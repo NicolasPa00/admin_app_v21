@@ -75,7 +75,7 @@ export class AuthService {
             this._accessToken.set(res.data.token);
             this.currentUser.set(res.data.usuario);
             this.persistUserMeta(res.data.usuario);
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/admin/dashboard']);
           }
         }),
       );

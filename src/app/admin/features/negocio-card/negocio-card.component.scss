@@ -1,0 +1,166 @@
+// ============================================================
+// NegocioCardComponent — Estilos
+// Design tokens heredados de src/styles/_theme.scss
+// ============================================================
+
+:host {
+  display: contents; // La card controla su propio layout
+}
+
+// ── Contenedor principal ────────────────────────────────────
+.nc-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
+  cursor: default;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-primary);
+  }
+
+  &--inactive {
+    opacity: 0.6;
+    filter: grayscale(0.4);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover { transform: none; }
+  }
+}
+
+// ── Cabecera: icono + badge ──────────────────────────────────
+.nc-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.nc-card__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+
+  .nc-card:hover & {
+    background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+}
+
+// ── Badge de estado ─────────────────────────────────────────
+.nc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+
+  &--active {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  &--inactive {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+  }
+}
+
+// ── Nombre ──────────────────────────────────────────────────
+.nc-card__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+  margin: 0;
+}
+
+// ── Descripción ─────────────────────────────────────────────
+.nc-card__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  // Truncado en 2 líneas
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+// ── Meta info ───────────────────────────────────────────────
+.nc-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin: 0;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.nc-card__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+
+  lucide-icon {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  dd { margin: 0; }
+}
+
+// ── Acciones ────────────────────────────────────────────────
+.nc-card__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: var(--spacing-sm);
+}
+
+.nc-card__btn-enter {
+  flex: 1 1 auto;
+  min-width: 100px;
+}
+
+.nc-card__btn-roles {
+  flex: 0 0 auto;
+}
+
+// ── Accesibilidad: sr-only ───────────────────────────────────
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,123 @@
+<!-- ============================================================
+  AdminDashboardComponent — Template
+  Soporta: loading skeleton · error state · empty state · grid de cards
+  ============================================================ -->
+
+<div class="dashboard">
+
+  <!-- ── Topbar ─────────────────────────────────────────────── -->
+  <header class="dashboard__topbar">
+    <div class="dashboard__brand">
+      <lucide-icon name="layout-grid" [size]="22" aria-hidden="true" />
+      <span class="dashboard__brand-name">Admin Panel</span>
+    </div>
+
+    <div class="dashboard__topbar-actions">
+      <!-- Toggle de tema -->
+      <button
+        type="button"
+        class="theme-toggle"
+        (click)="toggleTheme()"
+        [attr.aria-label]="isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+        [attr.aria-pressed]="isDark()"
+      >
+        @if (isDark()) {
+          <lucide-icon name="sun"  [size]="18" aria-hidden="true" />
+        } @else {
+          <lucide-icon name="moon" [size]="18" aria-hidden="true" />
+        }
+      </button>
+
+      <!-- Info del usuario -->
+      @if (user()) {
+        <span class="dashboard__user-name" aria-label="Usuario autenticado">
+          {{ displayName() }}
+        </span>
+      }
+
+      <!-- Cerrar sesión -->
+      <button
+        type="button"
+        class="btn btn--outline dashboard__logout-btn"
+        (click)="logout()"
+        aria-label="Cerrar sesión"
+      >
+        <lucide-icon name="log-out" [size]="16" aria-hidden="true" />
+        Salir
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Contenido principal ───────────────────────────────── -->
+  <main class="dashboard__main" id="main-content">
+
+    <!-- Encabezado de sección -->
+    <section class="dashboard__section-header" aria-labelledby="section-title">
+      <h1 id="section-title" class="dashboard__title">Tipos de negocio</h1>
+      @if (isSuperAdmin()) {
+        <span class="dashboard__role-badge">Super Administrador</span>
+      }
+    </section>
+
+    <!-- ── ESTADO: Cargando (skeleton) ── -->
+    @if (loadingState() === 'loading' || loadingState() === 'idle') {
+      <div class="dashboard__grid" aria-busy="true" aria-label="Cargando tipos de negocio">
+        @for (_ of [1,2,3,4,5,6]; track $index) {
+          <div class="skeleton-card" aria-hidden="true">
+            <div class="skeleton skeleton--header"></div>
+            <div class="skeleton skeleton--title"></div>
+            <div class="skeleton skeleton--text"></div>
+            <div class="skeleton skeleton--text skeleton--text-short"></div>
+            <div class="skeleton skeleton--meta"></div>
+            <div class="skeleton skeleton--actions"></div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── ESTADO: Error ── -->
+    @if (loadingState() === 'error') {
+      <div class="dashboard__state dashboard__state--error" role="alert">
+        <lucide-icon name="alert-circle" [size]="40" aria-hidden="true" />
+        <p class="dashboard__state-title">No se pudo cargar la información</p>
+        <p class="dashboard__state-desc">Verifica tu conexión o intenta de nuevo.</p>
+        <button
+          type="button"
+          class="btn btn--primary"
+          (click)="retry()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+
+    <!-- ── ESTADO: Sin datos ── -->
+    @if (loadingState() === 'success' && visibleTipos().length === 0) {
+      <div class="dashboard__state" role="status">
+        <lucide-icon name="layout-grid" [size]="40" aria-hidden="true" />
+        <p class="dashboard__state-title">Sin tipos de negocio disponibles</p>
+        <p class="dashboard__state-desc">No tienes negocios asignados en este momento.</p>
+      </div>
+    }
+
+    <!-- ── ESTADO: Grid de cards ── -->
+    @if (loadingState() === 'success' && visibleTipos().length > 0) {
+      <div
+        class="dashboard__grid"
+        role="list"
+        [attr.aria-label]="'Lista de ' + visibleTipos().length + ' tipos de negocio'"
+      >
+        @for (tipo of visibleTipos(); track tipo.id_tipo_negocio) {
+          <div role="listitem">
+            <app-negocio-card
+              [tipo]="tipo"
+              (entrar)="onEntrar($event)"
+              (verRoles)="onVerRoles($event)"
+            />
+          </div>
+        }
+      </div>
+    }
+
+  </main>
+</div>

@@ -1,0 +1,219 @@
+// ============================================================
+// AdminDashboardComponent — Estilos
+// ============================================================
+
+// ── Layout raíz ────────────────────────────────────────────
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+// ── Topbar ──────────────────────────────────────────────────
+.dashboard__topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  flex-wrap: wrap;
+}
+
+.dashboard__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-primary);
+}
+
+.dashboard__brand-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.dashboard__topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.dashboard__user-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard__logout-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+// ── Contenido principal ─────────────────────────────────────
+.dashboard__main {
+  flex: 1;
+  padding: var(--spacing-xl);
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+// ── Encabezado de sección ───────────────────────────────────
+.dashboard__section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
+}
+
+.dashboard__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dashboard__role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 15%, transparent);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+// ── Grid responsive ─────────────────────────────────────────
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+// ── Estados vacío / error ───────────────────────────────────
+.dashboard__state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+
+  lucide-icon {
+    opacity: 0.4;
+  }
+
+  &--error {
+    color: var(--color-error);
+
+    lucide-icon { opacity: 0.7; }
+  }
+}
+
+.dashboard__state-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dashboard__state-desc {
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+// ── Skeleton UI ─────────────────────────────────────────────
+
+// Animación de pulso
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.skeleton {
+  background: var(--color-border);
+  border-radius: var(--radius-sm);
+
+  &--header {
+    height: 52px;
+    width: 52px;
+    border-radius: var(--radius-md);
+  }
+
+  &--title {
+    height: 22px;
+    width: 70%;
+    border-radius: var(--radius-sm);
+  }
+
+  &--text {
+    height: 14px;
+    width: 100%;
+    border-radius: var(--radius-sm);
+
+    &-short { width: 60%; }
+  }
+
+  &--meta {
+    height: 14px;
+    width: 80%;
+    border-radius: var(--radius-sm);
+  }
+
+  &--actions {
+    height: 38px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    margin-top: auto;
+  }
+}
+
+// ── Responsive ──────────────────────────────────────────────
+@media (max-width: 600px) {
+  .dashboard__topbar {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .dashboard__main {
+    padding: var(--spacing-md);
+  }
+
+  .dashboard__grid {
+    grid-template-columns: 1fr;
+  }
+}
