@@ -1,0 +1,248 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <h1 class="auth-card__title">Crear cuenta</h1>
+      <p class="auth-card__subtitle">Completa tus datos para registrarte</p>
+    </div>
+
+    @if (serverError()) {
+      <div class="auth-card__alert auth-card__alert--error" role="alert">
+        {{ serverError() }}
+      </div>
+    }
+
+    <form (submit)="onSubmit(); $event.preventDefault()" novalidate>
+
+      <!-- ── Nombres ── -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="reg-primer-nombre" class="form-group__label">
+            Primer nombre
+          </label>
+          <input
+            id="reg-primer-nombre"
+            type="text"
+            class="input"
+            autocomplete="given-name"
+            placeholder="Ej. Juan"
+            [value]="primerNombre()"
+            (input)="updateField(primerNombre, $event)"
+            (blur)="primerNombreTouched.set(true)"
+            [attr.aria-invalid]="primerNombreTouched() && primerNombreError() ? 'true' : null"
+            [attr.aria-describedby]="primerNombreTouched() && primerNombreError() ? 'reg-primer-nombre-error' : null" />
+          @if (primerNombreTouched() && primerNombreError()) {
+            <span id="reg-primer-nombre-error" class="form-error" role="alert">
+              {{ primerNombreError() }}
+            </span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="reg-segundo-nombre" class="form-group__label">
+            Segundo nombre <span class="form-group__optional">(opcional)</span>
+          </label>
+          <input
+            id="reg-segundo-nombre"
+            type="text"
+            class="input"
+            autocomplete="additional-name"
+            placeholder="Ej. Carlos"
+            [value]="segundoNombre()"
+            (input)="updateField(segundoNombre, $event)" />
+        </div>
+      </div>
+
+      <!-- ── Apellidos ── -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="reg-primer-apellido" class="form-group__label">
+            Primer apellido
+          </label>
+          <input
+            id="reg-primer-apellido"
+            type="text"
+            class="input"
+            autocomplete="family-name"
+            placeholder="Ej. Pérez"
+            [value]="primerApellido()"
+            (input)="updateField(primerApellido, $event)"
+            (blur)="primerApellidoTouched.set(true)"
+            [attr.aria-invalid]="primerApellidoTouched() && primerApellidoError() ? 'true' : null"
+            [attr.aria-describedby]="primerApellidoTouched() && primerApellidoError() ? 'reg-primer-apellido-error' : null" />
+          @if (primerApellidoTouched() && primerApellidoError()) {
+            <span id="reg-primer-apellido-error" class="form-error" role="alert">
+              {{ primerApellidoError() }}
+            </span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="reg-segundo-apellido" class="form-group__label">
+            Segundo apellido <span class="form-group__optional">(opcional)</span>
+          </label>
+          <input
+            id="reg-segundo-apellido"
+            type="text"
+            class="input"
+            autocomplete="family-name"
+            placeholder="Ej. García"
+            [value]="segundoApellido()"
+            (input)="updateField(segundoApellido, $event)" />
+        </div>
+      </div>
+
+      <!-- ── Identificación ── -->
+      <div class="form-group">
+        <label for="reg-num-id" class="form-group__label">
+          Número de identificación
+        </label>
+        <input
+          id="reg-num-id"
+          type="text"
+          class="input"
+          autocomplete="off"
+          placeholder="Cédula, pasaporte u otro documento"
+          [value]="numIdentificacion()"
+          (input)="updateField(numIdentificacion, $event)"
+          (blur)="numIdentificacionTouched.set(true)"
+          [attr.aria-invalid]="numIdentificacionTouched() && numIdentificacionError() ? 'true' : null"
+          [attr.aria-describedby]="numIdentificacionTouched() && numIdentificacionError() ? 'reg-num-id-error' : null" />
+        @if (numIdentificacionTouched() && numIdentificacionError()) {
+          <span id="reg-num-id-error" class="form-error" role="alert">
+            {{ numIdentificacionError() }}
+          </span>
+        }
+      </div>
+
+      <!-- ── Teléfono (opcional) ── -->
+      <div class="form-group">
+        <label for="reg-telefono" class="form-group__label">
+          Teléfono <span class="form-group__optional">(opcional)</span>
+        </label>
+        <input
+          id="reg-telefono"
+          type="tel"
+          class="input"
+          autocomplete="tel"
+          placeholder="+57 300 000 0000"
+          [value]="telefono()"
+          (input)="updateField(telefono, $event)" />
+      </div>
+
+      <!-- ── Email ── -->
+      <div class="form-group">
+        <label for="reg-email" class="form-group__label">Email</label>
+        <input
+          id="reg-email"
+          type="email"
+          class="input"
+          autocomplete="email"
+          placeholder="tu@email.com"
+          [value]="email()"
+          (input)="updateField(email, $event)"
+          (blur)="onEmailBlur()"
+          [attr.aria-invalid]="emailTouched() && emailFullError() ? 'true' : null"
+          [attr.aria-describedby]="emailTouched() && emailFullError() ? 'reg-email-error' : null" />
+        @if (checkingEmail()) {
+          <span class="form-hint">Verificando disponibilidad…</span>
+        }
+        @if (emailTouched() && emailFullError()) {
+          <span id="reg-email-error" class="form-error" role="alert">
+            {{ emailFullError() }}
+          </span>
+        }
+      </div>
+
+      <!-- ── Contraseña ── -->
+      <div class="form-group">
+        <label for="reg-password" class="form-group__label">Contraseña</label>
+        <div class="form-group__input-wrapper">
+          <input
+            id="reg-password"
+            [type]="showPassword() ? 'text' : 'password'"
+            class="input"
+            autocomplete="new-password"
+            placeholder="Mínimo 8 caracteres"
+            [value]="password()"
+            (input)="updateField(password, $event)"
+            (blur)="passwordTouched.set(true)"
+            [attr.aria-invalid]="passwordTouched() && passwordError() ? 'true' : null"
+            [attr.aria-describedby]="passwordTouched() && passwordError() ? 'reg-password-error' : null" />
+          <button
+            type="button"
+            class="form-group__toggle-password"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">
+            @if (showPassword()) {
+              <lucide-icon name="eye-off" [size]="18" aria-hidden="true"></lucide-icon>
+            } @else {
+              <lucide-icon name="eye" [size]="18" aria-hidden="true"></lucide-icon>
+            }
+          </button>
+        </div>
+        @if (passwordTouched() && passwordError()) {
+          <span id="reg-password-error" class="form-error" role="alert">
+            {{ passwordError() }}
+          </span>
+        }
+      </div>
+
+      <!-- ── Confirmar contraseña ── -->
+      <div class="form-group">
+        <label for="reg-confirm-password" class="form-group__label">
+          Confirmar contraseña
+        </label>
+        <input
+          id="reg-confirm-password"
+          type="password"
+          class="input"
+          autocomplete="new-password"
+          placeholder="Repite la contraseña"
+          [value]="confirmPassword()"
+          (input)="updateField(confirmPassword, $event)"
+          (blur)="confirmPasswordTouched.set(true)"
+          [attr.aria-invalid]="confirmPasswordTouched() && confirmPasswordError() ? 'true' : null"
+          [attr.aria-describedby]="confirmPasswordTouched() && confirmPasswordError() ? 'reg-confirm-error' : null" />
+        @if (confirmPasswordTouched() && confirmPasswordError()) {
+          <span id="reg-confirm-error" class="form-error" role="alert">
+            {{ confirmPasswordError() }}
+          </span>
+        }
+      </div>
+
+      <!-- ── Fecha de nacimiento (opcional) ── -->
+      <div class="form-group">
+        <label for="reg-fecha-nacimiento" class="form-group__label">
+          Fecha de nacimiento <span class="form-group__optional">(opcional)</span>
+        </label>
+        <input
+          id="reg-fecha-nacimiento"
+          type="date"
+          class="input"
+          autocomplete="bday"
+          [value]="fechaNacimiento()"
+          (input)="updateField(fechaNacimiento, $event)" />
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        class="btn btn--primary auth-card__submit"
+        [disabled]="loading()">
+        @if (loading()) {
+          <lucide-icon name="loader-2" [size]="16" class="spinner-icon" aria-hidden="true"></lucide-icon>
+          Creando cuenta…
+        } @else {
+          Crear cuenta
+        }
+      </button>
+    </form>
+
+    <nav class="auth-card__links" aria-label="Opciones de autenticación">
+      <a routerLink="/auth/login" class="auth-card__link">
+        ¿Ya tienes cuenta? Inicia sesión
+      </a>
+    </nav>
+  </div>
+</div>
+

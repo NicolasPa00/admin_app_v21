@@ -1,0 +1,163 @@
+/* ============================================================
+   RegisterComponent — estilos usando design tokens CSS
+   (mismo layout que LoginComponent, reutiliza tokens)
+   ============================================================ */
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  padding: var(--spacing-2xl);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+
+  &__header {
+    margin-bottom: var(--spacing-xl);
+  }
+
+  &__title {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0 0 var(--spacing-xs);
+  }
+
+  &__subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  &__alert {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-md);
+
+    &--error {
+      background-color: var(--color-error-bg);
+      color: var(--color-error);
+      border: 1px solid var(--color-error);
+    }
+  }
+
+  &__submit {
+    width: 100%;
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+
+  &__links {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--spacing-lg);
+  }
+
+  &__link {
+    color: var(--color-primary);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  align-items: end; // alinea los inputs al mismo nivel aunque las etiquetas difieran en altura
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+.form-group {
+  margin-bottom: var(--spacing-md);
+
+  &__label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  &__optional {
+    font-weight: 400;
+    color: var(--color-text-secondary);
+  }
+
+  &__input-wrapper {
+    position: relative;
+
+    .input {
+      padding-right: 2.5rem;
+    }
+  }
+
+  &__toggle-password {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: var(--spacing-xs);
+    line-height: 1;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+      border-radius: var(--radius-sm);
+    }
+  }
+}
+
+.form-hint {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.spinner-icon {
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-icon {
+    animation: none;
+    opacity: 0.7;
+  }
+}

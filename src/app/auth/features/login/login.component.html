@@ -1,0 +1,150 @@
+<div class="login-layout">
+  <!-- ===== Panel izquierdo — Branding con logo ===== -->
+  <aside class="login-brand" aria-hidden="true">
+    <div class="login-brand__content">
+      <img class="login-brand__logo" src="/images/logo.png" alt="CodeBot" />
+      <p class="login-brand__tagline">
+        La plataforma para gestionar y hacer crecer cualquier negocio
+      </p>
+    </div>
+  </aside>
+
+  <!-- ===== Panel derecho — Formulario de login ===== -->
+  <main class="login-form-panel">
+    <!-- Toggle de tema (esquina superior derecha) -->
+    <div class="login-form-panel__toolbar">
+      <button
+        type="button"
+        class="theme-toggle"
+        (click)="themeService.toggleTheme()"
+        [attr.aria-label]="
+          themeService.resolvedTheme() === 'dark'
+            ? 'Cambiar a modo claro'
+            : 'Cambiar a modo oscuro'
+        "
+        title="Cambiar tema">
+        @if (themeService.resolvedTheme() === 'dark') {
+          <lucide-icon name="sun" [size]="18" aria-hidden="true"></lucide-icon>
+        } @else {
+          <lucide-icon name="moon" [size]="18" aria-hidden="true"></lucide-icon>
+        }
+      </button>
+    </div>
+
+    <!-- Logo visible solo en móvil -->
+    <div class="login-form-panel__mobile-logo">
+      <img class="login-form-panel__mobile-logo-svg" src="/images/logo.png" alt="CodeBot" />
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-card__header">
+        <h1 class="auth-card__title">Iniciar sesión</h1>
+        <p class="auth-card__subtitle">
+          Ingresa tus credenciales para continuar
+        </p>
+      </div>
+
+      <!-- Error del servidor -->
+      @if (serverError()) {
+        <div class="auth-card__alert auth-card__alert--error" role="alert">
+          {{ serverError() }}
+        </div>
+      }
+
+      <!-- Formulario -->
+      <form (submit)="onSubmit(); $event.preventDefault()" novalidate>
+        <!-- Número de identificación -->
+        <div class="form-group">
+          <label for="login-num-id" class="form-group__label">Número de identificación</label>
+          <input
+            id="login-num-id"
+            type="text"
+            class="input"
+            autocomplete="username"
+            placeholder="Ej. 123456789"
+            [value]="numIdentificacion()"
+            (input)="updateField(numIdentificacion, $event)"
+            (blur)="numIdentificacionTouched.set(true)"
+            [attr.aria-invalid]="
+              numIdentificacionTouched() && numIdentificacionError() ? 'true' : null
+            "
+            [attr.aria-describedby]="
+              numIdentificacionTouched() && numIdentificacionError() ? 'login-num-id-error' : null
+            " />
+          @if (numIdentificacionTouched() && numIdentificacionError()) {
+            <span id="login-num-id-error" class="form-error" role="alert">
+              {{ numIdentificacionError() }}
+            </span>
+          }
+        </div>
+
+        <!-- Contraseña -->
+        <div class="form-group">
+          <label for="login-password" class="form-group__label">
+            Contraseña
+          </label>
+          <div class="form-group__input-wrapper">
+            <input
+              id="login-password"
+              [type]="showPassword() ? 'text' : 'password'"
+              class="input"
+              autocomplete="current-password"
+              placeholder="Mínimo 8 caracteres"
+              [value]="password()"
+              (input)="updateField(password, $event)"
+              (blur)="passwordTouched.set(true)"
+              [attr.aria-invalid]="
+                passwordTouched() && passwordError() ? 'true' : null
+              "
+              [attr.aria-describedby]="
+                passwordTouched() && passwordError()
+                  ? 'login-password-error'
+                  : null
+              " />
+            <button
+              type="button"
+              class="form-group__toggle-password"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="
+                showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'
+              ">
+              @if (showPassword()) {
+                <lucide-icon name="eye-off" [size]="18" aria-hidden="true"></lucide-icon>
+              } @else {
+                <lucide-icon name="eye" [size]="18" aria-hidden="true"></lucide-icon>
+              }
+            </button>
+          </div>
+          @if (passwordTouched() && passwordError()) {
+            <span id="login-password-error" class="form-error" role="alert">
+              {{ passwordError() }}
+            </span>
+          }
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="btn btn--primary auth-card__submit"
+          [disabled]="loading()">
+          @if (loading()) {
+            <lucide-icon name="loader-2" [size]="16" class="spinner-icon" aria-hidden="true"></lucide-icon>
+            Iniciando sesión…
+          } @else {
+            Iniciar sesión
+          }
+        </button>
+      </form>
+
+      <!-- Links de navegación -->
+      <nav class="auth-card__links" aria-label="Opciones de autenticación">
+        <a routerLink="/auth/forgot-password" class="auth-card__link">
+          ¿Olvidaste tu contraseña?
+        </a>
+        <a routerLink="/auth/register" class="auth-card__link">
+          Crear una cuenta
+        </a>
+      </nav>
+    </div>
+  </main>
+</div>
