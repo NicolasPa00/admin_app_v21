@@ -12,7 +12,9 @@ import {
   RegisterRequest,
   RegisterResponse,
   ForgotPasswordRequest,
+  ForgotPasswordResponse,
   ResetPasswordRequest,
+  ResetPasswordResponse,
   ApiOkResponse,
   ProfileResponse,
   CheckEmailResponse,
@@ -107,28 +109,33 @@ export class AuthService {
   }
 
   /**
-   * Solicita email de recuperación de contraseña.
+   * Solicita el envío de un código OTP de 6 dígitos al email registrado.
+   * Siempre devuelve 200 (anti-enumeración).
    *
-   * POST /api/v1/auth/forgot-password
+   * POST /admin/auth/forgot-password
    */
-  requestForgotPassword(
-    request: ForgotPasswordRequest,
-  ): Observable<ApiOkResponse> {
-    return this.http.post<ApiOkResponse>(
+  requestForgotPassword(email: string): Observable<ForgotPasswordResponse> {
+    const body: ForgotPasswordRequest = { email };
+    return this.http.post<ForgotPasswordResponse>(
       `${this.API}/auth/forgot-password`,
-      request,
+      body,
     );
   }
 
   /**
-   * Resetea la contraseña con un token (recibido por email).
+   * Verifica el código OTP y actualiza la contraseña.
    *
-   * POST /api/v1/auth/reset-password
+   * POST /admin/auth/reset-password
    */
-  resetPassword(request: ResetPasswordRequest): Observable<ApiOkResponse> {
-    return this.http.post<ApiOkResponse>(
+  resetPassword(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Observable<ResetPasswordResponse> {
+    const body: ResetPasswordRequest = { email, code, newPassword };
+    return this.http.post<ResetPasswordResponse>(
       `${this.API}/auth/reset-password`,
-      request,
+      body,
     );
   }
 

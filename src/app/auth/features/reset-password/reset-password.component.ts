@@ -3,19 +3,20 @@ import {
   inject,
   signal,
   computed,
-  WritableSignal,
   OnInit,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../data-access/auth.service';
-import { ResetPasswordRequest } from '../../models/auth.models';
 
 /**
- * ResetPasswordComponent — Permite establecer una nueva contraseña.
+ * ResetPasswordComponent — Verifica el código OTP y actualiza la contraseña.
  *
- * Espera un query param `token` en la URL (ej: /auth/reset-password?token=abc123).
- * Este token es generado por el backend y enviado al email del usuario.
+ * Flujo:
+ *  1. Lee el query param `email` (inyectado por ForgotPasswordComponent).
+ *  2. Usuario ingresa el código OTP de 6 dígitos recibido por correo.
+ *  3. Usuario ingresa y confirma la nueva contraseña.
+ *  4. POST /admin/auth/reset-password → 200 OK → redirect a /auth/login.
  */
 @Component({
   selector: 'app-reset-password',
@@ -27,17 +28,20 @@ import { ResetPasswordRequest } from '../../models/auth.models';
 export class ResetPasswordComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   // ===================== Signal Form Fields =====================
 
+  /** Email precargado desde query param. */
+  readonly email = signal('');
+  readonly code = signal('');
   readonly newPassword = signal('');
   readonly confirmPassword = signal('');
 
-  /** Token extraído del query param. */
-  readonly token = signal('');
-
   // ===================== State =====================
 
+  readonly emailTouched = signal(false);
+  readonly codeTouched = signal(false);
   readonly newPasswordTouched = signal(false);
   readonly confirmPasswordTouched = signal(false);
 
@@ -48,10 +52,27 @@ export class ResetPasswordComponent implements OnInit {
 
   // ===================== Validaciones =====================
 
+  readonly emailError = computed(() => {
+    const val = this.email().trim();
+    if (!val) return 'El email es obligatorio';
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val))
+      return 'Formato de email inválido';
+    return null;
+  });
+
+  readonly codeError = computed(() => {
+    const val = this.code().trim();
+    if (!val) return 'El código es obligatorio';
+    if (!/^\d{6}$/.test(val)) return 'El código debe tener exactamente 6 dígitos';
+    return null;
+  });
+
   readonly newPasswordError = computed(() => {
     const val = this.newPassword();
     if (!val) return 'La nueva contraseña es obligatoria';
     if (val.length < 8) return 'Mínimo 8 caracteres';
+    if (!/[A-Z]/.test(val)) return 'Debe contener al menos una mayúscula';
+    if (!/\d/.test(val)) return 'Debe contener al menos un número';
     return null;
   });
 
@@ -64,7 +85,8 @@ export class ResetPasswordComponent implements OnInit {
 
   readonly formValid = computed(
     () =>
-      !!this.token() &&
+      !this.emailError() &&
+      !this.codeError() &&
       !this.newPasswordError() &&
       !this.confirmPasswordError(),
   );
@@ -72,16 +94,23 @@ export class ResetPasswordComponent implements OnInit {
   // ===================== Lifecycle =====================
 
   ngOnInit(): void {
-    // Leer el token de los query params
-    const tokenParam =
-      this.route.snapshot.queryParamMap.get('token') ?? '';
-    this.token.set(tokenParam);
+    const emailParam = this.route.snapshot.queryParamMap.get('email') ?? '';
+    this.email.set(emailParam);
   }
 
   // ===================== Métodos =====================
 
-  protected updateField(sig: WritableSignal<string>, event: Event): void {
-    sig.set((event.target as HTMLInputElement).value);
+  protected updateField(setter: (v: string) => void, event: Event): void {
+    setter((event.target as HTMLInputElement).value);
+  }
+
+  /** Limita la entrada del código a sólo dígitos (máx 6). */
+  protected onCodeInput(event: Event): void {
+    const raw = (event.target as HTMLInputElement).value
+      .replace(/\D/g, '')
+      .slice(0, 6);
+    this.code.set(raw);
+    (event.target as HTMLInputElement).value = raw;
   }
 
   protected togglePasswordVisibility(): void {
@@ -89,6 +118,8 @@ export class ResetPasswordComponent implements OnInit {
   }
 
   protected onSubmit(): void {
+    this.emailTouched.set(true);
+    this.codeTouched.set(true);
     this.newPasswordTouched.set(true);
     this.confirmPasswordTouched.set(true);
 
@@ -96,25 +127,24 @@ export class ResetPasswordComponent implements OnInit {
 
     this.loading.set(true);
     this.serverError.set(null);
-    this.success.set(false);
 
-    const request: ResetPasswordRequest = {
-      token: this.token(),
-      newPassword: this.newPassword(),
-    };
-
-    this.authService.resetPassword(request).subscribe({
-      next: () => {
-        this.loading.set(false);
-        this.success.set(true);
-      },
-      error: (err) => {
-        this.loading.set(false);
-        this.serverError.set(
-          err.error?.message ??
-            'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
-        );
-      },
-    });
+    this.authService
+      .resetPassword(this.email().trim(), this.code().trim(), this.newPassword())
+      .subscribe({
+        next: () => {
+          this.loading.set(false);
+          this.success.set(true);
+          // Redirige al login después de 2.5 s
+          setTimeout(() => this.router.navigate(['/auth/login']), 2500);
+        },
+        error: (err) => {
+          this.loading.set(false);
+          this.serverError.set(
+            err.error?.message ??
+              'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
+          );
+        },
+      });
   }
 }
+

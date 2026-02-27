@@ -84,18 +84,25 @@ export type RegisterResponse = ApiResponse<RegisterData>;
 /** GET /admin/usuarios/perfil */
 export type ProfileResponse = ApiResponse<User>;
 
-// ===================== Forgot / Reset Password =====================
+// ===================== Forgot / Reset Password (OTP) =====================
 
-/** Endpoints pendientes de implementación en el backend. */
+/** POST /admin/auth/forgot-password
+ *  Solicita el envío de un código OTP de 6 dígitos al email registrado. */
 export interface ForgotPasswordRequest {
-  email?: string;
-  num_identificacion?: string;
+  email: string;
 }
 
+export type ForgotPasswordResponse = ApiResponse;
+
+/** POST /admin/auth/reset-password
+ *  Verifica el OTP y actualiza la contraseña. */
 export interface ResetPasswordRequest {
-  token: string;
+  email: string;
+  code: string;        // 6 dígitos
   newPassword: string;
 }
+
+export type ResetPasswordResponse = ApiResponse;
 
 export type ApiOkResponse = ApiResponse;
 

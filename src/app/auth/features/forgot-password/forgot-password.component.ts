@@ -5,13 +5,19 @@ import {
   computed,
   WritableSignal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { AuthService } from '../../data-access/auth.service';
-import { ForgotPasswordRequest } from '../../models/auth.models';
 
 /**
- * ForgotPasswordComponent — Solicita un email de recuperación de contraseña.
+ * ForgotPasswordComponent — Solicita el envío de un código OTP de 6 dígitos.
+ *
+ * Flujo:
+ *  1. Usuario ingresa su email y envía el formulario.
+ *  2. El backend genera un OTP, lo hashea y lo envía al email registrado.
+ *  3. Siempre responde 200 (anti-enumeración).
+ *  4. En estado `success` se muestra guía de instrucciones y enlace a
+ *     /auth/reset-password?email=<email> para ingresar el código.
  */
 @Component({
   selector: 'app-forgot-password',
@@ -22,11 +28,11 @@ import { ForgotPasswordRequest } from '../../models/auth.models';
 })
 export class ForgotPasswordComponent {
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   // ===================== Signal Form Fields =====================
 
   readonly email = signal('');
-  readonly tenantId = signal('');
 
   // ===================== State =====================
 
@@ -47,10 +53,15 @@ export class ForgotPasswordComponent {
 
   readonly formValid = computed(() => !this.emailError());
 
+  /** URL para el botón "Ingresar código" — lleva el email como query param. */
+  readonly resetUrl = computed(() =>
+    `/auth/reset-password?email=${encodeURIComponent(this.email().trim())}`,
+  );
+
   // ===================== Métodos =====================
 
-  protected updateField(sig: WritableSignal<string>, event: Event): void {
-    sig.set((event.target as HTMLInputElement).value);
+  protected updateEmail(event: Event): void {
+    this.email.set((event.target as HTMLInputElement).value);
   }
 
   protected onSubmit(): void {
@@ -61,23 +72,27 @@ export class ForgotPasswordComponent {
     this.serverError.set(null);
     this.success.set(false);
 
-    const request: ForgotPasswordRequest = {
-      email: this.email().trim(),
-      ...(this.tenantId() ? { tenantId: this.tenantId() } : {}),
-    };
-
-    this.authService.requestForgotPassword(request).subscribe({
+    this.authService.requestForgotPassword(this.email().trim()).subscribe({
       next: () => {
         this.loading.set(false);
         this.success.set(true);
       },
       error: (err) => {
         this.loading.set(false);
+        // El backend siempre devuelve 200; este bloque solo captura
+        // errores de red o validación (400).
         this.serverError.set(
           err.error?.message ??
-            'No se pudo enviar el correo. Inténtalo de nuevo.',
+            'No se pudo procesar la solicitud. Inténtalo de nuevo.',
         );
       },
     });
   }
+
+  protected goToReset(): void {
+    this.router.navigate(['/auth/reset-password'], {
+      queryParams: { email: this.email().trim() },
+    });
+  }
 }
+
