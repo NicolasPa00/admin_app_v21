@@ -70,7 +70,6 @@ export interface RegisterRequest {
   email: string;
   password: string;
   fecha_nacimiento?: string;
-  id_rol: number;
   id_negocio?: number;
 }
 

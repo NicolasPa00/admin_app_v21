@@ -9,6 +9,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
   LucideAngularModule,
+  LucideIconProvider,
   LUCIDE_ICONS,
   Eye, EyeOff, Loader2,
 } from 'lucide-angular';
@@ -31,7 +32,7 @@ import { RegisterRequest } from '../../models/auth.models';
   standalone: true,
   imports: [RouterLink, LucideAngularModule],
   providers: [
-    { provide: LUCIDE_ICONS, multi: true, useValue: [Eye, EyeOff, Loader2] },
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Loader2 }) },
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -51,9 +52,6 @@ export class RegisterComponent {
   readonly password          = signal('');
   readonly confirmPassword   = signal('');
   readonly fechaNacimiento   = signal('');   // opcional
-
-  /** id_rol enviado al backend; el administrador puede cambiarlo luego. */
-  private readonly idRol = 1;
 
   // ===================== Touched State =====================
 
@@ -200,7 +198,6 @@ export class RegisterComponent {
       num_identificacion: this.numIdentificacion().trim(),
       email:    this.email().trim(),
       password: this.password(),
-      id_rol:   this.idRol,
       ...(this.segundoNombre().trim()   ? { segundo_nombre:   this.segundoNombre().trim() }   : {}),
       ...(this.segundoApellido().trim() ? { segundo_apellido: this.segundoApellido().trim() } : {}),
       ...(this.telefono().trim()        ? { telefono:         this.telefono().trim() }         : {}),

@@ -8,6 +8,7 @@ import {
 import { RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
+  LucideIconProvider,
   LUCIDE_ICONS,
   Eye, EyeOff, Sun, Moon, Loader2,
 } from 'lucide-angular';
@@ -27,7 +28,7 @@ import { LoginRequest } from '../../models/auth.models';
   standalone: true,
   imports: [RouterLink, LucideAngularModule],
   providers: [
-    { provide: LUCIDE_ICONS, multi: true, useValue: [Eye, EyeOff, Sun, Moon, Loader2] },
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Sun, Moon, Loader2 }) },
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
