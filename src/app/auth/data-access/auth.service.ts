@@ -57,6 +57,26 @@ export class AuthService {
     () => !!this._accessToken() && !!this.currentUser(),
   );
 
+  // ===================== Init =====================
+
+  constructor() {
+    // Restaura la sesión desde localStorage al recargar la página.
+    if (isPlatformBrowser(this.platformId)) {
+      const token = localStorage.getItem('app_token');
+      const metaRaw = localStorage.getItem('app_user_meta');
+      if (token && metaRaw) {
+        try {
+          const user: User = JSON.parse(metaRaw);
+          this._accessToken.set(token);
+          this.currentUser.set(user);
+        } catch {
+          localStorage.removeItem('app_token');
+          localStorage.removeItem('app_user_meta');
+        }
+      }
+    }
+  }
+
   // ===================== Métodos públicos =====================
 
   /** Lectura del token para el interceptor (solo lectura). */
@@ -78,6 +98,9 @@ export class AuthService {
           if (res.data) {
             this._accessToken.set(res.data.token);
             this.currentUser.set(res.data.usuario);
+            if (isPlatformBrowser(this.platformId)) {
+              localStorage.setItem('app_token', res.data.token);
+            }
             this.persistUserMeta(res.data.usuario);
             this.router.navigate(['/admin/dashboard']);
           }
@@ -105,6 +128,7 @@ export class AuthService {
     this._accessToken.set(null);
     this.currentUser.set(null);
     if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('app_token');
       localStorage.removeItem('app_user_meta');
     }
     this.router.navigate(['/auth/login']);
