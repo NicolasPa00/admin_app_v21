@@ -108,25 +108,47 @@
     </div>
 
     <div class="lp-hero__visual">
-      <div class="lp-hero__card lp-hero__card--1">
-        <lucide-icon name="store" [size]="28" aria-hidden="true" />
-        <div>
-          <strong>3 negocios</strong>
-          <span>activos</span>
+      <!-- Row 1: dos mini-cards lado a lado -->
+      <div class="lp-hero__card lp-hero__card--row">
+        <div class="lp-hero__mini-card">
+          <div class="lp-hero__mini-card__icon lp-hero__icon--blue">
+            <lucide-icon name="store" [size]="22" aria-hidden="true" />
+          </div>
+          <div>
+            <strong>3 negocios</strong>
+            <span>activos en la plataforma</span>
+          </div>
+        </div>
+        <div class="lp-hero__mini-card">
+          <div class="lp-hero__mini-card__icon lp-hero__icon--green">
+            <lucide-icon name="users" [size]="22" aria-hidden="true" />
+          </div>
+          <div>
+            <strong>12 usuarios</strong>
+            <span>conectados ahora</span>
+          </div>
         </div>
       </div>
-      <div class="lp-hero__card lp-hero__card--2">
-        <lucide-icon name="users" [size]="28" aria-hidden="true" />
+
+      <!-- Row 2: card de métricas -->
+      <div class="lp-hero__card">
+        <div class="lp-hero__card__icon lp-hero__icon--orange">
+          <lucide-icon name="bar-chart-3" [size]="26" aria-hidden="true" />
+        </div>
         <div>
-          <strong>12 usuarios</strong>
-          <span>conectados</span>
+          <strong>+24% en ventas</strong>
+          <span>vs. el mes anterior en todos los negocios</span>
         </div>
       </div>
-      <div class="lp-hero__card lp-hero__card--3">
-        <lucide-icon name="bar-chart-3" [size]="28" aria-hidden="true" />
+
+      <!-- Row 3: card de uptime -->
+      <div class="lp-hero__card">
+        <div class="lp-hero__card__icon lp-hero__icon--blue">
+          <lucide-icon name="shield" [size]="26" aria-hidden="true" />
+        </div>
         <div>
-          <strong>+24%</strong>
-          <span>ventas este mes</span>
+          <strong>99.9% disponibilidad</strong>
+          <span>infraestructura cloud de alta disponibilidad</span>
         </div>
       </div>
     </div>
@@ -161,14 +183,71 @@
   </div>
 </section>
 
-<!-- ═══════════════ STATS ═══════════════ -->
-<section class="lp-stats" id="stats">
+<!-- ═══════════════ ¿POR QUÉ ESCALAPP? ═══════════════ -->
+<section class="lp-why" id="stats">
   <div class="container">
-    <div class="lp-stats__grid">
+    <!-- Encabezado -->
+    <div class="lp-section-header">
+      <span class="lp-badge">
+        <lucide-icon name="zap" [size]="14" aria-hidden="true" />
+        ¿Por qué EscalApp?
+      </span>
+      <h2 class="lp-section-header__title">Construido para crecer contigo</h2>
+      <p class="lp-section-header__subtitle">
+        No es solo software — es la columna vertebral operativa de tu negocio.
+      </p>
+    </div>
+
+    <!-- Razones principales -->
+    <div class="lp-why__reasons">
+      <div class="lp-why__reason">
+        <div class="lp-why__reason-icon lp-why__reason-icon--blue">
+          <lucide-icon name="rocket" [size]="28" aria-hidden="true" />
+        </div>
+        <div>
+          <h3>Arranca en minutos</h3>
+          <p>Crea tu cuenta, registra tu negocio y empieza a operar sin necesidad de instalaciones ni configuraciones complejas. Todo desde el navegador.</p>
+        </div>
+      </div>
+
+      <div class="lp-why__reason">
+        <div class="lp-why__reason-icon lp-why__reason-icon--green">
+          <lucide-icon name="shield" [size]="28" aria-hidden="true" />
+        </div>
+        <div>
+          <h3>Seguridad desde el diseño</h3>
+          <p>Cada dato está protegido con autenticación JWT, cifrado en tránsito y en reposo, y controles de acceso por rol. Tu información nunca está en riesgo.</p>
+        </div>
+      </div>
+
+      <div class="lp-why__reason">
+        <div class="lp-why__reason-icon lp-why__reason-icon--orange">
+          <lucide-icon name="bar-chart-3" [size]="28" aria-hidden="true" />
+        </div>
+        <div>
+          <h3>Decisiones basadas en datos</h3>
+          <p>Reportes en tiempo real de ventas, inventario, ocupación y productividad. Deja de adivinar — actúa con información concreta.</p>
+        </div>
+      </div>
+
+      <div class="lp-why__reason">
+        <div class="lp-why__reason-icon lp-why__reason-icon--purple">
+          <lucide-icon name="users" [size]="28" aria-hidden="true" />
+        </div>
+        <div>
+          <h3>Tu equipo siempre alineado</h3>
+          <p>Roles y permisos granulares para cada persona. El cajero ve lo suyo, el mesero lo suyo, el admin todo. Sin confusiones, sin errores.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de métricas -->
+    <div class="lp-why__metrics">
       @for (stat of stats; track stat.etiqueta) {
-        <div class="lp-stat">
-          <span class="lp-stat__valor">{{ stat.valor }}</span>
-          <span class="lp-stat__etiqueta">{{ stat.etiqueta }}</span>
+        <div class="lp-why__metric">
+          <span class="lp-why__metric-valor">{{ stat.valor }}</span>
+          <span class="lp-why__metric-etiqueta">{{ stat.etiqueta }}</span>
+          <span class="lp-why__metric-desc">{{ stat.descripcion }}</span>
         </div>
       }
     </div>
@@ -189,22 +268,45 @@
       </p>
     </div>
 
+    <!-- ── Selector de tipo de negocio ── -->
+    <div class="lp-tipo-selector">
+      <p class="lp-tipo-selector__label">¿Qué tipo de negocio tienes?</p>
+      <div class="lp-tipo-selector__grid">
+        @for (tipo of tiposNegocio; track tipo.id) {
+          <button
+            type="button"
+            class="lp-tipo-chip"
+            [class.lp-tipo-chip--active]="selectedTipo().id === tipo.id"
+            (click)="selectTipo(tipo)"
+            [attr.aria-pressed]="selectedTipo().id === tipo.id">
+            <lucide-icon [name]="tipo.icon" [size]="18" aria-hidden="true" />
+            {{ tipo.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- ── Cards de planes ── -->
     <div class="lp-planes__grid">
-      @for (plan of planes; track plan.nombre) {
+      @for (plan of planes(); track plan.nombre) {
         <article class="lp-plan-card" [class.lp-plan-card--featured]="plan.destacado">
           @if (plan.destacado) {
             <span class="lp-plan-card__badge">Más popular</span>
+          } @else if (plan.badge) {
+            <span class="lp-plan-card__badge lp-plan-card__badge--trial">{{ plan.badge }}</span>
           }
-          <h3 class="lp-plan-card__nombre">{{ plan.nombre }}</h3>
-          <p class="lp-plan-card__desc">{{ plan.descripcion }}</p>
+          <div class="lp-plan-card__header">
+            <h3 class="lp-plan-card__nombre">{{ plan.nombre }}</h3>
+            <p class="lp-plan-card__desc">{{ plan.descripcion }}</p>
 
-          <div class="lp-plan-card__precio">
-            <span class="lp-plan-card__monto">{{ formatPrice(plan.precio) }}</span>
-            @if (plan.precio > 0) {
-              <span class="lp-plan-card__periodo">COP {{ plan.periodo }}</span>
-            } @else {
-              <span class="lp-plan-card__periodo">{{ plan.periodo }}</span>
-            }
+            <div class="lp-plan-card__precio">
+              <span class="lp-plan-card__monto">{{ formatPrice(plan.precio) }}</span>
+              @if (plan.precio > 0) {
+                <span class="lp-plan-card__periodo">COP {{ plan.periodo }}</span>
+              } @else {
+                <span class="lp-plan-card__periodo">{{ plan.periodo }}</span>
+              }
+            </div>
           </div>
 
           <ul class="lp-plan-card__features">
