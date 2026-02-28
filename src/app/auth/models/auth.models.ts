@@ -104,6 +104,10 @@ export interface ResetPasswordRequest {
 
 export type ResetPasswordResponse = ApiResponse;
 
+/** Verificación de OTP (paso 1 del flujo de reset-password) */
+export interface VerifyOtpRequest { email: string; code: string; }
+export type VerifyOtpResponse = ApiResponse;
+
 export type ApiOkResponse = ApiResponse;
 
 // ===================== Check Email =====================

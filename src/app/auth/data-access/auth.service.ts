@@ -15,6 +15,8 @@ import {
   ForgotPasswordResponse,
   ResetPasswordRequest,
   ResetPasswordResponse,
+  VerifyOtpRequest,
+  VerifyOtpResponse,
   ApiOkResponse,
   ProfileResponse,
   CheckEmailResponse,
@@ -137,6 +139,15 @@ export class AuthService {
       `${this.API}/auth/reset-password`,
       body,
     );
+  }
+
+  /**
+   * Verifica el OTP sin consumirlo ni cambiar la contraseña (paso 1 del reset).
+   * POST /admin/auth/verify-otp
+   */
+  verifyOtp(email: string, code: string): Observable<VerifyOtpResponse> {
+    const body: VerifyOtpRequest = { email, code };
+    return this.http.post<VerifyOtpResponse>(`${this.API}/auth/verify-otp`, body);
   }
 
   /**

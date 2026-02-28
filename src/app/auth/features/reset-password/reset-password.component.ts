@@ -6,6 +6,14 @@ import {
   OnInit,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  LucideAngularModule,
+  LucideIconProvider,
+  LUCIDE_ICONS,
+  Eye,
+  EyeOff,
+  Loader2,
+} from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
 
@@ -21,34 +29,42 @@ import { AuthService } from '../../data-access/auth.service';
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, LucideAngularModule],
+  providers: [
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Loader2 }) },
+  ],
   templateUrl: './reset-password.component.html',
   styleUrl: './reset-password.component.scss',
 })
 export class ResetPasswordComponent implements OnInit {
   private readonly authService = inject(AuthService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
+  private readonly route       = inject(ActivatedRoute);
+  private readonly router      = inject(Router);
+
+  // ===================== Paso actual (1 = código, 2 = contraseña) =====================
+
+  readonly step = signal<1 | 2>(1);
 
   // ===================== Signal Form Fields =====================
 
-  /** Email precargado desde query param. */
-  readonly email = signal('');
-  readonly code = signal('');
-  readonly newPassword = signal('');
+  readonly email           = signal('');
+  readonly code            = signal('');
+  readonly newPassword     = signal('');
   readonly confirmPassword = signal('');
 
   // ===================== State =====================
 
-  readonly emailTouched = signal(false);
-  readonly codeTouched = signal(false);
-  readonly newPasswordTouched = signal(false);
+  readonly emailTouched           = signal(false);
+  readonly codeTouched            = signal(false);
+  readonly newPasswordTouched     = signal(false);
   readonly confirmPasswordTouched = signal(false);
 
-  readonly loading = signal(false);
-  readonly serverError = signal<string | null>(null);
-  readonly success = signal(false);
+  readonly loading      = signal(false);
+  readonly loadingStep1 = signal(false);
+  readonly serverError  = signal<string | null>(null);
+  readonly success      = signal(false);
   readonly showPassword = signal(false);
+  readonly showConfirm  = signal(false);
 
   // ===================== Validaciones =====================
 
@@ -63,7 +79,7 @@ export class ResetPasswordComponent implements OnInit {
   readonly codeError = computed(() => {
     const val = this.code().trim();
     if (!val) return 'El código es obligatorio';
-    if (!/^\d{6}$/.test(val)) return 'El código debe tener exactamente 6 dígitos';
+    if (!/^\d{6}$/.test(val)) return 'Debe tener exactamente 6 dígitos';
     return null;
   });
 
@@ -83,13 +99,8 @@ export class ResetPasswordComponent implements OnInit {
     return null;
   });
 
-  readonly formValid = computed(
-    () =>
-      !this.emailError() &&
-      !this.codeError() &&
-      !this.newPasswordError() &&
-      !this.confirmPasswordError(),
-  );
+  readonly step1Valid = computed(() => !this.emailError() && !this.codeError());
+  readonly step2Valid = computed(() => !this.newPasswordError() && !this.confirmPasswordError());
 
   // ===================== Lifecycle =====================
 
@@ -104,7 +115,6 @@ export class ResetPasswordComponent implements OnInit {
     setter((event.target as HTMLInputElement).value);
   }
 
-  /** Limita la entrada del código a sólo dígitos (máx 6). */
   protected onCodeInput(event: Event): void {
     const raw = (event.target as HTMLInputElement).value
       .replace(/\D/g, '')
@@ -113,17 +123,42 @@ export class ResetPasswordComponent implements OnInit {
     (event.target as HTMLInputElement).value = raw;
   }
 
-  protected togglePasswordVisibility(): void {
-    this.showPassword.update((v) => !v);
+  /** Verifica el OTP contra el backend; si OK avanza al paso 2. */
+  protected nextStep(): void {
+    this.emailTouched.set(true);
+    this.codeTouched.set(true);
+    this.serverError.set(null);
+    if (!this.step1Valid() || this.loadingStep1()) return;
+
+    this.loadingStep1.set(true);
+    this.authService.verifyOtp(this.email().trim(), this.code().trim()).subscribe({
+      next: () => {
+        this.loadingStep1.set(false);
+        this.step.set(2);
+      },
+      error: (err) => {
+        this.loadingStep1.set(false);
+        this.serverError.set(
+          err.error?.message ?? 'Código inválido o expirado.',
+        );
+      },
+    });
+  }
+
+  /** Regresa al paso 1 para corregir email o código. */
+  protected prevStep(): void {
+    this.step.set(1);
+    this.serverError.set(null);
+    this.newPassword.set('');
+    this.confirmPassword.set('');
+    this.newPasswordTouched.set(false);
+    this.confirmPasswordTouched.set(false);
   }
 
   protected onSubmit(): void {
-    this.emailTouched.set(true);
-    this.codeTouched.set(true);
     this.newPasswordTouched.set(true);
     this.confirmPasswordTouched.set(true);
-
-    if (!this.formValid() || this.loading()) return;
+    if (!this.step2Valid() || this.loading()) return;
 
     this.loading.set(true);
     this.serverError.set(null);
@@ -134,15 +169,17 @@ export class ResetPasswordComponent implements OnInit {
         next: () => {
           this.loading.set(false);
           this.success.set(true);
-          // Redirige al login después de 2.5 s
           setTimeout(() => this.router.navigate(['/auth/login']), 2500);
         },
         error: (err) => {
           this.loading.set(false);
-          this.serverError.set(
-            err.error?.message ??
-              'No se pudo restablecer la contraseña. Inténtalo de nuevo.',
-          );
+          const msg: string =
+            err.error?.message ?? 'No se pudo restablecer la contraseña. Inténtalo de nuevo.';
+          this.serverError.set(msg);
+          // Si el error es del código, regresar al paso 1
+          if (/código|expirado|intentos/i.test(msg)) {
+            this.step.set(1);
+          }
         },
       });
   }
