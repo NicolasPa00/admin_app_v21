@@ -68,6 +68,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 4002
+          },
           "configurations": {
             "production": {
               "buildTarget": "admin_app-v21:build:production"
