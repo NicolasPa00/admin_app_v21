@@ -1,0 +1,278 @@
+<!-- ============================================================
+     EscalApp — Landing Page
+     ============================================================ -->
+
+<!-- ═══════════════ HEADER / NAVBAR ═══════════════ -->
+<header class="lp-header">
+  <nav class="lp-nav container">
+    <!-- Logo -->
+    <a class="lp-nav__brand" (click)="scrollTo('hero'); $event.preventDefault()" href="#">
+      <img src="/images/escalapplogo.png" alt="EscalApp" class="lp-nav__logo" />
+    </a>
+
+    <!-- Links (desktop) -->
+    <ul class="lp-nav__links">
+      <li><a (click)="scrollTo('features'); $event.preventDefault()" href="#">Funcionalidades</a></li>
+      <li><a (click)="scrollTo('planes'); $event.preventDefault()" href="#">Planes</a></li>
+      <li><a (click)="scrollTo('stats'); $event.preventDefault()" href="#">¿Por qué EscalApp?</a></li>
+    </ul>
+
+    <!-- Actions -->
+    <div class="lp-nav__actions">
+      <button
+        type="button"
+        class="theme-toggle"
+        (click)="themeService.toggleTheme()"
+        [attr.aria-label]="themeService.resolvedTheme() === 'dark' ? 'Modo claro' : 'Modo oscuro'">
+        @if (themeService.resolvedTheme() === 'dark') {
+          <lucide-icon name="sun" [size]="18" aria-hidden="true" />
+        } @else {
+          <lucide-icon name="moon" [size]="18" aria-hidden="true" />
+        }
+      </button>
+      <a routerLink="/auth/login" class="btn btn--outline btn--sm">Iniciar sesión</a>
+      <a routerLink="/auth/register" class="btn btn--primary btn--sm">Registrarse</a>
+    </div>
+
+    <!-- Hamburger (mobile) -->
+    <button
+      type="button"
+      class="lp-nav__hamburger"
+      (click)="toggleMobileMenu()"
+      [attr.aria-label]="mobileMenuOpen() ? 'Cerrar menú' : 'Abrir menú'"
+      [attr.aria-expanded]="mobileMenuOpen()">
+      @if (mobileMenuOpen()) {
+        <lucide-icon name="x" [size]="24" aria-hidden="true" />
+      } @else {
+        <lucide-icon name="menu" [size]="24" aria-hidden="true" />
+      }
+    </button>
+  </nav>
+
+  <!-- Mobile Menu -->
+  @if (mobileMenuOpen()) {
+    <div class="lp-mobile-menu" role="dialog" aria-label="Menú de navegación">
+      <ul class="lp-mobile-menu__links">
+        <li><a (click)="scrollTo('features')" href="#">Funcionalidades</a></li>
+        <li><a (click)="scrollTo('planes')" href="#">Planes</a></li>
+        <li><a (click)="scrollTo('stats')" href="#">¿Por qué EscalApp?</a></li>
+      </ul>
+      <div class="lp-mobile-menu__actions">
+        <button
+          type="button"
+          class="theme-toggle"
+          (click)="themeService.toggleTheme()"
+          [attr.aria-label]="themeService.resolvedTheme() === 'dark' ? 'Modo claro' : 'Modo oscuro'">
+          @if (themeService.resolvedTheme() === 'dark') {
+            <lucide-icon name="sun" [size]="18" aria-hidden="true" />
+          } @else {
+            <lucide-icon name="moon" [size]="18" aria-hidden="true" />
+          }
+        </button>
+        <a routerLink="/auth/login" class="btn btn--outline" (click)="closeMobileMenu()">Iniciar sesión</a>
+        <a routerLink="/auth/register" class="btn btn--primary" (click)="closeMobileMenu()">Registrarse</a>
+      </div>
+    </div>
+  }
+</header>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="lp-hero" id="hero">
+  <div class="container lp-hero__inner">
+    <div class="lp-hero__content">
+      <span class="lp-badge">
+        <lucide-icon name="rocket" [size]="14" aria-hidden="true" />
+        Plataforma SaaS multi-negocio
+      </span>
+
+      <h1 class="lp-hero__title">
+        Centraliza y escala
+        <span class="lp-hero__highlight">tu negocio</span>
+        desde un solo lugar
+      </h1>
+
+      <p class="lp-hero__subtitle">
+        EscalApp es la solución todo-en-uno para administrar restaurantes, cafeterías y más.
+        Usuarios, roles, mesas, pedidos, inventario y reportes — todo conectado.
+      </p>
+
+      <div class="lp-hero__cta">
+        <a routerLink="/auth/register" class="btn btn--primary btn--lg">
+          Empezar gratis
+          <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+        </a>
+        <a (click)="scrollTo('planes'); $event.preventDefault()" href="#" class="btn btn--outline btn--lg">
+          Ver planes
+        </a>
+      </div>
+    </div>
+
+    <div class="lp-hero__visual">
+      <div class="lp-hero__card lp-hero__card--1">
+        <lucide-icon name="store" [size]="28" aria-hidden="true" />
+        <div>
+          <strong>3 negocios</strong>
+          <span>activos</span>
+        </div>
+      </div>
+      <div class="lp-hero__card lp-hero__card--2">
+        <lucide-icon name="users" [size]="28" aria-hidden="true" />
+        <div>
+          <strong>12 usuarios</strong>
+          <span>conectados</span>
+        </div>
+      </div>
+      <div class="lp-hero__card lp-hero__card--3">
+        <lucide-icon name="bar-chart-3" [size]="28" aria-hidden="true" />
+        <div>
+          <strong>+24%</strong>
+          <span>ventas este mes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FEATURES ═══════════════ -->
+<section class="lp-features" id="features">
+  <div class="container">
+    <div class="lp-section-header">
+      <span class="lp-badge">
+        <lucide-icon name="zap" [size]="14" aria-hidden="true" />
+        Funcionalidades
+      </span>
+      <h2 class="lp-section-header__title">Todo lo que tu negocio necesita</h2>
+      <p class="lp-section-header__subtitle">
+        Herramientas diseñadas para simplificar la operación diaria y crecer sin límites.
+      </p>
+    </div>
+
+    <div class="lp-features__grid">
+      @for (feature of features; track feature.titulo) {
+        <article class="lp-feature-card">
+          <div class="lp-feature-card__icon">
+            <lucide-icon [name]="feature.icon" [size]="24" aria-hidden="true" />
+          </div>
+          <h3 class="lp-feature-card__title">{{ feature.titulo }}</h3>
+          <p class="lp-feature-card__desc">{{ feature.descripcion }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ STATS ═══════════════ -->
+<section class="lp-stats" id="stats">
+  <div class="container">
+    <div class="lp-stats__grid">
+      @for (stat of stats; track stat.etiqueta) {
+        <div class="lp-stat">
+          <span class="lp-stat__valor">{{ stat.valor }}</span>
+          <span class="lp-stat__etiqueta">{{ stat.etiqueta }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PLANES (PRICING) ═══════════════ -->
+<section class="lp-planes" id="planes">
+  <div class="container">
+    <div class="lp-section-header">
+      <span class="lp-badge">
+        <lucide-icon name="star" [size]="14" aria-hidden="true" />
+        Planes
+      </span>
+      <h2 class="lp-section-header__title">Elige el plan perfecto para ti</h2>
+      <p class="lp-section-header__subtitle">
+        Sin contratos largos. Cancela cuando quieras. Empieza gratis hoy.
+      </p>
+    </div>
+
+    <div class="lp-planes__grid">
+      @for (plan of planes; track plan.nombre) {
+        <article class="lp-plan-card" [class.lp-plan-card--featured]="plan.destacado">
+          @if (plan.destacado) {
+            <span class="lp-plan-card__badge">Más popular</span>
+          }
+          <h3 class="lp-plan-card__nombre">{{ plan.nombre }}</h3>
+          <p class="lp-plan-card__desc">{{ plan.descripcion }}</p>
+
+          <div class="lp-plan-card__precio">
+            <span class="lp-plan-card__monto">{{ formatPrice(plan.precio) }}</span>
+            @if (plan.precio > 0) {
+              <span class="lp-plan-card__periodo">COP {{ plan.periodo }}</span>
+            } @else {
+              <span class="lp-plan-card__periodo">{{ plan.periodo }}</span>
+            }
+          </div>
+
+          <ul class="lp-plan-card__features">
+            @for (feat of plan.features; track feat) {
+              <li>
+                <lucide-icon name="check" [size]="16" aria-hidden="true" />
+                {{ feat }}
+              </li>
+            }
+          </ul>
+
+          <a
+            routerLink="/auth/register"
+            class="btn lp-plan-card__cta"
+            [class.btn--primary]="plan.destacado"
+            [class.btn--outline]="!plan.destacado">
+            {{ plan.cta }}
+            <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
+          </a>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CTA FINAL ═══════════════ -->
+<section class="lp-cta-section">
+  <div class="container lp-cta-section__inner">
+    <h2 class="lp-cta-section__title">¿Listo para transformar tu negocio?</h2>
+    <p class="lp-cta-section__subtitle">
+      Crea tu cuenta gratis en menos de 2 minutos. Sin tarjeta de crédito.
+    </p>
+    <a routerLink="/auth/register" class="btn btn--primary btn--lg">
+      Crear cuenta gratis
+      <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+    </a>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer class="lp-footer">
+  <div class="container lp-footer__inner">
+    <div class="lp-footer__brand">
+      <img src="/images/escalapplogo.png" alt="EscalApp" class="lp-footer__logo" />
+      <p class="lp-footer__tagline">
+        La plataforma para gestionar y hacer crecer cualquier negocio.
+      </p>
+    </div>
+
+    <div class="lp-footer__links">
+      <div class="lp-footer__col">
+        <h4>Producto</h4>
+        <ul>
+          <li><a (click)="scrollTo('features'); $event.preventDefault()" href="#">Funcionalidades</a></li>
+          <li><a (click)="scrollTo('planes'); $event.preventDefault()" href="#">Planes</a></li>
+        </ul>
+      </div>
+      <div class="lp-footer__col">
+        <h4>Cuenta</h4>
+        <ul>
+          <li><a routerLink="/auth/login">Iniciar sesión</a></li>
+          <li><a routerLink="/auth/register">Registrarse</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="lp-footer__bottom">
+      <p>&copy; {{ currentYear }} EscalApp. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</footer>

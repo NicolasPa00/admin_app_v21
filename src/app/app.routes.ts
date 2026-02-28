@@ -4,6 +4,15 @@ import { authRoutes }  from './auth/auth-routing';
 import { adminRoutes } from './admin/admin-routing';
 
 export const routes: Routes = [
+  // Landing page pública
+  {
+    path: '',
+    loadComponent: () =>
+      import('./landing/landing.component').then((m) => m.LandingComponent),
+    pathMatch: 'full',
+    title: 'EscalApp — Centraliza y escala tu negocio',
+  },
+
   // Módulo de autenticación — /auth/login, /auth/register, etc.
   { path: 'auth', children: authRoutes },
 
@@ -23,9 +32,9 @@ export const routes: Routes = [
     title: 'Detalle del negocio',
   },
 
-  // Ruta raíz → login
-  { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
+  // Ruta raíz → landing
+  { path: '', redirectTo: '', pathMatch: 'full' },
 
-  // Wildcard — redirige rutas desconocidas
-  { path: '**', redirectTo: 'auth/login' },
+  // Wildcard — redirige rutas desconocidas a la landing
+  { path: '**', redirectTo: '' },
 ];
