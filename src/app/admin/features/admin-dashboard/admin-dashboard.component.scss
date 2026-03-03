@@ -217,3 +217,160 @@
     grid-template-columns: 1fr;
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Selector de sucursales (Vista B)
+// ═══════════════════════════════════════════════════════════════
+
+// ── Cabecera del selector ──
+.sel__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-xl);
+}
+
+.sel__back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: var(--color-surface-hover, rgba(0,0,0,.04));
+    color: var(--color-text-primary);
+    border-color: var(--color-primary);
+  }
+
+  lucide-icon { flex-shrink: 0; }
+}
+
+.sel__breadcrumb-sep {
+  color: var(--color-text-muted, var(--color-text-secondary));
+  font-size: var(--font-size-sm);
+  opacity: .5;
+}
+
+.sel__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  flex: 1 1 100%;
+  line-height: 1.2;
+
+  @media (min-width: 640px) { flex: 0 0 auto; }
+}
+
+.sel__subtitle {
+  flex: 1 1 100%;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+// ── Grid de sucursales ──
+.sel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+// ── Card de sucursal ──
+.sel__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.15s;
+
+  &:hover {
+    box-shadow: var(--shadow-md, 0 4px 16px rgba(0,0,0,.1));
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+  }
+}
+
+.sel__card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.sel__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.sel__card-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.25;
+}
+
+// ── Metadatos de la sucursal ──
+.sel__card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin: 0;
+  flex: 1;
+}
+
+.sel__card-meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+
+  lucide-icon { flex-shrink: 0; opacity: .7; }
+
+  dd { margin: 0; }
+}
+
+// ── Footer / acción ──
+.sel__card-footer {
+  margin-top: auto;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.sel__card-enter-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+// ── Responsive ──────────────────────────────────────────────
+@media (max-width: 600px) {
+  .sel__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sel__header {
+    gap: var(--spacing-xs);
+  }
+}

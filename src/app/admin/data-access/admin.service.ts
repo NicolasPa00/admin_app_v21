@@ -9,6 +9,8 @@ import {
   TipoNegocioConRoles,
   TiposNegocioResponse,
   RolesResponse,
+  Negocio,
+  NegociosResponse,
 } from '../models/admin.models';
 
 // ============================================================
@@ -118,5 +120,16 @@ export class AdminService {
         })),
       ),
     );
+  }
+
+  /**
+   * Obtiene los negocios del usuario autenticado que pertenecen a un tipo dado.
+   * GET /admin/mis-negocios?id_tipo_negocio={id}
+   * Soporta múltiples sucursales del mismo tipo.
+   */
+  getMisNegociosPorTipo(idTipoNegocio: number): Observable<Negocio[]> {
+    return this.http
+      .get<NegociosResponse>(`${this.API}/mis-negocios?id_tipo_negocio=${idTipoNegocio}`)
+      .pipe(map((res) => res.data ?? []));
   }
 }

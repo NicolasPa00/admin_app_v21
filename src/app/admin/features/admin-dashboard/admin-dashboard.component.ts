@@ -7,17 +7,21 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router }            from '@angular/router';
+import { HttpClient }        from '@angular/common/http';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Sun, Moon, LogOut, AlertCircle, LayoutGrid,
+  Building2, ChevronLeft, ArrowRight, Phone, Mail, Hash, Loader,
 } from 'lucide-angular';
 
+import { TitleCasePipe }        from '@angular/common';
 import { AuthService }          from '../../../auth/data-access/auth.service';
 import { ThemeService }         from '../../../core/theme/theme.service';
 import { AdminService }         from '../../data-access/admin.service';
-import { TipoNegocioConRoles }  from '../../models/admin.models';
+import { TipoNegocioConRoles, Negocio }  from '../../models/admin.models';
 import { LoadingState }         from '../../models/admin.models';
 import { NegocioCardComponent } from '../negocio-card/negocio-card.component';
 import { SUPER_ADMIN_ROL }      from '../../guards/admin.guard';
+import { environment }          from '../../../../environments/environment';
 
 /**
  * AdminDashboardComponent — Vista principal del panel administrador.
@@ -32,12 +36,15 @@ import { SUPER_ADMIN_ROL }      from '../../guards/admin.guard';
   selector: 'app-admin-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, NegocioCardComponent],
+  imports: [LucideAngularModule, NegocioCardComponent, TitleCasePipe],
   providers: [
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ Sun, Moon, LogOut, AlertCircle, LayoutGrid }),
+      useValue: new LucideIconProvider({
+        Sun, Moon, LogOut, AlertCircle, LayoutGrid,
+        Building2, ChevronLeft, ArrowRight, Phone, Mail, Hash, Loader,
+      }),
     },
   ],
   templateUrl: './admin-dashboard.component.html',
@@ -48,11 +55,29 @@ export class AdminDashboardComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
   private readonly adminService = inject(AdminService);
   private readonly router       = inject(Router);
+  private readonly http         = inject(HttpClient);
+
+  /** URL base del backend sin prefijo de módulo (ej. http://localhost:3000) */
+  private readonly backendBase = environment.apiUrl.replace(/\/[^\/]+$/, '');
 
   // ===================== Estado reactivo =====================
 
   protected readonly loadingState = signal<LoadingState>('idle');
   private readonly _allTipos      = signal<TipoNegocioConRoles[]>([]);
+
+  /**
+   * Estado de la vista de selección de sucursal.
+   *
+   *  null              → muestra el grid de tipos de negocio (vista principal)
+   *  { loading: true } → consultando negocios al backend
+   *  { loading: false, negocios: [] } → sin negocios disponibles
+   *  { loading: false, negocios: [N…] } → lista de sucursales para elegir
+   */
+  protected readonly sucursalView = signal<{
+    tipo:     TipoNegocioConRoles;
+    negocios: Negocio[];
+    loading:  boolean;
+  } | null>(null);
 
   /** Usuario actual — recalcula la vista cuando cambia la sesión. */
   protected readonly user = this.authService.currentUser;
@@ -119,7 +144,84 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   protected onEntrar(tipo: TipoNegocioConRoles): void {
-    this.router.navigate(['/dashboard/negocio', tipo.id_tipo_negocio]);
+    /** Mapa de tipo de negocio → URL de su app dedicada */
+    const MODULO_APPS: Record<string, string> = {
+      PARQUEADERO: 'http://localhost:4003',
+    };
+
+    const key    = tipo.nombre.toUpperCase().replace(/\s+/g, '_');
+    const appUrl = MODULO_APPS[key];
+
+    // Sin app dedicada aún: ruta interna de placeholder
+    if (!appUrl) {
+      this.router.navigate(['/dashboard/negocio', tipo.id_tipo_negocio]);
+      return;
+    }
+
+    // Mostrar estado de carga del selector
+    this.sucursalView.set({ tipo, negocios: [], loading: true });
+
+    // Obtener los negocios del usuario para este tipo
+    this.adminService.getMisNegociosPorTipo(tipo.id_tipo_negocio).subscribe({
+      next: (negocios) => {
+        if (negocios.length === 0) {
+          // Sin negocios asignados → mostrar estado vacío en el selector
+          this.sucursalView.set({ tipo, negocios: [], loading: false });
+        } else if (negocios.length === 1) {
+          // Solo una sucursal → ingresar directamente sin mostrar selector
+          this.sucursalView.set(null);
+          this.entrarAlNegocio(negocios[0], appUrl);
+        } else {
+          // Múltiples sucursales → mostrar selector
+          this.sucursalView.set({ tipo, negocios, loading: false });
+        }
+      },
+      error: () => {
+        this.sucursalView.set(null);
+        // Fallback: abrir app sin negocio específico
+        window.location.href = `${appUrl}/acceso`;
+      },
+    });
+  }
+
+  /**
+   * Genera código de acceso de un solo uso para el negocio seleccionado
+   * y redirige al usuario a la app dedicada en la MISMA pestaña.
+   */
+  protected entrarAlNegocio(negocio: Negocio, appUrl?: string): void {
+    if (!appUrl) {
+      const MODULO_APPS: Record<string, string> = { PARQUEADERO: 'http://localhost:4003' };
+      const sv = this.sucursalView();
+      if (sv) {
+        appUrl = MODULO_APPS[sv.tipo.nombre.toUpperCase().replace(/\s+/g, '_')];
+      }
+    }
+    if (!appUrl) return;
+
+    const token = this.authService.getAccessToken();
+    if (!token) { this.authService.logout(); return; }
+
+    this.http
+      .post<{ success: boolean; data?: { code: string } }>(
+        `${this.backendBase}/parqueadero/auth/generar-codigo`,
+        { token, id_negocio: negocio.id_negocio },
+      )
+      .subscribe({
+        next: (res) => {
+          if (res.success && res.data?.code) {
+            // Navegar en la MISMA pestaña (no _blank)
+            window.location.href = `${appUrl}/auth/callback?code=${res.data.code}`;
+          }
+        },
+        error: () => {
+          window.location.href = `${appUrl}/acceso`;
+        },
+      });
+  }
+
+  /** Vuelve al grid de tipos de negocio desde el selector de sucursales */
+  protected volverAlDashboard(): void {
+    this.sucursalView.set(null);
   }
 
   protected onVerRoles(tipo: TipoNegocioConRoles): void {

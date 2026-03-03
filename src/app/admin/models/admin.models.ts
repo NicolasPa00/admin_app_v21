@@ -53,3 +53,24 @@ export type RolesResponse       = ApiResponse<Rol[]>;
 // ===================== Estado de carga =====================
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+// ===================== Negocio (instancia real de un tipo de negocio) =====================
+
+/**
+ * Representa un negocio registrado en la plataforma.
+ * Viene de GET /admin/mis-negocios?id_tipo_negocio=N
+ */
+export interface Negocio {
+  id_negocio:     number;
+  nombre:         string;
+  nit:            string | null;
+  email_contacto: string | null;
+  telefono:       string | null;
+  id_tipo_negocio: number;
+  id_paleta:      number | null;
+  /** 'A' = activo, 'I' = inactivo */
+  estado:         'A' | 'I';
+  fecha_registro: string;
+}
+
+export type NegociosResponse = ApiResponse<Negocio[]>;

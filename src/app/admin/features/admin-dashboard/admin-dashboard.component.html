@@ -51,72 +51,197 @@
   <!-- ── Contenido principal ───────────────────────────────── -->
   <main class="dashboard__main" id="main-content">
 
-    <!-- Encabezado de sección -->
-    <section class="dashboard__section-header" aria-labelledby="section-title">
-      <h1 id="section-title" class="dashboard__title">Tipos de negocio</h1>
-      @if (isSuperAdmin()) {
-        <span class="dashboard__role-badge">Super Administrador</span>
-      }
-    </section>
+    <!-- ══════════════════════════════════════════════════════
+      VISTA A: Grid de tipos de negocio (vista principal)
+      Se oculta cuando el usuario está eligiendo una sucursal
+      ══════════════════════════════════════════════════════ -->
+    @if (!sucursalView()) {
 
-    <!-- ── ESTADO: Cargando (skeleton) ── -->
-    @if (loadingState() === 'loading' || loadingState() === 'idle') {
-      <div class="dashboard__grid" aria-busy="true" aria-label="Cargando tipos de negocio">
-        @for (_ of [1,2,3,4,5,6]; track $index) {
-          <div class="skeleton-card" aria-hidden="true">
-            <div class="skeleton skeleton--header"></div>
-            <div class="skeleton skeleton--title"></div>
-            <div class="skeleton skeleton--text"></div>
-            <div class="skeleton skeleton--text skeleton--text-short"></div>
-            <div class="skeleton skeleton--meta"></div>
-            <div class="skeleton skeleton--actions"></div>
-          </div>
+      <!-- Encabezado de sección -->
+      <section class="dashboard__section-header" aria-labelledby="section-title">
+        <h1 id="section-title" class="dashboard__title">Tipos de negocio</h1>
+        @if (isSuperAdmin()) {
+          <span class="dashboard__role-badge">Super Administrador</span>
         }
-      </div>
+      </section>
+
+      <!-- ── ESTADO: Cargando (skeleton) ── -->
+      @if (loadingState() === 'loading' || loadingState() === 'idle') {
+        <div class="dashboard__grid" aria-busy="true" aria-label="Cargando tipos de negocio">
+          @for (_ of [1,2,3,4,5,6]; track $index) {
+            <div class="skeleton-card" aria-hidden="true">
+              <div class="skeleton skeleton--header"></div>
+              <div class="skeleton skeleton--title"></div>
+              <div class="skeleton skeleton--text"></div>
+              <div class="skeleton skeleton--text skeleton--text-short"></div>
+              <div class="skeleton skeleton--meta"></div>
+              <div class="skeleton skeleton--actions"></div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── ESTADO: Error ── -->
+      @if (loadingState() === 'error') {
+        <div class="dashboard__state dashboard__state--error" role="alert">
+          <lucide-icon name="alert-circle" [size]="40" aria-hidden="true" />
+          <p class="dashboard__state-title">No se pudo cargar la información</p>
+          <p class="dashboard__state-desc">Verifica tu conexión o intenta de nuevo.</p>
+          <button
+            type="button"
+            class="btn btn--primary"
+            (click)="retry()"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+
+      <!-- ── ESTADO: Sin datos ── -->
+      @if (loadingState() === 'success' && visibleTipos().length === 0) {
+        <div class="dashboard__state" role="status">
+          <lucide-icon name="layout-grid" [size]="40" aria-hidden="true" />
+          <p class="dashboard__state-title">Sin tipos de negocio disponibles</p>
+          <p class="dashboard__state-desc">No tienes negocios asignados en este momento.</p>
+        </div>
+      }
+
+      <!-- ── ESTADO: Grid de cards ── -->
+      @if (loadingState() === 'success' && visibleTipos().length > 0) {
+        <div
+          class="dashboard__grid"
+          role="list"
+          [attr.aria-label]="'Lista de ' + visibleTipos().length + ' tipos de negocio'"
+        >
+          @for (tipo of visibleTipos(); track tipo.id_tipo_negocio) {
+            <div role="listitem">
+              <app-negocio-card
+                [tipo]="tipo"
+                (entrar)="onEntrar($event)"
+                (verRoles)="onVerRoles($event)"
+              />
+            </div>
+          }
+        </div>
+      }
+
     }
 
-    <!-- ── ESTADO: Error ── -->
-    @if (loadingState() === 'error') {
-      <div class="dashboard__state dashboard__state--error" role="alert">
-        <lucide-icon name="alert-circle" [size]="40" aria-hidden="true" />
-        <p class="dashboard__state-title">No se pudo cargar la información</p>
-        <p class="dashboard__state-desc">Verifica tu conexión o intenta de nuevo.</p>
+    <!-- ══════════════════════════════════════════════════════
+      VISTA B: Selector de sucursales
+      Se activa cuando el usuario presiona "Entrar" en una card
+      ══════════════════════════════════════════════════════ -->
+    @if (sucursalView(); as sv) {
+
+      <!-- Cabecera con botón de regreso -->
+      <section class="sel__header" aria-labelledby="sel-title">
         <button
           type="button"
-          class="btn btn--primary"
-          (click)="retry()"
+          class="sel__back-btn"
+          (click)="volverAlDashboard()"
+          aria-label="Volver a tipos de negocio"
         >
-          Reintentar
+          <lucide-icon name="chevron-left" [size]="18" aria-hidden="true" />
+          Tipos de negocio
         </button>
-      </div>
-    }
+        <div class="sel__breadcrumb-sep" aria-hidden="true">/</div>
+        <h1 id="sel-title" class="sel__title">
+          {{ sv.tipo.nombre | titlecase }}
+        </h1>
+        <span class="sel__subtitle">Selecciona la sucursal a la que deseas acceder</span>
+      </section>
 
-    <!-- ── ESTADO: Sin datos ── -->
-    @if (loadingState() === 'success' && visibleTipos().length === 0) {
-      <div class="dashboard__state" role="status">
-        <lucide-icon name="layout-grid" [size]="40" aria-hidden="true" />
-        <p class="dashboard__state-title">Sin tipos de negocio disponibles</p>
-        <p class="dashboard__state-desc">No tienes negocios asignados en este momento.</p>
-      </div>
-    }
+      <!-- ── Cargando negocios ── -->
+      @if (sv.loading) {
+        <div class="sel__grid" aria-busy="true">
+          @for (_ of [1,2,3]; track $index) {
+            <div class="skeleton-card" aria-hidden="true">
+              <div class="skeleton skeleton--header"></div>
+              <div class="skeleton skeleton--title"></div>
+              <div class="skeleton skeleton--text"></div>
+              <div class="skeleton skeleton--actions"></div>
+            </div>
+          }
+        </div>
+      }
 
-    <!-- ── ESTADO: Grid de cards ── -->
-    @if (loadingState() === 'success' && visibleTipos().length > 0) {
-      <div
-        class="dashboard__grid"
-        role="list"
-        [attr.aria-label]="'Lista de ' + visibleTipos().length + ' tipos de negocio'"
-      >
-        @for (tipo of visibleTipos(); track tipo.id_tipo_negocio) {
-          <div role="listitem">
-            <app-negocio-card
-              [tipo]="tipo"
-              (entrar)="onEntrar($event)"
-              (verRoles)="onVerRoles($event)"
-            />
-          </div>
-        }
-      </div>
+      <!-- ── Sin negocios asignados ── -->
+      @if (!sv.loading && sv.negocios.length === 0) {
+        <div class="dashboard__state" role="status">
+          <lucide-icon name="building-2" [size]="44" aria-hidden="true" />
+          <p class="dashboard__state-title">Sin sucursales disponibles</p>
+          <p class="dashboard__state-desc">
+            No tienes negocios de tipo {{ sv.tipo.nombre | titlecase }} asignados a tu usuario.
+          </p>
+          <button type="button" class="btn btn--outline" (click)="volverAlDashboard()">
+            Volver
+          </button>
+        </div>
+      }
+
+      <!-- ── Grid de sucursales ── -->
+      @if (!sv.loading && sv.negocios.length > 0) {
+        <div
+          class="sel__grid"
+          role="list"
+          [attr.aria-label]="sv.negocios.length + ' sucursales disponibles'"
+        >
+          @for (negocio of sv.negocios; track negocio.id_negocio) {
+            <article
+              class="sel__card"
+              role="listitem"
+              [attr.aria-label]="'Sucursal: ' + negocio.nombre"
+            >
+              <!-- Icono + nombre -->
+              <header class="sel__card-header">
+                <div class="sel__card-icon" aria-hidden="true">
+                  <lucide-icon name="building-2" [size]="26" />
+                </div>
+                <h2 class="sel__card-name">{{ negocio.nombre }}</h2>
+              </header>
+
+              <!-- Datos del negocio -->
+              <dl class="sel__card-meta">
+                @if (negocio.nit) {
+                  <div class="sel__card-meta-row">
+                    <lucide-icon name="hash" [size]="13" aria-hidden="true" />
+                    <dt class="sr-only">NIT</dt>
+                    <dd>NIT: {{ negocio.nit }}</dd>
+                  </div>
+                }
+                @if (negocio.telefono) {
+                  <div class="sel__card-meta-row">
+                    <lucide-icon name="phone" [size]="13" aria-hidden="true" />
+                    <dt class="sr-only">Teléfono</dt>
+                    <dd>{{ negocio.telefono }}</dd>
+                  </div>
+                }
+                @if (negocio.email_contacto) {
+                  <div class="sel__card-meta-row">
+                    <lucide-icon name="mail" [size]="13" aria-hidden="true" />
+                    <dt class="sr-only">Email</dt>
+                    <dd>{{ negocio.email_contacto }}</dd>
+                  </div>
+                }
+              </dl>
+
+              <!-- Acción -->
+              <footer class="sel__card-footer">
+                <button
+                  type="button"
+                  class="btn btn--primary sel__card-enter-btn"
+                  (click)="entrarAlNegocio(negocio)"
+                  [attr.aria-label]="'Entrar a ' + negocio.nombre"
+                >
+                  Entrar
+                  <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
+                </button>
+              </footer>
+            </article>
+          }
+        </div>
+      }
+
     }
 
   </main>
