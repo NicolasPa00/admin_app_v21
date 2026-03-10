@@ -19,9 +19,9 @@ import { ThemeService }         from '../../../core/theme/theme.service';
 import { AdminService }         from '../../data-access/admin.service';
 import { TipoNegocioConRoles, Negocio }  from '../../models/admin.models';
 import { LoadingState }         from '../../models/admin.models';
+import { environment }          from '../../../../environments/environment';
 import { NegocioCardComponent } from '../negocio-card/negocio-card.component';
 import { SUPER_ADMIN_ROL }      from '../../guards/admin.guard';
-import { environment }          from '../../../../environments/environment';
 
 /**
  * AdminDashboardComponent — Vista principal del panel administrador.
