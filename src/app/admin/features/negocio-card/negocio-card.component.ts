@@ -9,7 +9,7 @@ import { DatePipe, TitleCasePipe } from '@angular/common';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Utensils, Car, Scissors, ShoppingCart, Wrench, PiggyBank,
   Landmark, Building2, CheckCircle2, XCircle, Users, ArrowRight,
-  CalendarDays, RefreshCw,
+  CalendarDays, RotateCw,
 } from 'lucide-angular';
 
 import { TipoNegocioConRoles } from '../../models/admin.models';
@@ -45,7 +45,7 @@ const ICON_MAP: Record<string, string> = {
       useValue: new LucideIconProvider({
         Utensils, Car, Scissors, ShoppingCart, Wrench,
         PiggyBank, Landmark, Building2, CheckCircle2,
-        XCircle, Users, ArrowRight, CalendarDays, RefreshCw,
+        XCircle, Users, ArrowRight, CalendarDays, RotateCw,
       }),
     },
   ],
@@ -98,7 +98,7 @@ const ICON_MAP: Record<string, string> = {
         </div>
 
         <div class="nc-card__meta-item">
-          <lucide-icon name="refresh-cw" [size]="14" aria-hidden="true" />
+          <lucide-icon name="rotate-cw" [size]="14" aria-hidden="true" />
           <dt class="sr-only">Actualización</dt>
           <dd>{{ tipo().fecha_actualizacion | date: 'dd/MM/yyyy' }}</dd>
         </div>

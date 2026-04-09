@@ -7,7 +7,6 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router }            from '@angular/router';
-import { HttpClient }        from '@angular/common/http';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Sun, Moon, LogOut, AlertCircle, LayoutGrid,
   Building2, ChevronLeft, ArrowRight, Phone, Mail, Hash, Loader,
@@ -19,7 +18,6 @@ import { ThemeService }         from '../../../core/theme/theme.service';
 import { AdminService }         from '../../data-access/admin.service';
 import { TipoNegocioConRoles, Negocio }  from '../../models/admin.models';
 import { LoadingState }         from '../../models/admin.models';
-import { environment }          from '../../../../environments/environment';
 import { NegocioCardComponent } from '../negocio-card/negocio-card.component';
 import { SUPER_ADMIN_ROL }      from '../../guards/admin.guard';
 
@@ -55,10 +53,6 @@ export class AdminDashboardComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
   private readonly adminService = inject(AdminService);
   private readonly router       = inject(Router);
-  private readonly http         = inject(HttpClient);
-
-  /** URL base del backend sin prefijo de módulo (ej. http://localhost:3000) */
-  private readonly backendBase = environment.apiUrl.replace(/\/[^\/]+$/, '');
 
   // ===================== Estado reactivo =====================
 
@@ -147,6 +141,7 @@ export class AdminDashboardComponent implements OnInit {
     /** Mapa de tipo de negocio → URL de su app dedicada */
     const MODULO_APPS: Record<string, string> = {
       PARQUEADERO: 'http://localhost:4003',
+      RESTAURANTE: 'http://localhost:6002',
     };
 
     const key    = tipo.nombre.toUpperCase().replace(/\s+/g, '_');
@@ -185,12 +180,16 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   /**
-   * Genera código de acceso de un solo uso para el negocio seleccionado
-   * y redirige al usuario a la app dedicada en la MISMA pestaña.
+    * Redirige al módulo del negocio en la misma pestaña.
+    * Para la primera entrada, transfiere token vía window.name (sin query params)
+    * y la app destino lo persiste en su propio localStorage.
    */
   protected entrarAlNegocio(negocio: Negocio, appUrl?: string): void {
     if (!appUrl) {
-      const MODULO_APPS: Record<string, string> = { PARQUEADERO: 'http://localhost:4003' };
+      const MODULO_APPS: Record<string, string> = {
+        PARQUEADERO: 'http://localhost:4003',
+        RESTAURANTE: 'http://localhost:6002',
+      };
       const sv = this.sucursalView();
       if (sv) {
         appUrl = MODULO_APPS[sv.tipo.nombre.toUpperCase().replace(/\s+/g, '_')];
@@ -201,22 +200,14 @@ export class AdminDashboardComponent implements OnInit {
     const token = this.authService.getAccessToken();
     if (!token) { this.authService.logout(); return; }
 
-    this.http
-      .post<{ success: boolean; data?: { code: string } }>(
-        `${this.backendBase}/parqueadero/auth/generar-codigo`,
-        { token, id_negocio: negocio.id_negocio },
-      )
-      .subscribe({
-        next: (res) => {
-          if (res.success && res.data?.code) {
-            // Navegar en la MISMA pestaña (no _blank)
-            window.location.href = `${appUrl}/auth/callback?code=${res.data.code}`;
-          }
-        },
-        error: () => {
-          window.location.href = `${appUrl}/acceso`;
-        },
-      });
+    window.name = JSON.stringify({
+      source: 'admin_app',
+      token,
+      id_negocio: negocio.id_negocio,
+      ts: Date.now(),
+    });
+
+    window.location.href = `${appUrl}/dashboard`;
   }
 
   /** Vuelve al grid de tipos de negocio desde el selector de sucursales */
