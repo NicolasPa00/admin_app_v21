@@ -29,6 +29,7 @@ import {
 } from 'lucide-angular';
 
 import { ThemeService } from '../core/theme/theme.service';
+import { AssetService } from '../core/services/asset.service';
 
 /* ──────────────────────────────────────────────────────────
    Datos estáticos — sin llamadas al backend
@@ -473,6 +474,7 @@ const STATS = [
 })
 export class LandingComponent {
   protected readonly themeService = inject(ThemeService);
+  protected readonly assetService = inject(AssetService);
 
   protected readonly tiposNegocio = TIPOS_NEGOCIO;
   protected readonly features = FEATURES;

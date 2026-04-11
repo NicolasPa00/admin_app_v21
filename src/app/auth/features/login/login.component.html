@@ -2,7 +2,7 @@
   <!-- ===== Panel izquierdo — Branding con logo ===== -->
   <aside class="login-brand" aria-hidden="true">
     <div class="login-brand__content">
-      <img class="login-brand__logo" src="/images/escalapplogo.png" alt="CodeBot" />
+      <img class="login-brand__logo" [src]="assetService.getAssetPath('escalapplogo.png')" alt="CodeBot" />
       <p class="login-brand__tagline">
         La plataforma para gestionar y hacer crecer cualquier negocio
       </p>
@@ -33,7 +33,7 @@
 
     <!-- Logo visible solo en móvil -->
     <div class="login-form-panel__mobile-logo">
-      <img class="login-form-panel__mobile-logo-svg" src="/images/logo.png" alt="CodeBot" />
+      <img class="login-form-panel__mobile-logo-svg" [src]="assetService.getAssetPath('logo.png')" alt="CodeBot" />
     </div>
 
     <div class="auth-card">
