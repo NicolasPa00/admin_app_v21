@@ -6,4 +6,6 @@ export const environment = {
   production: true,
   apiUrl: '/admin',
   negocioAppUrl: '/negocio',
+  /** Ruta base de assets (imágenes, etc.) */
+  assetPath: '/admin/images',
 };

@@ -7,7 +7,7 @@
   <nav class="lp-nav container">
     <!-- Logo -->
     <a class="lp-nav__brand" (click)="scrollTo('hero'); $event.preventDefault()" href="#">
-      <img src="/images/escalapplogo.png" alt="EscalApp" class="lp-nav__logo" />
+      <img [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" class="lp-nav__logo" />
     </a>
 
     <!-- Links (desktop) -->
@@ -350,7 +350,7 @@
 <footer class="lp-footer">
   <div class="container lp-footer__inner">
     <div class="lp-footer__brand">
-      <img src="/images/escalapplogo.png" alt="EscalApp" class="lp-footer__logo" />
+      <img [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" class="lp-footer__logo" />
       <p class="lp-footer__tagline">
         La plataforma para gestionar y hacer crecer cualquier negocio.
       </p>
