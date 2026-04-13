@@ -7,6 +7,7 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router }            from '@angular/router';
+import { catchError, forkJoin, of } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Sun, Moon, LogOut, AlertCircle, LayoutGrid,
   Building2, ChevronLeft, ArrowRight, Phone, Mail, Hash, Loader,
@@ -58,6 +59,7 @@ export class AdminDashboardComponent implements OnInit {
 
   protected readonly loadingState = signal<LoadingState>('idle');
   private readonly _allTipos      = signal<TipoNegocioConRoles[]>([]);
+  private readonly _misNegocios   = signal<Negocio[]>([]);
 
   /**
    * Estado de la vista de selección de sucursal.
@@ -95,16 +97,23 @@ export class AdminDashboardComponent implements OnInit {
 
     if (!u || this.isSuperAdmin()) return all;
 
-    // Recopilar id_tipo_negocio de los roles del usuario en sus negocios
+    // Fuente principal: negocios realmente ligados al usuario desde backend.
+    const negociosLigados = this._misNegocios();
+    if (negociosLigados.length > 0) {
+      const tipoIds = new Set(negociosLigados.map((n) => n.id_tipo_negocio));
+      return all.filter((t) => tipoIds.has(t.id_tipo_negocio));
+    }
+
+    // Fallback: mapear por id_rol (evita ambigüedad de descripciones repetidas).
+    const roleIds = new Set(
+      u.negocios.flatMap((n) => n.roles.map((r) => r.id_rol)),
+    );
+
     const tipoIds = new Set(
-      u.negocios.flatMap((n) =>
-        n.roles.map((r) => {
-          const found = all
-            .flatMap((t) => t.roles)
-            .find((rol) => rol.descripcion === r.descripcion);
-          return found?.id_tipo_negocio ?? null;
-        }),
-      ).filter((id): id is number => id !== null),
+      all
+        .flatMap((t) => t.roles)
+        .filter((rol) => rol.id_tipo_negocio !== null && roleIds.has(rol.id_rol))
+        .map((rol) => Number(rol.id_tipo_negocio)),
     );
 
     return all.filter((t) => tipoIds.has(t.id_tipo_negocio));
@@ -228,9 +237,15 @@ export class AdminDashboardComponent implements OnInit {
 
   private loadTipos(): void {
     this.loadingState.set('loading');
-    this.adminService.getTiposNegocioConRoles().subscribe({
-      next: (tipos) => {
+    forkJoin({
+      tipos: this.adminService.getTiposNegocioConRoles(),
+      negocios: this.adminService.getMisNegociosUsuario().pipe(
+        catchError(() => of([] as Negocio[])),
+      ),
+    }).subscribe({
+      next: ({ tipos, negocios }) => {
         this._allTipos.set(tipos);
+        this._misNegocios.set(negocios);
         this.loadingState.set('success');
       },
       error: () => {
