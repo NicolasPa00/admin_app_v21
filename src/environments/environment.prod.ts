@@ -1,11 +1,12 @@
 /**
  * Configuración de entorno — producción.
- * apiUrl relativo asume que el frontend se sirve desde el mismo dominio que el backend.
+ * Backend en EC2 servido mediante Nginx reverse proxy con SSL (puerto 443).
+ * Frontend en AWS S3 + CloudFront.
+ * Todo el tráfico es HTTPS — sin Mixed Content.
  */
 export const environment = {
   production: true,
-  apiUrl: '/admin',
-  negocioAppUrl: '/negocio',
-  /** Ruta base de assets (imágenes, etc.) */
-  assetPath: '/admin/images',
+  apiUrl: 'https://escalapp.cloud/admin',
+  negocioAppUrl: 'https://escalapp.cloud/restaurante',
+  assetPath: 'images',
 };

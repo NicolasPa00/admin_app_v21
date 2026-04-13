@@ -30,8 +30,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const token = authService.getAccessToken();
   const authReq = token
-    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-    : req;
+    ? req.clone({
+        setHeaders: { Authorization: `Bearer ${token}` },
+        withCredentials: true, // ← Permite CORS con backend HTTP
+      })
+    : req.clone({ withCredentials: true });
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
