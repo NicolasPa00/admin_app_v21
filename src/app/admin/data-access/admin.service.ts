@@ -1,4 +1,4 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of } from 'rxjs';
 
@@ -120,6 +120,19 @@ export class AdminService {
         })),
       ),
     );
+  }
+
+  /**
+   * Obtiene todos los negocios del usuario autenticado.
+   * GET /admin/mis-negocios
+   */
+  getMisNegociosUsuario(): Observable<Negocio[]> {
+    if (USE_MOCK) {
+      return of([]);
+    }
+    return this.http
+      .get<NegociosResponse>(`${this.API}/mis-negocios`)
+      .pipe(map((res) => res.data ?? []));
   }
 
   /**

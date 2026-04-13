@@ -1,5 +1,6 @@
 import { Routes }    from '@angular/router';
 import { adminGuard } from './guards/admin.guard';
+import { authGuard } from '../auth/guards/auth.guard';
 
 /**
  * Rutas del módulo Admin.
@@ -24,7 +25,7 @@ export const adminRoutes: Routes = [
       import('./features/admin-dashboard/admin-dashboard.component').then(
         (m) => m.AdminDashboardComponent,
       ),
-    canActivate: [adminGuard()],
+    canActivate: [authGuard()],
     title: 'Panel de administración',
   },
   {
