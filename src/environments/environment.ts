@@ -1,6 +1,9 @@
 /**
  * Configuración de entorno — desarrollo.
- * Ajusta apiUrl al host de tu backend local.
+ * El backend local está en puerto 3000 bajo rutas /admin, /restaurante, /parqueadero.
+ * 
+ * IMPORTANTE: apiUrl incluye /admin porque en backend las rutas de admin están
+ * registradas bajo app.use('/admin', adminRoutes).
  */
 export const environment = {
   production: false,
