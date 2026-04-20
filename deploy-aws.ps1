@@ -1,61 +1,125 @@
 # =============================================================
-# deploy-aws.ps1 — Deploy admin_app-v21 a S3 + CloudFront
-# Uso: .\deploy-aws.ps1
+# deploy-aws.ps1 — Deploy a S3 + CloudFront
+# Uso: .\deploy-aws.ps1               (menú interactivo)
+#      .\deploy-aws.ps1 -App admin
+#      .\deploy-aws.ps1 -App restaurante
+#      .\deploy-aws.ps1 -App all
 # =============================================================
 
-$BUCKET      = "escalapp-web-front"
-$S3_PREFIX   = "admin"
-$CF_DIST_ID  = "E1ILE8J3E53GC9"
-$DIST_FOLDER = "dist\admin_app-v21\browser"
+param(
+    [ValidateSet("admin", "restaurante", "all", "")]
+    [string]$App = ""
+)
 
-# 1. Build de Angular (base-href ya está en angular.json producción)
-Write-Host "`n[1/4] Construyendo la aplicación..." -ForegroundColor Cyan
-ng build
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: El build falló. Revisa los errores anteriores." -ForegroundColor Red
-    exit 1
+$BUCKET     = "escalapp-web-front"
+$CF_DIST_ID = "E1ILE8J3E53GC9"
+$CF_URL     = "https://dsm1cwmosama.cloudfront.net"
+
+# ── Definición de cada app ──────────────────────────────────
+$APPS = @{
+    admin = @{
+        Name       = "Admin App"
+        ProjectDir = "$PSScriptRoot"
+        DistFolder = "$PSScriptRoot\dist\admin_app-v21\browser"
+        S3Prefix   = "admin"
+    }
+    restaurante = @{
+        Name       = "Restaurante App"
+        ProjectDir = "$PSScriptRoot\..\restaurante_app"
+        DistFolder = "$PSScriptRoot\..\restaurante_app\dist\negocio-app\browser"
+        S3Prefix   = "restaurante"
+    }
 }
 
-# 2. Subir archivos a S3 (--delete elimina archivos viejos)
-Write-Host "`n[2/4] Subiendo archivos a S3..." -ForegroundColor Cyan
-aws s3 sync "$DIST_FOLDER" "s3://$BUCKET/$S3_PREFIX/" --delete
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: Falló la subida a S3." -ForegroundColor Red
-    exit 1
+# ── Menú interactivo si no se pasó parámetro ─────────────────
+if ($App -eq "") {
+    Write-Host ""
+    Write-Host "¿Qué aplicación deseas desplegar?" -ForegroundColor Cyan
+    Write-Host "  [1] Admin"
+    Write-Host "  [2] Restaurante"
+    Write-Host "  [3] Ambas"
+    $choice = Read-Host "Selecciona (1/2/3)"
+    $App = switch ($choice) {
+        "1" { "admin" }
+        "2" { "restaurante" }
+        "3" { "all" }
+        default { Write-Host "Opción inválida." -ForegroundColor Red; exit 1 }
+    }
 }
 
-# 3. Corregir MIME types para .js y .css
-#    (aws s3 sync a veces no los asigna correctamente en Windows)
-Write-Host "`n[3/4] Configurando MIME types..." -ForegroundColor Cyan
+$targets = if ($App -eq "all") { @("admin", "restaurante") } else { @($App) }
 
-aws s3 cp "s3://$BUCKET/$S3_PREFIX/" "s3://$BUCKET/$S3_PREFIX/" `
-    --recursive `
-    --exclude "*" `
-    --include "*.js" `
-    --metadata-directive REPLACE `
-    --content-type "application/javascript" `
-    --cache-control "max-age=31536000,immutable"
+# ── Función de deploy para una app ───────────────────────────
+function Deploy-App($appKey) {
+    $cfg = $APPS[$appKey]
 
-aws s3 cp "s3://$BUCKET/$S3_PREFIX/" "s3://$BUCKET/$S3_PREFIX/" `
-    --recursive `
-    --exclude "*" `
-    --include "*.css" `
-    --metadata-directive REPLACE `
-    --content-type "text/css" `
-    --cache-control "max-age=31536000,immutable"
+    Write-Host ""
+    Write-Host "══════════════════════════════════════════" -ForegroundColor Magenta
+    Write-Host " Desplegando: $($cfg.Name)" -ForegroundColor Magenta
+    Write-Host "══════════════════════════════════════════" -ForegroundColor Magenta
 
-# index.html sin caché para que siempre obtenga la versión más nueva
-aws s3 cp "s3://$BUCKET/$S3_PREFIX/index.html" "s3://$BUCKET/$S3_PREFIX/index.html" `
-    --metadata-directive REPLACE `
-    --content-type "text/html" `
-    --cache-control "no-cache,no-store,must-revalidate"
+    # 1. Build
+    Write-Host "`n[1/5] Construyendo $($cfg.Name)..." -ForegroundColor Cyan
+    Push-Location $cfg.ProjectDir
+    # Se recomienda asegurar que el base-href coincida con el prefijo de S3
+    ng build --base-href "/$($cfg.S3Prefix)/"
+    if ($LASTEXITCODE -ne 0) {
+        Pop-Location
+        Write-Host "ERROR: El build de $($cfg.Name) falló." -ForegroundColor Red
+        exit 1
+    }
+    Pop-Location
 
-# 4. Invalidar caché de CloudFront
-Write-Host "`n[4/4] Invalidando caché de CloudFront..." -ForegroundColor Cyan
-aws cloudfront create-invalidation `
-    --distribution-id $CF_DIST_ID `
-    --paths "/$S3_PREFIX/*"
+    # 2. Sync a S3
+    Write-Host "`n[2/5] Subiendo archivos a s3://$BUCKET/$($cfg.S3Prefix)/..." -ForegroundColor Cyan
+    aws s3 sync $cfg.DistFolder "s3://$BUCKET/$($cfg.S3Prefix)/" --delete
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Falló la subida a S3." -ForegroundColor Red
+        exit 1
+    }
 
-Write-Host "`n✅ Deploy completado!" -ForegroundColor Green
+    # 3. Manejo de index.csr.html (Solución al error 403)
+    # Renombramos index.csr.html a index.html para que CloudFront lo encuentre
+    Write-Host "`n[3/5] Normalizando index.html..." -ForegroundColor Cyan
+    aws s3 mv "s3://$BUCKET/$($cfg.S3Prefix)/index.csr.html" "s3://$BUCKET/$($cfg.S3Prefix)/index.html" --content-type "text/html"
+    
+    # 4. MIME types y Cache Control
+    Write-Host "`n[4/5] Configurando MIME types..." -ForegroundColor Cyan
+
+    # JavaScript
+    aws s3 cp "s3://$BUCKET/$($cfg.S3Prefix)/" "s3://$BUCKET/$($cfg.S3Prefix)/" `
+        --recursive --exclude "*" --include "*.js" `
+        --metadata-directive REPLACE `
+        --content-type "application/javascript" `
+        --cache-control "max-age=31536000,immutable"
+
+    # CSS
+    aws s3 cp "s3://$BUCKET/$($cfg.S3Prefix)/" "s3://$BUCKET/$($cfg.S3Prefix)/" `
+        --recursive --exclude "*" --include "*.css" `
+        --metadata-directive REPLACE `
+        --content-type "text/css" `
+        --cache-control "max-age=31536000,immutable"
+
+    # HTML (Asegurar que el index no se guarde en caché para ver cambios rápido)
+    aws s3 cp "s3://$BUCKET/$($cfg.S3Prefix)/index.html" "s3://$BUCKET/$($cfg.S3Prefix)/index.html" `
+        --metadata-directive REPLACE `
+        --content-type "text/html" `
+        --cache-control "no-cache,no-store,must-revalidate"
+
+    # 5. Invalidar CloudFront
+    Write-Host "`n[5/5] Invalidando caché de CloudFront (/$($cfg.S3Prefix)/*)..." -ForegroundColor Cyan
+    aws cloudfront create-invalidation `
+        --distribution-id $CF_DIST_ID `
+        --paths "/$($cfg.S3Prefix)/*"
+
+    Write-Host "`n✅ $($cfg.Name) desplegado correctamente." -ForegroundColor Green
+    Write-Host "   URL: $CF_URL/$($cfg.S3Prefix)/" -ForegroundColor Yellow
+}
+
+# ── Ejecutar deploys seleccionados ───────────────────────────
+foreach ($target in $targets) {
+    Deploy-App $target
+}
+
+Write-Host ""
 Write-Host "Espera 1-2 minutos a que CloudFront propague los cambios." -ForegroundColor Yellow
-Write-Host "URL: https://dsm1cwmosama.cloudfront.net/$S3_PREFIX/" -ForegroundColor Yellow

@@ -7,6 +7,7 @@
 export const environment = {
   production: true,
   apiUrl: 'https://escalapp.cloud/admin',
-  negocioAppUrl: 'https://escalapp.cloud/restaurante',
+  negocioAppUrl: 'https://dsm1cwmosama.cloudfront.net/restaurante',
+  parqueaderoAppUrl: 'https://dsm1cwmosama.cloudfront.net/parqueadero',
   assetPath: 'images',
 };

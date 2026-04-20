@@ -21,6 +21,7 @@ import { TipoNegocioConRoles, Negocio }  from '../../models/admin.models';
 import { LoadingState }         from '../../models/admin.models';
 import { NegocioCardComponent } from '../negocio-card/negocio-card.component';
 import { SUPER_ADMIN_ROL }      from '../../guards/admin.guard';
+import { environment }          from '../../../../environments/environment';
 
 /**
  * AdminDashboardComponent — Vista principal del panel administrador.
@@ -149,8 +150,8 @@ export class AdminDashboardComponent implements OnInit {
   protected onEntrar(tipo: TipoNegocioConRoles): void {
     /** Mapa de tipo de negocio → URL de su app dedicada */
     const MODULO_APPS: Record<string, string> = {
-      PARQUEADERO: 'http://localhost:4003',
-      RESTAURANTE: 'http://localhost:6002',
+      PARQUEADERO: environment.parqueaderoAppUrl,
+      RESTAURANTE: environment.negocioAppUrl,
     };
 
     const key    = tipo.nombre.toUpperCase().replace(/\s+/g, '_');
@@ -196,8 +197,8 @@ export class AdminDashboardComponent implements OnInit {
   protected entrarAlNegocio(negocio: Negocio, appUrl?: string): void {
     if (!appUrl) {
       const MODULO_APPS: Record<string, string> = {
-        PARQUEADERO: 'http://localhost:4003',
-        RESTAURANTE: 'http://localhost:6002',
+        PARQUEADERO: environment.parqueaderoAppUrl,
+        RESTAURANTE: environment.negocioAppUrl,
       };
       const sv = this.sucursalView();
       if (sv) {
