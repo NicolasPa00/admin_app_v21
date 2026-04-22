@@ -191,8 +191,13 @@ export class AdminDashboardComponent implements OnInit {
 
   /**
     * Redirige al módulo del negocio en la misma pestaña.
-    * Para la primera entrada, transfiere token vía window.name (sin query params)
-    * y la app destino lo persiste en su propio localStorage.
+    *
+    * Pide al backend un código de acceso de un solo uso (TTL 30 s) y
+    * navega a `${appUrl}/auth/callback?code=<uuid>`. La app destino canjea
+    * el código por la sesión completa (token + permisos).
+    *
+    * Reemplaza el patrón anterior basado en `window.name`, que dejó de
+    * funcionar en navegación cross-origin (Chrome 88+, Firefox 79+).
    */
   protected entrarAlNegocio(negocio: Negocio, appUrl?: string): void {
     if (!appUrl) {
@@ -210,14 +215,30 @@ export class AdminDashboardComponent implements OnInit {
     const token = this.authService.getAccessToken();
     if (!token) { this.authService.logout(); return; }
 
-    window.name = JSON.stringify({
-      source: 'admin_app',
+    const moduloPath: 'restaurante' | 'parqueadero' | null =
+      appUrl === environment.negocioAppUrl     ? 'restaurante' :
+      appUrl === environment.parqueaderoAppUrl ? 'parqueadero' :
+      null;
+
+    if (!moduloPath) {
+      // Tipo de negocio sin app dedicada; abrir landing como fallback.
+      window.location.href = `${appUrl}/`;
+      return;
+    }
+
+    this.adminService.generarCodigoAcceso(moduloPath, {
       token,
       id_negocio: negocio.id_negocio,
-      ts: Date.now(),
+    }).subscribe({
+      next: (code) => {
+        if (!code) { this.authService.logout(); return; }
+        window.location.href = `${appUrl}/auth/callback?code=${encodeURIComponent(code)}`;
+      },
+      error: () => {
+        // Sin código no podemos transferir sesión: forzar relogin.
+        this.authService.logout();
+      },
     });
-
-    window.location.href = `${appUrl}/dashboard`;
   }
 
   /** Vuelve al grid de tipos de negocio desde el selector de sucursales */

@@ -145,4 +145,23 @@ export class AdminService {
       .get<NegociosResponse>(`${this.API}/mis-negocios?id_tipo_negocio=${idTipoNegocio}`)
       .pipe(map((res) => res.data ?? []));
   }
+
+  /**
+   * Pide al backend un código de acceso de un solo uso para entrar a una app
+   * de negocio (restaurante, parqueadero, etc). Necesario para el login
+   * cross-origin: `window.name` se borra al cambiar de origen, así que
+   * pasamos un `?code=` que la app destino canjea por la sesión.
+   */
+  generarCodigoAcceso(
+    moduloPath: 'restaurante' | 'parqueadero',
+    payload: { token: string; id_negocio?: number },
+  ): Observable<string> {
+    const root = environment.apiUrl.replace(/\/admin\/?$/, '');
+    return this.http
+      .post<{ success: boolean; data?: { code: string } }>(
+        `${root}/${moduloPath}/auth/generar-codigo`,
+        payload,
+      )
+      .pipe(map((res) => res.data?.code ?? ''));
+  }
 }
