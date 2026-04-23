@@ -131,6 +131,22 @@ export class AdminDashboardComponent implements OnInit {
     () => this.themeService.resolvedTheme() === 'dark',
   );
 
+  /**
+   * Mapa nombre-de-tipo → URL de la app dedicada. La key se obtiene
+   * normalizando el nombre del tipo (mayúsculas + underscores).
+   * Tipos sin entrada caen al placeholder interno `/dashboard/negocio/:id`.
+   */
+  private readonly MODULO_APPS: Record<string, string> = {
+    PARQUEADERO: environment.parqueaderoAppUrl,
+    RESTAURANTE: environment.negocioAppUrl,
+    GIMNASIO:    environment.gymAppUrl,
+  };
+
+  private resolveAppUrl(tipoNombre: string | undefined): string | undefined {
+    if (!tipoNombre) return undefined;
+    return this.MODULO_APPS[tipoNombre.toUpperCase().replace(/\s+/g, '_')];
+  }
+
   // ===================== Lifecycle =====================
 
   ngOnInit(): void {
@@ -148,14 +164,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   protected onEntrar(tipo: TipoNegocioConRoles): void {
-    /** Mapa de tipo de negocio → URL de su app dedicada */
-    const MODULO_APPS: Record<string, string> = {
-      PARQUEADERO: environment.parqueaderoAppUrl,
-      RESTAURANTE: environment.negocioAppUrl,
-    };
-
-    const key    = tipo.nombre.toUpperCase().replace(/\s+/g, '_');
-    const appUrl = MODULO_APPS[key];
+    const appUrl = this.resolveAppUrl(tipo.nombre);
 
     // Sin app dedicada aún: ruta interna de placeholder
     if (!appUrl) {
@@ -201,23 +210,17 @@ export class AdminDashboardComponent implements OnInit {
    */
   protected entrarAlNegocio(negocio: Negocio, appUrl?: string): void {
     if (!appUrl) {
-      const MODULO_APPS: Record<string, string> = {
-        PARQUEADERO: environment.parqueaderoAppUrl,
-        RESTAURANTE: environment.negocioAppUrl,
-      };
-      const sv = this.sucursalView();
-      if (sv) {
-        appUrl = MODULO_APPS[sv.tipo.nombre.toUpperCase().replace(/\s+/g, '_')];
-      }
+      appUrl = this.resolveAppUrl(this.sucursalView()?.tipo.nombre);
     }
     if (!appUrl) return;
 
     const token = this.authService.getAccessToken();
     if (!token) { this.authService.logout(); return; }
 
-    const moduloPath: 'restaurante' | 'parqueadero' | null =
+    const moduloPath: 'restaurante' | 'parqueadero' | 'gym' | null =
       appUrl === environment.negocioAppUrl     ? 'restaurante' :
       appUrl === environment.parqueaderoAppUrl ? 'parqueadero' :
+      appUrl === environment.gymAppUrl         ? 'gym' :
       null;
 
     if (!moduloPath) {

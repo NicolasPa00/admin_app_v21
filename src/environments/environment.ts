@@ -13,6 +13,8 @@ export const environment = {
   negocioAppUrl: 'http://localhost:6002',
   /** URL de la app de parqueadero */
   parqueaderoAppUrl: 'http://localhost:4003',
+  /** URL de la app de gimnasio */
+  gymAppUrl: 'http://localhost:4004',
   /** Ruta base de assets (imágenes, etc.) */
   assetPath: '/images',
 };

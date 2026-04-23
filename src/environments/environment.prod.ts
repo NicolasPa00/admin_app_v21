@@ -14,5 +14,6 @@ export const environment = {
   apiUrl: 'https://api.escalapp.cloud/admin',
   negocioAppUrl: 'https://escalapp.cloud/restaurante',
   parqueaderoAppUrl: 'https://escalapp.cloud/parqueadero',
+  gymAppUrl: 'https://escalapp.cloud/gym',
   assetPath: 'images',
 };
