@@ -277,10 +277,19 @@
             type="button"
             class="lp-tipo-chip"
             [class.lp-tipo-chip--active]="selectedTipo().id === tipo.id"
+            [class.lp-tipo-chip--soon]="!tipo.disponible"
             (click)="selectTipo(tipo)"
             [attr.aria-pressed]="selectedTipo().id === tipo.id">
-            <lucide-icon [name]="tipo.icon" [size]="18" aria-hidden="true" />
-            {{ tipo.label }}
+            <span class="lp-tipo-chip__main">
+              <lucide-icon [name]="tipo.icon" [size]="16" aria-hidden="true" />
+              {{ tipo.label }}
+            </span>
+            @if (!tipo.disponible) {
+              <span class="lp-tipo-chip__soon-badge">
+                <lucide-icon name="clock" [size]="10" aria-hidden="true" />
+                Próximamente
+              </span>
+            }
           </button>
         }
       </div>
@@ -292,8 +301,6 @@
         <article class="lp-plan-card" [class.lp-plan-card--featured]="plan.destacado">
           @if (plan.destacado) {
             <span class="lp-plan-card__badge">Más popular</span>
-          } @else if (plan.badge) {
-            <span class="lp-plan-card__badge lp-plan-card__badge--trial">{{ plan.badge }}</span>
           }
           <div class="lp-plan-card__header">
             <h3 class="lp-plan-card__nombre">{{ plan.nombre }}</h3>
@@ -301,19 +308,22 @@
 
             <div class="lp-plan-card__precio">
               <span class="lp-plan-card__monto">{{ formatPrice(plan.precio) }}</span>
-              @if (plan.precio > 0) {
-                <span class="lp-plan-card__periodo">COP {{ plan.periodo }}</span>
-              } @else {
-                <span class="lp-plan-card__periodo">{{ plan.periodo }}</span>
-              }
+              <span class="lp-plan-card__periodo">COP {{ plan.periodo }}</span>
             </div>
           </div>
 
           <ul class="lp-plan-card__features">
-            @for (feat of plan.features; track feat) {
-              <li>
-                <lucide-icon name="check" [size]="16" aria-hidden="true" />
-                {{ feat }}
+            @if (selectedDisponible()) {
+              @for (feat of plan.features; track feat) {
+                <li>
+                  <lucide-icon name="check" [size]="16" aria-hidden="true" />
+                  {{ feat }}
+                </li>
+              }
+            } @else {
+              <li class="lp-plan-card__soon-msg">
+                <lucide-icon name="clock" [size]="16" aria-hidden="true" />
+                Módulo en desarrollo — disponible próximamente
               </li>
             }
           </ul>

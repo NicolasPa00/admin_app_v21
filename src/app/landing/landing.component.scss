@@ -641,6 +641,34 @@
       border-color: var(--color-primary-hover);
     }
   }
+
+  &--soon {
+    opacity: 0.65;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 14px;
+  }
+
+  &__main {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__soon-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-warning, #d97706);
+    background-color: rgba(217, 119, 6, 0.1);
+    border-radius: var(--radius-full);
+    padding: 2px 6px;
+    white-space: nowrap;
+    line-height: 1;
+  }
 }
 
 // ── Plan cards ──
@@ -753,6 +781,15 @@
       lucide-icon {
         color: var(--color-success);
         flex-shrink: 0;
+      }
+    }
+
+    .lp-plan-card__soon-msg {
+      color: var(--color-text-secondary);
+      font-style: italic;
+
+      lucide-icon {
+        color: var(--color-warning, #d97706);
       }
     }
   }

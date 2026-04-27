@@ -23,9 +23,12 @@ import {
   Car,
   Scissors,
   ShoppingCart,
+  ShoppingBag,
   Wrench,
   PiggyBank,
   Landmark,
+  Dumbbell,
+  Clock,
 } from 'lucide-angular';
 
 import { ThemeService } from '../core/theme/theme.service';
@@ -40,6 +43,7 @@ interface TipoNegocio {
   nombre: string;
   icon: string;
   label: string;
+  disponible: boolean;
 }
 
 interface PlanBase {
@@ -64,59 +68,45 @@ interface Feature {
 
 /* ── Tipos de negocio ── */
 const TIPOS_NEGOCIO: TipoNegocio[] = [
-  { id: 1, nombre: 'RESTAURANTE',               icon: 'utensils-crossed', label: 'Restaurante' },
-  { id: 2, nombre: 'PARQUEADERO',               icon: 'car',              label: 'Parqueadero' },
-  { id: 3, nombre: 'BARBERIA',                  icon: 'scissors',         label: 'Barbería' },
-  { id: 4, nombre: 'SUPERMERCADO',              icon: 'shopping-cart',    label: 'Supermercado' },
-  { id: 5, nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',           label: 'Taller automotriz' },
-  { id: 6, nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',       label: 'Fondo de ahorros' },
-  { id: 7, nombre: 'FINANCIERA_PRESTAMOS',      icon: 'landmark',         label: 'Financiera' },
+  { id: 1, nombre: 'RESTAURANTE',               icon: 'utensils-crossed', label: 'Restaurante',       disponible: true  },
+  { id: 2, nombre: 'PARQUEADERO',               icon: 'car',              label: 'Parqueadero',        disponible: true  },
+  { id: 3, nombre: 'GIMNASIO',                  icon: 'dumbbell',         label: 'Gimnasio',           disponible: true  },
+  { id: 4, nombre: 'TIENDA',                    icon: 'shopping-bag',     label: 'Tienda',             disponible: true  },
+  { id: 5, nombre: 'BARBERIA',                  icon: 'scissors',         label: 'Barbería',           disponible: false },
+  { id: 6, nombre: 'SUPERMERCADO',              icon: 'shopping-cart',    label: 'Supermercado',       disponible: false },
+  { id: 7, nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',           label: 'Taller automotriz',  disponible: false },
+  { id: 8, nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',       label: 'Fondo de ahorros',  disponible: false },
+  { id: 9, nombre: 'FINANCIERA_PRESTAMOS',      icon: 'landmark',         label: 'Financiera',         disponible: false },
 ];
 
-/* ── Planes base (precio + meta) ── */
+/* ── Planes base (2 planes) ── */
 const PLANES_BASE: PlanBase[] = [
   {
-    nombre: 'Prueba gratuita',
-    precio: 0,
-    periodo: 'por 15 días',
-    descripcion: 'Todas las funcionalidades del plan Emprendedor. Sin tarjeta de crédito.',
+    nombre: 'Plan Básico',
+    precio: 27999,
+    periodo: '/mes',
+    descripcion: 'Ideal para negocios pequeños. Todo lo esencial para arrancar y operar.',
     destacado: false,
-    badge: '15 días gratis',
-    cta: 'Iniciar prueba gratis',
+    cta: 'Elegir Plan Básico',
   },
   {
-    nombre: 'Emprendedor',
-    precio: 19990,
+    nombre: 'Plan Avanzado',
+    precio: 59999,
     periodo: '/mes',
-    descripcion: 'Ideal para negocios pequeños que arrancan.',
-    destacado: false,
-    cta: 'Elegir Emprendedor',
-  },
-  {
-    nombre: 'Profesional',
-    precio: 34990,
-    periodo: '/mes',
-    descripcion: 'Para negocios en crecimiento.',
+    descripcion: 'Para negocios en crecimiento. Más sucursales, más usuarios y soporte prioritario.',
     destacado: true,
-    cta: 'Elegir Profesional',
-  },
-  {
-    nombre: 'Empresarial',
-    precio: 59990,
-    periodo: '/mes',
-    descripcion: 'Para cadenas y operaciones grandes.',
-    destacado: false,
-    cta: 'Contactar ventas',
+    cta: 'Elegir Plan Avanzado',
   },
 ];
 
 /**
- * Features específicas por tipo de negocio para cada plan.
- * Clave: TipoNegocio.nombre → array de 4 arrays (uno por plan).
+ * Features por tipo de negocio: 2 arrays (uno por plan).
+ * Solo tipos disponibles necesitan features detalladas;
+ * los "Próximamente" usan un array genérico.
  */
 const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
   RESTAURANTE: [
-    // Prueba gratuita (igual al plan Emprendedor)
+    // Plan Básico
     [
       '1 restaurante',
       'Hasta 5 usuarios',
@@ -126,37 +116,16 @@ const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
       'Gestión de cocina',
       'Reportes de ventas',
     ],
-    // Emprendedor
+    // Plan Avanzado
     [
-      '1 restaurante',
-      'Hasta 5 usuarios',
-      'Hasta 15 mesas',
-      'Menú digital completo',
-      'Pedidos en línea',
-      'Gestión de cocina',
-      'Reportes de ventas',
-    ],
-    // Profesional
-    [
-      'Hasta 2 restaurantes',
-      'Hasta 15 usuarios',
+      'Hasta 3 restaurantes',
+      'Usuarios ilimitados',
       'Mesas ilimitadas',
-      'Menú digital avanzado con fotos',
-      'Pedidos + delivery',
+      'Menú avanzado con fotos',
+      'Pedidos + domicilios',
       'Inventario de ingredientes',
       'Reportes completos',
       'Soporte prioritario',
-    ],
-    // Empresarial
-    [
-      'Restaurantes ilimitados',
-      'Usuarios ilimitados',
-      'Todas las funcionalidades',
-      'Reservas en línea',
-      'Programa de fidelización',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización de marca',
     ],
   ],
 
@@ -165,23 +134,14 @@ const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
       '1 parqueadero',
       'Hasta 5 usuarios',
       'Hasta 80 espacios',
-      'Tarifas por hora/fracción/día',
-      'Registro de placa automático',
+      'Tarifas por hora / fracción / día',
+      'Registro de placa',
       'Recibos digitales',
       'Reportes de ocupación',
     ],
     [
-      '1 parqueadero',
-      'Hasta 5 usuarios',
-      'Hasta 80 espacios',
-      'Tarifas por hora/fracción/día',
-      'Registro de placa automático',
-      'Recibos digitales',
-      'Reportes de ocupación',
-    ],
-    [
-      'Hasta 2 parqueaderos',
-      'Hasta 15 usuarios',
+      'Hasta 3 parqueaderos',
+      'Usuarios ilimitados',
       'Espacios ilimitados',
       'Tarifas diferenciadas',
       'Abonados y mensualidades',
@@ -189,236 +149,71 @@ const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
       'Reportes financieros',
       'Soporte prioritario',
     ],
-    [
-      'Parqueaderos ilimitados',
-      'Usuarios ilimitados',
-      'Todas las funcionalidades',
-      'Reconocimiento de placas (LPR)',
-      'Integración con barreras',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización completa',
-    ],
   ],
 
-  BARBERIA: [
+  GIMNASIO: [
     [
-      '1 barbería',
-      'Hasta 5 barberos',
-      'Agenda con franjas horarias',
-      'Catálogo de servicios + precios',
-      'Historial de clientes',
-      'Recordatorios por email',
-      'Reportes de ingresos',
+      '1 gimnasio',
+      'Hasta 5 usuarios',
+      'Hasta 200 miembros',
+      'Membresías básicas',
+      'Control de asistencia',
+      'Registro de pagos',
+      'Reportes básicos',
     ],
     [
-      '1 barbería',
-      'Hasta 5 barberos',
-      'Agenda con franjas horarias',
-      'Catálogo de servicios + precios',
-      'Historial de clientes',
-      'Recordatorios por email',
-      'Reportes de ingresos',
-    ],
-    [
-      'Hasta 2 barberías',
-      'Hasta 15 barberos',
-      'Agenda avanzada + turnos',
-      'Reservas en línea',
-      'Galería de trabajos',
-      'Inventario de productos',
+      'Hasta 3 gimnasios',
+      'Usuarios ilimitados',
+      'Miembros ilimitados',
+      'Planes de membresía avanzados',
+      'Control biométrico de asistencia',
+      'Cobro automático',
+      'Venta de productos',
       'Reportes completos',
       'Soporte prioritario',
     ],
-    [
-      'Barberías ilimitadas',
-      'Barberos ilimitados',
-      'Todas las funcionalidades',
-      'App de reservas para clientes',
-      'Programa de fidelización',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización de marca',
-    ],
   ],
 
-  SUPERMERCADO: [
+  TIENDA: [
     [
-      '1 sucursal',
+      '1 tienda',
       'Hasta 5 usuarios',
       'Hasta 1.000 productos',
-      'Punto de venta completo',
-      'Lector de códigos de barras',
-      'Alertas de stock bajo',
+      'Gestión de inventario',
+      'Movimientos de stock',
+      'Ventas y facturación',
       'Reportes de ventas',
     ],
     [
-      '1 sucursal',
-      'Hasta 5 usuarios',
-      'Hasta 1.000 productos',
-      'Punto de venta completo',
-      'Lector de códigos de barras',
-      'Alertas de stock bajo',
-      'Reportes de ventas',
-    ],
-    [
-      'Hasta 2 sucursales',
-      'Hasta 15 usuarios',
+      'Hasta 3 tiendas',
+      'Usuarios ilimitados',
       'Productos ilimitados',
-      'Gestión de proveedores',
-      'Compras y recepción',
-      'Ofertas y promociones',
-      'Reportes financieros',
-      'Soporte prioritario',
-    ],
-    [
-      'Sucursales ilimitadas',
-      'Usuarios ilimitados',
-      'Todas las funcionalidades',
-      'E-commerce integrado',
-      'Logística de domicilios',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización completa',
-    ],
-  ],
-
-  GESTION_TALLER_AUTOMOTRIZ: [
-    [
-      '1 taller',
-      'Hasta 5 técnicos',
-      'Historial por vehículo',
-      'Órdenes de trabajo completas',
-      'Cotizaciones detalladas',
-      'Inventario de repuestos',
-      'Reportes de productividad',
-    ],
-    [
-      '1 taller',
-      'Hasta 5 técnicos',
-      'Historial por vehículo',
-      'Órdenes de trabajo completas',
-      'Cotizaciones detalladas',
-      'Inventario de repuestos',
-      'Reportes de productividad',
-    ],
-    [
-      'Hasta 2 talleres',
-      'Hasta 15 técnicos',
-      'Seguimiento en tiempo real',
-      'Notificaciones al cliente',
-      'Proveedores de repuestos',
-      'Facturación integrada',
+      'Categorías y proveedores',
+      'Alertas de stock bajo',
+      'Ventas avanzadas',
       'Reportes completos',
       'Soporte prioritario',
-    ],
-    [
-      'Talleres ilimitados',
-      'Técnicos ilimitados',
-      'Todas las funcionalidades',
-      'Portal del cliente',
-      'Diagnóstico OBD-II',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización completa',
-    ],
-  ],
-
-  FONDO_AHORROS: [
-    [
-      '1 fondo',
-      'Hasta 5 administradores',
-      'Hasta 150 asociados',
-      'Aportes + retiros',
-      'Cálculo de rendimientos',
-      'Extractos detallados',
-      'Reportes financieros',
-    ],
-    [
-      '1 fondo',
-      'Hasta 5 administradores',
-      'Hasta 150 asociados',
-      'Aportes + retiros',
-      'Cálculo de rendimientos',
-      'Extractos detallados',
-      'Reportes financieros',
-    ],
-    [
-      'Hasta 2 fondos',
-      'Hasta 15 administradores',
-      'Asociados ilimitados',
-      'Líneas de crédito interno',
-      'Notificaciones automáticas',
-      'Auditoría de movimientos',
-      'Reportes completos',
-      'Soporte prioritario',
-    ],
-    [
-      'Fondos ilimitados',
-      'Administradores ilimitados',
-      'Todas las funcionalidades',
-      'Portal del asociado',
-      'Integración bancaria',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización completa',
-    ],
-  ],
-
-  FINANCIERA_PRESTAMOS: [
-    [
-      '1 financiera',
-      'Hasta 5 asesores',
-      'Hasta 200 clientes',
-      'Préstamos + refinanciación',
-      'Cobro de cuotas',
-      'Alertas de mora',
-      'Reportes de cartera',
-    ],
-    [
-      '1 financiera',
-      'Hasta 5 asesores',
-      'Hasta 200 clientes',
-      'Préstamos + refinanciación',
-      'Cobro de cuotas',
-      'Alertas de mora',
-      'Reportes de cartera',
-    ],
-    [
-      'Hasta 2 financieras',
-      'Hasta 15 asesores',
-      'Clientes ilimitados',
-      'Scoring crediticio interno',
-      'Cobranza automatizada',
-      'Gestión de garantías',
-      'Reportes regulatorios',
-      'Soporte prioritario',
-    ],
-    [
-      'Financieras ilimitadas',
-      'Asesores ilimitados',
-      'Todas las funcionalidades',
-      'Portal del cliente',
-      'Integración con centrales',
-      'API avanzada',
-      'Soporte dedicado 24/7',
-      'Personalización completa',
     ],
   ],
 };
+
+const FEATURES_PROXIMAMENTE: string[][] = [
+  ['Módulo en desarrollo', 'Disponible próximamente'],
+  ['Módulo en desarrollo', 'Disponible próximamente'],
+];
 
 const FEATURES: Feature[] = [
   {
     icon: 'store',
     titulo: 'Multi-negocio',
     descripcion:
-      'Administra múltiples negocios desde una sola cuenta. Restaurantes, cafeterías, bares y más.',
+      'Administra múltiples negocios desde una sola cuenta. Restaurantes, gimnasios, tiendas y más.',
   },
   {
     icon: 'users',
     titulo: 'Roles y permisos',
     descripcion:
-      'Define roles granulares: superadmin, admin, cajero, mesero. Cada quien ve solo lo que necesita.',
+      'Define roles granulares: superadmin, admin, cajero, operador. Cada quien ve solo lo que necesita.',
   },
   {
     icon: 'shield',
@@ -464,8 +259,9 @@ const STATS = [
       useValue: new LucideIconProvider({
         Sun, Moon, Rocket, Shield, Users, BarChart3,
         ChevronRight, Check, Star, Zap, Store, Smartphone,
-        ArrowRight, Menu, X,
-        UtensilsCrossed, Car, Scissors, ShoppingCart, Wrench, PiggyBank, Landmark,
+        ArrowRight, Menu, X, Clock,
+        UtensilsCrossed, Car, Scissors, ShoppingCart, ShoppingBag,
+        Wrench, PiggyBank, Landmark, Dumbbell,
       }),
     },
   ],
@@ -485,13 +281,18 @@ export class LandingComponent {
   /** Tipo de negocio seleccionado (por defecto: Restaurante) */
   protected readonly selectedTipo = signal<TipoNegocio>(TIPOS_NEGOCIO[0]);
 
+  /** ¿El tipo seleccionado está disponible? */
+  protected readonly selectedDisponible = computed(() => this.selectedTipo().disponible);
+
   /** Planes con features dinámicas según el tipo de negocio seleccionado */
   protected readonly planes = computed<PlanConFeatures[]>(() => {
     const tipo = this.selectedTipo();
-    const featuresForTipo = FEATURES_POR_NEGOCIO[tipo.nombre] ?? FEATURES_POR_NEGOCIO['RESTAURANTE'];
+    const featuresForTipo = tipo.disponible
+      ? (FEATURES_POR_NEGOCIO[tipo.nombre] ?? FEATURES_POR_NEGOCIO['RESTAURANTE'])
+      : FEATURES_PROXIMAMENTE;
     return PLANES_BASE.map((plan, i) => ({
       ...plan,
-      features: featuresForTipo[i],
+      features: featuresForTipo[i] ?? [],
     }));
   });
 
