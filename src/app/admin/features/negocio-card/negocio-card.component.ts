@@ -21,6 +21,7 @@ const ICON_MAP: Record<string, string> = {
   'PARQUEADERO':                   'car',
   'BARBERIA':                      'scissors',
   'SUPERMERCADO':                  'shopping-cart',
+  'TIENDA':                        'shopping-cart',
   'GESTION DE TALLER AUTOMOTRIZ':  'wrench',
   'FONDO DE AHORROS':              'piggy-bank',
   'FINANCIERA DE PRESTAMOS':       'landmark',
