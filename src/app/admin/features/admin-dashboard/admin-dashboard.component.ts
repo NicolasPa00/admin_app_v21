@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  HostListener,
   inject,
   signal,
   computed,
@@ -11,6 +12,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Sun, Moon, LogOut, AlertCircle, LayoutGrid,
   Building2, ChevronLeft, ArrowRight, Phone, Mail, Hash, Loader,
+  ChevronDown, Settings, User,
 } from 'lucide-angular';
 
 import { TitleCasePipe }        from '@angular/common';
@@ -44,6 +46,7 @@ import { environment }          from '../../../../environments/environment';
       useValue: new LucideIconProvider({
         Sun, Moon, LogOut, AlertCircle, LayoutGrid,
         Building2, ChevronLeft, ArrowRight, Phone, Mail, Hash, Loader,
+        ChevronDown, Settings, User,
       }),
     },
   ],
@@ -58,7 +61,8 @@ export class AdminDashboardComponent implements OnInit {
 
   // ===================== Estado reactivo =====================
 
-  protected readonly loadingState = signal<LoadingState>('idle');
+  protected readonly loadingState  = signal<LoadingState>('idle');
+  protected readonly userMenuOpen  = signal(false);
   private readonly _allTipos      = signal<TipoNegocioConRoles[]>([]);
   private readonly _misNegocios   = signal<Negocio[]>([]);
 
@@ -162,6 +166,24 @@ export class AdminDashboardComponent implements OnInit {
 
   protected logout(): void {
     this.authService.logout();
+  }
+
+  @HostListener('document:click')
+  protected onDocumentClick(): void {
+    if (this.userMenuOpen()) this.userMenuOpen.set(false);
+  }
+
+  protected toggleUserMenu(): void {
+    this.userMenuOpen.update((v) => !v);
+  }
+
+  protected closeUserMenu(): void {
+    this.userMenuOpen.set(false);
+  }
+
+  protected goToConfiguracion(): void {
+    this.userMenuOpen.set(false);
+    this.router.navigate(['/admin/configuracion']);
   }
 
   protected onEntrar(tipo: TipoNegocioConRoles): void {

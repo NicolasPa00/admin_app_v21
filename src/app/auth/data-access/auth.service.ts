@@ -20,6 +20,9 @@ import {
   ApiOkResponse,
   ProfileResponse,
   CheckEmailResponse,
+  UpdatePerfilRequest,
+  ChangePasswordRequest,
+  NegocioPlanInfo,
 } from '../models/auth.models';
 
 /**
@@ -193,6 +196,40 @@ export class AuthService {
    */
   checkEmailAvailability(_email: string): Observable<CheckEmailResponse> {
     return of({ available: true });
+  }
+
+  /**
+   * Actualiza la información personal del usuario autenticado.
+   * PUT /admin/usuarios/perfil
+   */
+  updatePerfil(data: UpdatePerfilRequest): Observable<User> {
+    return this.http
+      .put<ProfileResponse>(`${this.API}/usuarios/perfil`, data)
+      .pipe(
+        map((res) => res.data!),
+        tap((user) => {
+          this.currentUser.set({ ...this.currentUser()!, ...user });
+          this.persistUserMeta({ ...this.currentUser()!, ...user });
+        }),
+      );
+  }
+
+  /**
+   * Cambia la contraseña del usuario autenticado.
+   * POST /admin/auth/change-password
+   */
+  changePassword(data: ChangePasswordRequest): Observable<ApiOkResponse> {
+    return this.http.post<ApiOkResponse>(`${this.API}/auth/change-password`, data);
+  }
+
+  /**
+   * Retorna negocios del usuario con información de plan.
+   * GET /admin/usuarios/mis-negocios-planes
+   */
+  getMisNegociosPlanInfo(): Observable<NegocioPlanInfo[]> {
+    return this.http
+      .get<ApiOkResponse & { data: NegocioPlanInfo[] }>(`${this.API}/usuarios/mis-negocios-planes`)
+      .pipe(map((res) => res.data ?? []));
   }
 
   // ===================== Helpers privados =====================

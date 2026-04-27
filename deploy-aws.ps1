@@ -7,7 +7,7 @@
 # =============================================================
 
 param(
-    [ValidateSet("admin", "restaurante", "all", "")]
+    [ValidateSet("admin", "restaurante", "parqueadero", "tienda", "all", "")]
     [string]$App = ""
 )
 
@@ -26,8 +26,23 @@ $APPS = @{
     restaurante = @{
         Name       = "Restaurante App"
         ProjectDir = "$PSScriptRoot\..\restaurante_app"
+        # Verifica si este lleva guion bajo o medio
         DistFolder = "$PSScriptRoot\..\restaurante_app\dist\negocio-app\browser"
         S3Prefix   = "restaurante"
+    }
+    parqueadero = @{
+        Name       = "Parqueadero App"
+        ProjectDir = "$PSScriptRoot\..\parqueadero_app"
+        # AJUSTADO según tu log de error:
+        DistFolder = "$PSScriptRoot\..\parqueadero_app\dist\parqueadero_app\browser" 
+        S3Prefix   = "parqueadero"
+    }
+    tienda = @{
+        Name       = "Tienda App"
+        ProjectDir = "$PSScriptRoot\..\tienda_app"
+        # Ajusta este también según cómo se llame el proyecto en su angular.json
+        DistFolder = "$PSScriptRoot\..\tienda_app\dist\tienda_app\browser"
+        S3Prefix   = "tienda"
     }
 }
 
@@ -37,17 +52,21 @@ if ($App -eq "") {
     Write-Host "¿Qué aplicación deseas desplegar?" -ForegroundColor Cyan
     Write-Host "  [1] Admin"
     Write-Host "  [2] Restaurante"
-    Write-Host "  [3] Ambas"
-    $choice = Read-Host "Selecciona (1/2/3)"
+    Write-Host "  [3] Parqueadero"
+    Write-Host "  [4] Tienda"
+    Write-Host "  [5] Todas"
+    $choice = Read-Host "Selecciona (1-5)"
     $App = switch ($choice) {
         "1" { "admin" }
         "2" { "restaurante" }
-        "3" { "all" }
+        "3" { "parqueadero" }
+        "4" { "tienda" }
+        "5" { "all" }
         default { Write-Host "Opción inválida." -ForegroundColor Red; exit 1 }
     }
 }
 
-$targets = if ($App -eq "all") { @("admin", "restaurante") } else { @($App) }
+$targets = if ($App -eq "all") { @("admin", "restaurante", "parqueadero", "tienda") } else { @($App) }
 
 # ── Función de deploy para una app ───────────────────────────
 function Deploy-App($appKey) {

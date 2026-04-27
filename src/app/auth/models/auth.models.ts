@@ -36,10 +36,45 @@ export interface User {
   primer_apellido: string;
   segundo_apellido?: string | null;
   email: string;
+  num_identificacion?: string | null;
   /** Negocios a los que pertenece el usuario con sus roles por negocio. */
   negocios: UserNegocio[];
   /** Roles sin negocio (ej. Super Admin). */
   roles_globales: UserRol[];
+}
+
+// ===================== Configuración / Plan =====================
+
+export interface NegocioPlan {
+  nombre: string;
+  precio: number;
+  moneda: string;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
+  vigente: boolean;
+  dias_restantes: number | null;
+}
+
+export interface NegocioPlanInfo {
+  id_negocio: number;
+  nombre: string;
+  nit: string | null;
+  email_contacto: string | null;
+  telefono: string | null;
+  plan: NegocioPlan | null;
+}
+
+export interface UpdatePerfilRequest {
+  primer_nombre: string;
+  segundo_nombre?: string | null;
+  primer_apellido: string;
+  segundo_apellido?: string | null;
+  num_identificacion: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 // ===================== Login =====================

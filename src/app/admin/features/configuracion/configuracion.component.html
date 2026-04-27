@@ -1,0 +1,336 @@
+<div class="cfg">
+
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header class="cfg__header">
+    <button type="button" class="cfg__back" (click)="goBack()" aria-label="Volver al panel">
+      <lucide-icon name="chevron-left" [size]="18" aria-hidden="true" />
+      Panel
+    </button>
+    <h1 class="cfg__title">Configuración</h1>
+  </header>
+
+  <div class="cfg__layout">
+
+    <!-- ── Sidebar de navegación ─────────────────────────────── -->
+    <nav class="cfg__nav" aria-label="Secciones de configuración">
+      <button
+        type="button"
+        class="cfg__nav-item"
+        [class.active]="activeSection() === 'personal'"
+        (click)="setSection('personal')"
+      >
+        <lucide-icon name="user" [size]="17" aria-hidden="true" />
+        Información personal
+      </button>
+      <button
+        type="button"
+        class="cfg__nav-item"
+        [class.active]="activeSection() === 'password'"
+        (click)="setSection('password')"
+      >
+        <lucide-icon name="lock" [size]="17" aria-hidden="true" />
+        Cambiar contraseña
+      </button>
+      <button
+        type="button"
+        class="cfg__nav-item"
+        [class.active]="activeSection() === 'negocios'"
+        (click)="setSection('negocios')"
+      >
+        <lucide-icon name="building-2" [size]="17" aria-hidden="true" />
+        Mis negocios
+      </button>
+    </nav>
+
+    <!-- ── Panel de contenido ────────────────────────────────── -->
+    <section class="cfg__content">
+
+      <!-- ══ Información personal ══ -->
+      @if (activeSection() === 'personal') {
+        <div class="cfg__section">
+          <h2 class="cfg__section-title">Información personal</h2>
+          <p class="cfg__section-desc">Actualiza tus datos de usuario.</p>
+
+          <div class="cfg__form">
+            <div class="cfg__row">
+              <div class="cfg__field">
+                <label class="cfg__label" for="primer_nombre">Primer nombre *</label>
+                <input
+                  id="primer_nombre"
+                  type="text"
+                  class="input"
+                  [value]="personalForm().primer_nombre"
+                  (input)="updatePersonalField('primer_nombre', $any($event.target).value)"
+                  autocomplete="given-name"
+                />
+              </div>
+              <div class="cfg__field">
+                <label class="cfg__label" for="segundo_nombre">Segundo nombre</label>
+                <input
+                  id="segundo_nombre"
+                  type="text"
+                  class="input"
+                  [value]="personalForm().segundo_nombre"
+                  (input)="updatePersonalField('segundo_nombre', $any($event.target).value)"
+                  autocomplete="additional-name"
+                />
+              </div>
+            </div>
+
+            <div class="cfg__row">
+              <div class="cfg__field">
+                <label class="cfg__label" for="primer_apellido">Primer apellido *</label>
+                <input
+                  id="primer_apellido"
+                  type="text"
+                  class="input"
+                  [value]="personalForm().primer_apellido"
+                  (input)="updatePersonalField('primer_apellido', $any($event.target).value)"
+                  autocomplete="family-name"
+                />
+              </div>
+              <div class="cfg__field">
+                <label class="cfg__label" for="segundo_apellido">Segundo apellido</label>
+                <input
+                  id="segundo_apellido"
+                  type="text"
+                  class="input"
+                  [value]="personalForm().segundo_apellido"
+                  (input)="updatePersonalField('segundo_apellido', $any($event.target).value)"
+                />
+              </div>
+            </div>
+
+            <div class="cfg__field">
+              <label class="cfg__label" for="num_id">Número de identificación *</label>
+              <input
+                id="num_id"
+                type="text"
+                class="input"
+                [value]="personalForm().num_identificacion"
+                (input)="updatePersonalField('num_identificacion', $any($event.target).value)"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="cfg__field">
+              <label class="cfg__label" for="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                class="input"
+                [value]="email()"
+                readonly
+                aria-readonly="true"
+                tabindex="-1"
+              />
+              <span class="cfg__hint">El email no puede modificarse desde aquí.</span>
+            </div>
+
+            @if (perfilMsg()) {
+              <div
+                class="cfg__msg"
+                [class.cfg__msg--ok]="perfilMsg()!.ok"
+                [class.cfg__msg--err]="!perfilMsg()!.ok"
+                role="alert"
+              >
+                <lucide-icon [name]="perfilMsg()!.ok ? 'check-circle' : 'alert-circle'" [size]="16" />
+                {{ perfilMsg()!.text }}
+              </div>
+            }
+
+            <div class="cfg__actions">
+              <button
+                type="button"
+                class="btn btn--primary"
+                (click)="savePerfil()"
+                [disabled]="savingPerfil()"
+              >
+                <lucide-icon name="save" [size]="16" aria-hidden="true" />
+                {{ savingPerfil() ? 'Guardando…' : 'Guardar cambios' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ══ Cambiar contraseña ══ -->
+      @if (activeSection() === 'password') {
+        <div class="cfg__section">
+          <h2 class="cfg__section-title">Cambiar contraseña</h2>
+          <p class="cfg__section-desc">Usa una contraseña segura con al menos 8 caracteres, una mayúscula y un número.</p>
+
+          <div class="cfg__form cfg__form--narrow">
+            <div class="cfg__field">
+              <label class="cfg__label" for="cur-pw">Contraseña actual *</label>
+              <div class="cfg__pw-wrap">
+                <input
+                  id="cur-pw"
+                  [type]="showCurrent() ? 'text' : 'password'"
+                  class="input"
+                  [value]="pwForm().currentPassword"
+                  (input)="updatePwField('currentPassword', $any($event.target).value)"
+                  autocomplete="current-password"
+                />
+                <button
+                  type="button"
+                  class="cfg__pw-eye"
+                  (click)="showCurrent.update(v => !v)"
+                  [attr.aria-label]="showCurrent() ? 'Ocultar' : 'Mostrar'"
+                >
+                  <lucide-icon [name]="showCurrent() ? 'eye-off' : 'eye'" [size]="16" />
+                </button>
+              </div>
+            </div>
+
+            <div class="cfg__field">
+              <label class="cfg__label" for="new-pw">Nueva contraseña *</label>
+              <div class="cfg__pw-wrap">
+                <input
+                  id="new-pw"
+                  [type]="showNew() ? 'text' : 'password'"
+                  class="input"
+                  [value]="pwForm().newPassword"
+                  (input)="updatePwField('newPassword', $any($event.target).value)"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  class="cfg__pw-eye"
+                  (click)="showNew.update(v => !v)"
+                  [attr.aria-label]="showNew() ? 'Ocultar' : 'Mostrar'"
+                >
+                  <lucide-icon [name]="showNew() ? 'eye-off' : 'eye'" [size]="16" />
+                </button>
+              </div>
+            </div>
+
+            <div class="cfg__field">
+              <label class="cfg__label" for="conf-pw">Confirmar nueva contraseña *</label>
+              <input
+                id="conf-pw"
+                type="password"
+                class="input"
+                [value]="pwForm().confirmPassword"
+                (input)="updatePwField('confirmPassword', $any($event.target).value)"
+                autocomplete="new-password"
+              />
+            </div>
+
+            @if (pwMsg()) {
+              <div
+                class="cfg__msg"
+                [class.cfg__msg--ok]="pwMsg()!.ok"
+                [class.cfg__msg--err]="!pwMsg()!.ok"
+                role="alert"
+              >
+                <lucide-icon [name]="pwMsg()!.ok ? 'check-circle' : 'alert-circle'" [size]="16" />
+                {{ pwMsg()!.text }}
+              </div>
+            }
+
+            <div class="cfg__actions">
+              <button
+                type="button"
+                class="btn btn--primary"
+                (click)="changePw()"
+                [disabled]="savingPw()"
+              >
+                <lucide-icon name="lock" [size]="16" aria-hidden="true" />
+                {{ savingPw() ? 'Guardando…' : 'Cambiar contraseña' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ══ Mis negocios ══ -->
+      @if (activeSection() === 'negocios') {
+        <div class="cfg__section">
+          <h2 class="cfg__section-title">Mis negocios</h2>
+          <p class="cfg__section-desc">Negocios asociados a tu cuenta y estado de su plan.</p>
+
+          @if (loadingNegocios()) {
+            <div class="cfg__loading">Cargando negocios…</div>
+          }
+
+          @if (negociosError()) {
+            <div class="cfg__msg cfg__msg--err" role="alert">
+              <lucide-icon name="alert-circle" [size]="16" />
+              {{ negociosError() }}
+            </div>
+          }
+
+          @if (!loadingNegocios() && !negociosError()) {
+            @if (negocios().length === 0) {
+              <p class="cfg__empty">No tienes negocios asociados.</p>
+            } @else {
+              <div class="neg-list">
+                @for (n of negocios(); track n.id_negocio) {
+                  <article class="neg-card">
+                    <header class="neg-card__head">
+                      <div class="neg-card__icon">
+                        <lucide-icon name="building-2" [size]="22" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <h3 class="neg-card__name">{{ n.nombre }}</h3>
+                        @if (n.nit) {
+                          <span class="neg-card__nit">NIT: {{ n.nit }}</span>
+                        }
+                      </div>
+                      <span
+                        class="neg-card__status"
+                        [class]="'neg-card__status--' + planStatus(n.plan)"
+                      >
+                        @if (planStatus(n.plan) === 'vigente') { Vigente }
+                        @if (planStatus(n.plan) === 'proximo') { Próximo a vencer }
+                        @if (planStatus(n.plan) === 'vencido') { Vencido }
+                        @if (planStatus(n.plan) === 'sin-plan') { Sin plan }
+                      </span>
+                    </header>
+
+                    @if (n.plan) {
+                      <dl class="neg-card__plan">
+                        <div class="neg-card__plan-row">
+                          <lucide-icon name="credit-card" [size]="14" aria-hidden="true" />
+                          <dt>Plan</dt>
+                          <dd>{{ n.plan.nombre }}</dd>
+                        </div>
+                        <div class="neg-card__plan-row">
+                          <lucide-icon name="credit-card" [size]="14" aria-hidden="true" />
+                          <dt>Valor</dt>
+                          <dd>{{ formatPrecio(n.plan.precio, n.plan.moneda) }} / mes</dd>
+                        </div>
+                        <div class="neg-card__plan-row">
+                          <lucide-icon name="calendar" [size]="14" aria-hidden="true" />
+                          <dt>Inicio</dt>
+                          <dd>{{ formatDate(n.plan.fecha_inicio) }}</dd>
+                        </div>
+                        <div class="neg-card__plan-row">
+                          <lucide-icon name="calendar" [size]="14" aria-hidden="true" />
+                          <dt>Vencimiento</dt>
+                          <dd>
+                            {{ formatDate(n.plan.fecha_fin) }}
+                            @if (n.plan.dias_restantes !== null && n.plan.vigente) {
+                              <span class="neg-card__days"
+                                [class.neg-card__days--warn]="n.plan.dias_restantes <= 15">
+                                ({{ n.plan.dias_restantes }} días)
+                              </span>
+                            }
+                          </dd>
+                        </div>
+                      </dl>
+                    } @else {
+                      <p class="neg-card__no-plan">Este negocio no tiene un plan activo.</p>
+                    }
+                  </article>
+                }
+              </div>
+            }
+          }
+        </div>
+      }
+
+    </section>
+  </div>
+</div>

@@ -29,6 +29,15 @@ export const adminRoutes: Routes = [
     title: 'Panel de administración',
   },
   {
+    path: 'configuracion',
+    loadComponent: () =>
+      import('./features/configuracion/configuracion.component').then(
+        (m) => m.ConfiguracionComponent,
+      ),
+    canActivate: [authGuard()],
+    title: 'Configuración',
+  },
+  {
     path: 'tipos-negocio/:tipoId/roles',
     // TODO: Reemplazar con el componente real de detalle de roles
     loadComponent: () =>

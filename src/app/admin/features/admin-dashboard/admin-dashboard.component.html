@@ -7,16 +7,20 @@
 
   <!-- ── Topbar ─────────────────────────────────────────────── -->
   <header class="dashboard__topbar">
+
+    <!-- Brand (desktop: left · mobile: centered full row) -->
     <div class="dashboard__brand">
       <lucide-icon name="layout-grid" [size]="22" aria-hidden="true" />
       <span class="dashboard__brand-name">Admin Panel</span>
     </div>
 
+    <!-- Actions row (desktop: right · mobile: [toggle | name | logout]) -->
     <div class="dashboard__topbar-actions">
+
       <!-- Toggle de tema -->
       <button
         type="button"
-        class="theme-toggle"
+        class="topbar-icon-btn"
         (click)="toggleTheme()"
         [attr.aria-label]="isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
         [attr.aria-pressed]="isDark()"
@@ -28,23 +32,49 @@
         }
       </button>
 
-      <!-- Info del usuario -->
+      <!-- Menú de usuario -->
       @if (user()) {
-        <span class="dashboard__user-name" aria-label="Usuario autenticado">
-          {{ displayName() }}
-        </span>
+        <div class="user-menu" (click)="$event.stopPropagation()">
+          <button
+            type="button"
+            class="user-menu__trigger"
+            (click)="toggleUserMenu()"
+            aria-haspopup="true"
+            [attr.aria-expanded]="userMenuOpen()"
+          >
+            <lucide-icon name="user" [size]="15" aria-hidden="true" />
+            <span class="user-menu__name">{{ displayName() }}</span>
+            <lucide-icon name="chevron-down" [size]="14" aria-hidden="true"
+              [class.rotated]="userMenuOpen()" />
+          </button>
+
+          @if (userMenuOpen()) {
+            <div class="user-menu__dropdown" role="menu">
+              <button
+                type="button"
+                class="user-menu__item"
+                role="menuitem"
+                (click)="goToConfiguracion()"
+              >
+                <lucide-icon name="settings" [size]="15" aria-hidden="true" />
+                Configuración
+              </button>
+            </div>
+          }
+        </div>
       }
 
       <!-- Cerrar sesión -->
       <button
         type="button"
-        class="btn btn--outline dashboard__logout-btn"
+        class="topbar-icon-btn topbar-icon-btn--primary"
         (click)="logout()"
         aria-label="Cerrar sesión"
       >
         <lucide-icon name="log-out" [size]="16" aria-hidden="true" />
-        Salir
+        <span class="topbar-btn-label">Salir</span>
       </button>
+
     </div>
   </header>
 

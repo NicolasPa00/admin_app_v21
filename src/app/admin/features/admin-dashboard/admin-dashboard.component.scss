@@ -18,12 +18,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-xl);
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-  flex-wrap: wrap;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--spacing-sm) var(--spacing-md);
+    gap: var(--spacing-xs);
+  }
 }
 
 .dashboard__brand {
@@ -31,6 +37,10 @@
   align-items: center;
   gap: var(--spacing-sm);
   color: var(--color-primary);
+
+  @media (max-width: 600px) {
+    justify-content: center;
+  }
 }
 
 .dashboard__brand-name {
@@ -44,22 +54,148 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  flex-wrap: wrap;
+
+  @media (max-width: 600px) {
+    justify-content: space-between;
+    gap: 0;
+  }
 }
 
-.dashboard__user-name {
+// ── Botones de topbar (tema + salir) ────────────────────────
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  height: 36px;
+  min-width: 36px;
+  padding: 0 var(--spacing-sm);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: var(--font-family);
+  transition: background var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  // Filled variant for logout
+  &--primary {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+
+    &:hover {
+      background: var(--color-primary-hover);
+    }
+  }
+}
+
+// Text label — hidden on mobile
+.topbar-btn-label {
+  @media (max-width: 600px) { display: none; }
+}
+
+// ── User menu dropdown ───────────────────────────────────────
+.user-menu {
+  position: relative;
+
+  @media (max-width: 600px) {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+.user-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 var(--spacing-sm);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
   max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+
+  &:hover {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  lucide-icon.rotated {
+    transform: rotate(180deg);
+    transition: transform var(--transition-fast);
+  }
 }
 
-.dashboard__logout-btn {
-  padding: var(--spacing-xs) var(--spacing-md);
+.user-menu__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.user-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  z-index: 200;
+  overflow: hidden;
+
+  @media (max-width: 600px) {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.user-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
+  font-family: var(--font-family);
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+  }
 }
 
 // ── Contenido principal ─────────────────────────────────────
