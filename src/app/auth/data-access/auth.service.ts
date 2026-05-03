@@ -23,6 +23,10 @@ import {
   UpdatePerfilRequest,
   ChangePasswordRequest,
   NegocioPlanInfo,
+  TrialEnviarCodigoRequest,
+  TrialEnviarCodigoResponse,
+  TrialVerificarRequest,
+  TrialVerificarResponse,
 } from '../models/auth.models';
 
 /**
@@ -220,6 +224,28 @@ export class AuthService {
    */
   changePassword(data: ChangePasswordRequest): Observable<ApiOkResponse> {
     return this.http.post<ApiOkResponse>(`${this.API}/auth/change-password`, data);
+  }
+
+  /**
+   * Envía el código OTP de verificación para el registro trial.
+   * POST /admin/auth/registro/enviar-codigo
+   */
+  enviarCodigoTrial(request: TrialEnviarCodigoRequest): Observable<TrialEnviarCodigoResponse> {
+    return this.http.post<TrialEnviarCodigoResponse>(
+      `${this.API}/auth/registro/enviar-codigo`,
+      request,
+    );
+  }
+
+  /**
+   * Verifica el OTP y crea la cuenta trial automáticamente.
+   * POST /admin/auth/registro/prueba/verificar
+   */
+  verificarYCrearTrial(request: TrialVerificarRequest): Observable<TrialVerificarResponse> {
+    return this.http.post<TrialVerificarResponse>(
+      `${this.API}/auth/registro/prueba/verificar`,
+      request,
+    );
   }
 
   /**

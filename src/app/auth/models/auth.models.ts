@@ -37,6 +37,8 @@ export interface User {
   segundo_apellido?: string | null;
   email: string;
   num_identificacion?: string | null;
+  /** Si el usuario debe cambiar su contraseña en el primer inicio de sesión. */
+  debe_cambiar_password?: boolean;
   /** Negocios a los que pertenece el usuario con sus roles por negocio. */
   negocios: UserNegocio[];
   /** Roles sin negocio (ej. Super Admin). */
@@ -150,4 +152,28 @@ export type ApiOkResponse = ApiResponse;
 export interface CheckEmailResponse {
   available: boolean;
 }
+
+// ===================== Registro Trial =====================
+
+/** POST /admin/auth/registro/enviar-codigo */
+export interface TrialEnviarCodigoRequest {
+  email: string;
+  nombre_completo: string;
+  num_identificacion: string;
+  tipo_negocio: string;
+}
+
+/** POST /admin/auth/registro/prueba/verificar */
+export interface TrialVerificarRequest {
+  email: string;
+  code: string;
+}
+
+export interface TrialVerificarData {
+  nombre: string;
+  numIdentificacion: string;
+}
+
+export type TrialEnviarCodigoResponse = ApiResponse;
+export type TrialVerificarResponse = ApiResponse<TrialVerificarData>;
 
