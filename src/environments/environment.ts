@@ -17,6 +17,8 @@ export const environment = {
   gymAppUrl: 'http://localhost:4004',
   /** URL de la app de tienda / inventario */
   tiendaAppUrl: 'http://localhost:4005',
+  /** URL de la app de reserva */
+  reservaAppUrl: 'http://localhost:4006',
   /** Ruta base de assets (imágenes, etc.) */
   assetPath: '/images',
 };

@@ -16,5 +16,6 @@ export const environment = {
   parqueaderoAppUrl: 'https://escalapp.cloud/parqueadero',
   gymAppUrl: 'https://escalapp.cloud/gym',
   tiendaAppUrl: 'https://escalapp.cloud/tienda',
+  reservaAppUrl: 'https://escalapp.cloud/reserva',
   assetPath: 'images',
 };

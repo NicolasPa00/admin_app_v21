@@ -7,7 +7,7 @@
 # =============================================================
 
 param(
-    [ValidateSet("admin", "restaurante", "parqueadero", "tienda", "all", "")]
+    [ValidateSet("admin", "restaurante", "parqueadero", "tienda", "reserva", "all", "")]
     [string]$App = ""
 )
 
@@ -40,10 +40,16 @@ $APPS = @{
     tienda = @{
         Name       = "Tienda App"
         ProjectDir = "$PSScriptRoot\..\tienda_app"
-        # Ajusta este también según cómo se llame el proyecto en su angular.json
         DistFolder = "$PSScriptRoot\..\tienda_app\dist\tienda_app\browser"
         S3Prefix   = "tienda"
     }
+    reserva = @{
+        Name       = "Reserva App"
+        ProjectDir = "$PSScriptRoot\..\reserva_app"
+        DistFolder = "$PSScriptRoot\..\reserva_app\dist\reserva_app\browser"
+        S3Prefix   = "reserva"
+    }
+}
 }
 
 # ── Menú interactivo si no se pasó parámetro ─────────────────
@@ -54,19 +60,21 @@ if ($App -eq "") {
     Write-Host "  [2] Restaurante"
     Write-Host "  [3] Parqueadero"
     Write-Host "  [4] Tienda"
-    Write-Host "  [5] Todas"
-    $choice = Read-Host "Selecciona (1-5)"
+    Write-Host "  [5] Reserva"
+    Write-Host "  [6] Todas"
+    $choice = Read-Host "Selecciona (1-6)"
     $App = switch ($choice) {
         "1" { "admin" }
         "2" { "restaurante" }
         "3" { "parqueadero" }
         "4" { "tienda" }
-        "5" { "all" }
+        "5" { "reserva" }
+        "6" { "all" }
         default { Write-Host "Opción inválida." -ForegroundColor Red; exit 1 }
     }
 }
 
-$targets = if ($App -eq "all") { @("admin", "restaurante", "parqueadero", "tienda") } else { @($App) }
+$targets = if ($App -eq "all") { @("admin", "restaurante", "parqueadero", "tienda", "reserva") } else { @($App) }
 
 # ── Función de deploy para una app ───────────────────────────
 function Deploy-App($appKey) {

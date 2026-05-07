@@ -145,6 +145,7 @@ export class AdminDashboardComponent implements OnInit {
     RESTAURANTE: environment.negocioAppUrl,
     GIMNASIO:    environment.gymAppUrl,
     TIENDA:      environment.tiendaAppUrl,
+    RESERVA:     environment.reservaAppUrl,
   };
 
   private resolveAppUrl(tipoNombre: string | undefined): string | undefined {
@@ -240,11 +241,12 @@ export class AdminDashboardComponent implements OnInit {
     const token = this.authService.getAccessToken();
     if (!token) { this.authService.logout(); return; }
 
-    const moduloPath: 'restaurante' | 'parqueadero' | 'gym' | 'tienda' | null =
+    const moduloPath: 'restaurante' | 'parqueadero' | 'gym' | 'tienda' | 'reserva' | null =
       appUrl === environment.negocioAppUrl     ? 'restaurante' :
       appUrl === environment.parqueaderoAppUrl ? 'parqueadero' :
       appUrl === environment.gymAppUrl         ? 'gym' :
       appUrl === environment.tiendaAppUrl      ? 'tienda' :
+      appUrl === environment.reservaAppUrl     ? 'reserva' :
       null;
 
     if (!moduloPath) {
