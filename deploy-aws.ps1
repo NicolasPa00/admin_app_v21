@@ -50,7 +50,7 @@ $APPS = @{
         S3Prefix   = "reserva"
     }
 }
-}
+
 
 # ── Menú interactivo si no se pasó parámetro ─────────────────
 if ($App -eq "") {
