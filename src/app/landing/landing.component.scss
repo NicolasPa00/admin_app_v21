@@ -92,8 +92,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: none;
-    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-md);
     color: var(--color-text-primary);
     cursor: pointer;
@@ -102,6 +102,7 @@
     &:hover {
       border-color: var(--color-primary);
       color: var(--color-primary);
+      background: var(--color-surface-elevated);
     }
 
     @media (min-width: 768px) {

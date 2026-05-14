@@ -90,50 +90,37 @@ const PLANES_BASE: PlanBase[] = [
     nombre: 'Plan Básico',
     precio: 27999,
     periodo: '/mes',
-    descripcion: 'Ideal para emprendedores y negocios pequeños. Todo lo esencial para operar desde el primer día.',
+    descripcion: 'Todo lo esencial para operar tu negocio desde el primer día. Hasta 5 personas en tu equipo.',
     destacado: false,
-    cta: 'Probar gratis 7 días',
-  },
-  {
-    nombre: 'Plan Avanzado',
-    precio: 59999,
-    periodo: '/mes',
-    descripcion: 'Para negocios en crecimiento. Más sucursales, más personas en tu equipo y soporte prioritario.',
-    destacado: true,
     cta: 'Probar gratis 7 días',
   },
 ];
 
 const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
   RESTAURANTE: [
-    ['1 sucursal', 'Hasta 5 personas en tu equipo', 'Hasta 15 mesas', 'Menú digital completo', 'Pedidos en línea', 'Gestión de cocina', 'Reportes de ventas'],
-    ['Hasta 3 sucursales', 'Equipo ilimitado', 'Mesas ilimitadas', 'Menú avanzado con fotos', 'Pedidos + domicilios', 'Inventario de ingredientes', 'Reportes completos', 'Soporte prioritario'],
+    ['Hasta 5 personas en tu equipo', 'Menú digital completo', 'Pedidos en línea', 'Gestión de cocina', 'Reportes de ventas'],
   ],
   PARQUEADERO: [
-    ['1 sucursal', 'Hasta 5 personas en tu equipo', 'Hasta 80 espacios', 'Tarifas por hora / fracción / día', 'Registro de placa', 'Recibos digitales', 'Reportes de ocupación'],
-    ['Hasta 3 sucursales', 'Equipo ilimitado', 'Espacios ilimitados', 'Tarifas diferenciadas', 'Abonados y mensualidades', 'Panel en tiempo real', 'Reportes financieros', 'Soporte prioritario'],
+    ['Hasta 5 personas en tu equipo', 'Espacios ilimitados', 'Tarifas por hora / fracción / día', 'Registro de placa', 'Recibos digitales', 'Reportes de ocupación'],
   ],
   GIMNASIO: [
-    ['1 sucursal', 'Hasta 5 personas en tu equipo', 'Hasta 200 miembros', 'Membresías básicas', 'Control de asistencia', 'Registro de pagos', 'Reportes básicos'],
-    ['Hasta 3 sucursales', 'Equipo ilimitado', 'Miembros ilimitados', 'Planes de membresía avanzados', 'Control de asistencia', 'Cobro automático', 'Venta de productos', 'Reportes completos', 'Soporte prioritario'],
+    ['Hasta 5 personas en tu equipo', 'Miembros ilimitados', 'Membresías', 'Control de asistencia', 'Registro de pagos', 'Reportes completos'],
   ],
   TIENDA: [
-    ['1 sucursal', 'Hasta 5 personas en tu equipo', 'Hasta 1.000 productos', 'Gestión de inventario', 'Movimientos de stock', 'Ventas y facturación', 'Reportes de ventas'],
-    ['Hasta 3 sucursales', 'Equipo ilimitado', 'Productos ilimitados', 'Categorías y proveedores', 'Alertas de stock bajo', 'Ventas avanzadas', 'Reportes completos', 'Soporte prioritario'],
+    ['Hasta 5 personas en tu equipo', 'Productos ilimitados', 'Gestión de inventario', 'Movimientos de stock', 'Ventas y facturación', 'Reportes de ventas'],
   ],
 };
 
 const FEATURES_PROXIMAMENTE: string[][] = [
-  ['Módulo en desarrollo', 'Disponible próximamente'],
-  ['Módulo en desarrollo', 'Disponible próximamente'],
+  ['Módulo en desarrollo — disponible próximamente'],
 ];
 
 const FEATURES: Feature[] = [
   {
     icon: 'building-2',
-    titulo: 'Tus sucursales en un lugar',
+    titulo: 'Todo tu negocio en un lugar',
     descripcion:
-      'Abre y gestiona todas tus sucursales desde una sola plataforma. Restaurantes, gimnasios, tiendas y más — todo centralizado y fácil de controlar.',
+      'Gestiona tu restaurante, gimnasio, tienda o parqueadero desde una sola plataforma. Ventas, inventario, equipo y reportes — todo centralizado y fácil de controlar.',
   },
   {
     icon: 'users',
@@ -163,7 +150,7 @@ const FEATURES: Feature[] = [
     icon: 'zap',
     titulo: 'Crece sin límites',
     descripcion:
-      'Empieza con una sucursal y expande cuando quieras. La plataforma crece contigo sin cambiar de sistema ni perder información.',
+      'Empieza hoy y expande cuando quieras. La plataforma crece contigo sin cambiar de sistema ni perder información.',
   },
 ];
 
@@ -171,7 +158,7 @@ const STATS = [
   { valor: '99.9%',   etiqueta: 'Disponibilidad',     descripcion: 'Tu negocio siempre en línea, sin interrupciones.' },
   { valor: '< 200ms', etiqueta: 'Velocidad',           descripcion: 'Operaciones instantáneas para un equipo ágil.' },
   { valor: '24/7',    etiqueta: 'Soporte técnico',     descripcion: 'Asistencia disponible en cualquier momento.' },
-  { valor: '∞',       etiqueta: 'Escalabilidad',       descripcion: 'De 1 sucursal a cientos, sin límites.' },
+  { valor: '∞',       etiqueta: 'Escalabilidad',       descripcion: 'Crece sin límites, la plataforma se adapta a ti.' },
 ];
 
 /* ──────────────────────────────────────────────────────────
