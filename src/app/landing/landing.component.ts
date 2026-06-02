@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, afterNextRender, DestroyRef } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -77,10 +77,11 @@ const TIPOS_NEGOCIO: TipoNegocio[] = [
   { id: 3, nombre: 'GIMNASIO',                  icon: 'dumbbell',         label: 'Gimnasio',           disponible: true  },
   { id: 4, nombre: 'TIENDA',                    icon: 'shopping-bag',     label: 'Tienda',             disponible: true  },
   { id: 5, nombre: 'BARBERIA',                  icon: 'scissors',         label: 'Barbería',           disponible: false },
-  { id: 6, nombre: 'SUPERMERCADO',              icon: 'shopping-cart',    label: 'Supermercado',       disponible: false },
-  { id: 7, nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',           label: 'Taller automotriz',  disponible: false },
-  { id: 8, nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',       label: 'Fondo de ahorros',   disponible: false },
-  { id: 9, nombre: 'FINANCIERA_PRESTAMOS',      icon: 'landmark',         label: 'Financiera',         disponible: false },
+  { id: 6, nombre: 'SALON_BELLEZA',             icon: 'scissors',         label: 'Salón de belleza',   disponible: false },
+  { id: 7, nombre: 'SUPERMERCADO',              icon: 'shopping-cart',    label: 'Supermercado',       disponible: false },
+  { id: 8, nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',           label: 'Taller automotriz',  disponible: false },
+  { id: 9, nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',       label: 'Fondo de ahorros',   disponible: false },
+  { id: 10, nombre: 'FINANCIERA_PRESTAMOS',     icon: 'landmark',         label: 'Financiera',         disponible: false },
 ];
 
 const TIPOS_NEGOCIO_REGISTRO = TIPOS_NEGOCIO.filter((t) => t.disponible);
@@ -108,6 +109,12 @@ const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
   ],
   TIENDA: [
     ['Hasta 5 personas en tu equipo', 'Productos ilimitados', 'Gestión de inventario', 'Movimientos de stock', 'Ventas y facturación', 'Reportes de ventas'],
+  ],
+  BARBERIA: [
+    ['Hasta 5 personas en tu equipo', 'Agenda de citas', 'Gestión de profesionales', 'Control de servicios', 'Recordatorios automáticos', 'Reportes de ingresos'],
+  ],
+  SALON_BELLEZA: [
+    ['Hasta 5 personas en tu equipo', 'Agenda de citas', 'Gestión de profesionales', 'Control de servicios', 'Recordatorios automáticos', 'Reportes de ingresos'],
   ],
 };
 
@@ -199,9 +206,95 @@ export class LandingComponent {
   protected readonly mobileMenuOpen      = signal(false);
   protected readonly currentYear         = new Date().getFullYear();
 
+  /* ── Typewriter CTA ── */
+  private readonly ctaPhrases = [
+    'Prueba gratis 7 días',
+    'Empieza ya',
+    'Sin compromisos',
+    'Crece tu negocio',
+  ];
+  protected readonly ctaBtnText = signal('');
+  protected readonly ctaCursorVisible = signal(true);
+  private phraseIndex  = 0;
+  private charIndex    = 0;
+  private isDeleting   = false;
+  private typewriterPaused = false;
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      this.ctaBtnText.set(this.ctaPhrases[0]);
+      this.charIndex   = this.ctaPhrases[0].length;
+      this.phraseIndex = 0;
+
+      const tick = () => {
+        if (this.typewriterPaused) {
+          this.timer = setTimeout(tick, 50);
+          return;
+        }
+
+        const currentPhrase = this.ctaPhrases[this.phraseIndex];
+
+        if (!this.isDeleting) {
+          if (this.charIndex < currentPhrase.length) {
+            this.charIndex++;
+            this.ctaBtnText.set(currentPhrase.slice(0, this.charIndex));
+            this.timer = setTimeout(tick, 50);
+          } else {
+            this.typewriterPaused = true;
+            this.timer = setTimeout(() => {
+              this.typewriterPaused = false;
+              this.isDeleting = true;
+              tick();
+            }, 2000);
+          }
+        } else {
+          if (this.charIndex > 0) {
+            this.charIndex--;
+            this.ctaBtnText.set(currentPhrase.slice(0, this.charIndex));
+            this.timer = setTimeout(tick, 30);
+          } else {
+            this.isDeleting = false;
+            this.phraseIndex = (this.phraseIndex + 1) % this.ctaPhrases.length;
+            this.timer = setTimeout(tick, 300);
+          }
+        }
+      };
+
+      this.timer = setTimeout(tick, 1500);
+    });
+
+    // Blinking cursor independent of typewriter
+    const cursorInterval = setInterval(() => {
+      this.ctaCursorVisible.update((v) => !v);
+    }, 530);
+    destroyRef.onDestroy(() => {
+      clearInterval(cursorInterval);
+      clearTimeout(this.timer);
+    });
+  }
+
+  private timer: ReturnType<typeof setTimeout> | undefined;
+
   /** Tipo seleccionado en el selector de planes */
   protected readonly selectedTipo = signal<TipoNegocio>(TIPOS_NEGOCIO[0]);
   protected readonly selectedDisponible = computed(() => this.selectedTipo().disponible);
+
+  /* ── Imagen representativa por tipo de negocio ── */
+  private readonly tipoImagenMap: Record<string, string | null> = {
+    RESTAURANTE:  'pulpo_restaurante.png',
+    PARQUEADERO:  'pulpo_parqueadero.png',
+    GIMNASIO:     'pulpo_gym.png',
+    TIENDA:       'pulpo_tienda.png',
+    BARBERIA:     'pulpo_barberia.png',
+    SALON_BELLEZA: 'pulpo_salonbelleza.png',
+    SUPERMERCADO: 'pulpo_tienda.png',
+  };
+
+  protected readonly tipoImagenSrc = computed(() => {
+    const filename = this.tipoImagenMap[this.selectedTipo().nombre] ?? null;
+    return filename ? this.assetService.getAssetPath(filename) : null;
+  });
 
   protected readonly planes = computed<PlanConFeatures[]>(() => {
     const tipo = this.selectedTipo();

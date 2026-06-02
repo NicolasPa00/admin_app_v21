@@ -11,6 +11,8 @@ import {
   LucideIconProvider,
   LUCIDE_ICONS,
   Eye, EyeOff, Sun, Moon, Loader2,
+  User, Lock, ArrowRight, ChevronLeft, AlertCircle,
+  Zap, ShieldCheck, TrendingUp,
 } from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
@@ -29,7 +31,7 @@ import { LoginRequest } from '../../models/auth.models';
   standalone: true,
   imports: [RouterLink, LucideAngularModule],
   providers: [
-    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Sun, Moon, Loader2 }) },
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Sun, Moon, Loader2, User, Lock, ArrowRight, ChevronLeft, AlertCircle, Zap, ShieldCheck, TrendingUp }) },
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',

@@ -1,5 +1,6 @@
 <!-- ============================================================
      EscalApp — Landing Page
+     Sistema de diseño --es-* · Componentes es-btn
      ============================================================ -->
 
 <!-- ═══════════════ HEADER / NAVBAR ═══════════════ -->
@@ -27,8 +28,8 @@
           <lucide-icon name="moon" [size]="18" aria-hidden="true" />
         }
       </button>
-      <a routerLink="/auth/login" class="btn btn--outline btn--sm">Iniciar sesión</a>
-      <button type="button" class="btn btn--primary btn--sm" (click)="openModal()">Prueba gratis</button>
+      <a routerLink="/auth/login" class="es-btn es-btn--outline es-btn--sm">Iniciar sesión</a>
+      <button type="button" class="es-btn es-btn--primary es-btn--sm" (click)="openModal()">Prueba gratis</button>
     </div>
 
     <button
@@ -64,8 +65,8 @@
             <lucide-icon name="moon" [size]="18" aria-hidden="true" />
           }
         </button>
-        <a routerLink="/auth/login" class="btn btn--outline" (click)="closeMobileMenu()">Iniciar sesión</a>
-        <button type="button" class="btn btn--primary" (click)="openModal(); closeMobileMenu()">Prueba gratis</button>
+        <a routerLink="/auth/login" class="es-btn es-btn--outline" (click)="closeMobileMenu()">Iniciar sesión</a>
+        <button type="button" class="es-btn es-btn--primary" (click)="openModal(); closeMobileMenu()">Prueba gratis</button>
       </div>
     </div>
   }
@@ -92,11 +93,14 @@
       </p>
 
       <div class="lp-hero__cta">
-        <button type="button" class="btn btn--primary btn--lg" (click)="openModal()">
-          Prueba gratis 7 días
+        <button type="button" class="es-btn es-btn--primary es-btn--lg" (click)="openModal()">
+          <span class="es-btn__typewriter">
+            {{ ctaBtnText() }}
+            <span class="es-btn__cursor" [class.es-btn__cursor--blink]="ctaCursorVisible()">|</span>
+          </span>
           <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
         </button>
-        <a (click)="scrollTo('planes'); $event.preventDefault()" href="#" class="btn btn--outline btn--lg">
+        <a (click)="scrollTo('planes'); $event.preventDefault()" href="#" class="es-btn es-btn--outline es-btn--lg">
           Ver planes
         </a>
       </div>
@@ -105,46 +109,12 @@
     </div>
 
     <div class="lp-hero__visual">
-      <div class="lp-hero__card lp-hero__card--row">
-        <div class="lp-hero__mini-card">
-          <div class="lp-hero__mini-card__icon lp-hero__icon--green">
-            <lucide-icon name="users" [size]="22" aria-hidden="true" />
-          </div>
-          <div>
-            <strong>12 personas</strong>
-            <span>trabajando ahora</span>
-          </div>
-        </div>
-        <div class="lp-hero__mini-card">
-          <div class="lp-hero__mini-card__icon lp-hero__icon--purple">
-            <lucide-icon name="zap" [size]="22" aria-hidden="true" />
-          </div>
-          <div>
-            <strong>7 días gratis</strong>
-            <span>sin tarjeta de crédito</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="lp-hero__card">
-        <div class="lp-hero__card__icon lp-hero__icon--orange">
-          <lucide-icon name="bar-chart-3" [size]="26" aria-hidden="true" />
-        </div>
-        <div>
-          <strong>+24% en ventas</strong>
-          <span>vs. el mes anterior</span>
-        </div>
-      </div>
-
-      <div class="lp-hero__card">
-        <div class="lp-hero__card__icon lp-hero__icon--blue">
-          <lucide-icon name="shield" [size]="26" aria-hidden="true" />
-        </div>
-        <div>
-          <strong>99.9% disponibilidad</strong>
-          <span>tu negocio siempre en línea</span>
-        </div>
-      </div>
+      <img
+        [src]="assetService.getAssetPath('ilustracion_escalapp.png')"
+        alt="Mascota EscalApp — Pulpo multi-negocio"
+        class="lp-hero__mascot"
+        width="500"
+        height="500" />
     </div>
   </div>
 </section>
@@ -201,7 +171,6 @@
       </div>
     </div>
 
-    <!-- Callout: cómo funciona el acceso -->
     <div class="lp-how__callout">
       <div class="lp-how__callout-icon">
         <lucide-icon name="shield" [size]="28" aria-hidden="true" />
@@ -354,7 +323,7 @@
       </div>
     </div>
 
-    <div class="lp-planes__grid">
+    <div class="lp-planes__grid"> 
       @for (plan of planes(); track plan.nombre) {
         <article class="lp-plan-card" [class.lp-plan-card--featured]="plan.destacado">
           @if (plan.destacado) {
@@ -391,14 +360,23 @@
 
           <button
             type="button"
-            class="btn lp-plan-card__cta"
-            [class.btn--primary]="plan.destacado"
-            [class.btn--outline]="!plan.destacado"
+            class="es-btn lp-plan-card__cta"
+            [class.es-btn--primary]="plan.destacado"
+            [class.es-btn--outline]="!plan.destacado"
             (click)="openModal()">
             {{ plan.cta }}
             <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
           </button>
         </article>
+      }
+
+      @if (tipoImagenSrc()) {
+        <div class="lp-planes__mascot">
+          <img
+            [src]="tipoImagenSrc()"
+            [alt]="'Ilustración EscalApp — ' + selectedTipo().label"
+            class="lp-planes__mascot-img" />
+        </div>
       }
     </div>
   </div>
@@ -412,7 +390,7 @@
       Regístrate en menos de 2 minutos. Solo necesitas tu cédula y tu correo.
       7 días gratis, sin tarjeta de crédito.
     </p>
-    <button type="button" class="btn btn--primary btn--lg" (click)="openModal()">
+    <button type="button" class="es-btn es-btn--primary es-btn--lg" (click)="openModal()">
       Empezar prueba gratuita
       <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
     </button>
@@ -421,6 +399,14 @@
 
 <!-- ═══════════════ FOOTER ═══════════════ -->
 <footer class="lp-footer">
+  <div class="lp-footer__pulpo" aria-hidden="true">
+    <img
+      [src]="assetService.getAssetPath('pulpo_emergiendo.png')"
+      alt=""
+      class="lp-footer__pulpo-img"
+      width="400"
+      height="400" />
+  </div>
   <div class="container lp-footer__inner">
     <div class="lp-footer__brand">
       <img [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" class="lp-footer__logo" />
@@ -549,7 +535,7 @@
 
           <button
             type="submit"
-            class="btn btn--primary btn--block"
+            class="es-btn es-btn--primary es-btn--block"
             [disabled]="trialLoading()">
             @if (trialLoading()) {
               <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
@@ -609,7 +595,7 @@
 
           <button
             type="submit"
-            class="btn btn--primary btn--block"
+            class="es-btn es-btn--primary es-btn--block"
             [disabled]="trialLoading()">
             @if (trialLoading()) {
               <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
@@ -664,7 +650,7 @@
             <p>Por seguridad, cambia tu contraseña al iniciar sesión la primera vez. Los datos también fueron enviados a tu correo.</p>
           </div>
 
-          <a routerLink="/auth/login" class="btn btn--primary btn--block" (click)="closeModal()">
+          <a routerLink="/auth/login" class="es-btn es-btn--primary es-btn--block" (click)="closeModal()">
             Ir a iniciar sesión
             <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
           </a>
