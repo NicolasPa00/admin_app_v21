@@ -132,7 +132,7 @@
       var(--es-secondary-darker) 0%,
       var(--es-secondary-dark) 100%);
   --es-gradient-primary: linear-gradient(135deg, var(--es-primary), var(--es-primary-light));
-  --es-gradient-metrics: linear-gradient(135deg, var(--es-secondary-dark), var(--es-secondary));
+  --es-gradient-metrics: linear-gradient(135deg, var(--es-secondary-dark), var(--es-secondary-darker));
   --es-gradient-callout: linear-gradient(135deg,
       rgba(var(--es-accent-blue-rgb), 0.06),
       rgba(var(--es-accent-blue-rgb), 0.02));

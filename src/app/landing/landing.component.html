@@ -93,16 +93,19 @@
       </p>
 
       <div class="lp-hero__cta">
-        <button type="button" class="es-btn es-btn--primary es-btn--lg" (click)="openModal()">
-          <span class="es-btn__typewriter">
-            {{ ctaBtnText() }}
-            <span class="es-btn__cursor" [class.es-btn__cursor--blink]="ctaCursorVisible()">|</span>
-          </span>
-          <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
-        </button>
-        <a (click)="scrollTo('planes'); $event.preventDefault()" href="#" class="es-btn es-btn--outline es-btn--lg">
-          Ver planes
-        </a>
+        <p class="lp-hero__typewriter-text">
+          {{ ctaBtnText() }}
+          <span class="lp-hero__typewriter-cursor" [class.lp-hero__typewriter-cursor--blink]="ctaCursorVisible()">|</span>
+        </p>
+        <div class="lp-hero__cta-btns">
+          <button type="button" class="es-btn es-btn--primary es-btn--lg" (click)="openModal()">
+            Prueba gratis 7 días
+            <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+          </button>
+          <a (click)="scrollTo('planes'); $event.preventDefault()" href="#" class="es-btn es-btn--outline es-btn--lg">
+            Ver planes
+          </a>
+        </div>
       </div>
 
       <p class="lp-hero__disclaimer">Sin tarjeta de crédito · Sin compromisos · Cancela cuando quieras</p>
@@ -382,32 +385,38 @@
   </div>
 </section>
 
-<!-- ═══════════════ CTA FINAL ═══════════════ -->
-<section class="lp-cta-section">
-  <div class="container lp-cta-section__inner">
-    <h2 class="lp-cta-section__title">¿Listo para probar EscalApp?</h2>
-    <p class="lp-cta-section__subtitle">
-      Regístrate en menos de 2 minutos. Solo necesitas tu cédula y tu correo.
-      7 días gratis, sin tarjeta de crédito.
-    </p>
-    <button type="button" class="es-btn es-btn--primary es-btn--lg" (click)="openModal()">
-      Empezar prueba gratuita
-      <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
-    </button>
-  </div>
-</section>
+<!-- ═══════════════ FINAL (Diagonal Slice) ═══════════════ -->
+<div class="lp-final">
+  <!-- CTA + Pulpo -->
+  <section class="lp-cta-section">
+    <div class="container lp-cta-section__inner">
+      <div class="lp-cta-section__content">
+        <div class="lp-cta-section__text">
+          <h2 class="lp-cta-section__title">¿Listo para probar EscalApp?</h2>
+          <p class="lp-cta-section__subtitle">
+            Regístrate en menos de 2 minutos. Solo necesitas tu cédula y tu correo.
+            7 días gratis, sin tarjeta de crédito.
+          </p>
+          <button type="button" class="es-btn es-btn--primary es-btn--lg" (click)="openModal()">
+            Empezar prueba gratuita
+            <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+          </button>
+        </div>
+        <div class="lp-cta-section__pulpo" aria-hidden="true">
+          <img
+            [src]="assetService.getAssetPath('pulpo_emergiendo.png')"
+            alt=""
+            class="lp-cta-section__pulpo-img"
+            width="400"
+            height="400" />
+        </div>
+      </div>
+    </div>
+  </section>
 
-<!-- ═══════════════ FOOTER ═══════════════ -->
-<footer class="lp-footer">
-  <div class="lp-footer__pulpo" aria-hidden="true">
-    <img
-      [src]="assetService.getAssetPath('pulpo_emergiendo.png')"
-      alt=""
-      class="lp-footer__pulpo-img"
-      width="400"
-      height="400" />
-  </div>
-  <div class="container lp-footer__inner">
+  <!-- Footer -->
+  <footer class="lp-footer">
+    <div class="container lp-footer__inner">
     <div class="lp-footer__brand">
       <img [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" class="lp-footer__logo" />
       <p class="lp-footer__tagline">
@@ -438,6 +447,7 @@
     </div>
   </div>
 </footer>
+</div>
 
 <!-- ═══════════════ MODAL REGISTRO TRIAL ═══════════════ -->
 @if (modalOpen()) {
