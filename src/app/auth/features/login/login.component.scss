@@ -25,9 +25,9 @@
     min-height: 100vh;
     background: linear-gradient(
       160deg,
-      #1a0a3e 0%,
-      #3b1d8e 40%,
-      #5b21b6 100%
+      #0F0A2A 0%,
+      #1d193f 50%,
+      #2A2454 100%
     );
     padding: var(--spacing-xl) var(--spacing-2xl);
   }
@@ -101,9 +101,9 @@
     width: 44px;
     height: 44px;
     border-radius: var(--radius-md);
-    background: rgba(167, 139, 250, 0.15);
-    color: #a78bfa;
-    border: 1px solid rgba(167, 139, 250, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #a49bc8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   &__feature span {
@@ -248,13 +248,13 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm);
-    background: linear-gradient(135deg, var(--color-primary) 0%, #7c3aed 100%);
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+    box-shadow: 0 4px 12px rgba(var(--color-primary-rgb), 0.3);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 
     &:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+      box-shadow: 0 6px 16px rgba(var(--color-primary-rgb), 0.4);
     }
 
     &:active:not(:disabled) {
@@ -323,7 +323,7 @@
 
       &:hover {
         border-color: var(--color-primary);
-        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);
+        box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.15);
         color: var(--color-primary);
         text-decoration: none;
       }
@@ -372,8 +372,8 @@
   }
 
   .auth-card__badge {
-    background: rgba(139, 92, 246, 0.1);
-    color: #8B5CF6;
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
   }
 
   .form-group__label {
@@ -395,7 +395,7 @@
   }
 
   .form-group__input-wrapper--icon:focus-within .form-group__input-icon {
-    color: #8B5CF6;
+    color: var(--color-primary);
   }
 
   .form-group__toggle-password {
@@ -403,7 +403,7 @@
   }
 
   .form-group__toggle-password:hover {
-    color: #8B5CF6;
+    color: var(--color-primary);
   }
 
   .auth-card__divider::before,
@@ -420,7 +420,7 @@
   }
 
   .auth-card__link:hover {
-    color: #8B5CF6;
+    color: var(--color-primary);
   }
 
   .auth-card__link--cta {
@@ -430,8 +430,8 @@
   }
 
   .auth-card__link--cta:hover {
-    border-color: #8B5CF6;
-    color: #8B5CF6;
+    border-color: var(--color-primary);
+    color: var(--color-primary);
   }
 
   .auth-card__back {
@@ -440,7 +440,7 @@
   }
 
   .auth-card__back:hover {
-    color: #8B5CF6;
+    color: var(--color-primary);
   }
 
   .auth-card__alert--error {
@@ -461,7 +461,7 @@
 
   .theme-toggle:hover {
     background-color: #f5f5f5;
-    border-color: #8B5CF6;
+    border-color: var(--color-primary);
   }
 }
 
