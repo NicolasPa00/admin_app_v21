@@ -310,16 +310,18 @@ export class LandingComponent {
   protected readonly modalStep = signal<ModalStep>('form');
 
   // Formulario - paso 1
-  protected readonly trialNombre     = signal('');
-  protected readonly trialCedula     = signal('');
-  protected readonly trialEmail      = signal('');
-  protected readonly trialTipoNeg    = signal('');
+  protected readonly trialNombre        = signal('');
+  protected readonly trialCedula        = signal('');
+  protected readonly trialEmail         = signal('');
+  protected readonly trialTipoNeg       = signal('');
+  protected readonly trialNombreNegocio = signal('');
 
   // Touched
-  protected readonly trialNombreTouched  = signal(false);
-  protected readonly trialCedulaTouched  = signal(false);
-  protected readonly trialEmailTouched   = signal(false);
-  protected readonly trialTipoTouched    = signal(false);
+  protected readonly trialNombreTouched        = signal(false);
+  protected readonly trialCedulaTouched        = signal(false);
+  protected readonly trialEmailTouched         = signal(false);
+  protected readonly trialTipoTouched          = signal(false);
+  protected readonly trialNombreNegocioTouched = signal(false);
 
   // OTP - paso 2
   protected readonly trialOtp          = signal('');
@@ -362,12 +364,20 @@ export class LandingComponent {
     return null;
   });
 
+  protected readonly trialNombreNegocioError = computed(() => {
+    const v = this.trialNombreNegocio().trim();
+    if (!v) return 'El nombre del negocio es obligatorio';
+    if (v.length < 2) return 'Mínimo 2 caracteres';
+    return null;
+  });
+
   protected readonly trialFormValid = computed(
     () =>
       !this.trialNombreError() &&
       !this.trialCedulaError() &&
       !this.trialEmailError() &&
-      !this.trialTipoError(),
+      !this.trialTipoError() &&
+      !this.trialNombreNegocioError(),
   );
 
   // Validación OTP
@@ -425,6 +435,7 @@ export class LandingComponent {
     this.trialCedulaTouched.set(true);
     this.trialEmailTouched.set(true);
     this.trialTipoTouched.set(true);
+    this.trialNombreNegocioTouched.set(true);
 
     if (!this.trialFormValid() || this.trialLoading()) return;
 
@@ -438,6 +449,7 @@ export class LandingComponent {
           nombre_completo:    this.trialNombre().trim(),
           num_identificacion: this.trialCedula().trim(),
           tipo_negocio:       this.trialTipoNeg(),
+          nombre_negocio:     this.trialNombreNegocio().trim(),
         }),
       );
       this.trialOtp.set('');
@@ -465,6 +477,7 @@ export class LandingComponent {
           nombre_completo:    this.trialNombre().trim(),
           num_identificacion: this.trialCedula().trim(),
           tipo_negocio:       this.trialTipoNeg(),
+          nombre_negocio:     this.trialNombreNegocio().trim(),
         }),
       );
       this.trialResendCount.update((n) => n + 1);

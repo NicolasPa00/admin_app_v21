@@ -33,7 +33,7 @@ const ICON_MAP: Record<string, string> = {
  *
  * Emite:
  *   (entrar)    → usuario hace click en "Entrar"
- *   (verRoles)  → usuario hace click en "Ver roles"
+ *   (verPlan)   → usuario hace click en "Ver plan"
  */
 @Component({
   selector: 'app-negocio-card',
@@ -63,18 +63,17 @@ const ICON_MAP: Record<string, string> = {
           <lucide-icon [name]="icon()" [size]="28" />
         </div>
 
-        <span
-          class="nc-badge"
-          [class.nc-badge--active]="tipo().estado === 'A'"
-          [class.nc-badge--inactive]="tipo().estado === 'I'"
-        >
-          <lucide-icon
-            [name]="tipo().estado === 'A' ? 'check-circle-2' : 'x-circle'"
-            [size]="12"
-            aria-hidden="true"
-          />
-          {{ tipo().estado === 'A' ? 'Activo' : 'Inactivo' }}
-        </span>
+        @if (tipo().estado === 'A') {
+          <span class="nc-badge nc-badge--active">
+            <lucide-icon name="check-circle-2" [size]="12" aria-hidden="true" />
+            Activo
+          </span>
+        } @else {
+          <span class="nc-badge nc-badge--inactive">
+            <lucide-icon name="x-circle" [size]="12" aria-hidden="true" />
+            Inactivo
+          </span>
+        }
       </header>
 
       <!-- Nombre -->
@@ -120,11 +119,11 @@ const ICON_MAP: Record<string, string> = {
 
         <button
           type="button"
-          class="btn btn--outline nc-card__btn-roles"
-          (click)="onVerRoles()"
-          [attr.aria-label]="'Ver roles de ' + tipo().nombre"
+          class="btn btn--outline nc-card__btn-plan"
+          (click)="onVerPlan()"
+          [attr.aria-label]="'Ver plan de ' + tipo().nombre"
         >
-          Ver roles
+          Ver plan
         </button>
       </footer>
     </article>
@@ -138,8 +137,8 @@ export class NegocioCardComponent {
   /** Emitido cuando el usuario hace click en "Entrar". */
   readonly entrar   = output<TipoNegocioConRoles>();
 
-  /** Emitido cuando el usuario hace click en "Ver roles". */
-  readonly verRoles = output<TipoNegocioConRoles>();
+  /** Emitido cuando el usuario hace click en "Ver plan". */
+  readonly verPlan  = output<TipoNegocioConRoles>();
 
   /** Icono lucide-angular calculado a partir del nombre del tipo de negocio. */
   readonly icon = computed<string>(() => {
@@ -147,6 +146,6 @@ export class NegocioCardComponent {
     return ICON_MAP[nombre] ?? 'building-2';
   });
 
-  protected onEntrar():   void { this.entrar.emit(this.tipo()); }
-  protected onVerRoles(): void { this.verRoles.emit(this.tipo()); }
+  protected onEntrar():  void { this.entrar.emit(this.tipo()); }
+  protected onVerPlan(): void { this.verPlan.emit(this.tipo()); }
 }

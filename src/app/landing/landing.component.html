@@ -539,6 +539,22 @@
             }
           </div>
 
+          <!-- Nombre del negocio -->
+          <div class="lp-form-field" [class.lp-form-field--error]="trialNombreNegocioTouched() && trialNombreNegocioError()">
+            <label class="lp-form-field__label" for="trial-nombre-negocio">Nombre de tu negocio</label>
+            <input
+              id="trial-nombre-negocio"
+              type="text"
+              class="lp-form-field__input"
+              placeholder="Ej: Restaurante El Buen Sabor"
+              [value]="trialNombreNegocio()"
+              (input)="trialNombreNegocio.set($any($event.target).value)"
+              (blur)="trialNombreNegocioTouched.set(true)" />
+            @if (trialNombreNegocioTouched() && trialNombreNegocioError()) {
+              <span class="lp-form-field__error">{{ trialNombreNegocioError() }}</span>
+            }
+          </div>
+
           @if (trialError()) {
             <div class="lp-trial-form__server-error">{{ trialError() }}</div>
           }

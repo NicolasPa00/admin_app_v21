@@ -125,6 +125,7 @@ export class AdminService {
   /**
    * Obtiene todos los negocios del usuario autenticado.
    * GET /admin/mis-negocios
+   * Solo retorna negocios activos (estado = 'A')
    */
   getMisNegociosUsuario(): Observable<Negocio[]> {
     if (USE_MOCK) {
@@ -132,18 +133,19 @@ export class AdminService {
     }
     return this.http
       .get<NegociosResponse>(`${this.API}/mis-negocios`)
-      .pipe(map((res) => res.data ?? []));
+      .pipe(map((res) => (res.data ?? []).filter((n) => n.estado === 'A')));
   }
 
   /**
    * Obtiene los negocios del usuario autenticado que pertenecen a un tipo dado.
    * GET /admin/mis-negocios?id_tipo_negocio={id}
+   * Solo retorna negocios activos (estado = 'A')
    * Soporta múltiples sucursales del mismo tipo.
    */
   getMisNegociosPorTipo(idTipoNegocio: number): Observable<Negocio[]> {
     return this.http
       .get<NegociosResponse>(`${this.API}/mis-negocios?id_tipo_negocio=${idTipoNegocio}`)
-      .pipe(map((res) => res.data ?? []));
+      .pipe(map((res) => (res.data ?? []).filter((n) => n.estado === 'A')));
   }
 
   /**

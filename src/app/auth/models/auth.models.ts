@@ -161,6 +161,7 @@ export interface TrialEnviarCodigoRequest {
   nombre_completo: string;
   num_identificacion: string;
   tipo_negocio: string;
+  nombre_negocio: string;
 }
 
 /** POST /admin/auth/registro/prueba/verificar */

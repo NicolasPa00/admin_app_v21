@@ -22,6 +22,7 @@
     box-shadow var(--transition-fast),
     border-color var(--transition-fast);
   cursor: default;
+  min-height: 320px;
 
   &:hover {
     transform: translateY(-2px);
@@ -148,7 +149,7 @@
   min-width: 100px;
 }
 
-.nc-card__btn-roles {
+.nc-card__btn-plan {
   flex: 0 0 auto;
 }
 

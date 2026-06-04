@@ -32,6 +32,9 @@
         }
       </button>
 
+      <!-- Notificaciones -->
+      <app-notificaciones-bell />
+
       <!-- Menú de usuario -->
       @if (user()) {
         <div class="user-menu" (click)="$event.stopPropagation()">
@@ -148,7 +151,7 @@
               <app-negocio-card
                 [tipo]="tipo"
                 (entrar)="onEntrar($event)"
-                (verRoles)="onVerRoles($event)"
+                (verPlan)="onVerPlan($event)"
               />
             </div>
           }

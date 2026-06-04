@@ -22,6 +22,7 @@ import { AdminService }         from '../../data-access/admin.service';
 import { TipoNegocioConRoles, Negocio }  from '../../models/admin.models';
 import { LoadingState }         from '../../models/admin.models';
 import { NegocioCardComponent } from '../negocio-card/negocio-card.component';
+import { NotificacionesBellComponent } from '../notificaciones/notificaciones-bell.component';
 import { SUPER_ADMIN_ROL }      from '../../guards/admin.guard';
 import { environment }          from '../../../../environments/environment';
 
@@ -38,7 +39,7 @@ import { environment }          from '../../../../environments/environment';
   selector: 'app-admin-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, NegocioCardComponent, TitleCasePipe],
+  imports: [LucideAngularModule, NegocioCardComponent, NotificacionesBellComponent, TitleCasePipe],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -275,9 +276,8 @@ export class AdminDashboardComponent implements OnInit {
     this.sucursalView.set(null);
   }
 
-  protected onVerRoles(tipo: TipoNegocioConRoles): void {
-    // Por ahora abre un dialog/navegación; ampliar según diseño
-    this.router.navigate(['/admin/tipos-negocio', tipo.id_tipo_negocio, 'roles']);
+  protected onVerPlan(tipo: TipoNegocioConRoles): void {
+    this.router.navigate(['/admin/configuracion'], { queryParams: { plan: tipo.id_tipo_negocio } });
   }
 
   protected retry(): void {
