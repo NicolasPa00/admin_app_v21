@@ -6,12 +6,12 @@
 
 // ---------- MODO CLARO (por defecto) ----------
 :root {
-  // --- Colores principales (EscalApp brand: violeta) ---
-  --color-primary: #1d193f;
-  --color-primary-hover: #2A2454;
-  --color-primary-light: #3A3468;
+  // --- Colores principales (EscalApp brand: azul corporativo) ---
+  --color-primary: #312E81;
+  --color-primary-hover: #4F46E5;
+  --color-primary-light: #6366F1;
   --color-on-primary: #ffffff;
-  --color-primary-rgb: 29, 25, 63;
+  --color-primary-rgb: 49, 46, 129;
 
   // --- Fondo y superficies ---
   --color-bg: #f5f5f5;
@@ -55,7 +55,7 @@
   --color-accent-purple-rgb: 123, 31, 162;
 
   // --- Focus ---
-  --color-focus: #1d193f;
+  --color-focus: #312E81;
   --focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.4);
   --focus-ring-error: 0 0 0 3px rgba(var(--color-error-rgb), 0.15);
 
@@ -90,13 +90,13 @@
   --transition-normal: 250ms ease;
 }
 
-// ---------- MODO OSCURO: Blue/Purple depth ----------
+// ---------- MODO OSCURO: Blue depth ----------
 :root[data-theme='dark'] {
-  --color-primary: #a78bfa;
-  --color-primary-hover: #c4b5fd;
-  --color-primary-light: #ddd6fe;
-  --color-on-primary: #1a1032;
-  --color-primary-rgb: 167, 139, 250;
+  --color-primary: #6366F1;
+  --color-primary-hover: #818CF8;
+  --color-primary-light: #A5B4FC;
+  --color-on-primary: #0F0A2A;
+  --color-primary-rgb: 99, 102, 241;
 
   // Superficies: capas de profundidad azul-púrpura
   --color-bg: #0B081A;
@@ -135,7 +135,7 @@
   --color-accent-purple: #ce93d8;
   --color-accent-purple-rgb: 206, 147, 216;
 
-  --color-focus: #a78bfa;
+  --color-focus: #6366F1;
   --focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.4);
   --focus-ring-error: 0 0 0 3px rgba(var(--color-error-rgb), 0.15);
 }

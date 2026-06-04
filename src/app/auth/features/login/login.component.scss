@@ -25,9 +25,9 @@
     min-height: 100vh;
     background: linear-gradient(
       160deg,
-      #0F0A2A 0%,
-      #1d193f 50%,
-      #2A2454 100%
+      #312E81 0%,
+      #4F46E5 50%,
+      #6366F1 100%
     );
     padding: var(--spacing-xl) var(--spacing-2xl);
   }
@@ -101,9 +101,9 @@
     width: 44px;
     height: 44px;
     border-radius: var(--radius-md);
-    background: rgba(255, 255, 255, 0.08);
-    color: #a49bc8;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
+    color: #A5B4FC;
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   &__feature span {
