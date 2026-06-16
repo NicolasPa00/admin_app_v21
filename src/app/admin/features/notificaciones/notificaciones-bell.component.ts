@@ -291,7 +291,7 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargarNotificaciones();
     this.pollInterval = setInterval(() => {
-      this.notificacionService.contarMisNoLeidas().subscribe();
+      this.notificacionService.contarMisNoLeidas().subscribe({ error: () => {} });
     }, 60000);
   }
 
@@ -312,7 +312,7 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
       next: () => this.loading.set(false),
       error: () => this.loading.set(false),
     });
-    this.notificacionService.contarMisNoLeidas().subscribe();
+    this.notificacionService.contarMisNoLeidas().subscribe({ error: () => {} });
   }
 
   protected onItemClick(notif: Notificacion): void {

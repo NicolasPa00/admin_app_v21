@@ -1,0 +1,169 @@
+<!-- ============================================================
+  RegistrarComponent — Registro de clientes (Super Admin)
+  Fase 1: Tipos de negocio
+  ============================================================ -->
+<div class="reg">
+
+  <header class="reg__head">
+    <div>
+      <h1 class="reg__title">Registrar — Tipos de negocio</h1>
+      <p class="reg__subtitle">
+        Crea las verticales disponibles en la plataforma. Luego podrás registrar
+        negocios (clientes) de cada tipo.
+      </p>
+    </div>
+  </header>
+
+  <div class="reg__layout">
+
+    <!-- ── Formulario de creación ── -->
+    <section class="reg__panel">
+      <h2 class="reg__panel-title">
+        <lucide-icon name="plus" [size]="18" aria-hidden="true" />
+        Nuevo tipo de negocio
+      </h2>
+
+      <div class="reg__field">
+        <label class="reg__label" for="tn-nombre">Nombre *</label>
+        <input
+          id="tn-nombre"
+          type="text"
+          class="input"
+          placeholder="Ej. Restaurante, Barbería, Gimnasio…"
+          [value]="nombre()"
+          (input)="setNombre($event)"
+        />
+      </div>
+
+      <div class="reg__field">
+        <label class="reg__label" for="tn-desc">Descripción</label>
+        <textarea
+          id="tn-desc"
+          class="input reg__textarea"
+          rows="2"
+          placeholder="Breve descripción del tipo de negocio"
+          [value]="descripcion()"
+          (input)="setDescripcion($event)"
+        ></textarea>
+      </div>
+
+      <div class="reg__field">
+        <label class="reg__label">
+          <lucide-icon name="tag" [size]="14" aria-hidden="true" /> Ícono
+        </label>
+        <div class="reg__icon-grid" role="radiogroup" aria-label="Ícono del tipo">
+          @for (ic of iconos; track ic) {
+            <button
+              type="button"
+              class="reg__icon-btn"
+              [class.is-selected]="icono() === ic"
+              [attr.aria-pressed]="icono() === ic"
+              (click)="selectIcono(ic)"
+              [title]="ic"
+            >
+              <lucide-icon [name]="ic" [size]="20" aria-hidden="true" />
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="reg__field">
+        <label class="reg__label" for="tn-color">
+          <lucide-icon name="palette" [size]="14" aria-hidden="true" /> Color de acento
+        </label>
+        <div class="reg__color-row">
+          <input
+            id="tn-color"
+            type="color"
+            class="reg__color"
+            [value]="color()"
+            (input)="setColor($event)"
+          />
+          <span class="reg__color-hex">{{ color() }}</span>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="reg__preview">
+        <span class="reg__preview-label">Vista previa</span>
+        <div class="reg__preview-chip">
+          <span
+            class="reg__preview-icon"
+            [style.background]="color() + '22'"
+            [style.color]="color()"
+          >
+            <lucide-icon [name]="icono()" [size]="22" aria-hidden="true" />
+          </span>
+          <span class="reg__preview-name">{{ nombre() || 'Nuevo tipo' }}</span>
+        </div>
+      </div>
+
+      @if (msg(); as m) {
+        <div
+          class="reg__msg"
+          [class.reg__msg--ok]="m.ok"
+          [class.reg__msg--err]="!m.ok"
+          role="alert"
+        >
+          <lucide-icon [name]="m.ok ? 'check' : 'alert-circle'" [size]="16" aria-hidden="true" />
+          {{ m.text }}
+        </div>
+      }
+
+      <button
+        type="button"
+        class="btn btn--primary reg__submit"
+        [disabled]="!nombreValido() || saving()"
+        (click)="submit()"
+      >
+        @if (saving()) {
+          <lucide-icon name="loader-2" [size]="16" class="reg__spin" aria-hidden="true" />
+          Creando…
+        } @else {
+          <lucide-icon name="plus" [size]="16" aria-hidden="true" />
+          Crear tipo de negocio
+        }
+      </button>
+    </section>
+
+    <!-- ── Listado de tipos existentes ── -->
+    <section class="reg__panel">
+      <h2 class="reg__panel-title">Tipos existentes</h2>
+
+      @if (loadingState() === 'loading' || loadingState() === 'idle') {
+        <p class="reg__muted">Cargando…</p>
+      }
+
+      @if (loadingState() === 'error') {
+        <p class="reg__msg reg__msg--err">No se pudieron cargar los tipos.</p>
+      }
+
+      @if (loadingState() === 'success') {
+        @if (tipos().length === 0) {
+          <p class="reg__muted">Aún no hay tipos de negocio.</p>
+        } @else {
+          <ul class="reg__list">
+            @for (t of tipos(); track t.id_tipo_negocio) {
+              <li class="reg__list-item">
+                <span
+                  class="reg__preview-icon"
+                  [style.background]="colorDe(t) + '22'"
+                  [style.color]="colorDe(t)"
+                >
+                  <lucide-icon [name]="iconoDe(t)" [size]="20" aria-hidden="true" />
+                </span>
+                <div class="reg__list-text">
+                  <span class="reg__list-name">{{ t.nombre }}</span>
+                  @if (t.descripcion) {
+                    <span class="reg__list-desc">{{ t.descripcion }}</span>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+
+  </div>
+</div>

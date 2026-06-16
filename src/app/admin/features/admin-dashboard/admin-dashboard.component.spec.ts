@@ -1,3 +1,4 @@
+import { vi }              from 'vitest';
 import { TestBed }         from '@angular/core/testing';
 import { provideRouter }   from '@angular/router';
 import { signal }          from '@angular/core';
@@ -11,10 +12,8 @@ import {
 
 import { AdminDashboardComponent } from './admin-dashboard.component';
 import { AuthService }             from '../../../auth/data-access/auth.service';
-import { ThemeService }            from '../../../core/theme/theme.service';
-import { AdminService }            from '../../data-access/admin.service';
 import { User }                    from '../../../auth/models/auth.models';
-import { TipoNegocioConRoles }     from '../../models/admin.models';
+import { Negocio, TipoNegocio }    from '../../models/admin.models';
 import { environment }             from '../../../../environments/environment';
 
 // ---------------------------------------------------------------------------
@@ -33,17 +32,14 @@ function buildUser(overrides: Partial<User> = {}): User {
   };
 }
 
-const TIPOS_MOCK: TipoNegocioConRoles[] = [
-  {
-    id_tipo_negocio: 1, nombre: 'RESTAURANTE', descripcion: 'Restaurante',
-    estado: 'A', fecha_creacion: '2026-02-27', fecha_actualizacion: '2026-02-27',
-    roles: [{ id_rol: 2, descripcion: 'ADMINISTRADOR RESTAURANTE', estado: 'A', id_tipo_negocio: 1, fecha_creacion: '2026-02-27', fecha_actualizacion: '2026-02-27' }],
-  },
-  {
-    id_tipo_negocio: 2, nombre: 'PARQUEADERO', descripcion: 'Parqueadero',
-    estado: 'A', fecha_creacion: '2026-02-27', fecha_actualizacion: '2026-02-27',
-    roles: [{ id_rol: 4, descripcion: 'ADMINISTRADOR PARQUEADERO', estado: 'A', id_tipo_negocio: 2, fecha_creacion: '2026-02-27', fecha_actualizacion: '2026-02-27' }],
-  },
+const TIPOS_MOCK: TipoNegocio[] = [
+  { id_tipo_negocio: 1, nombre: 'RESTAURANTE', descripcion: 'Restaurante', estado: 'A', fecha_creacion: '2026-02-27', fecha_actualizacion: '2026-02-27' },
+  { id_tipo_negocio: 2, nombre: 'PARQUEADERO', descripcion: 'Parqueadero', estado: 'A', fecha_creacion: '2026-02-27', fecha_actualizacion: '2026-02-27' },
+];
+
+const NEGOCIOS_MOCK: Negocio[] = [
+  { id_negocio: 10, nombre: 'La Parrilla de Juan', nit: '900', email_contacto: 'j@x.com', telefono: '300', id_tipo_negocio: 1, id_paleta: null, estado: 'A', fecha_registro: '2026-02-27' },
+  { id_negocio: 11, nombre: 'Parqueadero Centro',  nit: null,  email_contacto: null,      telefono: null,  id_tipo_negocio: 2, id_paleta: null, estado: 'A', fecha_registro: '2026-02-27' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -57,12 +53,8 @@ describe('AdminDashboardComponent', () => {
     const authMock = {
       currentUser:     signal(user),
       isAuthenticated: signal(user !== null),
-      logout:          jasmine.createSpy('logout'),
-    };
-
-    const themeMock = {
-      resolvedTheme: signal<'light' | 'dark'>('light'),
-      toggleTheme:   jasmine.createSpy('toggleTheme'),
+      getAccessToken:  vi.fn().mockReturnValue('tok'),
+      logout:          vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -72,125 +64,72 @@ describe('AdminDashboardComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authMock },
-        { provide: ThemeService, useValue: themeMock },
       ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
     const fixture = TestBed.createComponent(AdminDashboardComponent);
     fixture.detectChanges();
-    return { fixture, authMock, themeMock };
+    return { fixture, authMock };
+  }
+
+  /** Resuelve las dos peticiones que dispara loadData(). */
+  function flushData(negocios: Negocio[], tipos: TipoNegocio[]) {
+    httpMock.expectOne(`${environment.apiUrl}/mis-negocios`)
+      .flush({ success: true, data: negocios });
+    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`)
+      .flush({ success: true, data: tipos });
   }
 
   afterEach(() => {
     httpMock?.verify();
   });
 
-  // ── Cargando / skeleton ──────────────────────────────────
-
   it('should show skeleton while loading', async () => {
-    const superAdmin = buildUser({
-      roles_globales: [{ id_rol: 1, descripcion: 'SUPER ADMINISTRADOR' }],
-    });
-    const { fixture } = await createComponent(superAdmin);
+    const { fixture } = await createComponent(buildUser());
 
     const skeletons = fixture.nativeElement.querySelectorAll('.skeleton-card');
     expect(skeletons.length).toBeGreaterThan(0);
 
-    // Limpiar petición pendiente
-    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`).flush({ success: true, data: [] });
-    httpMock.expectOne(`${environment.apiUrl}/roles`).flush({ success: true, data: [] });
+    flushData([], []);
   });
 
-  // ── Super Admin ve todos los tipos ──────────────────────
-
-  it('should show all tipos when user is SUPER ADMINISTRADOR', async () => {
-    const superAdmin = buildUser({
-      roles_globales: [{ id_rol: 1, descripcion: 'SUPER ADMINISTRADOR' }],
-    });
-    const { fixture } = await createComponent(superAdmin);
-
-    // Resolver la petición HTTP
-    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`)
-      .flush({ success: true, data: TIPOS_MOCK.map(({ roles: _, ...t }) => t) });
-    httpMock.expectOne(`${environment.apiUrl}/roles`)
-      .flush({ success: true, data: TIPOS_MOCK.flatMap((t) => t.roles) });
-
+  it('should list the active businesses with their type', async () => {
+    const { fixture } = await createComponent(buildUser());
+    flushData(NEGOCIOS_MOCK, TIPOS_MOCK);
     fixture.detectChanges();
 
-    const cards = fixture.nativeElement.querySelectorAll('app-negocio-card');
+    const cards = fixture.nativeElement.querySelectorAll('.neg-card');
     expect(cards.length).toBe(2);
+
+    const firstName = fixture.nativeElement.querySelector('.neg-card__name')?.textContent ?? '';
+    expect(firstName).toContain('La Parrilla de Juan');
+
+    const firstType = fixture.nativeElement.querySelector('.neg-card__type')?.textContent ?? '';
+    expect(firstType.toLowerCase()).toContain('restaurante');
   });
 
-  // ── Admin de tenant ve solo su tipo ─────────────────────
-
-  it('should show only permitted tipo for tenant admin', async () => {
-    const tenantAdmin = buildUser({
-      negocios: [{
-        id_negocio: 1,
-        nombre: 'Mi Restaurante',
-        roles: [{ id_rol: 2, descripcion: 'ADMINISTRADOR RESTAURANTE' }],
-      }],
-    });
-    const { fixture } = await createComponent(tenantAdmin);
-
-    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`)
-      .flush({ success: true, data: TIPOS_MOCK.map(({ roles: _, ...t }) => t) });
-    httpMock.expectOne(`${environment.apiUrl}/roles`)
-      .flush({ success: true, data: TIPOS_MOCK.flatMap((t) => t.roles) });
-
+  it('should show empty state when there are no businesses', async () => {
+    const { fixture } = await createComponent(buildUser());
+    flushData([], TIPOS_MOCK);
     fixture.detectChanges();
 
-    const cards = fixture.nativeElement.querySelectorAll('app-negocio-card');
-    expect(cards.length).toBe(1);
+    const empty = fixture.nativeElement.querySelector('.dashboard__state');
+    expect(empty).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('.neg-card').length).toBe(0);
   });
 
-  // ── Estado de error ──────────────────────────────────────
+  it('should show error state when the request fails', async () => {
+    const { fixture } = await createComponent(buildUser());
 
-  it('should show error state when request fails', async () => {
-    const superAdmin = buildUser({
-      roles_globales: [{ id_rol: 1, descripcion: 'SUPER ADMINISTRADOR' }],
-    });
-    const { fixture } = await createComponent(superAdmin);
-
-    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`).error(new ErrorEvent('Network error'));
-    httpMock.expectOne(`${environment.apiUrl}/roles`).flush({ success: true, data: [] });
+    httpMock.expectOne(`${environment.apiUrl}/mis-negocios`)
+      .error(new ErrorEvent('Network error'));
+    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`)
+      .flush({ success: true, data: [] });
 
     fixture.detectChanges();
 
     const errorState = fixture.nativeElement.querySelector('.dashboard__state--error');
     expect(errorState).toBeTruthy();
-  });
-
-  // ── Toggle de tema ───────────────────────────────────────
-
-  it('should call toggleTheme when theme button clicked', async () => {
-    const superAdmin = buildUser({
-      roles_globales: [{ id_rol: 1, descripcion: 'SUPER ADMINISTRADOR' }],
-    });
-    const { fixture, themeMock } = await createComponent(superAdmin);
-
-    const btn = fixture.nativeElement.querySelector('.theme-toggle') as HTMLElement;
-    btn.click();
-    expect(themeMock.toggleTheme).toHaveBeenCalled();
-
-    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`).flush({ success: true, data: [] });
-    httpMock.expectOne(`${environment.apiUrl}/roles`).flush({ success: true, data: [] });
-  });
-
-  // ── Logout ───────────────────────────────────────────────
-
-  it('should call logout when logout button clicked', async () => {
-    const superAdmin = buildUser({
-      roles_globales: [{ id_rol: 1, descripcion: 'SUPER ADMINISTRADOR' }],
-    });
-    const { fixture, authMock } = await createComponent(superAdmin);
-
-    const btn = fixture.nativeElement.querySelector('.dashboard__logout-btn') as HTMLElement;
-    btn.click();
-    expect(authMock.logout).toHaveBeenCalled();
-
-    httpMock.expectOne(`${environment.apiUrl}/tipos-negocio`).flush({ success: true, data: [] });
-    httpMock.expectOne(`${environment.apiUrl}/roles`).flush({ success: true, data: [] });
   });
 });

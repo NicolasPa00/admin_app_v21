@@ -1,0 +1,131 @@
+<!-- ============================================================
+  AdminLayoutComponent — Shell: sidebar + header + contenido
+  ============================================================ -->
+<div
+  class="adm"
+  [class.adm--collapsed]="collapsed()"
+  [class.adm--mobile-open]="mobileOpen()"
+>
+  <!-- Overlay (solo móvil, al abrir el drawer) -->
+  <div class="adm__overlay" (click)="closeMobile()" aria-hidden="true"></div>
+
+  <!-- ── Sidebar ─────────────────────────────────────────────── -->
+  <aside class="adm__sidebar" aria-label="Navegación principal">
+    <div class="adm__sidebar-head">
+      <a
+        routerLink="/admin/dashboard"
+        class="adm__brand"
+        (click)="closeMobile()"
+        aria-label="Ir al inicio"
+      >
+        <img
+          class="adm__logo"
+          [src]="assets.getAssetPath('escalapplogo.png')"
+          alt="EscalApp"
+        />
+      </a>
+
+      <button
+        type="button"
+        class="adm__collapse-btn"
+        (click)="toggleCollapsed()"
+        [attr.aria-label]="collapsed() ? 'Expandir menú' : 'Colapsar menú'"
+        [attr.aria-pressed]="collapsed()"
+      >
+        @if (collapsed()) {
+          <lucide-icon name="panel-left" [size]="18" aria-hidden="true" />
+        } @else {
+          <lucide-icon name="panel-left-close" [size]="18" aria-hidden="true" />
+        }
+      </button>
+    </div>
+
+    <nav class="adm__nav" aria-label="Secciones">
+      @for (item of visibleNavItems(); track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="is-active"
+          class="adm__nav-item"
+          [title]="item.label"
+          (click)="closeMobile()"
+        >
+          <lucide-icon [name]="item.icon" [size]="20" aria-hidden="true" />
+          <span class="adm__nav-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="adm__sidebar-foot">
+      <button
+        type="button"
+        class="adm__nav-item adm__nav-item--logout"
+        (click)="logout()"
+        title="Cerrar sesión"
+      >
+        <lucide-icon name="log-out" [size]="20" aria-hidden="true" />
+        <span class="adm__nav-label">Cerrar sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Columna principal ───────────────────────────────────── -->
+  <div class="adm__main">
+    <!-- Header -->
+    <header class="adm__header">
+      <div class="adm__header-left">
+        <button
+          type="button"
+          class="topbar-icon-btn adm__hamburger"
+          (click)="toggleMobile()"
+          aria-label="Abrir menú"
+        >
+          <lucide-icon name="menu" [size]="20" aria-hidden="true" />
+        </button>
+
+        <nav class="adm__breadcrumb" aria-label="Ruta de navegación">
+          <span class="adm__breadcrumb-root">Panel</span>
+          <lucide-icon
+            name="chevron-right"
+            [size]="15"
+            class="adm__breadcrumb-sep"
+            aria-hidden="true"
+          />
+          <span class="adm__breadcrumb-current">{{ pageTitle() }}</span>
+        </nav>
+      </div>
+
+      <div class="adm__header-right">
+        <!-- Toggle de tema -->
+        <button
+          type="button"
+          class="topbar-icon-btn"
+          (click)="toggleTheme()"
+          [attr.aria-label]="isDark() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+          [attr.aria-pressed]="isDark()"
+        >
+          @if (isDark()) {
+            <lucide-icon name="sun" [size]="18" aria-hidden="true" />
+          } @else {
+            <lucide-icon name="moon" [size]="18" aria-hidden="true" />
+          }
+        </button>
+
+        <!-- Notificaciones -->
+        <app-notificaciones-bell />
+
+        <!-- Identidad del usuario (navegación y logout viven en el sidebar) -->
+        @if (user()) {
+          <div class="adm__user" aria-label="Sesión activa">
+            <span class="adm__avatar" aria-hidden="true">{{ initials() }}</span>
+            <span class="adm__user-name">{{ displayName() }}</span>
+          </div>
+        }
+      </div>
+    </header>
+
+    <!-- Contenido -->
+    <main class="adm__content" id="main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

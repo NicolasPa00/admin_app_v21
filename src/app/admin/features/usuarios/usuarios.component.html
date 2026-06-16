@@ -1,0 +1,363 @@
+<!-- ============================================================
+  UsuariosComponent — Usuarios del sistema (Super Admin)
+  ============================================================ -->
+<div class="usr">
+
+  <!-- Encabezado -->
+  <header class="usr__head">
+    <div>
+      <h1 class="usr__title">Usuarios del sistema</h1>
+      <p class="usr__subtitle">Administradores de negocios registrados en la plataforma</p>
+    </div>
+    @if (loadingState() === 'success') {
+      <span class="usr__count">
+        {{ filtered().length }} de {{ administradores().length }}
+      </span>
+    }
+  </header>
+
+  <!-- Filtros -->
+  <div class="usr__filters">
+    <div class="usr__search">
+      <lucide-icon name="search" [size]="18" class="usr__search-icon" aria-hidden="true" />
+      <input
+        type="search"
+        class="input usr__search-input"
+        placeholder="Buscar por nombre, email o identificación…"
+        [value]="search()"
+        (input)="onSearch($event)"
+        aria-label="Buscar usuarios"
+      />
+    </div>
+    <select
+      class="input usr__select"
+      [value]="estadoFilter()"
+      (change)="onEstado($event)"
+      aria-label="Filtrar por estado"
+    >
+      <option value="A">Activos</option>
+      <option value="I">Suspendidos</option>
+      <option value="ALL">Todos</option>
+    </select>
+    <select
+      class="input usr__select"
+      [value]="planFilter()"
+      (change)="onPlanFilter($event)"
+      aria-label="Filtrar por plan"
+    >
+      <option value="ALL">Todos los planes</option>
+      <option value="ACTIVO">Con plan vigente</option>
+      <option value="SIN">Sin plan</option>
+      @for (nombre of planNombres(); track nombre) {
+        <option [value]="nombre">{{ nombre }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Error de acción puntual -->
+  @if (actionError()) {
+    <div class="usr__alert" role="alert">
+      <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+      <span>{{ actionError() }}</span>
+    </div>
+  }
+
+  <!-- ── ESTADO: Cargando ── -->
+  @if (loadingState() === 'loading' || loadingState() === 'idle') {
+    <div class="usr__skeleton" aria-busy="true">
+      @for (_ of [1,2,3,4,5]; track $index) {
+        <div class="usr__skeleton-row"></div>
+      }
+    </div>
+  }
+
+  <!-- ── ESTADO: Error ── -->
+  @if (loadingState() === 'error') {
+    <div class="usr__state usr__state--error" role="alert">
+      <lucide-icon name="alert-circle" [size]="40" aria-hidden="true" />
+      <p class="usr__state-title">No se pudieron cargar los usuarios</p>
+      <button type="button" class="btn btn--primary" (click)="retry()">Reintentar</button>
+    </div>
+  }
+
+  <!-- ── ESTADO: Vacío ── -->
+  @if (loadingState() === 'success' && filtered().length === 0) {
+    <div class="usr__state" role="status">
+      <lucide-icon name="users" [size]="40" aria-hidden="true" />
+      <p class="usr__state-title">Sin usuarios para mostrar</p>
+      <p class="usr__state-desc">Ajusta la búsqueda o el filtro de estado.</p>
+    </div>
+  }
+
+  <!-- ── ESTADO: Tabla ── -->
+  @if (loadingState() === 'success' && filtered().length > 0) {
+    <div class="usr__table-wrap">
+      <table class="usr__table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th class="usr__col-email">Email</th>
+            <th>Negocios que administra</th>
+            <th>Plan</th>
+            <th>Estado</th>
+            <th class="usr__col-date">Inicio plan</th>
+            <th class="usr__col-actions">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of filtered(); track u.id_usuario) {
+            <tr>
+              <!-- Usuario -->
+              <td>
+                <div class="usr__user-cell">
+                  <span class="usr__avatar" aria-hidden="true">{{ initials(u) }}</span>
+                  <div class="usr__user-text">
+                    <span class="usr__name">
+                      {{ u.nombre_completo }}
+                      @if (u.es_admin_principal) {
+                        <lucide-icon name="shield-check" [size]="13" class="usr__principal"
+                          aria-label="Administrador principal" />
+                      }
+                    </span>
+                    <span class="usr__id">CC {{ u.num_identificacion }}</span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Email -->
+              <td class="usr__col-email usr__email">{{ u.email }}</td>
+
+              <!-- Negocios -->
+              <td>
+                <div class="usr__negocios">
+                  @for (negocio of negociosAdministrados(u); track negocio) {
+                    <span class="es-badge es-badge--primary">{{ negocio }}</span>
+                  } @empty {
+                    <span class="usr__muted">—</span>
+                  }
+                </div>
+              </td>
+
+              <!-- Plan -->
+              <td>
+                @if (planPrincipal(u); as p) {
+                  <span
+                    class="es-badge"
+                    [class.es-badge--success]="planTone(p) === 'success'"
+                    [class.es-badge--warning]="planTone(p) === 'warning'"
+                    [class.es-badge--error]="planTone(p) === 'error'"
+                  >{{ p.nombre }}</span>
+                  @if (planesConDatos(u) > 1) {
+                    <span class="usr__muted usr__plan-extra">+{{ planesConDatos(u) - 1 }}</span>
+                  }
+                } @else {
+                  <span class="usr__muted">Sin plan</span>
+                }
+              </td>
+
+              <!-- Estado -->
+              <td>
+                <span
+                  class="es-badge"
+                  [class.es-badge--success]="u.estado === 'A'"
+                  [class.es-badge--error]="u.estado === 'I'"
+                >
+                  {{ u.estado === 'A' ? 'Activo' : 'Suspendido' }}
+                </span>
+              </td>
+
+              <!-- Inicio del plan -->
+              <td class="usr__col-date usr__date">{{ planInicioTexto(u) }}</td>
+
+              <!-- Acciones -->
+              <td>
+                <div class="usr__actions">
+                  <button
+                    type="button"
+                    class="usr__icon-btn"
+                    (click)="openDetails(u)"
+                    aria-label="Ver detalles"
+                    title="Ver detalles"
+                  >
+                    <lucide-icon name="eye" [size]="17" aria-hidden="true" />
+                  </button>
+
+                  <button
+                    type="button"
+                    class="usr__icon-btn"
+                    [class.usr__icon-btn--danger]="u.estado === 'A'"
+                    [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
+                    (click)="toggleEstado(u)"
+                    [title]="u.es_admin_principal
+                      ? 'No se puede suspender al administrador principal'
+                      : (u.estado === 'A' ? 'Suspender' : 'Reactivar')"
+                    [attr.aria-label]="u.estado === 'A' ? 'Suspender usuario' : 'Reactivar usuario'"
+                  >
+                    @if (u.estado === 'A') {
+                      <lucide-icon name="user-x" [size]="17" aria-hidden="true" />
+                    } @else {
+                      <lucide-icon name="user-check" [size]="17" aria-hidden="true" />
+                    }
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
+
+<!-- ════════════ Modal de detalles ════════════ -->
+@if (selected(); as u) {
+  <div class="usr-modal" (click)="closeDetails()">
+    <div
+      class="usr-modal__card"
+      (click)="$event.stopPropagation()"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="usr-modal-title"
+    >
+      <header class="usr-modal__head">
+        <div class="usr__user-cell">
+          <span class="usr__avatar usr__avatar--lg" aria-hidden="true">{{ initials(u) }}</span>
+          <div class="usr__user-text">
+            <h2 id="usr-modal-title" class="usr-modal__name">{{ u.nombre_completo }}</h2>
+            <span class="usr__id">CC {{ u.num_identificacion }}</span>
+          </div>
+        </div>
+        <button type="button" class="usr__icon-btn" (click)="closeDetails()" aria-label="Cerrar">
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+
+      <dl class="usr-modal__grid">
+        <div class="usr-modal__row">
+          <dt>Email</dt>
+          <dd>{{ u.email }}</dd>
+        </div>
+        <div class="usr-modal__row">
+          <dt>Estado</dt>
+          <dd>
+            <span
+              class="es-badge"
+              [class.es-badge--success]="u.estado === 'A'"
+              [class.es-badge--error]="u.estado === 'I'"
+            >
+              {{ u.estado === 'A' ? 'Activo' : 'Suspendido' }}
+            </span>
+          </dd>
+        </div>
+        <div class="usr-modal__row">
+          <dt>Registrado</dt>
+          <dd>{{ formatDate(u.fecha_creacion) }}</dd>
+        </div>
+        <div class="usr-modal__row">
+          <dt>Registrado</dt>
+          <dd>{{ formatDate(u.fecha_creacion) }}</dd>
+        </div>
+      </dl>
+
+      <section class="usr-modal__section">
+        <h3 class="usr-modal__section-title">Negocios y plan</h3>
+        <ul class="usr-modal__negocios">
+          @for (np of u.planes; track np.id_negocio) {
+            <li class="usr-modal__neg">
+              <div class="usr-modal__neg-head">
+                <lucide-icon name="building-2" [size]="15" aria-hidden="true" />
+                <span class="usr-modal__role-neg">{{ np.negocio_nombre ?? 'Sin negocio' }}</span>
+                @if (np.plan; as p) {
+                  <span
+                    class="es-badge usr-modal__neg-badge"
+                    [class.es-badge--success]="planTone(p) === 'success'"
+                    [class.es-badge--warning]="planTone(p) === 'warning'"
+                    [class.es-badge--error]="planTone(p) === 'error'"
+                  >{{ p.nombre }}</span>
+                } @else {
+                  <span class="usr__muted usr-modal__neg-badge">Sin plan</span>
+                }
+              </div>
+
+              @if (np.plan?.fecha_fin) {
+                <span class="usr-modal__neg-meta">
+                  Vence {{ formatDate(np.plan!.fecha_fin) }}
+                  @if (np.plan!.dias_restantes !== null) {
+                    ({{ np.plan!.dias_restantes }} días)
+                  }
+                </span>
+              }
+
+              <div class="usr-modal__plan-edit">
+                <div class="usr-modal__plan-field usr-modal__plan-field--full">
+                  <label class="usr-modal__plan-label">Plan</label>
+                  <select
+                    class="input"
+                    (change)="onPlanField(np.id_negocio, 'id_plan', $event)"
+                    aria-label="Plan"
+                  >
+                    <option value="" disabled [selected]="!planEdit()[np.id_negocio]?.id_plan">Selecciona…</option>
+                    @for (pl of planesCatalogo(); track pl.id_plan) {
+                      <option [value]="pl.id_plan" [selected]="esPlanSel(np.id_negocio, pl.id_plan)">
+                        {{ pl.nombre }} — {{ formatPrecio(pl) }}
+                      </option>
+                    }
+                  </select>
+                </div>
+                <div class="usr-modal__plan-field">
+                  <label class="usr-modal__plan-label">Inicio</label>
+                  <input
+                    type="date"
+                    class="input"
+                    [value]="planEdit()[np.id_negocio]?.inicio ?? ''"
+                    (change)="onPlanField(np.id_negocio, 'inicio', $event)"
+                  />
+                </div>
+                <div class="usr-modal__plan-field">
+                  <label class="usr-modal__plan-label">Fin</label>
+                  <input
+                    type="date"
+                    class="input"
+                    [value]="planEdit()[np.id_negocio]?.fin ?? ''"
+                    (change)="onPlanField(np.id_negocio, 'fin', $event)"
+                  />
+                </div>
+                <div class="usr-modal__plan-field usr-modal__plan-field--full">
+                  <button
+                    type="button"
+                    class="btn btn--primary usr-modal__apply"
+                    [disabled]="!planEdit()[np.id_negocio]?.id_plan || applyingNegocio() === np.id_negocio"
+                    (click)="aplicarPlan(np.id_negocio)"
+                  >
+                    <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
+                    {{ applyingNegocio() === np.id_negocio ? 'Aplicando…' : 'Aplicar plan' }}
+                  </button>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="usr__muted">Sin negocios administrados.</li>
+          }
+        </ul>
+      </section>
+
+      <footer class="usr-modal__foot">
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
+          (click)="toggleEstado(u)"
+        >
+          @if (u.estado === 'A') {
+            <lucide-icon name="user-x" [size]="16" aria-hidden="true" />
+            Suspender
+          } @else {
+            <lucide-icon name="user-check" [size]="16" aria-hidden="true" />
+            Reactivar
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}

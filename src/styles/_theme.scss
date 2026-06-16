@@ -282,6 +282,53 @@ body {
   }
 }
 
+// --- Botón-ícono de barra superior (ghost sobre superficie clara) ---
+// Global para que la campana de notificaciones y el header del shell
+// compartan exactamente el mismo estilo (la encapsulación de Angular
+// impide que un componente padre estilice el botón interno del hijo).
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  height: 40px;
+  min-width: 40px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover {
+    background-color: var(--color-surface-hover);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &--primary {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border-color: var(--color-primary);
+
+    &:hover {
+      background-color: var(--color-primary-hover);
+      color: var(--color-on-primary);
+      border-color: var(--color-primary-hover);
+    }
+  }
+}
+
 // --- Badge ---
 .es-badge {
   display: inline-flex;

@@ -1,0 +1,263 @@
+// ============================================================
+// RegistrarComponent — Tipos de negocio (Super Admin)
+// ============================================================
+
+.reg {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.reg__head {
+  margin-bottom: var(--spacing-xl);
+}
+
+.reg__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.reg__subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+  max-width: 60ch;
+}
+
+// ── Layout dos columnas ─────────────────────────────────────
+.reg__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--spacing-xl);
+  align-items: start;
+
+  @media (max-width: 860px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reg__panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.reg__panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--spacing-lg);
+
+  lucide-icon { color: var(--color-primary); }
+}
+
+// ── Campos ──────────────────────────────────────────────────
+.reg__field {
+  margin-bottom: var(--spacing-md);
+}
+
+.reg__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+
+  lucide-icon { color: var(--color-text-muted); }
+}
+
+.reg__textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: var(--font-family);
+}
+
+// ── Selector de íconos ──────────────────────────────────────
+.reg__icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: var(--spacing-xs);
+}
+
+.reg__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &.is-selected {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: rgba(var(--color-primary-rgb), 0.1);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+// ── Selector de color ───────────────────────────────────────
+.reg__color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.reg__color {
+  width: 48px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.reg__color-hex {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+// ── Preview ─────────────────────────────────────────────────
+.reg__preview {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.reg__preview-label {
+  display: block;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-sm);
+}
+
+.reg__preview-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.reg__preview-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.reg__preview-name {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+// ── Mensaje ─────────────────────────────────────────────────
+.reg__msg {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+
+  &--ok {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border: 1px solid var(--color-success);
+  }
+  &--err {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+    border: 1px solid var(--color-error);
+  }
+}
+
+.reg__submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+// ── Listado ─────────────────────────────────────────────────
+.reg__muted {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.reg__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.reg__list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.reg__list-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reg__list-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.reg__list-desc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+// ── Spinner ─────────────────────────────────────────────────
+.reg__spin {
+  animation: reg-spin 0.8s linear infinite;
+}
+
+@keyframes reg-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg__spin { animation: none; }
+}

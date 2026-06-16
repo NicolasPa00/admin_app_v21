@@ -11,6 +11,10 @@ import {
   RolesResponse,
   Negocio,
   NegociosResponse,
+  CreateTipoNegocioRequest,
+  TipoNegocioResponse,
+  MetricasResumen,
+  MetricasResumenResponse,
 } from '../models/admin.models';
 
 // ============================================================
@@ -102,6 +106,26 @@ export class AdminService {
     return this.http
       .get<RolesResponse>(`${this.API}/roles/lista`)
       .pipe(map((res) => res.data ?? []));
+  }
+
+  /**
+   * Resumen de métricas cross-vertical de la plataforma (solo Super Admin).
+   * GET /admin/metricas/resumen
+   */
+  getMetricasResumen(): Observable<MetricasResumen | null> {
+    return this.http
+      .get<MetricasResumenResponse>(`${this.API}/metricas/resumen`)
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Crea un nuevo tipo de negocio.
+   * POST /admin/tipos-negocio
+   */
+  createTipoNegocio(data: CreateTipoNegocioRequest): Observable<TipoNegocio | null> {
+    return this.http
+      .post<TipoNegocioResponse>(`${this.API}/tipos-negocio`, data)
+      .pipe(map((res) => res.data ?? null));
   }
 
   /**

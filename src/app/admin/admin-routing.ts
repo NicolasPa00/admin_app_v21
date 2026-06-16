@@ -15,36 +15,73 @@ import { authGuard } from '../auth/guards/auth.guard';
  */
 export const adminRoutes: Routes = [
   {
+    // Shell con sidebar + header; envuelve todas las vistas de /admin.
     path: '',
-    redirectTo: 'dashboard',
-    pathMatch: 'full',
-  },
-  {
-    path: 'dashboard',
     loadComponent: () =>
-      import('./features/admin-dashboard/admin-dashboard.component').then(
-        (m) => m.AdminDashboardComponent,
+      import('./layout/admin-layout.component').then(
+        (m) => m.AdminLayoutComponent,
       ),
-    canActivate: [authGuard()],
-    title: 'Panel de administración',
-  },
-  {
-    path: 'configuracion',
-    loadComponent: () =>
-      import('./features/configuracion/configuracion.component').then(
-        (m) => m.ConfiguracionComponent,
-      ),
-    canActivate: [authGuard()],
-    title: 'Configuración',
-  },
-  {
-    path: 'tipos-negocio/:tipoId/roles',
-    // TODO: Reemplazar con el componente real de detalle de roles
-    loadComponent: () =>
-      import('./features/admin-dashboard/admin-dashboard.component').then(
-        (m) => m.AdminDashboardComponent,
-      ),
-    canActivate: [adminGuard()],
-    title: 'Roles del tipo de negocio',
+    children: [
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/admin-dashboard/admin-dashboard.component').then(
+            (m) => m.AdminDashboardComponent,
+          ),
+        canActivate: [authGuard()],
+        title: 'Panel de administración',
+      },
+      {
+        path: 'usuarios',
+        loadComponent: () =>
+          import('./features/usuarios/usuarios.component').then(
+            (m) => m.UsuariosComponent,
+          ),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Usuarios del sistema',
+      },
+      {
+        path: 'negocios',
+        loadComponent: () =>
+          import('./features/negocios/negocios.component').then(
+            (m) => m.NegociosComponent,
+          ),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Negocios',
+      },
+      {
+        path: 'registrar',
+        loadComponent: () =>
+          import('./features/registrar/registrar.component').then(
+            (m) => m.RegistrarComponent,
+          ),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Tipos de negocio',
+      },
+      {
+        path: 'configuracion',
+        loadComponent: () =>
+          import('./features/configuracion/configuracion.component').then(
+            (m) => m.ConfiguracionComponent,
+          ),
+        canActivate: [authGuard()],
+        title: 'Configuración',
+      },
+      {
+        path: 'tipos-negocio/:tipoId/roles',
+        // TODO: Reemplazar con el componente real de detalle de roles
+        loadComponent: () =>
+          import('./features/admin-dashboard/admin-dashboard.component').then(
+            (m) => m.AdminDashboardComponent,
+          ),
+        canActivate: [adminGuard()],
+        title: 'Roles del tipo de negocio',
+      },
+    ],
   },
 ];

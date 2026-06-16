@@ -1,0 +1,368 @@
+// ============================================================
+// AdminLayoutComponent — Estilos del shell
+// Sistema azul corporativo (--color-*). Sidebar + header + main.
+// ============================================================
+
+:host {
+  --sb-w: 256px;
+  --sb-w-collapsed: 76px;
+  --hdr-h: 64px;
+  display: block;
+}
+
+.adm {
+  display: flex;
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+// ── Sidebar ─────────────────────────────────────────────────
+.adm__sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  width: var(--sb-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  transition: width var(--transition-normal);
+  z-index: 50;
+}
+
+.adm--collapsed .adm__sidebar {
+  width: var(--sb-w-collapsed);
+}
+
+.adm__sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  height: var(--hdr-h);
+  padding: 0 var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.adm__brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.adm__logo {
+  height: 34px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+
+  :root[data-theme='dark'] & {
+    filter: brightness(0) invert(1);
+  }
+}
+
+.adm__collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+// ── Navegación ──────────────────────────────────────────────
+.adm__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-md) var(--spacing-sm);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.adm__sidebar-foot {
+  padding: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.adm__nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast);
+
+  lucide-icon {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  // Item activo: fondo suave + texto primario + acento lateral
+  &.is-active {
+    background: rgba(var(--color-primary-rgb), 0.1);
+    color: var(--color-primary);
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 60%;
+      border-radius: var(--radius-full);
+      background: var(--color-primary);
+    }
+  }
+
+  &--logout:hover {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+  }
+}
+
+// ── Estado colapsado (desktop): solo íconos ─────────────────
+// El logo se oculta y queda únicamente el botón de colapsar centrado,
+// que ahora actúa como botón de "expandir" (icono panel-left).
+.adm--collapsed {
+  .adm__brand {
+    display: none;
+  }
+  .adm__sidebar-head {
+    justify-content: center;
+    padding: 0 var(--spacing-sm);
+  }
+  .adm__nav-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .adm__nav-label {
+    display: none;
+  }
+}
+
+// ── Columna principal ───────────────────────────────────────
+.adm__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Header ──────────────────────────────────────────────────
+.adm__header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--hdr-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-xl);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+
+  @media (max-width: 600px) {
+    padding: 0 var(--spacing-md);
+  }
+}
+
+.adm__header-left,
+.adm__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.adm__hamburger {
+  display: none;
+}
+
+// ── Breadcrumb ──────────────────────────────────────────────
+.adm__breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 0;
+}
+
+.adm__breadcrumb-root {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+
+  @media (max-width: 480px) {
+    display: none;
+  }
+}
+
+.adm__breadcrumb-sep {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
+}
+
+.adm__breadcrumb-current {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ── Identidad del usuario (chip estático) ───────────────────
+.adm__user {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  height: 40px;
+  padding: 0 var(--spacing-sm) 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  max-width: 220px;
+}
+
+.adm__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.adm__user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 130px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+
+  @media (max-width: 600px) {
+    display: none;
+  }
+}
+
+// ── Contenido ───────────────────────────────────────────────
+.adm__content {
+  flex: 1;
+  padding: var(--spacing-xl);
+
+  @media (max-width: 600px) {
+    padding: var(--spacing-md);
+  }
+}
+
+// ── Overlay (móvil) ─────────────────────────────────────────
+.adm__overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 45;
+}
+
+// ── Responsive: sidebar como drawer off-canvas < 1024px ─────
+@media (max-width: 1024px) {
+  .adm__sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sb-w);
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    box-shadow: var(--shadow-lg);
+  }
+
+  // En modo drawer nunca se colapsa a riel: siempre ancho completo
+  .adm--collapsed .adm__sidebar {
+    width: var(--sb-w);
+  }
+  .adm--collapsed .adm__brand {
+    display: flex;
+  }
+  .adm--collapsed .adm__nav-item {
+    justify-content: flex-start;
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+  }
+  .adm--collapsed .adm__nav-label {
+    display: inline;
+  }
+
+  .adm--mobile-open .adm__sidebar {
+    transform: translateX(0);
+  }
+
+  .adm--mobile-open .adm__overlay {
+    display: block;
+  }
+
+  .adm__collapse-btn {
+    display: none;
+  }
+
+  .adm__hamburger {
+    display: inline-flex;
+  }
+}

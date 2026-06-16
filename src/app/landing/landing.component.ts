@@ -34,6 +34,9 @@ import {
   CheckCheck,
   Mail,
   Building2,
+  Facebook,
+  Instagram,
+  Youtube,
 } from 'lucide-angular';
 
 import { ThemeService } from '../core/theme/theme.service';
@@ -168,6 +171,18 @@ const STATS = [
   { valor: '∞',       etiqueta: 'Escalabilidad',       descripcion: 'Crece sin límites, la plataforma se adapta a ti.' },
 ];
 
+/* Verticales para el diagrama radial (orden = posición en el círculo) */
+const ECOSISTEMA = [
+  { icon: 'utensils-crossed', label: 'Restaurantes' },
+  { icon: 'car',              label: 'Parqueaderos' },
+  { icon: 'dumbbell',         label: 'Gimnasios' },
+  { icon: 'shopping-bag',     label: 'Tiendas' },
+  { icon: 'scissors',         label: 'Barberías' },
+  { icon: 'shopping-cart',    label: 'Supermercados' },
+  { icon: 'wrench',           label: 'Talleres' },
+  { icon: 'landmark',         label: 'Financieras' },
+];
+
 /* ──────────────────────────────────────────────────────────
    Tipo de paso del modal trial
    ────────────────────────────────────────────────────────── */
@@ -185,7 +200,7 @@ type ModalStep = 'form' | 'otp' | 'success';
         Sun, Moon, Rocket, Shield, Users, BarChart3,
         ChevronRight, Check, Star, Zap, Store, Smartphone,
         ArrowRight, Menu, X, Clock, Loader2, CheckCheck,
-        Mail, Building2,
+        Mail, Building2, Facebook, Instagram, Youtube,
         UtensilsCrossed, Car, Scissors, ShoppingCart, ShoppingBag,
         Wrench, PiggyBank, Landmark, Dumbbell,
       }),
@@ -203,6 +218,7 @@ export class LandingComponent {
   protected readonly tiposNegocioRegistro = TIPOS_NEGOCIO_REGISTRO;
   protected readonly features            = FEATURES;
   protected readonly stats               = STATS;
+  protected readonly ecosistema          = ECOSISTEMA;
   protected readonly mobileMenuOpen      = signal(false);
   protected readonly currentYear         = new Date().getFullYear();
 

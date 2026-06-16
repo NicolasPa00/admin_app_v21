@@ -6,11 +6,10 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
-  User, Lock, Building2, ChevronLeft, Save, Eye, EyeOff,
+  User, Lock, Building2, Save, Eye, EyeOff,
   CreditCard, Calendar, CheckCircle, XCircle, AlertCircle,
 } from 'lucide-angular';
 
@@ -29,7 +28,7 @@ type Section = 'personal' | 'password' | 'negocios';
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        User, Lock, Building2, ChevronLeft, Save, Eye, EyeOff,
+        User, Lock, Building2, Save, Eye, EyeOff,
         CreditCard, Calendar, CheckCircle, XCircle, AlertCircle,
       }),
     },
@@ -39,7 +38,6 @@ type Section = 'personal' | 'password' | 'negocios';
 })
 export class ConfiguracionComponent implements OnInit {
   private readonly auth   = inject(AuthService);
-  private readonly router = inject(Router);
 
   readonly user = this.auth.currentUser;
 
@@ -88,10 +86,6 @@ export class ConfiguracionComponent implements OnInit {
   setSection(s: Section): void {
     this.activeSection.set(s);
     if (s === 'negocios' && this.negocios().length === 0) this.loadNegocios();
-  }
-
-  goBack(): void {
-    this.router.navigate(['/admin/dashboard']);
   }
 
   // ── Guardar perfil ──────────────────────────────────────────
