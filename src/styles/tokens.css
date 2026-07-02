@@ -151,66 +151,74 @@
   --es-container-max: 1200px;
 }
 
-/* ── MODO OSCURO ── */
+/* ============================================================
+   MODO OSCURO — Deep Indigo
+   Evolución natural del modo claro: misma familia azul-índigo
+   del login (--lp-blue / --color-primary), superficies en capas
+   "deep indigo" y acentos aclarados un paso para que resalten
+   sobre fondo oscuro. Solo sobrescribe lo necesario; el modo
+   claro de :root permanece intacto. Contraste verificado AA+.
+   ============================================================ */
 :root[data-theme='dark'] {
-  --es-primary: var(--es-dark-accent);
-  --es-primary-rgb: var(--es-dark-accent-rgb);
-  --es-primary-hover: var(--es-dark-accent-hover);
-  --es-primary-light: #a78bfa;
+  /* ── Marca: azul índigo aclarado (mismo hue del login) ── */
+  --es-primary: #6366f1;
+  --es-primary-rgb: 99, 102, 241;
+  --es-primary-hover: #818cf8;
+  --es-primary-light: #a5b4fc;
 
-  --es-secondary: var(--es-dark-accent);
-  --es-secondary-dark: #312E81;
-  --es-secondary-darker: #1A1635;
-  --es-ink: #e0e0e0;
-  --es-ink-rgb: 224, 224, 224;
-  --es-on-primary: #1a1032;
+  --es-secondary: #6366f1;
+  --es-secondary-dark: #312e81;
+  --es-secondary-darker: #1a1635;
+  --es-ink: #f0eeff;             /* la "tinta" se invierte a casi-blanco */
+  --es-ink-rgb: 240, 238, 255;
+  --es-on-primary: #0f0a2a;      /* texto oscuro sobre botón claro */
 
-  /* Fondos: salto claro de luminosidad entre fondo y tarjeta */
-  --es-bg: #0B081A;
-  --es-bg-card: #1E1A3D;
-  --es-bg-elevated: #2A2454;
-  --es-surface-alt: #16132E;
+  /* ── Fondos: capas de profundidad índigo (base → card → elevado) ── */
+  --es-bg: #0b081a;
+  --es-bg-card: #1e1a3d;
+  --es-bg-elevated: #2a2454;
+  --es-surface-alt: #16132e;
 
-  /* ── Profundidad tonal: Blue/Purple depth ── */
-  --es-dark-surface-base: #09071A;
-  --es-dark-surface-elevated: #161330;
-  --es-dark-surface-deep: #1E1B42;
-  --es-dark-surface-border: #2D2952;
+  /* Sub-tokens de profundidad usados por la landing (alineados con la
+     escala del admin para que ambos compartan la misma base oscura) */
+  --es-dark-surface-base: #0b081a;
+  --es-dark-surface-elevated: #1e1a3d;
+  --es-dark-surface-deep: #2a2454;
+  --es-dark-surface-border: #3a3468;
+  --es-dark-text-primary: #f0eeff;
+  --es-dark-text-secondary: #b0aec8;
+  --es-dark-accent: #6366f1;
+  --es-dark-accent-rgb: 99, 102, 241;
+  --es-dark-accent-hover: #818cf8;
 
-  /* Texto modo oscuro: blanco cálido + azul-púrpura nítido */
-  --es-dark-text-primary: #F0EEFF;
-  --es-dark-text-secondary: #B0AEC8;
+  /* ── Texto: blanco-lila → secundario → deshabilitado ── */
+  --es-text-primary: #f0eeff;
+  --es-text-secondary: #b0aec8;
+  --es-text-muted: #6b6880;      /* solo deshabilitado/decorativo */
+  --es-text-on-dark: #f0eeff;
+  --es-text-on-dark-secondary: #b0aec8;
 
-  /* Acento vibrante: lavender que "explota" sobre superficie oscura */
-  --es-dark-accent: #8B5CF6;
-  --es-dark-accent-rgb: 139, 92, 246;
-  --es-dark-accent-hover: #9B6FF7;
-
-  --es-text-primary: var(--es-dark-text-primary);
-  --es-text-secondary: var(--es-dark-text-secondary);
-  --es-text-muted: #6B6880;
-  --es-text-on-dark: var(--es-dark-text-primary);
-  --es-text-on-dark-secondary: var(--es-dark-text-secondary);
-
-  /* Bordes: separador púrpura sutil integrado en la paleta */
-  --es-border: var(--es-dark-surface-border);
-  --es-border-strong: #3D3868;
-  --es-border-light: rgba(255, 255, 255, 0.08);
+  /* ── Bordes: sutiles, dentro de la familia índigo ── */
+  --es-border: #3a3468;
+  --es-border-strong: #4a4478;
+  --es-border-light: rgba(255, 255, 255, 0.07);
   --es-border-on-dark: rgba(255, 255, 255, 0.08);
-  --es-border-on-dark-strong: rgba(255, 255, 255, 0.15);
+  --es-border-on-dark-strong: rgba(255, 255, 255, 0.16);
 
+  /* ── Estados semánticos: tonos luminosos + fondos translúcidos ── */
   --es-success: #66bb6a;
   --es-success-rgb: 102, 187, 106;
-  --es-success-subtle: #1b3a1d;
+  --es-success-subtle: rgba(102, 187, 106, 0.14);
   --es-warning: #ffa726;
   --es-warning-rgb: 255, 167, 38;
-  --es-warning-subtle: #3e2723;
+  --es-warning-subtle: rgba(255, 167, 38, 0.14);
   --es-error: #ef5350;
   --es-error-rgb: 239, 83, 80;
-  --es-error-subtle: #3e1a1a;
+  --es-error-subtle: rgba(239, 83, 80, 0.14);
 
-  --es-accent-blue: var(--es-dark-accent);
-  --es-accent-blue-rgb: var(--es-dark-accent-rgb);
+  /* ── Acentos para íconos: aclarados para resaltar sobre lo oscuro ── */
+  --es-accent-blue: #818cf8;
+  --es-accent-blue-rgb: 129, 140, 248;
   --es-accent-green: #66bb6a;
   --es-accent-green-rgb: 102, 187, 106;
   --es-accent-orange: #ffa726;
@@ -220,37 +228,44 @@
   --es-accent-amber: #fbbf24;
   --es-accent-amber-rgb: 251, 191, 36;
 
-  --es-accent-blue-bg: rgba(var(--es-accent-blue-rgb), 0.15);
-  --es-accent-green-bg: rgba(var(--es-accent-green-rgb), 0.15);
-  --es-accent-orange-bg: rgba(var(--es-accent-orange-rgb), 0.15);
-  --es-accent-purple-bg: rgba(var(--es-accent-purple-rgb), 0.15);
-  --es-accent-amber-bg: rgba(var(--es-accent-amber-rgb), 0.12);
-  --es-primary-subtle-bg: rgba(var(--es-primary-rgb), 0.15);
+  /* Fondos de acento: un poco más opacos que en claro para mantener
+     presencia visible sobre superficie oscura */
+  --es-accent-blue-bg: rgba(var(--es-accent-blue-rgb), 0.16);
+  --es-accent-green-bg: rgba(var(--es-accent-green-rgb), 0.16);
+  --es-accent-orange-bg: rgba(var(--es-accent-orange-rgb), 0.16);
+  --es-accent-purple-bg: rgba(var(--es-accent-purple-rgb), 0.16);
+  --es-accent-amber-bg: rgba(var(--es-accent-amber-rgb), 0.16);
+  --es-primary-subtle-bg: rgba(var(--es-primary-rgb), 0.16);
+  --es-primary-outline-bg: rgba(var(--es-primary-rgb), 0.10);
 
+  /* ── Estados de formulario ── */
   --es-form-error-text: #fc8181;
-  --es-form-error-bg: rgba(var(--es-error-rgb), 0.15);
+  --es-form-error-bg: rgba(var(--es-error-rgb), 0.14);
   --es-form-error-border: rgba(var(--es-error-rgb), 0.4);
   --es-form-error-text-dark: #fc8181;
 
-  --es-focus-ring: 0 0 0 3px rgba(var(--es-primary-rgb), 0.4);
-  --es-focus-ring-error: 0 0 0 3px rgba(var(--es-error-rgb), 0.15);
+  /* ── Focus: anillo algo más opaco para verse sobre fondo oscuro ── */
+  --es-focus-ring: 0 0 0 3px rgba(var(--es-primary-rgb), 0.45);
+  --es-focus-ring-error: 0 0 0 3px rgba(var(--es-error-rgb), 0.35);
 
-  /* Sombras: en modo oscuro se usan bordes y luces interiores */
+  /* ── Sombras: en oscuro se apoyan en borde + sombra dura (no luz suave) ── */
   --es-shadow-sm: 0 0 0 1px var(--es-border);
   --es-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--es-border);
-  --es-shadow-lg: 0 8px 12px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--es-border-strong);
+  --es-shadow-lg: 0 8px 16px -4px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--es-border-strong);
   --es-shadow-xl: 0 24px 60px rgba(0, 0, 0, 0.7);
-  --es-shadow-featured: 0 4px 20px rgba(var(--es-primary-rgb), 0.2);
+  --es-shadow-featured: 0 4px 20px rgba(var(--es-primary-rgb), 0.35);
 
-  --es-gradient-hero: linear-gradient(160deg, #0F0A2A 0%, #1A1635 100%);
+  /* ── Gradientes ── */
+  --es-gradient-hero: linear-gradient(160deg, #0f0a2a 0%, #1a1635 100%);
   --es-gradient-primary: linear-gradient(135deg, var(--es-primary), var(--es-primary-light));
-  --es-gradient-metrics: linear-gradient(135deg, #1A1635, #312E81);
+  --es-gradient-metrics: linear-gradient(135deg, #1a1635, #312e81);
   --es-gradient-callout: linear-gradient(135deg,
-      rgba(var(--es-accent-blue-rgb), 0.06),
-      rgba(var(--es-accent-blue-rgb), 0.02));
+      rgba(var(--es-accent-blue-rgb), 0.10),
+      rgba(var(--es-accent-blue-rgb), 0.03));
 
+  /* ── Overlay / Navbar ── */
   --es-overlay-bg: rgba(0, 0, 0, 0.7);
-  --es-nav-bg: rgba(30, 26, 61, 0.97);
+  --es-nav-bg: rgba(15, 11, 30, 0.92);
   --es-nav-border: rgba(255, 255, 255, 0.10);
 }
 

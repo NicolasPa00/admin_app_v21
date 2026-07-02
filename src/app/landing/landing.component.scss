@@ -1617,16 +1617,24 @@
   width: 100%;
   max-width: 460px;
   max-height: 90vh;
-  overflow-y: auto;
+  /* overflow:hidden clip scrollbar al border-radius */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--es-bg-card);
   border-radius: var(--es-radius-xl);
   box-shadow: var(--es-shadow-xl);
-  padding: var(--es-spacing-12);
   animation: slideUp 0.2s ease;
 
   @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  &__scroll {
+    overflow-y: auto;
+    flex: 1;
+    padding: var(--es-spacing-12);
   }
 
   &__close {
@@ -1918,6 +1926,46 @@
       box-shadow: var(--es-focus-ring);
     }
   }
+}
+
+/* ── Botón flotante WhatsApp ── */
+.lp-wa-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--es-radius-full);
+  background-color: #25d366;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.45);
+  text-decoration: none;
+  transition: transform var(--es-transition-fast), box-shadow var(--es-transition-fast);
+
+  &:hover {
+    transform: translateY(-2px) scale(1.06);
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.55);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #25d366;
+    outline-offset: 3px;
+  }
+}
+
+/* ── Modo oscuro: ramp de acento aclarado un paso ──
+   Sobre superficie oscura, el azul del login (#4F46E5) pierde contraste
+   (≈2.6:1 como texto). Subimos toda la escala un nivel para que el acento
+   "resalte" y cumpla AA, manteniendo la misma familia índigo. */
+:host-context([data-theme='dark']) {
+  --lp-blue: #6366f1;       /* fills / botones */
+  --lp-blue-deep: #4f46e5;  /* hover de fills */
+  --lp-blue-2: #818cf8;     /* acentos / gradiente */
+  --lp-blue-3: #a5b4fc;     /* texto e íconos sobre oscuro (AA+) */
 }
 
 /* ── Modo oscuro: profundidad tonal Blue/Purple depth ── */

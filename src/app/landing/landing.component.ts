@@ -39,9 +39,9 @@ import {
   Youtube,
 } from 'lucide-angular';
 
-import { ThemeService } from '../core/theme/theme.service';
 import { AssetService } from '../core/services/asset.service';
 import { AuthService } from '../auth/data-access/auth.service';
+import { environment } from '../../environments/environment';
 
 /* ──────────────────────────────────────────────────────────
    Datos estáticos
@@ -210,7 +210,6 @@ type ModalStep = 'form' | 'otp' | 'success';
   styleUrl: './landing.component.scss',
 })
 export class LandingComponent {
-  protected readonly themeService   = inject(ThemeService);
   protected readonly assetService   = inject(AssetService);
   private   readonly authService    = inject(AuthService);
 
@@ -221,6 +220,7 @@ export class LandingComponent {
   protected readonly ecosistema          = ECOSISTEMA;
   protected readonly mobileMenuOpen      = signal(false);
   protected readonly currentYear         = new Date().getFullYear();
+  protected readonly waUrl               = environment.whatsappUrl;
 
   /* ── Typewriter CTA ── */
   private readonly ctaPhrases = [

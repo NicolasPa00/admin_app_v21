@@ -35,10 +35,10 @@ import {
 } from 'lucide-angular';
 
 import { AuthService } from '../../auth/data-access/auth.service';
-import { ThemeService } from '../../core/theme/theme.service';
 import { AssetService } from '../../core/services/asset.service';
 import { NotificacionesBellComponent } from '../features/notificaciones/notificaciones-bell.component';
 import { SUPER_ADMIN_ROL } from '../guards/admin.guard';
+import { environment } from '../../../environments/environment';
 
 interface NavItem {
   label: string;
@@ -88,7 +88,6 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
 })
 export class AdminLayoutComponent {
   private readonly auth = inject(AuthService);
-  protected readonly theme = inject(ThemeService);
   protected readonly assets = inject(AssetService);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
@@ -119,11 +118,8 @@ export class AdminLayoutComponent {
   protected readonly collapsed = signal(this.readCollapsed());
   protected readonly mobileOpen = signal(false);
 
-  // ── Derivados de sesión / tema ──────────────────────────────
+  // ── Derivados de sesión ─────────────────────────────────────
   protected readonly user = this.auth.currentUser;
-  protected readonly isDark = computed(
-    () => this.theme.resolvedTheme() === 'dark',
-  );
   protected readonly displayName = computed(() => {
     const u = this.user();
     return u ? `${u.primer_nombre} ${u.primer_apellido}` : '';
@@ -168,13 +164,17 @@ export class AdminLayoutComponent {
     this.mobileOpen.set(false);
   }
 
-  protected toggleTheme(): void {
-    this.theme.toggleTheme();
-  }
-
   protected logout(): void {
     this.auth.logout();
   }
+
+  /** Texto sugerido que se autocompleta en el chat de WhatsApp. */
+  private readonly waMessage =
+    '¡Hola! 👋 Estoy usando EscalApp y necesito ayuda. ¿Me pueden orientar?';
+
+  /** URL de WhatsApp con el mensaje sugerido precargado. */
+  protected readonly waUrl =
+    `${environment.whatsappUrl}?text=${encodeURIComponent(this.waMessage)}`;
 
   private readCollapsed(): boolean {
     if (!isPlatformBrowser(this.platformId)) return false;

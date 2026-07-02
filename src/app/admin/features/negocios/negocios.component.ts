@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   ChangeDetectionStrategy,
   inject,
   signal,
@@ -9,14 +10,18 @@ import {
 import { forkJoin } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
-  CreditCard, Check,
+  CreditCard, Check, UserRound, UserPlus,
 } from 'lucide-angular';
 
+import { AuthService } from '../../../auth/data-access/auth.service';
+import { SUPER_ADMIN_ROL } from '../../guards/admin.guard';
 import { NegociosAdminService } from '../../data-access/negocios-admin.service';
 import {
   NegocioAdmin, TipoNegocio, Plan, PlanInfo, LoadingState,
-  RegistrarClienteRequest,
+  RegistrarClienteRequest, UsuarioBusqueda,
 } from '../../models/admin.models';
+
+type UserMode = 'nuevo' | 'existente';
 
 type PlanTone = 'success' | 'warning' | 'error';
 
@@ -54,15 +59,16 @@ const EMPTY_CREATE: CreateForm = {
       multi: true,
       useValue: new LucideIconProvider({
         Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
-        CreditCard, Check,
+        CreditCard, Check, UserRound, UserPlus,
       }),
     },
   ],
   templateUrl: './negocios.component.html',
   styleUrl: './negocios.component.scss',
 })
-export class NegociosComponent implements OnInit {
+export class NegociosComponent implements OnInit, OnDestroy {
   private readonly service = inject(NegociosAdminService);
+  private readonly auth = inject(AuthService);
 
   // ── Estado de datos ─────────────────────────────────────────
   protected readonly loadingState = signal<LoadingState>('idle');
@@ -75,12 +81,28 @@ export class NegociosComponent implements OnInit {
   protected readonly estadoFilter = signal<'A' | 'I' | 'ALL'>('A');
   protected readonly tipoFilter = signal<string>('ALL');
 
+  // ── Rol ─────────────────────────────────────────────────────
+  protected readonly isSuperAdmin = computed(() => {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    return u.roles_globales.some((r) => r.descripcion === SUPER_ADMIN_ROL) ||
+           u.negocios.some((n) => n.roles.some((r) => r.descripcion === SUPER_ADMIN_ROL));
+  });
+
   // ── Modal ───────────────────────────────────────────────────
   protected readonly modalMode = signal<'create' | 'edit' | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly createForm = signal<CreateForm>({ ...EMPTY_CREATE });
   protected readonly editForm = signal<EditForm | null>(null);
+
+  // ── Usuario mode (crear nuevo vs vincular existente) ────────
+  protected readonly userMode = signal<UserMode>('nuevo');
+  protected readonly usuarioQuery = signal('');
+  protected readonly usuarioResults = signal<UsuarioBusqueda[]>([]);
+  protected readonly usuarioSeleccionado = signal<UsuarioBusqueda | null>(null);
+  protected readonly searchLoading = signal(false);
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ── Acción de fila ──────────────────────────────────────────
   protected readonly actionId = signal<number | null>(null);
@@ -104,24 +126,43 @@ export class NegociosComponent implements OnInit {
     });
   });
 
+  /** Criterios de seguridad de la contraseña del admin nuevo (evaluados en vivo). */
+  protected readonly passwordChecks = computed(() => {
+    const p = this.createForm().a_password;
+    return {
+      length: p.length >= 8,
+      upper: /[A-Z]/.test(p),
+      number: /\d/.test(p),
+    };
+  });
+
+  /** ¿La contraseña cumple todos los criterios? */
+  protected readonly passwordValid = computed(() => {
+    const c = this.passwordChecks();
+    return c.length && c.upper && c.number;
+  });
+
   protected readonly createValid = computed(() => {
     const f = this.createForm();
+    const base = f.nombre.trim().length > 0 && f.id_tipo_negocio !== '';
+    if (this.userMode() === 'existente') return base && this.usuarioSeleccionado() !== null;
     return (
-      f.nombre.trim().length > 0 &&
-      f.id_tipo_negocio !== '' &&
+      base &&
       f.a_primer_nombre.trim().length > 0 &&
       f.a_primer_apellido.trim().length > 0 &&
       f.a_num_identificacion.trim().length > 0 &&
       f.a_email.includes('@') &&
-      f.a_password.length >= 8
+      this.passwordValid()
     );
   });
 
   protected readonly editValid = computed(() => (this.editForm()?.nombre.trim().length ?? 0) > 0);
 
   // ── Lifecycle ───────────────────────────────────────────────
-  ngOnInit(): void {
-    this.load();
+  ngOnInit(): void { this.load(); }
+
+  ngOnDestroy(): void {
+    if (this.searchTimer) clearTimeout(this.searchTimer);
   }
 
   // ── Filtros ─────────────────────────────────────────────────
@@ -133,7 +174,52 @@ export class NegociosComponent implements OnInit {
   protected openCreate(): void {
     this.createForm.set({ ...EMPTY_CREATE });
     this.formError.set(null);
+    this.userMode.set('nuevo');
+    this.usuarioQuery.set('');
+    this.usuarioResults.set([]);
+    this.usuarioSeleccionado.set(null);
     this.modalMode.set('create');
+  }
+
+  protected setUserMode(mode: UserMode): void {
+    this.userMode.set(mode);
+    this.usuarioQuery.set('');
+    this.usuarioResults.set([]);
+    this.usuarioSeleccionado.set(null);
+  }
+
+  protected onUsuarioQuery(e: Event): void {
+    const q = (e.target as HTMLInputElement).value;
+    this.usuarioQuery.set(q);
+    this.usuarioSeleccionado.set(null);
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    if (q.trim().length < 2) { this.usuarioResults.set([]); return; }
+    this.searchTimer = setTimeout(() => this.doSearch(q.trim()), 350);
+  }
+
+  private doSearch(q: string): void {
+    this.searchLoading.set(true);
+    this.service.buscarUsuarios(q).subscribe({
+      next: (r) => { this.usuarioResults.set(r); this.searchLoading.set(false); },
+      error: () => this.searchLoading.set(false),
+    });
+  }
+
+  protected selectUsuario(u: UsuarioBusqueda): void {
+    this.usuarioSeleccionado.set(u);
+    this.usuarioResults.set([]);
+    // Autofill negocio contact fields from the selected user
+    this.createForm.update((f) => ({
+      ...f,
+      email_contacto: u.email,
+      telefono: u.telefono ?? '',
+    }));
+  }
+
+  protected clearUsuario(): void {
+    this.usuarioSeleccionado.set(null);
+    this.usuarioQuery.set('');
+    this.usuarioResults.set([]);
   }
 
   protected updateCreate(field: keyof CreateForm, e: Event): void {
@@ -147,24 +233,33 @@ export class NegociosComponent implements OnInit {
     this.saving.set(true);
     this.formError.set(null);
 
-    const payload: RegistrarClienteRequest = {
-      negocio: {
-        nombre: f.nombre.trim(),
-        id_tipo_negocio: Number(f.id_tipo_negocio),
-        nit: f.nit.trim() || null,
-        email_contacto: f.email_contacto.trim() || null,
-        telefono: f.telefono.trim() || null,
-        direccion: f.direccion.trim() || null,
-      },
-      plan: f.id_plan ? { id_plan: Number(f.id_plan), meses: Number(f.meses) || 1 } : null,
-      admin: {
-        primer_nombre: f.a_primer_nombre.trim(),
-        primer_apellido: f.a_primer_apellido.trim(),
-        num_identificacion: f.a_num_identificacion.trim(),
-        email: f.a_email.trim(),
-        password: f.a_password,
-      },
+    const negocioPayload = {
+      nombre: f.nombre.trim(),
+      id_tipo_negocio: Number(f.id_tipo_negocio),
+      nit: f.nit.trim() || null,
+      email_contacto: f.email_contacto.trim() || null,
+      telefono: f.telefono.trim() || null,
+      direccion: f.direccion.trim() || null,
     };
+    const planPayload = f.id_plan ? { id_plan: Number(f.id_plan), meses: Number(f.meses) || 1 } : null;
+
+    const payload: RegistrarClienteRequest = this.userMode() === 'existente'
+      ? {
+          negocio: negocioPayload,
+          plan: planPayload,
+          id_usuario_existente: this.usuarioSeleccionado()!.id_usuario,
+        }
+      : {
+          negocio: negocioPayload,
+          plan: planPayload,
+          admin: {
+            primer_nombre: f.a_primer_nombre.trim(),
+            primer_apellido: f.a_primer_apellido.trim(),
+            num_identificacion: f.a_num_identificacion.trim(),
+            email: f.a_email.trim(),
+            password: f.a_password,
+          },
+        };
 
     this.service.registrarCliente(payload).subscribe({
       next: () => { this.saving.set(false); this.closeModal(); this.load(); },

@@ -9,13 +9,26 @@ import {
 import { forkJoin } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Search, Users, Eye, UserCheck, UserX, Building2, AlertCircle,
-  X, CreditCard, ShieldCheck,
+  X, CreditCard, ShieldCheck, Pencil, Check, Loader2,
 } from 'lucide-angular';
 
 import { UsuariosAdminService } from '../../data-access/usuarios-admin.service';
 import {
-  UsuarioAdmin, LoadingState, Plan, PlanInfo,
+  UsuarioAdmin, LoadingState, Plan, PlanInfo, UpdateUsuarioPerfilRequest,
 } from '../../models/admin.models';
+
+/** Datos editables del perfil de un usuario dentro del modal "Editar". */
+interface EditUserForm {
+  id_usuario: number;
+  primer_nombre: string;
+  segundo_nombre: string;
+  primer_apellido: string;
+  segundo_apellido: string;
+  num_identificacion: string;
+  email: string;
+  /** Vacío = conservar la contraseña actual. */
+  password: string;
+}
 
 /** ¿La descripción del rol corresponde a un administrador/dueño? */
 function esRolAdministrador(descripcion: string): boolean {
@@ -49,7 +62,7 @@ interface PlanEdit {
       multi: true,
       useValue: new LucideIconProvider({
         Search, Users, Eye, UserCheck, UserX, Building2, AlertCircle,
-        X, CreditCard, ShieldCheck,
+        X, CreditCard, ShieldCheck, Pencil, Check, Loader2,
       }),
     },
   ],
@@ -72,6 +85,42 @@ export class UsuariosComponent implements OnInit {
   protected readonly selected = signal<UsuarioAdmin | null>(null);
   protected readonly actionId = signal<number | null>(null);
   protected readonly actionError = signal<string | null>(null);
+
+  // ── Modal: editar usuario ───────────────────────────────────
+  protected readonly editForm = signal<EditUserForm | null>(null);
+  protected readonly editSaving = signal(false);
+  protected readonly editError = signal<string | null>(null);
+
+  /** Criterios de la contraseña nueva (solo aplican si el campo no está vacío). */
+  protected readonly editPasswordChecks = computed(() => {
+    const p = this.editForm()?.password ?? '';
+    return {
+      length: p.length >= 8,
+      upper: /[A-Z]/.test(p),
+      number: /\d/.test(p),
+    };
+  });
+
+  /** ¿La contraseña nueva (si se escribió) cumple todos los criterios? */
+  protected readonly editPasswordValid = computed(() => {
+    const p = this.editForm()?.password ?? '';
+    if (!p) return true; // vacío = conservar la actual
+    const c = this.editPasswordChecks();
+    return c.length && c.upper && c.number;
+  });
+
+  /** ¿El formulario de edición es válido para enviar? */
+  protected readonly editValid = computed(() => {
+    const f = this.editForm();
+    if (!f) return false;
+    return (
+      f.primer_nombre.trim().length > 0 &&
+      f.primer_apellido.trim().length > 0 &&
+      f.num_identificacion.trim().length > 0 &&
+      f.email.includes('@') &&
+      this.editPasswordValid()
+    );
+  });
 
   /** Estado editable del plan por negocio dentro del modal (id_negocio → {id_plan, inicio, fin}). */
   protected readonly planEdit = signal<Record<number, PlanEdit>>({});
@@ -216,6 +265,61 @@ export class UsuariosComponent implements OnInit {
 
   protected closeDetails(): void {
     this.selected.set(null);
+  }
+
+  // ── Modal: editar usuario ───────────────────────────────────
+  protected openEdit(u: UsuarioAdmin): void {
+    this.editForm.set({
+      id_usuario: u.id_usuario,
+      primer_nombre: u.primer_nombre ?? '',
+      segundo_nombre: u.segundo_nombre ?? '',
+      primer_apellido: u.primer_apellido ?? '',
+      segundo_apellido: u.segundo_apellido ?? '',
+      num_identificacion: u.num_identificacion ?? '',
+      email: u.email ?? '',
+      password: '',
+    });
+    this.editError.set(null);
+  }
+
+  protected updateEdit(field: keyof EditUserForm, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.editForm.update((f) => (f ? { ...f, [field]: value } : f));
+  }
+
+  protected closeEdit(): void {
+    this.editForm.set(null);
+    this.editError.set(null);
+  }
+
+  protected submitEdit(): void {
+    const f = this.editForm();
+    if (!f || !this.editValid() || this.editSaving()) return;
+
+    this.editSaving.set(true);
+    this.editError.set(null);
+
+    const payload: UpdateUsuarioPerfilRequest = {
+      primer_nombre: f.primer_nombre.trim(),
+      segundo_nombre: f.segundo_nombre.trim() || null,
+      primer_apellido: f.primer_apellido.trim(),
+      segundo_apellido: f.segundo_apellido.trim() || null,
+      num_identificacion: f.num_identificacion.trim(),
+      email: f.email.trim(),
+      ...(f.password ? { password: f.password } : {}),
+    };
+
+    this.service.updatePerfil(f.id_usuario, payload).subscribe({
+      next: () => {
+        this.editSaving.set(false);
+        this.closeEdit();
+        this.refreshUsuarios(this.selected()?.id_usuario);
+      },
+      error: (err) => {
+        this.editSaving.set(false);
+        this.editError.set(err.error?.message ?? 'No se pudo actualizar el usuario.');
+      },
+    });
   }
 
   protected retry(): void {

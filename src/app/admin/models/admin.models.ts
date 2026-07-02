@@ -220,6 +220,16 @@ export interface AdminUsuarioNuevo {
   password: string;
 }
 
+/** GET /admin/usuarios/buscar — resultado de búsqueda de usuario existente. */
+export interface UsuarioBusqueda {
+  id_usuario: number;
+  primer_nombre: string;
+  primer_apellido: string;
+  email: string;
+  num_identificacion: string;
+  telefono?: string | null;
+}
+
 /** POST /admin/negocios/registrar-cliente */
 export interface RegistrarClienteRequest {
   negocio: {
@@ -231,7 +241,10 @@ export interface RegistrarClienteRequest {
     direccion?: string | null;
   };
   plan?: { id_plan: number; meses?: number } | null;
-  admin: AdminUsuarioNuevo;
+  /** Modo A: vincular usuario existente (se excluye mutuamente con admin). */
+  id_usuario_existente?: number | null;
+  /** Modo B: crear usuario nuevo (se excluye mutuamente con id_usuario_existente). */
+  admin?: AdminUsuarioNuevo | null;
 }
 
 /** PUT /admin/negocios/:id */
@@ -242,6 +255,18 @@ export interface UpdateNegocioRequest {
   telefono?: string | null;
   direccion?: string | null;
   id_tipo_negocio?: number;
+}
+
+/** PUT /admin/usuarios/admin/:id/perfil — edición de datos del usuario. */
+export interface UpdateUsuarioPerfilRequest {
+  primer_nombre: string;
+  segundo_nombre?: string | null;
+  primer_apellido: string;
+  segundo_apellido?: string | null;
+  num_identificacion: string;
+  email: string;
+  /** Solo se envía si el admin quiere cambiar la contraseña. */
+  password?: string;
 }
 
 /** Filtros aceptados por GET /admin/usuarios/admin. */

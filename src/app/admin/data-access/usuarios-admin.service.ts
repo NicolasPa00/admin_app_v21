@@ -8,6 +8,7 @@ import {
   UsuarioAdmin,
   UsuariosAdminResponse,
   UsuariosAdminFiltros,
+  UpdateUsuarioPerfilRequest,
   Plan,
   PlanesResponse,
 } from '../models/admin.models';
@@ -40,6 +41,13 @@ export class UsuariosAdminService {
   setEstado(idUsuario: number, estado: 'A' | 'I'): Observable<void> {
     return this.http
       .patch<ApiResponse>(`${this.API}/usuarios/admin/${idUsuario}/estado`, { estado })
+      .pipe(map(() => undefined));
+  }
+
+  /** Actualiza los datos de perfil de un usuario (nombre → contraseña). */
+  updatePerfil(idUsuario: number, payload: UpdateUsuarioPerfilRequest): Observable<void> {
+    return this.http
+      .put<ApiResponse>(`${this.API}/usuarios/admin/${idUsuario}/perfil`, payload)
       .pipe(map(() => undefined));
   }
 

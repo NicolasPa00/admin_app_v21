@@ -21,4 +21,6 @@ export const environment = {
   reservaAppUrl: 'http://localhost:4006',
   /** Ruta base de assets (imágenes, etc.) */
   assetPath: '/images',
+  /** WhatsApp de soporte (wa.me URL) */
+  whatsappUrl: 'https://wa.me/573114682492',
 };

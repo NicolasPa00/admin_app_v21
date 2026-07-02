@@ -13,6 +13,7 @@ import {
   TiposNegocioResponse,
   Plan,
   PlanesResponse,
+  UsuarioBusqueda,
 } from '../models/admin.models';
 
 /**
@@ -65,6 +66,12 @@ export class NegociosAdminService {
   getPlanes(): Observable<Plan[]> {
     return this.http
       .get<PlanesResponse>(`${this.API}/planes`)
+      .pipe(map((res) => res.data ?? []));
+  }
+
+  buscarUsuarios(q: string): Observable<UsuarioBusqueda[]> {
+    return this.http
+      .get<ApiResponse<UsuarioBusqueda[]>>(`${this.API}/usuarios/buscar`, { params: { q } })
       .pipe(map((res) => res.data ?? []));
   }
 }

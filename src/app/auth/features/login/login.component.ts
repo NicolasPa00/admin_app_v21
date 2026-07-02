@@ -16,7 +16,6 @@ import {
 } from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
-import { ThemeService } from '../../../core/theme/theme.service';
 import { AssetService } from '../../../core/services/asset.service';
 import { LoginRequest } from '../../models/auth.models';
 
@@ -24,7 +23,7 @@ import { LoginRequest } from '../../models/auth.models';
  * LoginComponent — Página de inicio de sesión.
  *
  * Signal Forms: cada campo es un signal() con validaciones
- * derivadas vía computed(). Incluye toggle de tema (claro/oscuro).
+ * derivadas vía computed().
  */
 @Component({
   selector: 'app-login',
@@ -38,7 +37,6 @@ import { LoginRequest } from '../../models/auth.models';
 })
 export class LoginComponent {
   private readonly authService = inject(AuthService);
-  protected readonly themeService = inject(ThemeService);
   protected readonly assetService = inject(AssetService);
 
   // ===================== Signal Form Fields =====================

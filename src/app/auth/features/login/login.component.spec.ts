@@ -109,12 +109,6 @@ describe('LoginComponent', () => {
       expect(title?.textContent?.trim()).toBe('Iniciar sesión');
     });
 
-    it('debería renderizar el toggle de tema', () => {
-      const compiled = fixture.nativeElement as HTMLElement;
-      const toggle = compiled.querySelector('.theme-toggle');
-      expect(toggle).toBeTruthy();
-    });
-
     it('debería tener inputs de email, password y tenant', () => {
       const compiled = fixture.nativeElement as HTMLElement;
       expect(compiled.querySelector('#login-email')).toBeTruthy();

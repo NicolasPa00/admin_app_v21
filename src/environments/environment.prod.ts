@@ -18,4 +18,6 @@ export const environment = {
   tiendaAppUrl: 'https://escalapp.cloud/tienda',
   reservaAppUrl: 'https://escalapp.cloud/reserva',
   assetPath: 'images',
+  /** WhatsApp de soporte (wa.me URL) */
+  whatsappUrl: 'https://wa.me/573114682492',
 };

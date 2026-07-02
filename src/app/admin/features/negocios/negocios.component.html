@@ -151,160 +151,263 @@
 
 <!-- ════════════ Modal crear / editar ════════════ -->
 @if (modalMode(); as mode) {
-  <div class="neg-modal" (click)="closeModal()">
-    <div class="neg-modal__card" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="neg-modal-title">
-      <header class="neg-modal__head">
-        <h2 id="neg-modal-title" class="neg-modal__title">
-          {{ mode === 'create' ? 'Registrar negocio' : 'Editar negocio' }}
-        </h2>
-        <button type="button" class="neg__icon-btn" (click)="closeModal()" aria-label="Cerrar">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
-
-      @if (formError()) {
-        <div class="neg__alert" role="alert">
-          <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
-          <span>{{ formError() }}</span>
-        </div>
-      }
-
-      <!-- ─── Formulario CREAR ─── -->
-      @if (mode === 'create') {
-        <div class="neg-modal__body">
-          <h3 class="neg-modal__section">Datos del negocio</h3>
-          <div class="neg-form__grid">
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label">Nombre del negocio *</label>
-              <input class="input" [value]="createForm().nombre" (input)="updateCreate('nombre', $event)" placeholder="Ej. La Parrilla de Juan" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Tipo de negocio *</label>
-              <select class="input" [value]="createForm().id_tipo_negocio" (change)="updateCreate('id_tipo_negocio', $event)">
-                <option value="" disabled>Selecciona…</option>
-                @for (t of tipos(); track t.id_tipo_negocio) {
-                  <option [value]="t.id_tipo_negocio">{{ t.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">NIT</label>
-              <input class="input" [value]="createForm().nit" (input)="updateCreate('nit', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Email de contacto</label>
-              <input class="input" type="email" [value]="createForm().email_contacto" (input)="updateCreate('email_contacto', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Teléfono</label>
-              <input class="input" [value]="createForm().telefono" (input)="updateCreate('telefono', $event)" />
-            </div>
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label">Dirección</label>
-              <input class="input" [value]="createForm().direccion" (input)="updateCreate('direccion', $event)" />
-            </div>
-          </div>
-
-          <h3 class="neg-modal__section">Plan (opcional)</h3>
-          <div class="neg-form__grid">
-            <div class="neg-form__field">
-              <label class="neg-form__label">Plan asignado</label>
-              <select class="input" [value]="createForm().id_plan" (change)="updateCreate('id_plan', $event)">
-                <option value="">Sin plan</option>
-                @for (p of planes(); track p.id_plan) {
-                  <option [value]="p.id_plan">{{ p.nombre }}</option>
-                }
-              </select>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Duración (meses)</label>
-              <input class="input" type="number" min="1" max="60" [value]="createForm().meses" (input)="updateCreate('meses', $event)" [disabled]="!createForm().id_plan" />
-            </div>
-          </div>
-
-          <h3 class="neg-modal__section">Usuario administrador</h3>
-          <div class="neg-form__grid">
-            <div class="neg-form__field">
-              <label class="neg-form__label">Primer nombre *</label>
-              <input class="input" [value]="createForm().a_primer_nombre" (input)="updateCreate('a_primer_nombre', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Primer apellido *</label>
-              <input class="input" [value]="createForm().a_primer_apellido" (input)="updateCreate('a_primer_apellido', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Identificación *</label>
-              <input class="input" [value]="createForm().a_num_identificacion" (input)="updateCreate('a_num_identificacion', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Email *</label>
-              <input class="input" type="email" [value]="createForm().a_email" (input)="updateCreate('a_email', $event)" />
-            </div>
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label">Contraseña temporal *</label>
-              <input class="input" type="text" [value]="createForm().a_password" (input)="updateCreate('a_password', $event)" placeholder="Mín. 8, una mayúscula y un número" />
-            </div>
-          </div>
-        </div>
-
-        <footer class="neg-modal__foot">
-          <button type="button" class="btn btn--outline" (click)="closeModal()">Cancelar</button>
-          <button type="button" class="btn btn--primary" [disabled]="!createValid() || saving()" (click)="submitCreate()">
-            @if (saving()) {
-              <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Registrando…
-            } @else {
-              <lucide-icon name="check" [size]="16" aria-hidden="true" /> Registrar cliente
-            }
+  <div class="neg-modal">
+    <div class="neg-modal__card" role="dialog" aria-modal="true" aria-labelledby="neg-modal-title">
+      <!-- Scroll wrapper — separa overflow del border-radius (fix esquinas redondeadas) -->
+      <div class="neg-modal__scroll">
+        <header class="neg-modal__head">
+          <h2 id="neg-modal-title" class="neg-modal__title">
+            {{ mode === 'create' ? 'Registrar negocio' : 'Editar negocio' }}
+          </h2>
+          <button type="button" class="neg__icon-btn" (click)="closeModal()" aria-label="Cerrar">
+            <lucide-icon name="x" [size]="18" aria-hidden="true" />
           </button>
-        </footer>
-      }
+        </header>
 
-      <!-- ─── Formulario EDITAR ─── -->
-      @if (mode === 'edit' && editForm(); as f) {
-        <div class="neg-modal__body">
-          <div class="neg-form__grid">
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label">Nombre del negocio *</label>
-              <input class="input" [value]="f.nombre" (input)="updateEdit('nombre', $event)" />
+        @if (formError()) {
+          <div class="neg__alert" role="alert">
+            <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+            <span>{{ formError() }}</span>
+          </div>
+        }
+
+        <!-- ─── Formulario CREAR ─── -->
+        @if (mode === 'create') {
+          <div class="neg-modal__body">
+
+            <!-- 1. Usuario administrador (primero para poder autollenar el negocio) -->
+            <div class="neg-user-mode">
+              <h3 class="neg-modal__section">Usuario administrador</h3>
+              <div class="neg-user-mode__tabs" role="group" aria-label="Modo de usuario">
+                <button type="button"
+                        class="neg-user-mode__tab"
+                        [class.neg-user-mode__tab--active]="userMode() === 'nuevo'"
+                        (click)="setUserMode('nuevo')">
+                  <lucide-icon name="user-plus" [size]="14" aria-hidden="true" />
+                  Nuevo
+                </button>
+                <button type="button"
+                        class="neg-user-mode__tab"
+                        [class.neg-user-mode__tab--active]="userMode() === 'existente'"
+                        (click)="setUserMode('existente')">
+                  <lucide-icon name="user-round" [size]="14" aria-hidden="true" />
+                  Existente
+                </button>
+              </div>
             </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Tipo de negocio</label>
-              <select class="input" (change)="updateEdit('id_tipo_negocio', $event)">
-                @for (t of tipos(); track t.id_tipo_negocio) {
-                  <option [value]="t.id_tipo_negocio" [selected]="esTipoEdit(t.id_tipo_negocio)">{{ t.nombre }}</option>
-                }
-              </select>
+
+            <!-- Modo A: crear usuario nuevo -->
+            @if (userMode() === 'nuevo') {
+              <div class="neg-form__grid">
+                <div class="neg-form__field">
+                  <label class="neg-form__label">Primer nombre *</label>
+                  <input class="input" [value]="createForm().a_primer_nombre" (input)="updateCreate('a_primer_nombre', $event)" />
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label">Primer apellido *</label>
+                  <input class="input" [value]="createForm().a_primer_apellido" (input)="updateCreate('a_primer_apellido', $event)" />
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label">Identificación *</label>
+                  <input class="input" [value]="createForm().a_num_identificacion" (input)="updateCreate('a_num_identificacion', $event)" />
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label">Email *</label>
+                  <input class="input" type="email" [value]="createForm().a_email" (input)="updateCreate('a_email', $event)" />
+                </div>
+                <div class="neg-form__field neg-form__field--full">
+                  <label class="neg-form__label">Contraseña temporal *</label>
+                  <input class="input" type="text" [value]="createForm().a_password" (input)="updateCreate('a_password', $event)" placeholder="Mín. 8, una mayúscula y un número" />
+
+                  <ul class="pwd-checks" aria-label="Requisitos de la contraseña">
+                    <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().length">
+                      <lucide-icon [name]="passwordChecks().length ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                      Mínimo 8 caracteres
+                    </li>
+                    <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().upper">
+                      <lucide-icon [name]="passwordChecks().upper ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                      Al menos una mayúscula
+                    </li>
+                    <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().number">
+                      <lucide-icon [name]="passwordChecks().number ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                      Al menos un número
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            }
+
+            <!-- Modo B: vincular usuario existente + buscador -->
+            @if (userMode() === 'existente') {
+              <div class="neg-form__grid">
+                <div class="neg-form__field neg-form__field--full">
+                  <label class="neg-form__label">Buscar usuario *</label>
+                  <div class="neg-user-search">
+                    <input
+                      class="input"
+                      type="search"
+                      [value]="usuarioQuery()"
+                      (input)="onUsuarioQuery($event)"
+                      placeholder="Nombre, email o identificación (mín. 2 chars)…"
+                      autocomplete="off"
+                    />
+                    @if (searchLoading()) {
+                      <p class="neg-user-search__loading">
+                        <lucide-icon name="loader-2" [size]="14" class="neg__spin" aria-hidden="true" /> Buscando…
+                      </p>
+                    }
+                    @if (!searchLoading() && usuarioResults().length > 0 && !usuarioSeleccionado()) {
+                      <ul class="neg-user-results" role="listbox">
+                        @for (u of usuarioResults(); track u.id_usuario) {
+                          <li class="neg-user-results__item" role="option" (click)="selectUsuario(u)" (keydown.enter)="selectUsuario(u)" tabindex="0">
+                            <span class="neg-user-results__name">{{ u.primer_nombre }} {{ u.primer_apellido }}</span>
+                            <span class="neg-user-results__meta">{{ u.email }} · {{ u.num_identificacion }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
+                    @if (!searchLoading() && usuarioQuery().trim().length >= 2 && usuarioResults().length === 0 && !usuarioSeleccionado()) {
+                      <p class="neg-user-search__loading">Sin resultados para "{{ usuarioQuery() }}"</p>
+                    }
+                  </div>
+                  @if (usuarioSeleccionado(); as u) {
+                    <div class="neg-user-selected">
+                      <div class="neg-user-selected__info">
+                        <span class="neg-user-selected__name">{{ u.primer_nombre }} {{ u.primer_apellido }}</span>
+                        <span class="neg-user-selected__meta">{{ u.email }} · {{ u.num_identificacion }}</span>
+                      </div>
+                      <button type="button" class="neg-user-selected__clear" (click)="clearUsuario()" aria-label="Quitar usuario seleccionado">
+                        <lucide-icon name="x" [size]="14" aria-hidden="true" />
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- 2. Datos del negocio (email/teléfono autollenados al seleccionar usuario) -->
+            <h3 class="neg-modal__section">Datos del negocio</h3>
+            <div class="neg-form__grid">
+              <div class="neg-form__field neg-form__field--full">
+                <label class="neg-form__label">Nombre del negocio *</label>
+                <input class="input" [value]="createForm().nombre" (input)="updateCreate('nombre', $event)" placeholder="Ej. La Parrilla de Juan" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">Tipo de negocio *</label>
+                <select class="input" [value]="createForm().id_tipo_negocio" (change)="updateCreate('id_tipo_negocio', $event)">
+                  <option value="" disabled>Selecciona…</option>
+                  @for (t of tipos(); track t.id_tipo_negocio) {
+                    <option [value]="t.id_tipo_negocio">{{ t.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">NIT</label>
+                <input class="input" [value]="createForm().nit" (input)="updateCreate('nit', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">
+                  Email de contacto
+                  @if (userMode() === 'existente' && usuarioSeleccionado()) {
+                    <span class="neg-form__hint">· copiado del usuario</span>
+                  }
+                </label>
+                <input class="input" type="email" [value]="createForm().email_contacto" (input)="updateCreate('email_contacto', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">
+                  Teléfono
+                  @if (userMode() === 'existente' && usuarioSeleccionado() && createForm().telefono) {
+                    <span class="neg-form__hint">· copiado del usuario</span>
+                  }
+                </label>
+                <input class="input" [value]="createForm().telefono" (input)="updateCreate('telefono', $event)" />
+              </div>
+              <div class="neg-form__field neg-form__field--full">
+                <label class="neg-form__label">Dirección</label>
+                <input class="input" [value]="createForm().direccion" (input)="updateCreate('direccion', $event)" />
+              </div>
             </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">NIT</label>
-              <input class="input" [value]="f.nit" (input)="updateEdit('nit', $event)" />
+
+            <!-- 3. Plan (opcional) -->
+            <h3 class="neg-modal__section">Plan (opcional)</h3>
+            <div class="neg-form__grid">
+              <div class="neg-form__field">
+                <label class="neg-form__label">Plan asignado</label>
+                <select class="input" [value]="createForm().id_plan" (change)="updateCreate('id_plan', $event)">
+                  <option value="">Sin plan</option>
+                  @for (p of planes(); track p.id_plan) {
+                    <option [value]="p.id_plan">{{ p.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">Duración (meses)</label>
+                <input class="input" type="number" min="1" max="60" [value]="createForm().meses" (input)="updateCreate('meses', $event)" [disabled]="!createForm().id_plan" />
+              </div>
             </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Email de contacto</label>
-              <input class="input" type="email" [value]="f.email_contacto" (input)="updateEdit('email_contacto', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label">Teléfono</label>
-              <input class="input" [value]="f.telefono" (input)="updateEdit('telefono', $event)" />
-            </div>
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label">Dirección</label>
-              <input class="input" [value]="f.direccion" (input)="updateEdit('direccion', $event)" />
+
+          </div>
+
+          <footer class="neg-modal__foot">
+            <button type="button" class="btn btn--outline" (click)="closeModal()">Cancelar</button>
+            <button type="button" class="btn btn--primary" [disabled]="!createValid() || saving()" (click)="submitCreate()">
+              @if (saving()) {
+                <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Registrando…
+              } @else {
+                <lucide-icon name="check" [size]="16" aria-hidden="true" /> Registrar cliente
+              }
+            </button>
+          </footer>
+        }
+
+        <!-- ─── Formulario EDITAR ─── -->
+        @if (mode === 'edit' && editForm(); as f) {
+          <div class="neg-modal__body">
+            <div class="neg-form__grid">
+              <div class="neg-form__field neg-form__field--full">
+                <label class="neg-form__label">Nombre del negocio *</label>
+                <input class="input" [value]="f.nombre" (input)="updateEdit('nombre', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">Tipo de negocio</label>
+                <select class="input" (change)="updateEdit('id_tipo_negocio', $event)">
+                  @for (t of tipos(); track t.id_tipo_negocio) {
+                    <option [value]="t.id_tipo_negocio" [selected]="esTipoEdit(t.id_tipo_negocio)">{{ t.nombre }}</option>
+                  }
+                </select>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">NIT</label>
+                <input class="input" [value]="f.nit" (input)="updateEdit('nit', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">Email de contacto</label>
+                <input class="input" type="email" [value]="f.email_contacto" (input)="updateEdit('email_contacto', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">Teléfono</label>
+                <input class="input" [value]="f.telefono" (input)="updateEdit('telefono', $event)" />
+              </div>
+              <div class="neg-form__field neg-form__field--full">
+                <label class="neg-form__label">Dirección</label>
+                <input class="input" [value]="f.direccion" (input)="updateEdit('direccion', $event)" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <footer class="neg-modal__foot">
-          <button type="button" class="btn btn--outline" (click)="closeModal()">Cancelar</button>
-          <button type="button" class="btn btn--primary" [disabled]="!editValid() || saving()" (click)="submitEdit()">
-            @if (saving()) {
-              <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Guardando…
-            } @else {
-              <lucide-icon name="check" [size]="16" aria-hidden="true" /> Guardar cambios
-            }
-          </button>
-        </footer>
-      }
+          <footer class="neg-modal__foot">
+            <button type="button" class="btn btn--outline" (click)="closeModal()">Cancelar</button>
+            <button type="button" class="btn btn--primary" [disabled]="!editValid() || saving()" (click)="submitEdit()">
+              @if (saving()) {
+                <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Guardando…
+              } @else {
+                <lucide-icon name="check" [size]="16" aria-hidden="true" /> Guardar cambios
+              }
+            </button>
+          </footer>
+        }
+      </div>
     </div>
   </div>
 }

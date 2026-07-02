@@ -40,26 +40,6 @@
 
   <!-- ===== Panel derecho — Formulario ===== -->
   <main class="login-form-panel">
-    <!-- Toggle de tema -->
-    <div class="login-form-panel__toolbar">
-      <button
-        type="button"
-        class="theme-toggle"
-        (click)="themeService.toggleTheme()"
-        [attr.aria-label]="
-          themeService.resolvedTheme() === 'dark'
-            ? 'Cambiar a modo claro'
-            : 'Cambiar a modo oscuro'
-        "
-        title="Cambiar tema">
-        @if (themeService.resolvedTheme() === 'dark') {
-          <lucide-icon name="sun" [size]="18" aria-hidden="true"></lucide-icon>
-        } @else {
-          <lucide-icon name="moon" [size]="18" aria-hidden="true"></lucide-icon>
-        }
-      </button>
-    </div>
-
     <!-- Logo móvil -->
     <div class="login-form-panel__mobile-logo">
       <img class="login-form-panel__mobile-logo-svg" [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" />
@@ -182,10 +162,7 @@
         <a routerLink="/auth/forgot-password" class="auth-card__link">
           ¿Olvidaste tu contraseña?
         </a>
-        <a routerLink="/auth/register" class="auth-card__link auth-card__link--cta">
-          Crear una cuenta
-          <lucide-icon name="arrow-right" [size]="14" aria-hidden="true"></lucide-icon>
-        </a>
+        <!-- Apartado para crear cuenta -->
       </nav>
 
       <a routerLink="/" class="auth-card__back">

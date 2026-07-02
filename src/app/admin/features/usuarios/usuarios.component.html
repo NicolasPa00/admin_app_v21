@@ -185,6 +185,16 @@
                   <button
                     type="button"
                     class="usr__icon-btn"
+                    (click)="openEdit(u)"
+                    aria-label="Editar usuario"
+                    title="Editar usuario"
+                  >
+                    <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
+                  </button>
+
+                  <button
+                    type="button"
+                    class="usr__icon-btn"
                     [class.usr__icon-btn--danger]="u.estado === 'A'"
                     [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
                     (click)="toggleEstado(u)"
@@ -212,14 +222,14 @@
 
 <!-- ════════════ Modal de detalles ════════════ -->
 @if (selected(); as u) {
-  <div class="usr-modal" (click)="closeDetails()">
+  <div class="usr-modal">
     <div
       class="usr-modal__card"
-      (click)="$event.stopPropagation()"
       role="dialog"
       aria-modal="true"
       aria-labelledby="usr-modal-title"
     >
+      <div class="usr-modal__scroll">
       <header class="usr-modal__head">
         <div class="usr__user-cell">
           <span class="usr__avatar usr__avatar--lg" aria-hidden="true">{{ initials(u) }}</span>
@@ -343,6 +353,13 @@
       </section>
 
       <footer class="usr-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="closeDetails()">
+          Cerrar
+        </button>
+        <button type="button" class="btn btn--outline" (click)="openEdit(u)">
+          <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
+          Editar
+        </button>
         <button
           type="button"
           class="btn btn--primary"
@@ -358,6 +375,96 @@
           }
         </button>
       </footer>
+      </div><!-- /usr-modal__scroll -->
+    </div>
+  </div>
+}
+
+<!-- ════════════ Modal editar usuario ════════════ -->
+@if (editForm(); as f) {
+  <div class="usr-modal">
+    <div class="usr-modal__card" role="dialog" aria-modal="true" aria-labelledby="usr-edit-title">
+      <div class="usr-modal__scroll">
+        <header class="usr-modal__head">
+          <h2 id="usr-edit-title" class="usr-modal__name">Editar usuario</h2>
+          <button type="button" class="usr__icon-btn" (click)="closeEdit()" aria-label="Cerrar">
+            <lucide-icon name="x" [size]="18" aria-hidden="true" />
+          </button>
+        </header>
+
+        @if (editError()) {
+          <div class="usr__alert" role="alert">
+            <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+            <span>{{ editError() }}</span>
+          </div>
+        }
+
+        <div class="usr-edit__grid">
+          <div class="usr-edit__field">
+            <label class="usr-edit__label">Primer nombre *</label>
+            <input class="input" [value]="f.primer_nombre" (input)="updateEdit('primer_nombre', $event)" />
+          </div>
+          <div class="usr-edit__field">
+            <label class="usr-edit__label">Segundo nombre</label>
+            <input class="input" [value]="f.segundo_nombre" (input)="updateEdit('segundo_nombre', $event)" />
+          </div>
+          <div class="usr-edit__field">
+            <label class="usr-edit__label">Primer apellido *</label>
+            <input class="input" [value]="f.primer_apellido" (input)="updateEdit('primer_apellido', $event)" />
+          </div>
+          <div class="usr-edit__field">
+            <label class="usr-edit__label">Segundo apellido</label>
+            <input class="input" [value]="f.segundo_apellido" (input)="updateEdit('segundo_apellido', $event)" />
+          </div>
+          <div class="usr-edit__field">
+            <label class="usr-edit__label">Identificación *</label>
+            <input class="input" [value]="f.num_identificacion" (input)="updateEdit('num_identificacion', $event)" />
+          </div>
+          <div class="usr-edit__field">
+            <label class="usr-edit__label">Email *</label>
+            <input class="input" type="email" [value]="f.email" (input)="updateEdit('email', $event)" />
+          </div>
+          <div class="usr-edit__field usr-edit__field--full">
+            <label class="usr-edit__label">Nueva contraseña</label>
+            <input
+              class="input"
+              type="text"
+              [value]="f.password"
+              (input)="updateEdit('password', $event)"
+              placeholder="Dejar en blanco para conservar la actual"
+              autocomplete="new-password"
+            />
+
+            @if (f.password) {
+              <ul class="pwd-checks" aria-label="Requisitos de la contraseña">
+                <li class="pwd-checks__item" [class.pwd-checks__item--ok]="editPasswordChecks().length">
+                  <lucide-icon [name]="editPasswordChecks().length ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                  Mínimo 8 caracteres
+                </li>
+                <li class="pwd-checks__item" [class.pwd-checks__item--ok]="editPasswordChecks().upper">
+                  <lucide-icon [name]="editPasswordChecks().upper ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                  Al menos una mayúscula
+                </li>
+                <li class="pwd-checks__item" [class.pwd-checks__item--ok]="editPasswordChecks().number">
+                  <lucide-icon [name]="editPasswordChecks().number ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                  Al menos un número
+                </li>
+              </ul>
+            }
+          </div>
+        </div>
+
+        <footer class="usr-modal__foot">
+          <button type="button" class="btn btn--outline" (click)="closeEdit()">Cancelar</button>
+          <button type="button" class="btn btn--primary" [disabled]="!editValid() || editSaving()" (click)="submitEdit()">
+            @if (editSaving()) {
+              <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Guardando…
+            } @else {
+              <lucide-icon name="check" [size]="16" aria-hidden="true" /> Guardar cambios
+            }
+          </button>
+        </footer>
+      </div>
     </div>
   </div>
 }
