@@ -1,0 +1,248 @@
+<!--
+  Vista de Auditoría (Super Admin): historial de cambios de datos y eventos
+  de aplicación, con filtros, detalle expandible y export CSV.
+-->
+<div class="aud">
+  <!-- Cabecera -->
+  <header class="aud__head">
+    <div>
+      <h1 class="aud__title">Auditoría</h1>
+      <p class="aud__subtitle">Historial de cambios y eventos de la plataforma</p>
+    </div>
+    <span class="aud__count">
+      {{ total() }} {{ pestania() === 'datos' ? 'cambios' : 'eventos' }}
+    </span>
+  </header>
+
+  <!-- Pestañas -->
+  <div class="aud__tabs" role="tablist">
+    <button
+      type="button" role="tab" class="aud__tab"
+      [class.is-active]="pestania() === 'datos'"
+      [attr.aria-selected]="pestania() === 'datos'"
+      (click)="cambiarPestania('datos')"
+    >
+      <lucide-icon name="database" [size]="16" aria-hidden="true" />
+      Cambios de datos
+    </button>
+    <button
+      type="button" role="tab" class="aud__tab"
+      [class.is-active]="pestania() === 'eventos'"
+      [attr.aria-selected]="pestania() === 'eventos'"
+      (click)="cambiarPestania('eventos')"
+    >
+      <lucide-icon name="zap" [size]="16" aria-hidden="true" />
+      Eventos
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="aud__filters">
+    <select class="input aud__select" [value]="fNegocio()"
+            (change)="fNegocio.set($any($event.target).value)" aria-label="Filtrar por negocio">
+      <option value="" [selected]="fNegocio() === ''">Todos los negocios</option>
+      @for (n of catalogo().negocios; track n.id_negocio) {
+        <option [value]="n.id_negocio" [selected]="fNegocio() === '' + n.id_negocio">{{ n.nombre }}</option>
+      }
+    </select>
+
+    @if (pestania() === 'datos') {
+      <select class="input aud__select" [value]="fTabla()"
+              (change)="fTabla.set($any($event.target).value)" aria-label="Filtrar por tabla">
+        <option value="" [selected]="fTabla() === ''">Todas las tablas</option>
+        @for (t of catalogo().tablas; track t.esquema + '.' + t.tabla) {
+          <option [value]="t.esquema + '.' + t.tabla"
+                  [selected]="fTabla() === t.esquema + '.' + t.tabla">
+            {{ t.esquema }}.{{ t.tabla }}
+          </option>
+        }
+      </select>
+
+      <select class="input aud__select aud__select--sm" [value]="fOperacion()"
+              (change)="fOperacion.set($any($event.target).value)" aria-label="Filtrar por operación">
+        <option value="" [selected]="fOperacion() === ''">Toda operación</option>
+        <option value="I" [selected]="fOperacion() === 'I'">Creación</option>
+        <option value="U" [selected]="fOperacion() === 'U'">Modificación</option>
+        <option value="D" [selected]="fOperacion() === 'D'">Eliminación</option>
+        <option value="B" [selected]="fOperacion() === 'B'">Baseline</option>
+      </select>
+    } @else {
+      <select class="input aud__select aud__select--sm" [value]="fModulo()"
+              (change)="onModuloChange($any($event.target).value)" aria-label="Filtrar por módulo">
+        <option value="" [selected]="fModulo() === ''">Todo módulo</option>
+        @for (m of catalogo().modulos; track m.modulo) {
+          <option [value]="m.modulo" [selected]="fModulo() === m.modulo">{{ m.modulo }}</option>
+        }
+      </select>
+
+      <select class="input aud__select" [value]="fAccion()"
+              (change)="fAccion.set($any($event.target).value)"
+              [disabled]="!fModulo()" aria-label="Filtrar por acción">
+        <option value="" [selected]="fAccion() === ''">Toda acción</option>
+        @for (a of accionesModulo(); track a) {
+          <option [value]="a" [selected]="fAccion() === a">{{ a }}</option>
+        }
+      </select>
+    }
+
+    <input type="date" class="input aud__date" [value]="fDesde()"
+           (change)="fDesde.set($any($event.target).value)" aria-label="Desde" />
+    <input type="date" class="input aud__date" [value]="fHasta()"
+           (change)="fHasta.set($any($event.target).value)" aria-label="Hasta" />
+
+    <button type="button" class="btn btn--primary" (click)="aplicarFiltros()">Filtrar</button>
+    <button type="button" class="btn aud__btn-clear" (click)="limpiarFiltros()" title="Limpiar filtros">
+      <lucide-icon name="rotate-ccw" [size]="16" aria-hidden="true" />
+    </button>
+    <button type="button" class="btn aud__btn-export" (click)="exportar()"
+            [disabled]="exportando()" title="Exportar CSV">
+      @if (exportando()) {
+        <lucide-icon name="loader-2" [size]="16" class="aud__spin" aria-hidden="true" />
+      } @else {
+        <lucide-icon name="download" [size]="16" aria-hidden="true" />
+      }
+      CSV
+    </button>
+  </div>
+
+  <!-- Estados -->
+  @if (estado() === 'loading') {
+    <div class="aud__skeleton" aria-busy="true">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="aud__skeleton-row"></div>
+      }
+    </div>
+  } @else if (estado() === 'error') {
+    <div class="aud__state aud__state--error" role="alert">
+      <lucide-icon name="alert-circle" [size]="32" aria-hidden="true" />
+      <p class="aud__state-title">No se pudo cargar la auditoría</p>
+      <button type="button" class="btn btn--primary" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (total() === 0) {
+    <div class="aud__state" role="status">
+      <lucide-icon name="history" [size]="32" aria-hidden="true" />
+      <p class="aud__state-title">Sin registros para mostrar</p>
+      <p class="aud__state-desc">Ajusta los filtros o el rango de fechas.</p>
+    </div>
+  } @else {
+    <div class="aud__table-wrap">
+      @if (pestania() === 'datos') {
+        <!-- ══ Tabla: cambios de datos ══ -->
+        <table class="aud__table">
+          <thead>
+            <tr>
+              <th class="aud__col-fecha">Fecha</th>
+              <th>Tabla</th>
+              <th class="aud__col-op">Operación</th>
+              <th>Registro</th>
+              <th>Negocio</th>
+              <th>Usuario</th>
+              <th class="aud__col-toggle"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of datos(); track d.id_audit) {
+              <tr class="aud__row" [class.is-open]="expandida() === d.id_audit"
+                  (click)="toggleDetalle(d.id_audit)">
+                <td class="aud__col-fecha">{{ fmtFecha(d.fecha) }}</td>
+                <td><span class="aud__mono">{{ d.esquema }}.{{ d.tabla }}</span></td>
+                <td class="aud__col-op">
+                  <span class="aud__badge aud__badge--{{ d.operacion }}">{{ opLabel(d.operacion) }}</span>
+                </td>
+                <td class="aud__mono">#{{ d.pk_registro ?? '—' }}</td>
+                <td>{{ d.negocio_nombre ?? (d.id_negocio ? '#' + d.id_negocio : '—') }}</td>
+                <td>{{ d.usuario_nombre || (d.id_usuario ? '#' + d.id_usuario : '—') }}</td>
+                <td class="aud__col-toggle">
+                  <lucide-icon name="chevron-down" [size]="16" class="aud__chevron" aria-hidden="true" />
+                </td>
+              </tr>
+              @if (expandida() === d.id_audit) {
+                <tr class="aud__detail-row">
+                  <td colspan="7">
+                    <div class="aud__detail">
+                      @if (d.datos_antes) {
+                        <div class="aud__detail-col">
+                          <h4 class="aud__detail-title">Antes</h4>
+                          <pre class="aud__json">{{ json(d.datos_antes) }}</pre>
+                        </div>
+                      }
+                      @if (d.datos_despues) {
+                        <div class="aud__detail-col">
+                          <h4 class="aud__detail-title">{{ d.datos_antes ? 'Después' : 'Datos' }}</h4>
+                          <pre class="aud__json">{{ json(d.datos_despues) }}</pre>
+                        </div>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      } @else {
+        <!-- ══ Tabla: eventos ══ -->
+        <table class="aud__table">
+          <thead>
+            <tr>
+              <th class="aud__col-fecha">Fecha</th>
+              <th>Módulo</th>
+              <th>Acción</th>
+              <th>Resultado</th>
+              <th>Negocio</th>
+              <th>Usuario</th>
+              <th>IP</th>
+              <th class="aud__col-toggle"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of eventos(); track e.id_evento) {
+              <tr class="aud__row" [class.is-open]="expandida() === e.id_evento"
+                  (click)="toggleDetalle(e.id_evento)">
+                <td class="aud__col-fecha">{{ fmtFecha(e.fecha) }}</td>
+                <td><span class="aud__mono">{{ e.modulo }}</span></td>
+                <td><span class="aud__mono">{{ e.accion }}</span></td>
+                <td>
+                  <span class="aud__badge"
+                        [class.aud__badge--ok]="e.resultado === 'ok'"
+                        [class.aud__badge--err]="e.resultado !== 'ok'">
+                    {{ e.resultado }}
+                  </span>
+                </td>
+                <td>{{ e.negocio_nombre ?? (e.id_negocio ? '#' + e.id_negocio : '—') }}</td>
+                <td>{{ e.usuario_nombre || (e.id_usuario ? '#' + e.id_usuario : '—') }}</td>
+                <td class="aud__mono">{{ e.ip ?? '—' }}</td>
+                <td class="aud__col-toggle">
+                  <lucide-icon name="chevron-down" [size]="16" class="aud__chevron" aria-hidden="true" />
+                </td>
+              </tr>
+              @if (expandida() === e.id_evento) {
+                <tr class="aud__detail-row">
+                  <td colspan="8">
+                    <div class="aud__detail">
+                      <div class="aud__detail-col">
+                        <h4 class="aud__detail-title">Detalle</h4>
+                        <pre class="aud__json">{{ json(e.detalle) }}</pre>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- Paginación -->
+    <div class="aud__pager">
+      <button type="button" class="btn aud__pager-btn" (click)="irPagina(-1)" [disabled]="page() === 1">
+        <lucide-icon name="chevron-left" [size]="16" aria-hidden="true" />
+      </button>
+      <span class="aud__pager-info">Página {{ page() }} de {{ totalPaginas() }}</span>
+      <button type="button" class="btn aud__pager-btn" (click)="irPagina(1)"
+              [disabled]="page() >= totalPaginas()">
+        <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
+      </button>
+    </div>
+  }
+</div>

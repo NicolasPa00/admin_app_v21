@@ -1,0 +1,270 @@
+/* AuditoriaComponent — vista de auditoría del Super Admin. */
+.aud {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+
+  &__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+
+  &__count {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    white-space: nowrap;
+  }
+
+  /* ── Pestañas ── */
+  &__tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+
+    &:hover { color: var(--color-text); }
+
+    &.is-active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+  }
+
+  /* ── Filtros ── */
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__select { max-width: 15rem; }
+  &__select--sm { max-width: 11rem; }
+  &__date { max-width: 10rem; }
+
+  &__btn-clear,
+  &__btn-export,
+  &__pager-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+
+    &:hover:not(:disabled) {
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+  }
+
+  &__btn-export { margin-left: auto; }
+
+  &__spin { animation: aud-spin 0.9s linear infinite; }
+
+  /* ── Estados ── */
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__skeleton-row {
+    height: 2.75rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--color-text) 6%, transparent);
+    animation: aud-pulse 1.4s ease-in-out infinite;
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+
+    &--error { color: var(--color-error, #b91c1c); }
+  }
+
+  &__state-title {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  &__state-desc {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+
+  /* ── Tabla ── */
+  &__table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8438rem;
+
+    th {
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.6rem 0.85rem;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+  }
+
+  &__row {
+    cursor: pointer;
+    transition: background 0.12s;
+
+    &:hover { background: color-mix(in srgb, var(--color-primary) 4%, transparent); }
+    &.is-open { background: color-mix(in srgb, var(--color-primary) 7%, transparent); }
+    &.is-open .aud__chevron { transform: rotate(180deg); }
+  }
+
+  &__chevron {
+    color: var(--color-text-secondary);
+    transition: transform 0.15s;
+  }
+
+  &__col-fecha { white-space: nowrap; }
+  &__col-op { white-space: nowrap; }
+  &__col-toggle { width: 2rem; text-align: center; }
+
+  &__mono {
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.8125rem;
+  }
+
+  /* ── Badges de operación / resultado ── */
+  &__badge {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+    color: var(--color-text-secondary);
+
+    &--I { background: color-mix(in srgb, #16a34a 12%, transparent); color: #15803d; }
+    &--U { background: color-mix(in srgb, #d97706 14%, transparent); color: #b45309; }
+    &--D { background: color-mix(in srgb, #dc2626 12%, transparent); color: #b91c1c; }
+    &--B { background: color-mix(in srgb, var(--color-primary) 10%, transparent); color: var(--color-primary); }
+    &--ok { background: color-mix(in srgb, #16a34a 12%, transparent); color: #15803d; }
+    &--err { background: color-mix(in srgb, #dc2626 12%, transparent); color: #b91c1c; }
+  }
+
+  /* ── Detalle expandible ── */
+  &__detail-row td {
+    padding: 0;
+    background: color-mix(in srgb, var(--color-primary) 3%, transparent);
+  }
+
+  &__detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  &__detail-title {
+    margin: 0 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+  }
+
+  &__json {
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 20rem;
+    overflow-y: auto;
+  }
+
+  /* ── Paginación ── */
+  &__pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  &__pager-info {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+  }
+}
+
+@keyframes aud-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes aud-spin {
+  to { transform: rotate(360deg); }
+}

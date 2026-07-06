@@ -64,6 +64,15 @@ export const adminRoutes: Routes = [
         title: 'Tipos de negocio',
       },
       {
+        path: 'auditoria',
+        loadComponent: () =>
+          import('./features/auditoria/auditoria.component').then(
+            (m) => m.AuditoriaComponent,
+          ),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Auditoría',
+      },
+      {
         path: 'configuracion',
         loadComponent: () =>
           import('./features/configuracion/configuracion.component').then(
