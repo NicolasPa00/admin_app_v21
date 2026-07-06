@@ -120,6 +120,8 @@ export class AdminLayoutComponent {
 
   // ── Derivados de sesión ─────────────────────────────────────
   protected readonly user = this.auth.currentUser;
+  /** ¿La sesión actual es una impersonación de super admin? */
+  protected readonly isImpersonating = this.auth.isImpersonating;
   protected readonly displayName = computed(() => {
     const u = this.user();
     return u ? `${u.primer_nombre} ${u.primer_apellido}` : '';
@@ -166,6 +168,11 @@ export class AdminLayoutComponent {
 
   protected logout(): void {
     this.auth.logout();
+  }
+
+  /** Termina la impersonación y vuelve a la sesión de super admin. */
+  protected stopImpersonation(): void {
+    this.auth.stopImpersonation();
   }
 
   /** Texto sugerido que se autocompleta en el chat de WhatsApp. */

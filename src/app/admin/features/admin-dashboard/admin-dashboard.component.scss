@@ -129,6 +129,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  // Altura uniforme: contenido fijo (header + 3 filas de datos + footer).
+  min-height: 264px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -170,6 +172,10 @@
   color: var(--color-text-primary);
   margin: 0;
   line-height: 1.25;
+  // Una sola línea con ellipsis para que la cabecera no altere la altura.
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .neg-card__type {
@@ -194,12 +200,27 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  min-width: 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 
   lucide-icon { flex-shrink: 0; opacity: .7; }
 
-  dd { margin: 0; }
+  // Valores largos (email) se truncan en vez de crecer la tarjeta.
+  dd {
+    margin: 0;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Texto para datos sin valor ("Sin definir").
+.neg-card__meta-empty {
+  font-style: italic;
+  color: var(--color-text-muted, var(--color-text-secondary));
+  opacity: 0.85;
 }
 
 .neg-card__footer {

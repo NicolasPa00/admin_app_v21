@@ -347,10 +347,34 @@
   box-shadow: var(--shadow-xl, var(--shadow-lg));
 }
 
+.usr-modal__card--sm {
+  max-width: 420px;
+}
+
 .usr-modal__scroll {
   overflow-y: auto;
   flex: 1;
   padding: var(--spacing-xl);
+}
+
+// ── Modal confirmar impersonación ───────────────────────────
+.usr-imp__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.usr-imp__lead {
+  font-size: var(--font-size-md, 1rem);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.usr-imp__note {
+  font-size: var(--font-size-sm, 0.875rem);
+  color: var(--color-text-muted, var(--color-text-secondary));
+  margin: 0;
+  line-height: 1.5;
 }
 
 .usr-modal__head {

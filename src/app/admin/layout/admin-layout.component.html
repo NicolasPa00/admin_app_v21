@@ -108,6 +108,19 @@
       </div>
     </header>
 
+    <!-- Banner de impersonación (super admin actuando como otro usuario) -->
+    @if (isImpersonating()) {
+      <div class="adm__impersonation" role="status">
+        <span>
+          Estás usando el sistema como <strong>{{ displayName() }}</strong> (impersonación).
+        </span>
+        <button type="button" class="adm__impersonation-btn" (click)="stopImpersonation()">
+          <lucide-icon name="log-out" [size]="15" aria-hidden="true" />
+          Volver a mi cuenta
+        </button>
+      </div>
+    }
+
     <!-- Contenido -->
     <main class="adm__content" id="main-content">
       <router-outlet />

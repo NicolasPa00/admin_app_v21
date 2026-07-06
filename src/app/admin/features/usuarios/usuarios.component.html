@@ -195,6 +195,21 @@
                   <button
                     type="button"
                     class="usr__icon-btn"
+                    [disabled]="u.estado !== 'A' || impersonateId() === u.id_usuario"
+                    (click)="impersonar(u)"
+                    aria-label="Entrar como este usuario"
+                    title="Entrar como este usuario"
+                  >
+                    @if (impersonateId() === u.id_usuario) {
+                      <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" />
+                    } @else {
+                      <lucide-icon name="log-in" [size]="16" aria-hidden="true" />
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    class="usr__icon-btn"
                     [class.usr__icon-btn--danger]="u.estado === 'A'"
                     [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
                     (click)="toggleEstado(u)"
@@ -461,6 +476,63 @@
               <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Guardando…
             } @else {
               <lucide-icon name="check" [size]="16" aria-hidden="true" /> Guardar cambios
+            }
+          </button>
+        </footer>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Modal confirmar impersonación ════════════ -->
+@if (confirmUser(); as u) {
+  <div class="usr-modal" (click)="cancelImpersonar()">
+    <div
+      class="usr-modal__card usr-modal__card--sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="usr-imp-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="usr-modal__scroll">
+        <header class="usr-modal__head">
+          <div class="usr__user-cell">
+            <span class="usr__avatar" aria-hidden="true">
+              <lucide-icon name="log-in" [size]="18" aria-hidden="true" />
+            </span>
+            <div class="usr__user-text">
+              <h2 id="usr-imp-title" class="usr-modal__name">Entrar como usuario</h2>
+            </div>
+          </div>
+          <button type="button" class="usr__icon-btn" (click)="cancelImpersonar()" aria-label="Cerrar">
+            <lucide-icon name="x" [size]="18" aria-hidden="true" />
+          </button>
+        </header>
+
+        <div class="usr-imp__body">
+          <p class="usr-imp__lead">
+            Vas a entrar al sistema como <strong>{{ u.nombre_completo }}</strong>.
+          </p>
+          <p class="usr-imp__note">
+            Tu sesión de super administrador se guardará para poder regresar, y esta
+            acción quedará registrada en la auditoría.
+          </p>
+        </div>
+
+        <footer class="usr-modal__foot">
+          <button type="button" class="btn btn--outline" (click)="cancelImpersonar()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="impersonateId() !== null"
+            (click)="confirmImpersonar()"
+          >
+            @if (impersonateId() !== null) {
+              <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Entrando…
+            } @else {
+              <lucide-icon name="log-in" [size]="16" aria-hidden="true" /> Entrar como este usuario
             }
           </button>
         </footer>

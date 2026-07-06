@@ -220,7 +220,9 @@ export class LandingComponent {
   protected readonly ecosistema          = ECOSISTEMA;
   protected readonly mobileMenuOpen      = signal(false);
   protected readonly currentYear         = new Date().getFullYear();
-  protected readonly waUrl               = environment.whatsappUrl;
+  /** Enlace de WhatsApp con el mensaje predeterminado precargado. */
+  protected readonly waUrl               =
+    `${environment.whatsappUrl}?text=${encodeURIComponent('Hola!, quiero adquirir Escalapp')}`;
 
   /* ── Typewriter CTA ── */
   private readonly ctaPhrases = [

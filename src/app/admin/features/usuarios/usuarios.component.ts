@@ -9,10 +9,11 @@ import {
 import { forkJoin } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Search, Users, Eye, UserCheck, UserX, Building2, AlertCircle,
-  X, CreditCard, ShieldCheck, Pencil, Check, Loader2,
+  X, CreditCard, ShieldCheck, Pencil, Check, Loader2, LogIn,
 } from 'lucide-angular';
 
 import { UsuariosAdminService } from '../../data-access/usuarios-admin.service';
+import { AuthService } from '../../../auth/data-access/auth.service';
 import {
   UsuarioAdmin, LoadingState, Plan, PlanInfo, UpdateUsuarioPerfilRequest,
 } from '../../models/admin.models';
@@ -62,7 +63,7 @@ interface PlanEdit {
       multi: true,
       useValue: new LucideIconProvider({
         Search, Users, Eye, UserCheck, UserX, Building2, AlertCircle,
-        X, CreditCard, ShieldCheck, Pencil, Check, Loader2,
+        X, CreditCard, ShieldCheck, Pencil, Check, Loader2, LogIn,
       }),
     },
   ],
@@ -71,6 +72,12 @@ interface PlanEdit {
 })
 export class UsuariosComponent implements OnInit {
   private readonly service = inject(UsuariosAdminService);
+  private readonly auth = inject(AuthService);
+
+  /** id del usuario que se está impersonando (para estado de carga del botón). */
+  protected readonly impersonateId = signal<number | null>(null);
+  /** Usuario pendiente de confirmar para impersonar (abre el modal). */
+  protected readonly confirmUser = signal<UsuarioAdmin | null>(null);
 
   // ── Estado ──────────────────────────────────────────────────
   protected readonly loadingState = signal<LoadingState>('idle');
@@ -318,6 +325,42 @@ export class UsuariosComponent implements OnInit {
       error: (err) => {
         this.editSaving.set(false);
         this.editError.set(err.error?.message ?? 'No se pudo actualizar el usuario.');
+      },
+    });
+  }
+
+  /**
+   * Abre el modal de confirmación para entrar al sistema como el usuario dado.
+   */
+  protected impersonar(u: UsuarioAdmin): void {
+    if (u.estado !== 'A' || this.impersonateId() !== null) return;
+    this.confirmUser.set(u);
+  }
+
+  /** Cierra el modal de confirmación de impersonación. */
+  protected cancelImpersonar(): void {
+    this.confirmUser.set(null);
+  }
+
+  /**
+   * Confirma la impersonación (super admin): el backend valida el rol y audita el acceso.
+   */
+  protected confirmImpersonar(): void {
+    const u = this.confirmUser();
+    if (!u || this.impersonateId() !== null) return;
+
+    this.impersonateId.set(u.id_usuario);
+    this.actionError.set(null);
+
+    this.auth.impersonate(u.id_usuario).subscribe({
+      next: () => {
+        this.impersonateId.set(null);
+        this.confirmUser.set(null);
+      },
+      error: (err) => {
+        this.actionError.set(err.error?.message ?? 'No se pudo iniciar la impersonación.');
+        this.impersonateId.set(null);
+        this.confirmUser.set(null);
       },
     });
   }

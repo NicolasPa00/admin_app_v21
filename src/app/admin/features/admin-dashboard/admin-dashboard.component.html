@@ -100,34 +100,37 @@
               <lucide-icon name="building-2" [size]="24" />
             </div>
             <div class="neg-card__heading">
-              <h2 class="neg-card__name">{{ negocio.nombre }}</h2>
+              <h2 class="neg-card__name" [title]="negocio.nombre">{{ negocio.nombre }}</h2>
               <span class="neg-card__type">{{ negocio.tipoNombre | titlecase }}</span>
             </div>
           </header>
 
-          <!-- Datos del negocio -->
+          <!-- Datos del negocio (siempre las 3 filas, para altura uniforme) -->
           <dl class="neg-card__meta">
-            @if (negocio.nit) {
-              <div class="neg-card__meta-row">
-                <lucide-icon name="hash" [size]="13" aria-hidden="true" />
-                <dt class="sr-only">NIT</dt>
-                <dd>NIT: {{ negocio.nit }}</dd>
-              </div>
-            }
-            @if (negocio.telefono) {
-              <div class="neg-card__meta-row">
-                <lucide-icon name="phone" [size]="13" aria-hidden="true" />
-                <dt class="sr-only">Teléfono</dt>
-                <dd>{{ negocio.telefono }}</dd>
-              </div>
-            }
-            @if (negocio.email_contacto) {
-              <div class="neg-card__meta-row">
-                <lucide-icon name="mail" [size]="13" aria-hidden="true" />
-                <dt class="sr-only">Email</dt>
-                <dd>{{ negocio.email_contacto }}</dd>
-              </div>
-            }
+            <div class="neg-card__meta-row">
+              <lucide-icon name="hash" [size]="13" aria-hidden="true" />
+              <dt class="sr-only">NIT</dt>
+              <dd [class.neg-card__meta-empty]="!negocio.nit">
+                NIT: {{ negocio.nit || 'Sin definir' }}
+              </dd>
+            </div>
+            <div class="neg-card__meta-row">
+              <lucide-icon name="phone" [size]="13" aria-hidden="true" />
+              <dt class="sr-only">Teléfono</dt>
+              <dd [class.neg-card__meta-empty]="!negocio.telefono">
+                {{ negocio.telefono || 'Sin definir' }}
+              </dd>
+            </div>
+            <div class="neg-card__meta-row">
+              <lucide-icon name="mail" [size]="13" aria-hidden="true" />
+              <dt class="sr-only">Email</dt>
+              <dd
+                [class.neg-card__meta-empty]="!negocio.email_contacto"
+                [title]="negocio.email_contacto || ''"
+              >
+                {{ negocio.email_contacto || 'Sin definir' }}
+              </dd>
+            </div>
           </dl>
 
           <!-- Acción -->

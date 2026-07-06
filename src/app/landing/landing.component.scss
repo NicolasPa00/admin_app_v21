@@ -1955,6 +1955,51 @@
     outline: 2px solid #25d366;
     outline-offset: 3px;
   }
+
+  /* Tooltip: aparece en hover/focus, a la izquierda del botón */
+  &:hover .lp-wa-fab__tooltip,
+  &:focus-visible .lp-wa-fab__tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+.lp-wa-fab__tooltip {
+  position: absolute;
+  right: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) translateX(8px);
+  padding: 8px 12px;
+  border-radius: var(--es-radius-md, 8px);
+  background: var(--es-color-text, #0f172a);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition:
+    opacity var(--es-transition-fast),
+    transform var(--es-transition-fast),
+    visibility var(--es-transition-fast);
+
+  /* Flechita apuntando al botón */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-left-color: var(--es-color-text, #0f172a);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: opacity var(--es-transition-fast), visibility var(--es-transition-fast);
+  }
 }
 
 /* ── Modo oscuro: ramp de acento aclarado un paso ──

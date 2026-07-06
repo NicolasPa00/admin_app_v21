@@ -64,6 +64,10 @@ export class AuthService {
     () => !!this._accessToken() && !!this.currentUser(),
   );
 
+  /** ¿La sesión actual es una impersonación de super admin? */
+  private readonly _impersonating = signal(false);
+  readonly isImpersonating = this._impersonating.asReadonly();
+
   // ===================== Init =====================
 
   constructor() {
@@ -76,6 +80,7 @@ export class AuthService {
           const user: User = JSON.parse(metaRaw);
           this._accessToken.set(token);
           this.currentUser.set(user);
+          this._impersonating.set(!!localStorage.getItem('admin_token'));
         } catch {
           localStorage.removeItem('app_token');
           localStorage.removeItem('app_user_meta');
@@ -129,14 +134,75 @@ export class AuthService {
   }
 
   /**
+   * Impersonación de super admin: obtiene un token de sesión de otro usuario
+   * y cambia la sesión actual a la de ese usuario. La sesión de super admin
+   * se guarda aparte para poder volver con `stopImpersonation()`.
+   *
+   * POST /admin/auth/impersonar  (protegido: solo SUPER ADMINISTRADOR)
+   */
+  impersonate(idUsuario: number): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${this.API}/auth/impersonar`, { id_usuario: idUsuario })
+      .pipe(
+        tap((res) => {
+          if (res.data) {
+            if (isPlatformBrowser(this.platformId) && !this._impersonating()) {
+              // Preserva la sesión de super admin para poder regresar.
+              const adminToken = localStorage.getItem('app_token');
+              const adminMeta = localStorage.getItem('app_user_meta');
+              if (adminToken) localStorage.setItem('admin_token', adminToken);
+              if (adminMeta) localStorage.setItem('admin_user_meta', adminMeta);
+            }
+            this._accessToken.set(res.data.token);
+            this.currentUser.set(res.data.usuario);
+            if (isPlatformBrowser(this.platformId)) {
+              localStorage.setItem('app_token', res.data.token);
+            }
+            this.persistUserMeta(res.data.usuario);
+            this._impersonating.set(true);
+            this.router.navigate(['/admin/dashboard']);
+          }
+        }),
+      );
+  }
+
+  /**
+   * Termina la impersonación y restaura la sesión de super admin guardada.
+   */
+  stopImpersonation(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const adminToken = localStorage.getItem('admin_token');
+    const adminMeta = localStorage.getItem('admin_user_meta');
+    if (adminToken && adminMeta) {
+      localStorage.setItem('app_token', adminToken);
+      localStorage.setItem('app_user_meta', adminMeta);
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user_meta');
+      try {
+        this._accessToken.set(adminToken);
+        this.currentUser.set(JSON.parse(adminMeta) as User);
+        this._impersonating.set(false);
+        this.router.navigate(['/admin/dashboard']);
+        return;
+      } catch {
+        /* cae a logout si la metadata está corrupta */
+      }
+    }
+    this.logout();
+  }
+
+  /**
    * Cierra sesión: limpia estado y redirige a login.
    */
   logout(): void {
     this._accessToken.set(null);
     this.currentUser.set(null);
+    this._impersonating.set(false);
     if (isPlatformBrowser(this.platformId)) {
       localStorage.removeItem('app_token');
       localStorage.removeItem('app_user_meta');
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user_meta');
     }
     this.router.navigate(['/auth/login']);
   }
