@@ -1,0 +1,214 @@
+<!--
+  Ficha 360 (Super Admin): personas que la plataforma conoce y su actividad agregada.
+  Vista de solo lectura — la identidad se crea sola al tomar un pedido con teléfono.
+-->
+<div class="per">
+  <header class="per__head">
+    <div>
+      <h1 class="per__title">Ficha 360</h1>
+      <p class="per__subtitle">Personas conocidas por la plataforma y su actividad</p>
+    </div>
+    <span class="per__count">{{ total() }} {{ total() === 1 ? 'persona' : 'personas' }}</span>
+  </header>
+
+  <div class="per__search">
+    <lucide-icon name="search" [size]="16" class="per__search-icon" aria-hidden="true" />
+    <input
+      type="search"
+      class="input per__search-input"
+      placeholder="Buscar por nombre o teléfono…"
+      aria-label="Buscar personas por nombre o teléfono"
+      [(ngModel)]="busqueda"
+      (keyup.enter)="buscar()"
+    />
+    @if (filtroActivo()) {
+      <button type="button" class="per__search-clear" (click)="limpiarBusqueda()" aria-label="Limpiar búsqueda">
+        <lucide-icon name="x" [size]="16" aria-hidden="true" />
+      </button>
+    }
+    <button type="button" class="btn per__search-btn" (click)="buscar()">Buscar</button>
+  </div>
+
+  @if (estado() === 'loading') {
+    <div class="per__state">
+      <lucide-icon name="loader-2" [size]="20" class="per__spin" aria-hidden="true" />
+      <span>Cargando personas…</span>
+    </div>
+  } @else if (estado() === 'error') {
+    <div class="per__state per__state--error">
+      <lucide-icon name="alert-circle" [size]="20" aria-hidden="true" />
+      <span>{{ error() }}</span>
+      <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (personas().length === 0) {
+    <div class="per__state">
+      <lucide-icon name="users" [size]="24" aria-hidden="true" />
+      @if (filtroActivo()) {
+        <span>Ninguna persona coincide con «{{ filtroActivo() }}».</span>
+      } @else {
+        <span>Todavía no hay personas registradas. Se crean solas al tomar pedidos con teléfono.</span>
+      }
+    </div>
+  } @else {
+    <div class="per__table-wrap">
+      <table class="per__table">
+        <thead>
+          <tr>
+            <th scope="col">Persona</th>
+            <th scope="col">Teléfono</th>
+            <th scope="col">Negocio</th>
+            <th scope="col" class="per__num">Pedidos</th>
+            <th scope="col" class="per__num">Total gastado</th>
+            <th scope="col">Último pedido</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of personas(); track p.id_persona_negocio) {
+            <tr class="per__row" tabindex="0" (click)="abrirFicha(p)" (keyup.enter)="abrirFicha(p)">
+              <td>
+                <span class="per__name">{{ p.nombre_mostrado || 'Sin nombre' }}</span>
+                @if (esClienteRecurrente(p.pedidos)) {
+                  <span class="per__tag">Recurrente</span>
+                }
+              </td>
+              <td class="per__mono">{{ formatearTelefono(p.telefono_e164) }}</td>
+              <td>{{ p.negocio }}</td>
+              <td class="per__num">{{ p.pedidos }}</td>
+              <td class="per__num">{{ p.total_gastado | number: '1.0-0' }}</td>
+              <td>
+                {{ p.ultimo_pedido ? (p.ultimo_pedido | date: 'dd/MM/yyyy') : '—' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="per__pager">
+      <button type="button" class="btn" [disabled]="!hayAnterior()" (click)="paginaAnterior()">
+        <lucide-icon name="chevron-left" [size]="16" aria-hidden="true" /> Anterior
+      </button>
+      <span class="per__pager-info">Página {{ pagina() }} de {{ totalPaginas() }}</span>
+      <button type="button" class="btn" [disabled]="!haySiguiente()" (click)="paginaSiguiente()">
+        Siguiente <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
+      </button>
+    </div>
+  }
+</div>
+
+<!-- Ficha de una persona -->
+@if (estadoFicha() !== 'idle') {
+  <div class="per__overlay" (click)="cerrarFicha()">
+    <aside
+      class="per__panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Ficha de la persona"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" class="per__close" (click)="cerrarFicha()" aria-label="Cerrar ficha">
+        <lucide-icon name="x" [size]="18" aria-hidden="true" />
+      </button>
+
+      @if (estadoFicha() === 'loading') {
+        <div class="per__state">
+          <lucide-icon name="loader-2" [size]="20" class="per__spin" aria-hidden="true" />
+          <span>Cargando ficha…</span>
+        </div>
+      } @else if (estadoFicha() === 'error') {
+        <div class="per__state per__state--error">
+          <lucide-icon name="alert-circle" [size]="20" aria-hidden="true" />
+          <span>No se pudo cargar la ficha.</span>
+        </div>
+      } @else if (ficha(); as f) {
+        <header class="per__panel-head">
+          <h2 class="per__panel-title">{{ f.persona.nombre_mostrado || 'Sin nombre' }}</h2>
+          <p class="per__panel-sub">
+            <lucide-icon name="phone" [size]="14" aria-hidden="true" />
+            <span class="per__mono">{{ formatearTelefono(f.persona.telefono_e164) }}</span>
+            <span class="per__dot">·</span>
+            <lucide-icon name="store" [size]="14" aria-hidden="true" />
+            {{ f.persona.negocio }}
+          </p>
+        </header>
+
+        @if (f.actividad.restaurante; as r) {
+          <section class="per__stats">
+            <div class="per__stat">
+              <lucide-icon name="shopping-bag" [size]="16" aria-hidden="true" />
+              <span class="per__stat-val">{{ r.pedidos }}</span>
+              <span class="per__stat-lbl">pedidos</span>
+            </div>
+            <div class="per__stat">
+              <lucide-icon name="receipt" [size]="16" aria-hidden="true" />
+              <span class="per__stat-val">{{ r.total_gastado | number: '1.0-0' }}</span>
+              <span class="per__stat-lbl">total gastado</span>
+            </div>
+            <div class="per__stat">
+              <lucide-icon name="receipt" [size]="16" aria-hidden="true" />
+              <span class="per__stat-val">{{ r.ticket_promedio | number: '1.0-0' }}</span>
+              <span class="per__stat-lbl">ticket promedio</span>
+            </div>
+            <div class="per__stat">
+              <lucide-icon name="calendar-clock" [size]="16" aria-hidden="true" />
+              <span class="per__stat-val">
+                {{ r.primer_pedido ? (r.primer_pedido | date: 'dd/MM/yy') : '—' }}
+              </span>
+              <span class="per__stat-lbl">cliente desde</span>
+            </div>
+          </section>
+
+          @if (r.pedidos === 1) {
+            <p class="per__note">
+              <lucide-icon name="info" [size]="14" aria-hidden="true" />
+              Esta persona solo ha hecho un pedido. Es el caso más común: alrededor del 70%
+              de las personas conocidas no ha vuelto todavía.
+            </p>
+          }
+        }
+
+        <section class="per__section">
+          <h3 class="per__section-title">Últimos pedidos</h3>
+          @if (f.ultimos_pedidos.length === 0) {
+            <p class="per__empty">Sin pedidos registrados.</p>
+          } @else {
+            <table class="per__table per__table--inner">
+              <thead>
+                <tr>
+                  <th scope="col">Orden</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col" class="per__num">Total</th>
+                  <th scope="col">Pago</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of f.ultimos_pedidos; track p.id_orden) {
+                  <tr>
+                    <td class="per__mono">{{ p.numero_orden }}</td>
+                    <td>{{ p.fecha_creacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td class="per__num">{{ p.total | number: '1.0-0' }}</td>
+                    <td>
+                      <span class="per__badge" [class.is-paid]="p.estado_pago === 'pagado'">
+                        {{ p.estado_pago === 'pagado' ? 'Pagado' : 'Pendiente' }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+
+        <!--
+          Distinguir "sin actividad" de "aún no se agrega" es importante: estas verticales
+          están vacías en producción, así que agregarlas sería construir para nadie.
+        -->
+        <p class="per__note per__note--muted">
+          <lucide-icon name="info" [size]="14" aria-hidden="true" />
+          Por ahora la ficha solo agrega actividad de restaurante. Las demás verticales se
+          añadirán cuando tengan datos.
+        </p>
+      }
+    </aside>
+  </div>
+}

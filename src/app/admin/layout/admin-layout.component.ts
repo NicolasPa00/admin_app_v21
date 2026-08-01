@@ -25,6 +25,7 @@ import {
   Users,
   Store,
   Building2,
+  Contact,
   History,
   Sun,
   Moon,
@@ -79,7 +80,7 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        LayoutGrid, Settings, Users, Store, Building2, History, Sun, Moon, LogOut,
+        LayoutGrid, Settings, Users, Store, Building2, Contact, History, Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose,
       }),
     },
@@ -99,6 +100,7 @@ export class AdminLayoutComponent {
     { label: 'Negocios', icon: 'building-2', route: '/admin/negocios', superAdmin: true },
     { label: 'Usuarios', icon: 'users', route: '/admin/usuarios', superAdmin: true },
     { label: 'Tipos', icon: 'store', route: '/admin/registrar', superAdmin: true },
+    { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },
   ];
