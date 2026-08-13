@@ -73,6 +73,16 @@ export const adminRoutes: Routes = [
         title: 'Ficha 360',
       },
       {
+        // Intelligence Console (F5-E): la Observabilidad del asistente, solo lectura.
+        path: 'intelligence',
+        loadComponent: () =>
+          import('./features/intelligence/intelligence.component').then(
+            (m) => m.IntelligenceComponent,
+          ),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Intelligence',
+      },
+      {
         path: 'auditoria',
         loadComponent: () =>
           import('./features/auditoria/auditoria.component').then(

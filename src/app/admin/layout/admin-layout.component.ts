@@ -27,6 +27,7 @@ import {
   Building2,
   Contact,
   History,
+  Bot,
   Sun,
   Moon,
   LogOut,
@@ -80,7 +81,7 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        LayoutGrid, Settings, Users, Store, Building2, Contact, History, Sun, Moon, LogOut,
+        LayoutGrid, Settings, Users, Store, Building2, Contact, History, Bot, Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose,
       }),
     },
@@ -101,6 +102,7 @@ export class AdminLayoutComponent {
     { label: 'Usuarios', icon: 'users', route: '/admin/usuarios', superAdmin: true },
     { label: 'Tipos', icon: 'store', route: '/admin/registrar', superAdmin: true },
     { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
+    { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },
   ];
@@ -150,6 +152,9 @@ export class AdminLayoutComponent {
     if (url.includes('/negocios')) return 'Negocios';
     if (url.includes('/usuarios')) return 'Usuarios';
     if (url.includes('/registrar')) return 'Tipos de negocio';
+    if (url.includes('/intelligence')) return 'Intelligence';
+    if (url.includes('/personas')) return 'Ficha 360';
+    if (url.includes('/auditoria')) return 'Auditoría';
     if (url.includes('/tipos-negocio')) return 'Roles del negocio';
     return 'Inicio';
   });

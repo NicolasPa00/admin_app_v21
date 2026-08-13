@@ -1,0 +1,314 @@
+<!--
+  Intelligence Console (F5-E): la Observabilidad vista desde el panel.
+  Solo lectura. Todo lo que se pinta salió de conversaciones reales — ADR-022 prohíbe
+  construir esta pantalla con datos simulados.
+-->
+<div class="int">
+  <header class="int__head">
+    <div>
+      <h1 class="int__title">Intelligence</h1>
+      <p class="int__subtitle">Conversaciones del asistente, turno a turno</p>
+    </div>
+    <span class="int__count">{{ total() }} {{ total() === 1 ? 'conversación' : 'conversaciones' }}</span>
+  </header>
+
+  @if (sinMigrar()) {
+    <!-- 503: la fase no está desplegada en este entorno. No es una avería. -->
+    <div class="int__state">
+      <lucide-icon name="bot" [size]="24" aria-hidden="true" />
+      <span>EscalApp Intelligence todavía no está migrado en este entorno.</span>
+      <code class="int__code">npm run migrate:intelligence-ledger</code>
+    </div>
+  } @else {
+    <!-- ── Métricas: las doce preguntas de ADR-022, hasta donde F5 llega ── -->
+    @if (estadoMetricas() === 'success' && metricas(); as m) {
+      <section class="int__metricas" aria-label="Métricas del asistente">
+        <div class="int__metrica">
+          <lucide-icon name="message-square" [size]="16" aria-hidden="true" />
+          <span class="int__metrica-valor">{{ m.conversaciones.conversaciones }}</span>
+          <span class="int__metrica-label">conversaciones</span>
+        </div>
+        <div class="int__metrica">
+          <lucide-icon name="zap" [size]="16" aria-hidden="true" />
+          <span class="int__metrica-valor">{{ m.turnos.turnos }}</span>
+          <span class="int__metrica-label">turnos</span>
+        </div>
+        <div class="int__metrica">
+          <lucide-icon name="circle-check" [size]="16" aria-hidden="true" />
+          <span class="int__metrica-valor">
+            {{ m.tasa_resolucion === null ? '—' : (m.tasa_resolucion | percent: '1.0-1') }}
+          </span>
+          <span class="int__metrica-label">resueltos</span>
+        </div>
+        <div class="int__metrica" [class.int__metrica--alerta]="m.turnos.con_error > 0">
+          <lucide-icon name="circle-alert" [size]="16" aria-hidden="true" />
+          <span class="int__metrica-valor">{{ m.turnos.con_error }}</span>
+          <span class="int__metrica-label">con error</span>
+        </div>
+        <div class="int__metrica">
+          <lucide-icon name="timer" [size]="16" aria-hidden="true" />
+          <span class="int__metrica-valor">{{ m.turnos.latencia_p95_ms | number }} ms</span>
+          <span class="int__metrica-label">latencia p95</span>
+        </div>
+        <!--
+          El costo $0.00 se muestra a propósito: en F5 no hay IA y ése es el resultado que la
+          fase promete, no una columna vacía. En F6 se llenará solo.
+        -->
+        <div class="int__metrica" [class.int__metrica--ok]="sinCosto()">
+          <lucide-icon name="coins" [size]="16" aria-hidden="true" />
+          <span class="int__metrica-valor">${{ m.costo_total_usd | number: '1.2-2' }}</span>
+          <span class="int__metrica-label">
+            @if (sinCosto()) { sin IA — Nivel 1 } @else { costo }
+          </span>
+        </div>
+      </section>
+
+      @if (m.capacidades.length > 0) {
+        <section class="int__caps" aria-label="Capacidades ejecutadas">
+          <h2 class="int__caps-title">
+            <lucide-icon name="wrench" [size]="14" aria-hidden="true" /> Capacidades ejecutadas
+          </h2>
+          <ul class="int__caps-list">
+            @for (c of m.capacidades; track c.capacidad) {
+              <li class="int__cap">
+                <span class="int__cap-nombre">{{ c.capacidad }}</span>
+                <span class="int__cap-vertical">{{ c.vertical }}</span>
+                <span class="int__cap-n">{{ c.invocaciones }}</span>
+                @if (c.errores > 0) {
+                  <span class="int__cap-err">{{ c.errores }} err</span>
+                }
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    }
+
+    <!-- ── Filtros ── -->
+    <div class="int__search">
+      <lucide-icon name="search" [size]="16" class="int__search-icon" aria-hidden="true" />
+      <input
+        type="search"
+        class="input int__search-input"
+        placeholder="Buscar por sesión o identificador del canal…"
+        aria-label="Buscar conversaciones"
+        [(ngModel)]="busqueda"
+        (keyup.enter)="buscar()"
+      />
+      @if (filtroBusqueda()) {
+        <button type="button" class="int__search-clear" (click)="limpiarBusqueda()" aria-label="Limpiar búsqueda">
+          <lucide-icon name="x" [size]="16" aria-hidden="true" />
+        </button>
+      }
+      <button type="button" class="btn int__search-btn" (click)="buscar()">Buscar</button>
+      <!-- El primer clic de cualquier depuración: por eso está a la vista. -->
+      <button
+        type="button"
+        class="btn int__filtro"
+        [class.int__filtro--activo]="soloErrores()"
+        (click)="alternarErrores()"
+        [attr.aria-pressed]="soloErrores()"
+      >
+        <lucide-icon name="filter" [size]="14" aria-hidden="true" /> Solo con errores
+      </button>
+    </div>
+
+    @if (estado() === 'loading') {
+      <div class="int__state">
+        <lucide-icon name="loader-2" [size]="20" class="int__spin" aria-hidden="true" />
+        <span>Cargando conversaciones…</span>
+      </div>
+    } @else if (estado() === 'error') {
+      <div class="int__state int__state--error">
+        <lucide-icon name="alert-circle" [size]="20" aria-hidden="true" />
+        <span>{{ error() }}</span>
+        <button type="button" class="btn" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (conversaciones().length === 0) {
+      <div class="int__state">
+        <lucide-icon name="bot" [size]="24" aria-hidden="true" />
+        @if (soloErrores()) {
+          <span>Ninguna conversación con errores. Buena señal.</span>
+        } @else if (filtroBusqueda()) {
+          <span>Ninguna conversación coincide con «{{ filtroBusqueda() }}».</span>
+        } @else {
+          <span>Todavía no hay conversaciones. Se crean cuando alguien escribe al asistente.</span>
+        }
+      </div>
+    } @else {
+      <div class="int__tabla-wrap">
+        <table class="int__tabla">
+          <thead>
+            <tr>
+              <th scope="col">Conversación</th>
+              <th scope="col">Negocio</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="int__num">Turnos</th>
+              <th scope="col" class="int__num">Mensajes</th>
+              <th scope="col" class="int__num">Costo</th>
+              <th scope="col">Último mensaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of conversaciones(); track c.id_conversacion) {
+              <tr
+                class="int__fila"
+                [class.int__fila--error]="c.turnos_con_error > 0"
+                (click)="abrirDetalle(c)"
+                tabindex="0"
+                (keyup.enter)="abrirDetalle(c)"
+              >
+                <td>
+                  <span class="int__canal">{{ c.canal }}</span>
+                  <span class="int__externo">{{ c.id_externo }}</span>
+                </td>
+                <td>{{ c.negocio || '—' }}</td>
+                <td>
+                  <span class="int__badge int__badge--{{ c.estado }}">{{ c.estado }}</span>
+                  @if (c.tarea_actual) {
+                    <span class="int__tarea">{{ c.tarea_actual }}</span>
+                  }
+                </td>
+                <td class="int__num">
+                  {{ c.turnos }}
+                  @if (c.turnos_con_error > 0) {
+                    <span class="int__err-chip">{{ c.turnos_con_error }}</span>
+                  }
+                </td>
+                <td class="int__num">{{ c.mensajes }}</td>
+                <td class="int__num">${{ +c.costo_usd | number: '1.2-2' }}</td>
+                <td>{{ c.ultimo_mensaje_en ? (c.ultimo_mensaje_en | date: 'dd/MM/yy HH:mm') : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="int__pag">
+        <button type="button" class="btn" [disabled]="!hayAnterior()" (click)="paginaAnterior()">
+          <lucide-icon name="chevron-left" [size]="16" aria-hidden="true" /> Anterior
+        </button>
+        <span>Página {{ pagina() }} de {{ totalPaginas() }}</span>
+        <button type="button" class="btn" [disabled]="!haySiguiente()" (click)="paginaSiguiente()">
+          Siguiente <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
+        </button>
+      </div>
+    }
+  }
+</div>
+
+<!-- ── Detalle: la pantalla que sustituye a leer logs ── -->
+@if (estadoDetalle() !== 'idle') {
+  <div class="int__modal" role="dialog" aria-modal="true" aria-label="Detalle de la conversación">
+    <div class="int__modal-caja">
+      <header class="int__modal-head">
+        <h2>Conversación</h2>
+        <button type="button" class="int__modal-x" (click)="cerrarDetalle()" aria-label="Cerrar">
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+
+      @if (estadoDetalle() === 'loading') {
+        <div class="int__state">
+          <lucide-icon name="loader-2" [size]="20" class="int__spin" aria-hidden="true" />
+          <span>Cargando el rastro…</span>
+        </div>
+      } @else if (estadoDetalle() === 'error') {
+        <div class="int__state int__state--error">
+          <lucide-icon name="alert-circle" [size]="20" aria-hidden="true" />
+          <span>No se pudo cargar la conversación.</span>
+        </div>
+      } @else if (detalle(); as d) {
+        <div class="int__modal-body">
+          <dl class="int__meta">
+            <div><dt>Canal</dt><dd>{{ d.conversacion.canal }}</dd></div>
+            <div><dt>Sesión</dt><dd>{{ d.conversacion.id_externo }}</dd></div>
+            <div><dt>Negocio</dt><dd>{{ d.conversacion.negocio || '—' }}</dd></div>
+            <div><dt>Estado</dt><dd>{{ d.conversacion.estado }}</dd></div>
+            @if (d.conversacion.persona) {
+              <div><dt>Persona</dt><dd>{{ d.conversacion.persona }}</dd></div>
+            }
+            @if (d.conversacion.tarea_actual) {
+              <div><dt>Tarea</dt><dd>{{ d.conversacion.tarea_actual }}</dd></div>
+            }
+          </dl>
+
+          @if (mensajesSinTurno().length > 0) {
+            <p class="int__pendientes">
+              {{ mensajesSinTurno().length }} mensaje(s) esperando turno.
+            </p>
+          }
+
+          @for (t of d.turnos; track t.id_turno) {
+            <article class="int__turno" [class.int__turno--error]="t.resultado === 'error'">
+              <header class="int__turno-head">
+                <span class="int__turno-n">Turno {{ t.secuencia }}</span>
+                <span class="int__badge int__badge--{{ t.nivel }}">{{ t.nivel }}</span>
+                <span class="int__badge">{{ t.resultado || t.estado }}</span>
+                <span class="int__turno-ms">{{ duracion(t) }}</span>
+                @if (t.intentos > 1) {
+                  <span class="int__err-chip">{{ t.intentos - 1 }} reintento(s)</span>
+                }
+              </header>
+
+              @if (t.error_detalle) {
+                <p class="int__turno-error">
+                  <strong>{{ t.error_codigo }}</strong> — {{ t.error_detalle }}
+                </p>
+              }
+
+              @for (m of mensajesDelTurno(t); track m.id_mensaje) {
+                <div class="int__msg int__msg--{{ m.direccion }}">
+                  <span class="int__msg-txt">{{ m.contenido }}</span>
+                  <!-- Los menús viajan en `opciones`, nunca numerados en el texto (ADR-017). -->
+                  @if (m.opciones?.length) {
+                    <span class="int__opciones">
+                      @for (o of m.opciones; track o.id) {
+                        <span class="int__opcion">{{ o.etiqueta }}</span>
+                      }
+                    </span>
+                  }
+                </div>
+              }
+
+              @if (t.pasos.length > 0) {
+                <div class="int__seccion">
+                  <h3>Decisiones</h3>
+                  <ul class="int__pasos">
+                    @for (p of t.pasos; track p.secuencia) {
+                      <li>
+                        <span class="int__paso-dec">{{ p.decision }}</span>
+                        @if (p.motivo) {
+                          <code class="int__paso-motivo">{{ json(p.motivo) }}</code>
+                        }
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+
+              @if (t.invocaciones.length > 0) {
+                <div class="int__seccion">
+                  <h3>Capacidades ejecutadas</h3>
+                  @for (i of t.invocaciones; track i.capacidad) {
+                    <div class="int__inv" [class.int__inv--error]="i.resultado !== 'ok'">
+                      <span class="int__inv-nombre">{{ i.capacidad }}</span>
+                      <span class="int__badge">{{ i.resultado }}</span>
+                      @if (i.error_codigo) {
+                        <span class="int__err-chip">{{ i.error_codigo }}</span>
+                      }
+                      <span class="int__turno-ms">{{ i.latencia_ms }} ms</span>
+                      @if (i.argumentos) {
+                        <code class="int__inv-args">{{ json(i.argumentos) }}</code>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
