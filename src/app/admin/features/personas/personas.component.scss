@@ -62,10 +62,14 @@
     color: var(--color-text-secondary);
     cursor: pointer;
 
-    &:hover { color: var(--color-text); }
+    &:hover {
+      color: var(--color-text);
+    }
   }
 
-  &__search-btn { white-space: nowrap; }
+  &__search-btn {
+    white-space: nowrap;
+  }
 
   /* Estados */
   &__state {
@@ -81,10 +85,14 @@
     font-size: 0.875rem;
     text-align: center;
 
-    &--error { color: var(--color-danger, #dc2626); }
+    &--error {
+      color: var(--color-danger, #dc2626);
+    }
   }
 
-  &__spin { animation: per-spin 1s linear infinite; }
+  &__spin {
+    animation: per-spin 1s linear infinite;
+  }
 
   /* Tabla */
   &__table-wrap {
@@ -117,7 +125,9 @@
       color: var(--color-text);
     }
 
-    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
 
     &--inner {
       border: 1px solid var(--color-border);
@@ -136,10 +146,14 @@
       outline: none;
     }
 
-    &:focus-visible { box-shadow: inset 0 0 0 2px var(--color-primary); }
+    &:focus-visible {
+      box-shadow: inset 0 0 0 2px var(--color-primary);
+    }
   }
 
-  &__name { font-weight: 600; }
+  &__name {
+    font-weight: 600;
+  }
 
   &__tag {
     margin-left: 0.5rem;
@@ -156,7 +170,9 @@
     font-size: 0.8125rem;
   }
 
-  &__num { text-align: right; }
+  &__num {
+    text-align: right;
+  }
 
   /* Paginación */
   &__pager {
@@ -172,33 +188,51 @@
     color: var(--color-text-secondary);
   }
 
-  /* Panel lateral con la ficha */
+  /* Modal con la ficha.
+     Nació como panel lateral y desentonaba: Usuarios, Negocios e Intelligence abren todos
+     una tarjeta centrada. Se alinea con ellos —mismo encuadre, mismo tope de alto, mismo
+     velo— para que la consola se lea como una sola aplicación y no como cuatro. */
   &__overlay {
     position: fixed;
     inset: 0;
     z-index: 60;
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
     background: rgba(0, 0, 0, 0.45);
   }
 
   &__panel {
     position: relative;
     width: min(560px, 100%);
-    height: 100%;
+    max-height: 90vh;
+    /* El scroll va en __panel-scroll, no aquí: sobre la tarjeta redondeada la barra queda
+       recortada por el radio. Es el mismo motivo que documenta negocios.component.scss. */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+    box-shadow: var(--shadow-xl, var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12)));
+  }
+
+  &__panel-scroll {
+    flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    background: var(--color-surface, #fff);
-    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
   }
 
   &__close {
     position: absolute;
     top: 1rem;
     right: 1rem;
+    /* Va sobre el contenido que ahora se desplaza por debajo. */
+    z-index: 1;
     display: grid;
     place-items: center;
     padding: 0.375rem;
@@ -214,7 +248,9 @@
     }
   }
 
-  &__panel-head { padding-right: 2.5rem; }
+  &__panel-head {
+    padding-right: 2.5rem;
+  }
 
   &__panel-title {
     margin: 0;
@@ -233,7 +269,9 @@
     color: var(--color-text-secondary);
   }
 
-  &__dot { opacity: 0.5; }
+  &__dot {
+    opacity: 0.5;
+  }
 
   /* Métricas */
   &__stats {
@@ -264,7 +302,11 @@
     color: var(--color-text-secondary);
   }
 
-  &__section { display: flex; flex-direction: column; gap: 0.5rem; }
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 
   &__section-title {
     margin: 0;
@@ -284,7 +326,9 @@
     color: var(--color-text-secondary);
   }
 
-  &__note--muted { opacity: 0.85; }
+  &__note--muted {
+    opacity: 0.85;
+  }
 
   &__badge {
     padding: 0.125rem 0.5rem;
@@ -302,5 +346,7 @@
 }
 
 @keyframes per-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
