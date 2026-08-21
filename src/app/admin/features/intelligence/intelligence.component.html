@@ -233,6 +233,39 @@
             }
           </dl>
 
+          <!-- La única acción de esta pantalla (F8-B). Solo aparece si hace falta: una baja
+               puesta por error es lo único que un humano tiene que poder deshacer, y hasta
+               ahora se deshacía con un UPDATE a mano en producción. -->
+          @if (estaBloqueada()) {
+            <div class="int__baja">
+              <p class="int__baja-txt">
+                <lucide-icon name="bell-off" [size]="16" aria-hidden="true" />
+                Esta persona pidió la baja. No recibe nada, ni respuestas ni recordatorios.
+              </p>
+              <div class="int__baja-form">
+                <input
+                  type="text"
+                  class="int__input"
+                  placeholder="¿Por qué se deshace? (queda auditado)"
+                  [(ngModel)]="motivoDesbloqueo"
+                  [disabled]="desbloqueando()"
+                  aria-label="Motivo para deshacer la baja"
+                />
+                <button
+                  type="button"
+                  class="int__btn"
+                  (click)="desbloquear()"
+                  [disabled]="desbloqueando()"
+                >
+                  {{ desbloqueando() ? 'Deshaciendo…' : 'Deshacer la baja' }}
+                </button>
+              </div>
+              @if (errorDesbloqueo(); as err) {
+                <p class="int__baja-error">{{ err }}</p>
+              }
+            </div>
+          }
+
           @if (mensajesSinTurno().length > 0) {
             <p class="int__pendientes">
               {{ mensajesSinTurno().length }} mensaje(s) esperando turno.

@@ -11,7 +11,7 @@ import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Bot, Search, X, ChevronLeft, ChevronRight, Loader2, AlertCircle,
-  MessageSquare, Zap, CircleAlert, CircleCheck, Timer, Wrench, Coins, Filter,
+  MessageSquare, Zap, CircleAlert, CircleCheck, Timer, Wrench, Coins, Filter, BellOff,
 } from 'lucide-angular';
 
 import { IntelligenceService } from '../../data-access/intelligence.service';
@@ -55,7 +55,7 @@ const LIMIT = 25;
       multi: true,
       useValue: new LucideIconProvider({
         Bot, Search, X, ChevronLeft, ChevronRight, Loader2, AlertCircle,
-        MessageSquare, Zap, CircleAlert, CircleCheck, Timer, Wrench, Coins, Filter,
+        MessageSquare, Zap, CircleAlert, CircleCheck, Timer, Wrench, Coins, Filter, BellOff,
       }),
     },
   ],
@@ -79,6 +79,18 @@ export class IntelligenceComponent implements OnInit {
 
   readonly estadoDetalle = signal<LoadingState>('idle');
   readonly detalle = signal<ConversacionDetalle | null>(null);
+
+  /**
+   * Deshacer una baja (F8-B). Es la única escritura de esta pantalla.
+   *
+   * Pide motivo porque el motivo se audita: un `STOP` es irrevocable **por el cliente** a
+   * propósito, así que volver a abrirle la puerta es una decisión de una persona con nombre.
+   */
+  readonly desbloqueando = signal(false);
+  readonly errorDesbloqueo = signal<string | null>(null);
+  motivoDesbloqueo = '';
+
+  readonly estaBloqueada = computed(() => this.detalle()?.conversacion.estado === 'bloqueada');
 
   busqueda = '';
   readonly filtroBusqueda = signal('');
@@ -184,6 +196,35 @@ export class IntelligenceComponent implements OnInit {
   cerrarDetalle(): void {
     this.estadoDetalle.set('idle');
     this.detalle.set(null);
+    this.motivoDesbloqueo = '';
+    this.errorDesbloqueo.set(null);
+  }
+
+  desbloquear(): void {
+    const d = this.detalle();
+    const motivo = this.motivoDesbloqueo.trim();
+    if (!d || motivo.length < 5) {
+      this.errorDesbloqueo.set('Escribe por qué se deshace la baja (mínimo 5 caracteres).');
+      return;
+    }
+
+    this.desbloqueando.set(true);
+    this.errorDesbloqueo.set(null);
+
+    this.service.desbloquear(d.conversacion.id_conversacion, motivo).subscribe({
+      next: () => {
+        // Se refleja en el sitio, sin recargar: el estado que se acaba de cambiar es
+        // justamente lo que la persona está mirando.
+        this.detalle.set({ ...d, conversacion: { ...d.conversacion, estado: 'activa' } });
+        this.motivoDesbloqueo = '';
+        this.desbloqueando.set(false);
+        this.cargar();
+      },
+      error: (e) => {
+        this.errorDesbloqueo.set(e?.error?.message || 'No se pudo desbloquear la conversación.');
+        this.desbloqueando.set(false);
+      },
+    });
   }
 
   /** Los mensajes de un turno concreto, para pintarlos dentro de él. */

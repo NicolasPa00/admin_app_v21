@@ -386,6 +386,65 @@
     color: var(--color-text-secondary);
   }
 
+  /* ── La baja, y cómo deshacerla (F8-B) ──────────────────────── */
+  /* Ámbar y no rojo: no es un error del sistema, es una decisión del cliente que se respeta.
+     Rojo diría «algo va mal» sobre algo que está funcionando exactamente como debe. */
+  &__baja {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid color-mix(in srgb, #d97706 45%, transparent);
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, #d97706 8%, transparent);
+  }
+
+  &__baja-txt {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text);
+  }
+
+  &__baja-form {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__input {
+    flex: 1 1 18rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.875rem;
+  }
+
+  &__btn {
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 0.875rem;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+
+  &__baja-error {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #b91c1c;
+  }
+
   /* ── Turno ──────────────────────────────────────────────────── */
   &__turno {
     border: 1px solid var(--color-border);
