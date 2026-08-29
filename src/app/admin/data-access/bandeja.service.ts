@@ -62,6 +62,22 @@ export class BandejaService {
       .pipe(map(() => undefined));
   }
 
+  /**
+   * «Ya terminé, que siga el asistente.»
+   *
+   * Es el único camino que devuelve una conversación escalada al bot, y existe por la Enmienda 1
+   * de ADR-023: lo prohibido es que el bot vuelva **solo**, no que una persona se lo devuelva a
+   * sabiendas. Nada automático llama aquí.
+   */
+  devolverAlAsistente(id: string): Observable<void> {
+    return this.http
+      .post<ApiResponse<{ estado: string }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/devolver-al-asistente`,
+        {},
+      )
+      .pipe(map(() => undefined));
+  }
+
   getConversacion(id: string): Observable<ConversacionBandejaDetalle | null> {
     return this.http
       .get<ApiResponse<ConversacionBandejaDetalle>>(

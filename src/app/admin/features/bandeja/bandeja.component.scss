@@ -336,6 +336,41 @@
     }
   }
 
+  /* Una barra bajo la cabecera, no un botón suelto: el estado «lo llevas tú» hay que leerlo
+     antes que el hilo, porque cambia quién responde. */
+  &__retomar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-text) 4%, transparent);
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+
+    span {
+      flex: 1;
+      min-width: 8rem;
+    }
+
+    button {
+      flex: 0 0 auto;
+      padding: 0.25rem 0.625rem;
+      border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+      border-radius: 999px;
+      background: none;
+      color: var(--color-primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+      }
+    }
+  }
+
   &__mensajes {
     flex: 1;
     min-height: 0;

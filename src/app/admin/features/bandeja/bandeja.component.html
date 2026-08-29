@@ -159,6 +159,20 @@
         </button>
       </header>
 
+      <!--
+        Solo cuando el asistente está fuera. Devolvérsela es una decisión de una persona, nunca
+        de un temporizador: eso es lo que separa la Enmienda 1 de ADR-023 de revocarlo.
+      -->
+      @if (d.conversacion.estado === 'handoff_humano') {
+        <div class="bdj__retomar">
+          <lucide-icon name="bot-message-square" [size]="15" aria-hidden="true" />
+          <span>El asistente no contesta en esta conversación. La llevas tú.</span>
+          <button type="button" (click)="devolverAlAsistente()">
+            Ya terminé, que siga el asistente
+          </button>
+        </div>
+      }
+
       <div class="bdj__mensajes" #mensajes>
         @for (m of d.mensajes; track m.id_mensaje) {
           <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">

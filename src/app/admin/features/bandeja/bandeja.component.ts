@@ -15,7 +15,7 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
-  Search, X, Check, Building2, CheckCheck,
+  Search, X, Check, Building2, CheckCheck, BotMessageSquare,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -100,7 +100,7 @@ const REFRESCO_MS = 5000;
       multi: true,
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
-        RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck,
+        RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare,
       }),
     },
   ],
@@ -312,6 +312,26 @@ export class BandejaComponent implements OnInit, OnDestroy {
         this.cargar(true);
       },
       error: () => this.errorEnvio.set('No se pudo marcar como atendida.'),
+    });
+  }
+
+  /**
+   * «Ya terminé, que siga el asistente.»
+   *
+   * ADR-023 decía «el bot no vuelve»; la Enmienda 1 acotó que lo prohibido es que vuelva
+   * **solo**. Esto nace de un clic y de nadie más. Y el asistente hereda el hilo sabiendo qué
+   * dijo una persona y qué dijo él.
+   */
+  devolverAlAsistente(): void {
+    const actual = this.detalle();
+    if (!actual) return;
+
+    this.service.devolverAlAsistente(actual.conversacion.id_conversacion).subscribe({
+      next: () => {
+        this.cargarHilo(actual.conversacion.id_conversacion, true);
+        this.cargar(true);
+      },
+      error: () => this.errorEnvio.set('No se pudo devolver la conversación al asistente.'),
     });
   }
 
