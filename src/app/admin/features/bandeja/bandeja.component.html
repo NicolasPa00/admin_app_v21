@@ -1,0 +1,165 @@
+<!--
+  Bandeja: donde el negocio contesta cuando el asistente no supo.
+  Lo que gobierna esta plantilla: las escaladas se ven primero, la ventana de 24 h se avisa
+  ANTES de escribir, y un envío aceptado se pinta como «enviando…», no como entregado.
+-->
+<div class="bdj">
+  <header class="bdj__head">
+    <div>
+      <h1 class="bdj__title">Conversaciones</h1>
+      <p class="bdj__subtitle">Lo que tus clientes le escriben al asistente por WhatsApp</p>
+    </div>
+
+    <div class="bdj__acciones">
+      @if (escaladas() > 0) {
+        <span class="bdj__aviso">
+          <lucide-icon name="triangle-alert" [size]="14" aria-hidden="true" />
+          {{ escaladas() }} {{ escaladas() === 1 ? 'espera respuesta' : 'esperan respuesta' }}
+        </span>
+      }
+      <button
+        type="button"
+        class="bdj__filtro"
+        [class.bdj__filtro--on]="soloEscaladas()"
+        (click)="alternarEscaladas()"
+      >
+        Solo las que esperan
+      </button>
+      <button type="button" class="bdj__icono" (click)="cargar()" aria-label="Actualizar">
+        <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
+      </button>
+    </div>
+  </header>
+
+  @if (sinModulo()) {
+    <div class="bdj__estado">
+      <lucide-icon name="bot" [size]="24" aria-hidden="true" />
+      <span>El asistente todavía no está activo en esta cuenta.</span>
+    </div>
+  } @else if (estado() === 'loading') {
+    <div class="bdj__estado">
+      <lucide-icon name="loader-2" [size]="20" class="bdj__spin" aria-hidden="true" />
+      <span>Cargando…</span>
+    </div>
+  } @else if (estado() === 'error') {
+    <div class="bdj__estado bdj__estado--error">
+      <lucide-icon name="alert-circle" [size]="20" aria-hidden="true" />
+      <span>{{ error() }}</span>
+      <button type="button" class="bdj__reintentar" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (conversaciones().length === 0) {
+    <div class="bdj__estado">
+      <lucide-icon name="inbox" [size]="24" aria-hidden="true" />
+      <span>
+        {{ soloEscaladas() ? 'Nada esperando respuesta. Todo lo lleva el asistente.'
+                           : 'Todavía no hay conversaciones.' }}
+      </span>
+    </div>
+  } @else {
+    <ul class="bdj__lista">
+      @for (c of conversaciones(); track c.id_conversacion) {
+        <li>
+          <button
+            type="button"
+            class="bdj__item"
+            [class.bdj__item--escalada]="c.escalada"
+            (click)="abrir(c)"
+          >
+            <span class="bdj__item-quien">
+              {{ quien(c) }}
+              @if (c.escalada) {
+                <span class="bdj__chip">te espera</span>
+              }
+            </span>
+            <span class="bdj__item-texto">{{ c.ultimo_texto || '—' }}</span>
+            <span class="bdj__item-fecha">
+              {{ (c.ultimo_mensaje_en || c.creado_en) | date: 'dd/MM HH:mm' }}
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<!-- ── El hilo, y el cuadro para contestar ───────────────────────────────── -->
+@if (detalle(); as d) {
+  <div class="bdj__panel" role="dialog" aria-label="Conversación">
+    <header class="bdj__panel-head">
+      <div>
+        <strong>{{ quien(d.conversacion) }}</strong>
+        @if (d.conversacion.negocio) {
+          <span class="bdj__panel-negocio">{{ d.conversacion.negocio }}</span>
+        }
+      </div>
+      <button type="button" class="bdj__icono" (click)="cerrar()" aria-label="Cerrar">✕</button>
+    </header>
+
+    <div class="bdj__hilo">
+      @for (m of d.mensajes; track m.id_mensaje) {
+        <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">
+          <p class="bdj__msg-texto">{{ m.contenido }}</p>
+          <span class="bdj__msg-pie">
+            {{ m.creado_en | date: 'dd/MM HH:mm' }}
+            @if (etiquetaEntrega(m); as et) {
+              <em class="bdj__msg-entrega" [class.bdj__msg-entrega--mal]="m.estado_entrega === 'fallido'">
+                · {{ et }}
+              </em>
+            }
+          </span>
+        </div>
+      }
+    </div>
+
+    <footer class="bdj__responder">
+      @if (!d.ventana.abierta) {
+        <!--
+          La ventana de 24 h. Se avisa aquí y no después de escribir: Meta rechaza el texto
+          libre pasado ese plazo, y descubrirlo con el párrafo ya redactado es la peor forma.
+        -->
+        <p class="bdj__cerrada">
+          <lucide-icon name="clock" [size]="14" aria-hidden="true" />
+          @if (d.ventana.ultimo_entrante_en) {
+            Pasaron más de 24 horas desde su último mensaje, así que WhatsApp ya no permite
+            escribirle texto libre. Podrás responder en cuanto vuelva a escribir.
+          } @else {
+            Esta persona todavía no ha escrito, así que WhatsApp no permite iniciar la
+            conversación con texto libre.
+          }
+        </p>
+      } @else {
+        @if (d.conversacion.estado !== 'handoff_humano') {
+          <p class="bdj__nota">
+            Si respondes, el asistente deja de contestar en esta conversación y sigues tú.
+          </p>
+        }
+        <div class="bdj__caja">
+          <textarea
+            class="bdj__texto"
+            rows="2"
+            placeholder="Escribe tu respuesta…"
+            [ngModel]="borrador()"
+            (ngModelChange)="borrador.set($event)"
+            [disabled]="enviando()"
+          ></textarea>
+          <button
+            type="button"
+            class="bdj__enviar"
+            [disabled]="!puedeEnviar()"
+            (click)="enviar()"
+          >
+            @if (enviando()) {
+              <lucide-icon name="loader-2" [size]="16" class="bdj__spin" aria-hidden="true" />
+            } @else {
+              <lucide-icon name="send" [size]="16" aria-hidden="true" />
+            }
+          </button>
+        </div>
+      }
+
+      @if (errorEnvio()) {
+        <p class="bdj__error">{{ errorEnvio() }}</p>
+      }
+    </footer>
+  </div>
+}

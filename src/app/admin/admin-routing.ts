@@ -73,6 +73,16 @@ export const adminRoutes: Routes = [
         title: 'Ficha 360',
       },
       {
+        // Bandeja: las conversaciones del asistente para el DUEÑO del negocio, con respuesta
+        // humana. A diferencia de la Consola, no es de super admin — el alcance lo decide el
+        // backend cruzando el usuario del token contra sus negocios.
+        path: 'bandeja',
+        loadComponent: () =>
+          import('./features/bandeja/bandeja.component').then((m) => m.BandejaComponent),
+        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        title: 'Conversaciones',
+      },
+      {
         // Intelligence Console (F5-E): la Observabilidad del asistente, solo lectura.
         path: 'intelligence',
         loadComponent: () =>
