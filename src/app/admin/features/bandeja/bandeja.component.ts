@@ -1,15 +1,17 @@
 import {
   Component,
   OnInit,
+  OnDestroy,
   ChangeDetectionStrategy,
   ElementRef,
+  PLATFORM_ID,
   inject,
   signal,
   computed,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
@@ -58,6 +60,22 @@ import { LoadingState } from '../../models/admin.models';
  *    restrictiva de WhatsApp: pasado ese plazo Meta rechaza el texto libre. Enterarse después de
  *    redactar un párrafo es la peor forma de descubrirlo.
  *
+ * ## Por qué se refresca sondeando y no con un canal de eventos
+ *
+ * Se miró SSE y se descartó por dos medidas, no por gusto. El proxy lleva `encode gzip zstd`
+ * sobre la API: una respuesta en streaming saldría **bufferizada**, así que «en vivo» exigiría
+ * tocar el Caddyfile. Y el servidor es **1 vCPU con 955 MB**, donde una conexión abierta por
+ * pestaña de admin cuesta más que una petición cada cinco segundos.
+ *
+ * Cinco segundos, para dos o tres personas mirando, es indistinguible de un push — y el
+ * Channel Gateway ya sondea la base cada segundo, así que esto no cambia la naturaleza de nada.
+ * Cuando haya cien negocios conectados, esta decisión se vuelve a mirar; hoy sería
+ * infraestructura para un problema que no existe.
+ *
+ * Tres cosas que el refresco automático NO puede hacer, y que son la mitad del trabajo:
+ * pisar lo que estás escribiendo, moverte el scroll mientras lees algo de más arriba, y seguir
+ * consumiendo servidor con la pestaña en segundo plano.
+ *
  * Y «enviado» no se dice hasta que lo está: el backend encola y entrega el Channel Gateway con
  * reintentos, así que un envío aceptado nace `pendiente` y se pinta «enviando…».
  *
@@ -68,6 +86,9 @@ import { LoadingState } from '../../models/admin.models';
  * el bot escala se resuelve por el chat — se llama al cliente, o se le atiende en el local—, y
  * sin él la única forma de vaciar la lista era escribirle a alguien que ya no lo necesitaba.
  */
+/** Cada cuánto se mira si hay algo nuevo. */
+const REFRESCO_MS = 5000;
+
 @Component({
   selector: 'app-bandeja',
   standalone: true,
@@ -86,8 +107,10 @@ import { LoadingState } from '../../models/admin.models';
   templateUrl: './bandeja.component.html',
   styleUrl: './bandeja.component.scss',
 })
-export class BandejaComponent implements OnInit {
+export class BandejaComponent implements OnInit, OnDestroy {
   private readonly service = inject(BandejaService);
+  private readonly platformId = inject(PLATFORM_ID);
+  private temporizador: ReturnType<typeof setInterval> | null = null;
 
   /** El contenedor del hilo. Se necesita para bajarlo, no para leerlo. */
   private readonly cajaMensajes = viewChild<ElementRef<HTMLElement>>('mensajes');
@@ -148,10 +171,38 @@ export class BandejaComponent implements OnInit {
 
   ngOnInit(): void {
     this.cargar();
+
+    // En SSR no hay `document` ni sentido en sondear: la página se pinta una vez y se manda.
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.temporizador = setInterval(() => this.refrescar(), REFRESCO_MS);
   }
 
-  cargar(): void {
-    this.estado.set('loading');
+  ngOnDestroy(): void {
+    if (this.temporizador) clearInterval(this.temporizador);
+  }
+
+  /**
+   * El latido: trae lo nuevo sin que se note.
+   *
+   * «Sin que se note» es literal y es lo que más cuidado tiene. No pone la lista en estado de
+   * carga —parpadearía cada cinco segundos—, no toca el borrador, y no mueve el scroll salvo
+   * que ya estuvieras abajo del todo.
+   *
+   * Se para con la pestaña en segundo plano: nadie está mirando, y el servidor es de 1 vCPU.
+   * También mientras se envía un mensaje, para no recargar el hilo a mitad.
+   */
+  private refrescar(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (document.hidden) return;
+    if (this.enviando()) return;
+
+    this.cargar(true);
+    const abierta = this.abierta();
+    if (abierta) this.cargarHilo(abierta, true);
+  }
+
+  cargar(silencioso = false): void {
+    if (!silencioso) this.estado.set('loading');
     this.error.set(null);
 
     this.service
@@ -171,6 +222,9 @@ export class BandejaComponent implements OnInit {
           this.estado.set('success');
         },
         error: () => {
+          // Un fallo del latido no rompe la pantalla: lo que ya está sigue en pie y se
+          // reintenta en cinco segundos. Solo la carga inicial puede dejarla en error.
+          if (silencioso) return;
           this.error.set('No se pudieron cargar las conversaciones.');
           this.estado.set('error');
         },
@@ -192,17 +246,30 @@ export class BandejaComponent implements OnInit {
 
   abrir(conversacion: ConversacionBandeja): void {
     this.abierta.set(conversacion.id_conversacion);
-    this.estadoDetalle.set('loading');
     this.errorEnvio.set(null);
     this.borrador.set('');
+    this.cargarHilo(conversacion.id_conversacion);
+  }
 
-    this.service.getConversacion(conversacion.id_conversacion).subscribe({
+  private cargarHilo(id: string, silencioso = false): void {
+    if (!silencioso) this.estadoDetalle.set('loading');
+
+    // Si ya estabas abajo del todo, seguirás abajo al llegar lo nuevo. Si habías subido a leer
+    // algo, no se te mueve: el margen de 40px es para el scroll que no cae en el píxel exacto.
+    const caja = this.cajaMensajes()?.nativeElement;
+    const pegadoAbajo =
+      !silencioso || !caja || caja.scrollHeight - caja.scrollTop - caja.clientHeight < 40;
+
+    this.service.getConversacion(id).subscribe({
       next: (data) => {
+        // La conversación pudo cerrarse mientras la petición volvía.
+        if (this.abierta() !== id) return;
         this.detalle.set(data);
         this.estadoDetalle.set('success');
-        this.alFinal();
+        if (pegadoAbajo) this.alFinal();
       },
       error: () => {
+        if (silencioso) return;
         this.errorEnvio.set('No se pudo abrir la conversación.');
         this.estadoDetalle.set('error');
       },
@@ -242,7 +309,7 @@ export class BandejaComponent implements OnInit {
           ...actual,
           conversacion: { ...actual.conversacion, escalada: false },
         });
-        this.cargar();
+        this.cargar(true);
       },
       error: () => this.errorEnvio.set('No se pudo marcar como atendida.'),
     });
@@ -270,8 +337,8 @@ export class BandejaComponent implements OnInit {
         this.enviando.set(false);
         // Se recarga en vez de añadir la burbuja a mano: así el hilo enseña el estado de entrega
         // real que puso el backend, y no uno optimista que podría ser mentira.
-        this.abrir(actual.conversacion);
-        this.cargar();
+        this.cargarHilo(actual.conversacion.id_conversacion, true);
+        this.cargar(true);
       },
       error: (err) => {
         this.enviando.set(false);
@@ -280,7 +347,7 @@ export class BandejaComponent implements OnInit {
         this.errorEnvio.set(
           err?.error?.message ?? 'No se pudo enviar la respuesta. Inténtalo de nuevo.',
         );
-        if (err?.status === 409) this.abrir(actual.conversacion);
+        if (err?.status === 409) this.cargarHilo(actual.conversacion.id_conversacion, true);
       },
     });
   }
