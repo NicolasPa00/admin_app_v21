@@ -1,244 +1,359 @@
 /*
-  BandejaComponent.
+  BandejaComponent — la forma de WhatsApp, la paleta de EscalApp.
 
-  Solo tokens `--color-*` del tema admin y mezclas con `color-mix` sobre `var(--color-primary)`:
-  la paleta es dinámica por inquilino y un color escrito a mano se rompe en cuanto alguien la
-  cambia. Es la misma regla que sigue la Consola.
+  Se copia la ESTRUCTURA (dos paneles, avatares, burbujas con la hora dentro) porque quien usa
+  esto ya sabe usar WhatsApp. No se copia el verde: la paleta es dinámica por inquilino, así que
+  todo sale de `--color-*` y de mezclas con `color-mix` sobre `var(--color-primary)`. Un color
+  escrito a mano se rompe en cuanto un negocio elige otro.
 */
 .bdj {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(16rem, 22rem) 1fr;
+  height: calc(100dvh - 8rem);
+  min-height: 26rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  overflow: hidden;
 
-  &__head {
+  /* En móvil no caben dos paneles: manda la lista, y el hilo se superpone al abrirlo. */
+  @media (max-width: 48rem) {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Panel de la lista ──────────────────────────────────────── */
+  &__lista-panel {
     display: flex;
-    align-items: flex-end;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-text) 3%, var(--color-surface));
+  }
+
+  &__lista-head {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    gap: 1rem;
-    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.875rem 0.875rem 0.625rem;
   }
 
   &__title {
     margin: 0;
-    font-size: 1.375rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: var(--color-text);
   }
 
-  &__subtitle {
-    margin: 0.25rem 0 0;
+  &__buscador {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0.875rem 0.625rem;
+    padding: 0.4375rem 0.75rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+    color: var(--color-text-secondary);
+
+    input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: none;
+      color: var(--color-text);
+      font: inherit;
+      font-size: 0.875rem;
+
+      &:focus {
+        outline: none;
+      }
+
+      &::placeholder {
+        color: var(--color-text-secondary);
+      }
+    }
+  }
+
+  &__chips {
+    display: flex;
+    gap: 0.375rem;
+    padding: 0 0.875rem 0.625rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3125rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-text) 7%, transparent);
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--color-text);
+    }
+  }
+
+  &__chip--on {
+    background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    color: var(--color-primary);
+  }
+
+  &__contador {
+    min-width: 1.125rem;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.6875rem;
+    line-height: 1.125rem;
+    text-align: center;
+  }
+
+  &__scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0.5rem 0.5rem;
+  }
+
+  &__vacio {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 2.5rem 1rem;
+    margin: 0;
+    text-align: center;
     font-size: 0.875rem;
     color: var(--color-text-secondary);
   }
 
-  &__acciones {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  /* El contador de escaladas es la única urgencia de la pantalla: se ve sin buscarlo. */
-  &__aviso {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.25rem 0.625rem;
-    border-radius: 999px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-  }
-
-  &__filtro,
-  &__reintentar {
-    padding: 0.375rem 0.75rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background: var(--color-surface);
-    color: var(--color-text-secondary);
-    font-size: 0.8125rem;
-    font-weight: 600;
-    cursor: pointer;
-
-    &:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-  }
-
-  &__filtro--on {
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  }
-
-  &__icono {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background: var(--color-surface);
-    color: var(--color-text-secondary);
-    cursor: pointer;
-
-    &:hover {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-  }
-
-  &__estado {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-    padding: 2rem 1rem;
-    border: 1px dashed var(--color-border);
-    border-radius: 0.75rem;
-    color: var(--color-text-secondary);
-    font-size: 0.9375rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  &__estado--error {
-    border-style: solid;
-    border-color: color-mix(in srgb, #dc2626 40%, var(--color-border));
+  &__vacio--error {
     color: #dc2626;
   }
 
-  &__spin {
-    animation: bdj-spin 1s linear infinite;
-  }
-
-  /* ── Lista ──────────────────────────────────────────────────── */
   &__lista {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
   }
 
   &__item {
-    display: grid;
-    grid-template-columns: minmax(8rem, 14rem) 1fr auto;
-    align-items: center;
-    gap: 0.75rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
     width: 100%;
-    padding: 0.75rem 0.875rem;
-    border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
-    background: var(--color-surface);
+    padding: 0.625rem 0.5rem;
+    border: none;
+    border-radius: 0.625rem;
+    background: none;
     text-align: left;
     cursor: pointer;
 
     &:hover {
-      border-color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-text) 5%, transparent);
     }
   }
 
-  /* Una escalada se distingue por una barra lateral, no por un fondo de color: el fondo pinta
-     toda la fila y compite con el texto justo cuando hay que leerlo con prisa. */
-  &__item--escalada {
-    border-left: 3px solid var(--color-primary);
+  &__item--activa {
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  }
+
+  &__avatar {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    color: var(--color-primary);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  /* La que espera respuesta lleva un anillo, no un fondo distinto: el fondo compite con el
+     texto justo cuando hay que leerlo con prisa. */
+  &__avatar--espera {
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+
+  &__avatar--grande {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 0.75rem;
+  }
+
+  &__item-cuerpo {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  &__item-fila {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-width: 0;
   }
 
   &__item-quien {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
     font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--color-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__chip {
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 14%, transparent);
-  }
-
-  &__item-texto {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   &__item-fecha {
-    font-size: 0.75rem;
+    flex: 0 0 auto;
+    font-size: 0.6875rem;
     color: var(--color-text-secondary);
+  }
+
+  &__item-texto {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  /* ── El hilo ────────────────────────────────────────────────── */
-  &__panel {
-    position: fixed;
-    inset: auto 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    width: min(28rem, 100vw);
-    height: 100dvh;
-    top: 0;
-    border-left: 1px solid var(--color-border);
-    background: var(--color-surface);
-    box-shadow: -8px 0 24px color-mix(in srgb, var(--color-text) 10%, transparent);
-    z-index: 40;
+  &__punto {
+    flex: 0 0 auto;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-primary);
   }
 
-  &__panel-head {
+  &__item-negocio {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+    opacity: 0.85;
+  }
+
+  /* ── Panel del hilo ─────────────────────────────────────────── */
+  &__hilo-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--color-surface);
+
+    @media (max-width: 48rem) {
+      display: none;
+
+      &:has(.bdj__hilo-head) {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+      }
+    }
+  }
+
+  &__placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+
+    p {
+      margin: 0;
+      font-size: 0.9375rem;
+    }
+  }
+
+  &__placeholder-nota {
+    max-width: 22rem;
+    font-size: 0.8125rem;
+    opacity: 0.8;
+  }
+
+  &__hilo-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding: 0.875rem 1rem;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
     border-bottom: 1px solid var(--color-border);
-    color: var(--color-text);
   }
 
-  &__panel-negocio {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
-  }
-
-  &__hilo {
+  &__hilo-quien {
     flex: 1;
-    overflow-y: auto;
-    padding: 1rem;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
+
+    strong {
+      font-size: 0.9375rem;
+      color: var(--color-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__mensajes {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    background: color-mix(in srgb, var(--color-text) 3%, var(--color-surface));
   }
 
   &__msg {
-    max-width: 85%;
+    max-width: min(75%, 32rem);
     align-self: flex-end;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.75rem;
-    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    padding: 0.4375rem 0.625rem 0.3125rem;
+    border-radius: 0.625rem 0.625rem 0.125rem 0.625rem;
+    background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
   }
 
   /* Lo que escribe la persona va a la izquierda y sin color de marca: es la convención de
      cualquier chat, y romperla obliga a pensar dónde mirar. */
   &__msg--suyo {
     align-self: flex-start;
-    background: color-mix(in srgb, var(--color-text) 6%, transparent);
+    border-radius: 0.625rem 0.625rem 0.625rem 0.125rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
   }
 
   &__msg-texto {
@@ -252,8 +367,9 @@
 
   &__msg-pie {
     display: block;
-    margin-top: 0.25rem;
-    font-size: 0.6875rem;
+    margin-top: 0.125rem;
+    text-align: right;
+    font-size: 0.625rem;
     color: var(--color-text-secondary);
   }
 
@@ -269,18 +385,35 @@
   /* ── Responder ──────────────────────────────────────────────── */
   &__responder {
     border-top: 1px solid var(--color-border);
-    padding: 0.75rem 1rem 1rem;
+    padding: 0.625rem 0.875rem 0.875rem;
   }
 
-  &__nota,
-  &__cerrada {
+  &__nota {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.375rem;
     margin: 0 0 0.5rem;
     font-size: 0.75rem;
-    line-height: 1.4;
     color: var(--color-text-secondary);
+  }
+
+  /* El aviso de la ventana cerrada NO es un texto pequeño al pie: sustituye al cuadro de
+     escribir, en su sitio, para que se lea antes de intentar nada. */
+  &__cerrada {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    border-radius: 0.625rem;
+    background: color-mix(in srgb, var(--color-text) 6%, transparent);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+
+    strong {
+      display: block;
+      color: var(--color-text);
+    }
   }
 
   &__caja {
@@ -291,15 +424,17 @@
 
   &__texto {
     flex: 1;
-    resize: vertical;
+    resize: none;
     min-height: 2.5rem;
-    padding: 0.5rem 0.625rem;
+    max-height: 8rem;
+    padding: 0.625rem 0.875rem;
     border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
+    border-radius: 1.25rem;
     background: var(--color-surface);
     color: var(--color-text);
     font: inherit;
     font-size: 0.875rem;
+    field-sizing: content;
 
     &:focus {
       outline: none;
@@ -308,20 +443,39 @@
   }
 
   &__enviar {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: 50%;
     background: var(--color-primary);
     color: #fff;
     cursor: pointer;
 
     &:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
+    }
+  }
+
+  &__icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-text) 8%, transparent);
+      color: var(--color-text);
     }
   }
 
@@ -329,6 +483,10 @@
     margin: 0.5rem 0 0;
     font-size: 0.8125rem;
     color: #dc2626;
+  }
+
+  &__spin {
+    animation: bdj-spin 1s linear infinite;
   }
 }
 
