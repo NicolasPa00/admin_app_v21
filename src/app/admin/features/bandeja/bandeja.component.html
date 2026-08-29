@@ -141,12 +141,25 @@
             @if (d.conversacion.negocio) { · {{ d.conversacion.negocio }} }
           </span>
         </div>
+        @if (d.conversacion.escalada) {
+          <!-- No devuelve la conversación al asistente (ADR-023): solo deja de contar como
+               pendiente. Hace falta porque no todo se resuelve por el chat. -->
+          <button
+            type="button"
+            class="bdj__atender"
+            (click)="atender()"
+            title="Quitarla de las que esperan respuesta. El asistente no vuelve a esta conversación."
+          >
+            <lucide-icon name="check-check" [size]="15" aria-hidden="true" />
+            Ya me ocupé
+          </button>
+        }
         <button type="button" class="bdj__icono" (click)="cerrar()" aria-label="Cerrar">
           <lucide-icon name="x" [size]="16" aria-hidden="true" />
         </button>
       </header>
 
-      <div class="bdj__mensajes">
+      <div class="bdj__mensajes" #mensajes>
         @for (m of d.mensajes; track m.id_mensaje) {
           <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">
             <p class="bdj__msg-texto">{{ m.contenido }}</p>

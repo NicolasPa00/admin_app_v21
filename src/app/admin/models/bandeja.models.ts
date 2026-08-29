@@ -62,9 +62,16 @@ export interface ConversacionBandejaDetalle {
   ventana: VentanaBandeja;
 }
 
+/** Un negocio que TIENE conversaciones. No son todos los del usuario — ver el servicio. */
+export interface NegocioConConversaciones {
+  id_negocio: number;
+  nombre: string | null;
+}
+
 export interface BandejaListado {
   disponible: boolean;
   conversaciones: ConversacionBandeja[];
+  negocios: NegocioConConversaciones[];
 }
 
 export interface RespuestaEncolada {

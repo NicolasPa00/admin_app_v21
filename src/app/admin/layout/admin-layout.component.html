@@ -127,7 +127,9 @@
     </main>
   </div>
 
-  <!-- Botón flotante WhatsApp (se expande al pasar el cursor) -->
+  <!-- Botón flotante WhatsApp (se expande al pasar el cursor). Solo en el inicio: en las
+       pantallas de trabajo se sentaba encima de lo que hay en esa esquina. -->
+  @if (mostrarWaFab()) {
   <a [href]="waUrl" target="_blank" rel="noopener noreferrer"
      class="adm__wa-fab" aria-label="¿Necesitas ayuda? Escríbenos por WhatsApp">
     <span class="adm__wa-fab-label">¿Necesitas ayuda?</span>
@@ -137,4 +139,5 @@
       </svg>
     </span>
   </a>
+  }
 </div>

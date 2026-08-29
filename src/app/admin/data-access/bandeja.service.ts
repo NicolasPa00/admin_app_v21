@@ -44,7 +44,22 @@ export class BandejaService {
       .get<ApiResponse<BandejaListado>>(`${this.API}/intelligence/bandeja/conversaciones`, {
         params,
       })
-      .pipe(map((res) => res.data ?? { disponible: false, conversaciones: [] }));
+      .pipe(map((res) => res.data ?? { disponible: false, conversaciones: [], negocios: [] }));
+  }
+
+  /**
+   * «Ya me ocupé de esto», sin escribir nada.
+   *
+   * No devuelve la conversación al asistente: eso lo prohíbe ADR-023 y sigue prohibido. Lo
+   * único que cambia es si le queda algo por hacer a una persona.
+   */
+  atender(id: string): Observable<void> {
+    return this.http
+      .post<ApiResponse<{ escalada: boolean }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/atender`,
+        {},
+      )
+      .pipe(map(() => undefined));
   }
 
   getConversacion(id: string): Observable<ConversacionBandejaDetalle | null> {

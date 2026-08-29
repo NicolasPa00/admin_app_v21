@@ -150,6 +150,21 @@ export class AdminLayoutComponent {
     ),
     { initialValue: this.router.url },
   );
+  /**
+   * El botón flotante de WhatsApp solo en el inicio.
+   *
+   * Es un enlace de soporte —«¿necesitas ayuda?»— y estaba fijo en TODAS las pantallas, pegado
+   * a la esquina inferior derecha. En la Bandeja se sentaba justo encima del cuadro de escribir
+   * y tapaba el botón de enviar: un botón de ayuda estorbando el trabajo real.
+   *
+   * Va por lista blanca y no por lista negra: la siguiente pantalla con algo en esa esquina no
+   * tendría por qué acordarse de este archivo.
+   */
+  protected readonly mostrarWaFab = computed(() => {
+    const url = this.currentUrl().split('?')[0].replace(/\/$/, '');
+    return url === '/admin' || url.endsWith('/admin/dashboard');
+  });
+
   protected readonly pageTitle = computed(() => {
     const url = this.currentUrl();
     if (url.includes('/configuracion')) return 'Configuración';
