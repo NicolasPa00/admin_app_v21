@@ -42,3 +42,12 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Caché de compilación de Angular (decenas de MB, se regenera sola)
+.angular/
+
+# Archivos subidos o exportados durante pruebas locales
+/uploads
+*.dump
+*.tgz
+*.tar.gz
