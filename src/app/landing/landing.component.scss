@@ -977,6 +977,24 @@
 }
 
 /* ── Selector de tipo de negocio ── */
+/* Línea «También para…» bajo el chip seleccionado. Discreta a propósito: informa de que el
+   mismo motor sirve para oficios vecinos, sin competir con los chips ni con el precio. */
+.lp-tipo-selector__adapta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: var(--es-spacing-4) 0 0;
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+  text-align: center;
+
+  lucide-icon {
+    flex-shrink: 0;
+    color: var(--es-primary);
+  }
+}
+
 .lp-tipo-selector {
   text-align: center;
   margin-bottom: var(--es-spacing-12);
@@ -1279,10 +1297,29 @@
 }
 
 /* Watermark gigante de marca */
+/*
+  Marca de agua «EscalApp» del bloque final.
+
+  Se apoya sobre la barra legal, no encima del todo: las descendentes de las «pp» entran en esa
+  franja a propósito y se ven a través de su fondo negro al 25%. Ese solape es el efecto buscado.
+
+  Las dos referencias que fijan la posición están fuera de este bloque, así que si alguna cambia
+  hay que volver aquí:
+
+  · **Vertical.** La barra legal (`.lp-final__legal`) mide ~51 px —16 px de relleno arriba y
+    abajo más una línea de texto pequeño— y tiene `z-index: 2`, así que se pinta encima.
+    ⚠️ **`bottom` NO coincide con dónde se ve la letra.** Con `line-height: 0.8` la caja de línea
+    es más corta que el tipo, así que el glifo se desborda por abajo ~20 px: un `bottom` igual a
+    la altura de la barra mete el pie de TODAS las letras dentro. Hay que sumarle ese desborde
+    para que solo bajen las descendentes.
+  · **Horizontal.** El botón flotante de WhatsApp es `position: fixed` y ocupa los 76 px de la
+    derecha (24 de margen + 52 de ancho). Con 88 px la marca queda a unos pocos píxeles a su
+    izquierda, sin irse al centro.
+*/
 .lp-final__watermark {
   position: absolute;
-  right: 3%;
-  bottom: clamp(26px, 3.5vw, 38px);
+  right: 88px;
+  bottom: clamp(52px, 4vw, 58px);
   font-family: var(--es-font-sans);
   font-size: clamp(2.75rem, 8vw, 7rem);
   font-weight: 800;
@@ -1293,6 +1330,13 @@
   pointer-events: none;
   user-select: none;
   z-index: 0;
+
+  /* En móvil la barra legal se apila en columna y crece a ~78 px: sin esto la marca quedaría
+     casi entera detrás de ella, no apoyada encima. */
+  @media (max-width: 600px) {
+    bottom: 80px;
+    right: 84px;
+  }
 }
 
 /* Pulpo emergiendo del corte */
@@ -1747,6 +1791,21 @@
     color: var(--es-form-error-text-dark);
     font-size: var(--es-font-size-sm);
     line-height: 1.5;
+  }
+
+  /* Aviso de aceptación. Va dentro del formulario y pegado al botón a propósito: el
+     consentimiento tiene que estar donde se consiente, no escondido en el pie de página. */
+  &__legal {
+    margin: 0;
+    font-size: var(--es-font-size-xs);
+    line-height: 1.5;
+    color: var(--es-text-muted);
+    text-align: center;
+
+    a {
+      color: var(--es-primary);
+      text-decoration: underline;
+    }
   }
 }
 

@@ -21,6 +21,12 @@ import {
   Menu,
   X,
   UtensilsCrossed,
+  Coffee,
+  Sparkles,
+  Beer,
+  CakeSlice,
+  Bike,
+  HandHeart,
   Car,
   Scissors,
   ShoppingCart,
@@ -49,10 +55,19 @@ import { environment } from '../../environments/environment';
 
 interface TipoNegocio {
   id: number;
+  /** Lo que se manda al backend. Debe existir en TIPO_NEGOCIO_MAPA de registroTrialService.js. */
   nombre: string;
   icon: string;
   label: string;
   disponible: boolean;
+  /**
+   * Los oficios vecinos que caben en el mismo motor, en una línea.
+   *
+   * Va aquí y no como chips propios: «Arepería», «Heladería» o «Depilación» son el mismo
+   * software con otro nombre, y ponerlos sueltos convierte el selector en una lista de
+   * sinónimos que no ayuda a nadie a elegir. Se enseña bajo el chip seleccionado.
+   */
+  adaptaPara: string;
 }
 
 interface PlanBase {
@@ -74,17 +89,51 @@ interface Feature {
   descripcion: string;
 }
 
+/**
+ * Los tipos de negocio del selector.
+ *
+ * ## La regla: solo se ofrece lo que se puede operar HOY
+ *
+ * Detrás de estos chips hay **dos motores desplegados**, no diez: restaurante (POS, cocina, menú
+ * digital) y reserva (agenda de citas), más el asistente de WhatsApp encima de ambos. Parqueadero,
+ * gimnasio y tienda tienen código pero **no están en producción**, así que anunciarlos como
+ * disponibles es vender algo que el cliente no va a poder usar el lunes.
+ *
+ * Barbería y salón de belleza sí están disponibles aunque no tengan motor propio: los atiende el
+ * vertical de **reserva**, en producción desde el 2026-08-24. La traducción de chip a tipo real la
+ * hace `TIPO_NEGOCIO_MAPA` en el backend, y ahí está explicado por qué «BARBERIA» no va al tipo
+ * `BARBERIA` de la base.
+ *
+ * ⚠️ Al añadir o quitar un chip disponible hay que tocar además **tres sitios**: el validador de
+ * `registroVerificacionController.js`, el mapa `TIPO_NEGOCIO_MAPA` de `registroTrialService.js` y
+ * `FEATURES_POR_NEGOCIO` aquí abajo. Si falta el primero, el registro contesta 400; si falta el
+ * segundo, el negocio nace sin vertical.
+ *
+ * El `id` es solo para la plantilla (`track` y chip activo); lo que viaja al backend es `nombre`.
+ */
 const TIPOS_NEGOCIO: TipoNegocio[] = [
-  { id: 1, nombre: 'RESTAURANTE',               icon: 'utensils-crossed', label: 'Restaurante',       disponible: true  },
-  { id: 2, nombre: 'PARQUEADERO',               icon: 'car',              label: 'Parqueadero',        disponible: true  },
-  { id: 3, nombre: 'GIMNASIO',                  icon: 'dumbbell',         label: 'Gimnasio',           disponible: true  },
-  { id: 4, nombre: 'TIENDA',                    icon: 'shopping-bag',     label: 'Tienda',             disponible: true  },
-  { id: 5, nombre: 'BARBERIA',                  icon: 'scissors',         label: 'Barbería',           disponible: false },
-  { id: 6, nombre: 'SALON_BELLEZA',             icon: 'scissors',         label: 'Salón de belleza',   disponible: false },
-  { id: 7, nombre: 'SUPERMERCADO',              icon: 'shopping-cart',    label: 'Supermercado',       disponible: false },
-  { id: 8, nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',           label: 'Taller automotriz',  disponible: false },
-  { id: 9, nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',       label: 'Fondo de ahorros',   disponible: false },
-  { id: 10, nombre: 'FINANCIERA_PRESTAMOS',     icon: 'landmark',         label: 'Financiera',         disponible: false },
+  // ── Disponibles: motor restaurante ──
+  { id: 1,  nombre: 'RESTAURANTE',   icon: 'utensils-crossed', label: 'Restaurante',      disponible: true,
+    adaptaPara: 'También para bares, comidas rápidas y cocinas ocultas.' },
+  { id: 11, nombre: 'CAFETERIA',     icon: 'coffee',           label: 'Cafetería',        disponible: true,
+    adaptaPara: 'También para panaderías, heladerías y reposterías.' },
+
+  // ── Disponibles: motor reserva ──
+  { id: 5,  nombre: 'BARBERIA',      icon: 'scissors',         label: 'Barbería',         disponible: true,
+    adaptaPara: 'También para peluquerías y barber shops.' },
+  { id: 6,  nombre: 'SALON_BELLEZA', icon: 'sparkles',         label: 'Salón de belleza', disponible: true,
+    adaptaPara: 'También para spa, uñas, estética y depilación.' },
+
+  // ── Próximamente: hay código, pero no están en producción ──
+  { id: 2,  nombre: 'PARQUEADERO',   icon: 'car',              label: 'Parqueadero',      disponible: false, adaptaPara: '' },
+  { id: 3,  nombre: 'GIMNASIO',      icon: 'dumbbell',         label: 'Gimnasio',         disponible: false, adaptaPara: '' },
+  { id: 4,  nombre: 'TIENDA',        icon: 'shopping-bag',     label: 'Tienda',           disponible: false, adaptaPara: '' },
+
+  // ── Próximamente: sin construir ──
+  { id: 7,  nombre: 'SUPERMERCADO',              icon: 'shopping-cart', label: 'Supermercado',      disponible: false, adaptaPara: '' },
+  { id: 8,  nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',        label: 'Taller automotriz', disponible: false, adaptaPara: '' },
+  { id: 9,  nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',    label: 'Fondo de ahorros',  disponible: false, adaptaPara: '' },
+  { id: 10, nombre: 'FINANCIERA_PRESTAMOS',      icon: 'landmark',      label: 'Financiera',        disponible: false, adaptaPara: '' },
 ];
 
 const TIPOS_NEGOCIO_REGISTRO = TIPOS_NEGOCIO.filter((t) => t.disponible);
@@ -100,18 +149,23 @@ const PLANES_BASE: PlanBase[] = [
   },
 ];
 
+/**
+ * Qué incluye el plan para cada tipo disponible.
+ *
+ * Solo tiene entradas para los chips `disponible: true`: a los demás la plantilla les enseña
+ * `FEATURES_PROXIMAMENTE`, así que una entrada aquí para parqueadero o gimnasio sería una lista
+ * que nadie puede ver y que envejecería sin que se note. Cuando esas verticales salgan a
+ * producción se añaden aquí junto con el chip.
+ *
+ * El acceso tiene respaldo (`?? RESTAURANTE`), así que activar un chip sin acordarse de esta
+ * lista degrada a las features de restaurante en vez de romper la página.
+ */
 const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
   RESTAURANTE: [
-    ['Hasta 5 personas en tu equipo', 'Menú digital completo', 'Pedidos en línea', 'Gestión de cocina', 'Reportes de ventas'],
+    ['Hasta 5 personas en tu equipo', 'Menú digital con pedidos', 'Comandas a cocina', 'Mesas y domicilios', 'Caja y reportes de ventas'],
   ],
-  PARQUEADERO: [
-    ['Hasta 5 personas en tu equipo', 'Espacios ilimitados', 'Tarifas por hora / fracción / día', 'Registro de placa', 'Recibos digitales', 'Reportes de ocupación'],
-  ],
-  GIMNASIO: [
-    ['Hasta 5 personas en tu equipo', 'Miembros ilimitados', 'Membresías', 'Control de asistencia', 'Registro de pagos', 'Reportes completos'],
-  ],
-  TIENDA: [
-    ['Hasta 5 personas en tu equipo', 'Productos ilimitados', 'Gestión de inventario', 'Movimientos de stock', 'Ventas y facturación', 'Reportes de ventas'],
+  CAFETERIA: [
+    ['Hasta 5 personas en tu equipo', 'Carta digital con pedidos', 'Punto de venta rápido', 'Control de inventario', 'Caja y reportes de ventas'],
   ],
   BARBERIA: [
     ['Hasta 5 personas en tu equipo', 'Agenda de citas', 'Gestión de profesionales', 'Control de servicios', 'Recordatorios automáticos', 'Reportes de ingresos'],
@@ -172,15 +226,22 @@ const STATS = [
 ];
 
 /* Verticales para el diagrama radial (orden = posición en el círculo) */
+/**
+ * La tira de oficios que atendemos. Se enseña tal cual, así que aquí NO puede haber nada que no
+ * podamos operar hoy: es una promesa, no una hoja de ruta. Antes listaba parqueaderos, gimnasios,
+ * tiendas, supermercados, talleres y financieras — ninguno desplegado.
+ *
+ * Los que están son los oficios reales que caben en los dos motores que sí existen.
+ */
 const ECOSISTEMA = [
   { icon: 'utensils-crossed', label: 'Restaurantes' },
-  { icon: 'car',              label: 'Parqueaderos' },
-  { icon: 'dumbbell',         label: 'Gimnasios' },
-  { icon: 'shopping-bag',     label: 'Tiendas' },
+  { icon: 'coffee',           label: 'Cafeterías' },
   { icon: 'scissors',         label: 'Barberías' },
-  { icon: 'shopping-cart',    label: 'Supermercados' },
-  { icon: 'wrench',           label: 'Talleres' },
-  { icon: 'landmark',         label: 'Financieras' },
+  { icon: 'sparkles',         label: 'Salones de belleza' },
+  { icon: 'beer',             label: 'Bares' },
+  { icon: 'cake-slice',       label: 'Reposterías' },
+  { icon: 'bike',             label: 'Comidas rápidas' },
+  { icon: 'hand-heart',       label: 'Spa y estética' },
 ];
 
 /* ──────────────────────────────────────────────────────────
@@ -201,7 +262,8 @@ type ModalStep = 'form' | 'otp' | 'success';
         ChevronRight, Check, Star, Zap, Store, Smartphone,
         ArrowRight, Menu, X, Clock, Loader2, CheckCheck,
         Mail, Building2, Facebook, Instagram, Youtube,
-        UtensilsCrossed, Car, Scissors, ShoppingCart, ShoppingBag,
+        UtensilsCrossed, Coffee, Sparkles, Beer, CakeSlice, Bike, HandHeart,
+        Car, Scissors, ShoppingCart, ShoppingBag,
         Wrench, PiggyBank, Landmark, Dumbbell,
       }),
     },
@@ -299,14 +361,21 @@ export class LandingComponent {
   protected readonly selectedDisponible = computed(() => this.selectedTipo().disponible);
 
   /* ── Imagen representativa por tipo de negocio ── */
+  /**
+   * La ilustración que acompaña a cada tipo. Se conservan las de los chips «Próximamente» porque
+   * esos chips siguen siendo seleccionables —el visitante puede pulsarlos para ver que existen— y
+   * quedarse sin dibujo se vería como un fallo. No hay ilustración de cafetería, así que reutiliza
+   * la de restaurante, que es el mismo motor.
+   */
   private readonly tipoImagenMap: Record<string, string | null> = {
-    RESTAURANTE:  'pulpo_restaurante.png',
-    PARQUEADERO:  'pulpo_parqueadero.png',
-    GIMNASIO:     'pulpo_gym.png',
-    TIENDA:       'pulpo_tienda.png',
-    BARBERIA:     'pulpo_barberia.png',
+    RESTAURANTE:   'pulpo_restaurante.png',
+    CAFETERIA:     'pulpo_restaurante.png',
+    BARBERIA:      'pulpo_barberia.png',
     SALON_BELLEZA: 'pulpo_salonbelleza.png',
-    SUPERMERCADO: 'pulpo_tienda.png',
+    PARQUEADERO:   'pulpo_parqueadero.png',
+    GIMNASIO:      'pulpo_gym.png',
+    TIENDA:        'pulpo_tienda.png',
+    SUPERMERCADO:  'pulpo_tienda.png',
   };
 
   protected readonly tipoImagenSrc = computed(() => {
