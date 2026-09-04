@@ -29,6 +29,7 @@ import {
   History,
   Bot,
   MessageSquare,
+  FileText,
   Sun,
   Moon,
   LogOut,
@@ -83,6 +84,7 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
       multi: true,
       useValue: new LucideIconProvider({
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, Bot, MessageSquare,
+        FileText,
         Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose,
       }),
@@ -106,6 +108,8 @@ export class AdminLayoutComponent {
     { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
     // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador.
     { label: 'Conversaciones', icon: 'message-square', route: '/admin/bandeja' },
+    // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
+    { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion' },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },

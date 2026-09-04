@@ -83,6 +83,17 @@ export const adminRoutes: Routes = [
         title: 'Conversaciones',
       },
       {
+        // Datos fiscales (FE-1). NO es de super admin: es la pantalla del DUEÑO del negocio,
+        // que es quien conoce su RUT y quien declara si su negocio está registrado.
+        path: 'facturacion',
+        loadComponent: () =>
+          import('./features/facturacion/facturacion.component').then(
+            (m) => m.FacturacionComponent,
+          ),
+        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        title: 'Facturación electrónica',
+      },
+      {
         // Intelligence Console (F5-E): la Observabilidad del asistente, solo lectura.
         path: 'intelligence',
         loadComponent: () =>

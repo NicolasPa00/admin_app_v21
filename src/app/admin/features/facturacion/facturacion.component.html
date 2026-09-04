@@ -1,0 +1,434 @@
+<!--
+  Datos fiscales (FE-1).
+
+  La pantalla NO abre con un formulario: abre con una pregunta. Ver la cabecera del componente
+  para el porqué — resumen: muchos clientes son negocios informales y recibirlos con veinte
+  campos fiscales se lee como «esto no es para ti».
+-->
+<section class="fac">
+  <header class="fac__head">
+    <div>
+      <h1 class="fac__title">
+        <lucide-icon name="file-text" [size]="20"></lucide-icon>
+        Facturación electrónica
+      </h1>
+      <p class="fac__sub">
+        Los datos que la DIAN exige para emitir documentos a nombre de tu negocio.
+      </p>
+    </div>
+
+    @if (negocios().length > 1) {
+      <label class="fac__selector">
+        <span class="fac__selector-label">Negocio</span>
+        <select
+          class="fac__input"
+          [ngModel]="idNegocio()"
+          (ngModelChange)="seleccionar(+$event)"
+          name="negocio"
+        >
+          @for (n of negocios(); track trackNegocio($index, n)) {
+            <option [value]="n.id_negocio">{{ n.nombre }}</option>
+          }
+        </select>
+      </label>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="fac__alerta fac__alerta--error" role="alert">
+      <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+  @if (aviso()) {
+    <div class="fac__alerta fac__alerta--ok" role="status">
+      <lucide-icon name="check" [size]="18"></lucide-icon>
+      <span>{{ aviso() }}</span>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="fac__cargando">
+      <lucide-icon name="loader-2" [size]="22" class="fac__spin"></lucide-icon>
+      <span>Cargando…</span>
+    </div>
+  } @else if (negocios().length === 0) {
+    <div class="fac__vacio">
+      <lucide-icon name="store" [size]="28"></lucide-icon>
+      <p>No tienes ningún negocio activo.</p>
+    </div>
+  } @else {
+    <!-- ════════ PASO 1 · la única pregunta con la que abre la pantalla ════════ -->
+    <article class="fac__card">
+      <h2 class="fac__card-title">
+        <lucide-icon name="building-2" [size]="18"></lucide-icon>
+        ¿Tu negocio está registrado?
+      </h2>
+      <p class="fac__ayuda">
+        Nos referimos a si está inscrito en la Cámara de Comercio y tiene RUT ante la DIAN.
+        <strong>Si todavía no, no pasa nada</strong>: tu negocio funciona igual y no te vamos a
+        pedir ningún dato más.
+      </p>
+
+      <div class="fac__opciones">
+        <button
+          type="button"
+          class="fac__opcion"
+          [class.is-activa]="estadoRegistro() === 'REGISTRADO'"
+          [disabled]="guardando()"
+          (click)="declararRegistro('REGISTRADO')"
+        >
+          <strong>Sí, está registrado</strong>
+          <span>Tiene Cámara de Comercio y RUT</span>
+        </button>
+
+        <button
+          type="button"
+          class="fac__opcion"
+          [class.is-activa]="estadoRegistro() === 'SIN_REGISTRO'"
+          [disabled]="guardando()"
+          (click)="declararRegistro('SIN_REGISTRO')"
+        >
+          <strong>Todavía no</strong>
+          <span>Mi negocio no está formalizado</span>
+        </button>
+      </div>
+
+      <!--
+        Lo que el cliente marque aquí es responsabilidad suya: EscalApp no verifica nada ante la
+        Cámara de Comercio ni ante la DIAN. Decirlo aquí, y no solo en la letra pequeña, es lo
+        honesto — y es la cláusula que tiene que estar en los términos y condiciones.
+      -->
+      <p class="fac__nota">
+        <lucide-icon name="info" [size]="14"></lucide-icon>
+        EscalApp no verifica esta información ante la Cámara de Comercio ni ante la DIAN. Lo que
+        declares aquí queda registrado a tu nombre y con la fecha.
+      </p>
+    </article>
+
+    <!-- ════════ CAMINO A · el negocio informal: aquí se acaba ════════ -->
+    @if (estadoRegistro() === 'SIN_REGISTRO') {
+      <article class="fac__card fac__card--calma">
+        <h2 class="fac__card-title">
+          <lucide-icon name="circle-check" [size]="18"></lucide-icon>
+          Listo, no necesitas nada más
+        </h2>
+        <p class="fac__ayuda">
+          Tu negocio sigue funcionando exactamente igual: ventas, pedidos, caja y reportes no
+          cambian. La facturación electrónica queda apagada.
+        </p>
+        <p class="fac__ayuda">
+          El día que formalices tu negocio, vuelve aquí y actívala. Si tienes dudas sobre si
+          estás obligado a facturar, eso lo responde un contador.
+        </p>
+      </article>
+    }
+
+    <!-- ════════ CAMINOS B y C · el negocio registrado ════════ -->
+    @if (mostrarFormulario()) {
+      <article class="fac__card">
+        <h2 class="fac__card-title">Datos del negocio ante la DIAN</h2>
+
+        <div class="fac__grid">
+          <label class="fac__campo fac__campo--ancho">
+            <span>¿A nombre de quién está el negocio?</span>
+            <select
+              class="fac__input"
+              [ngModel]="get('tipo_persona')"
+              (ngModelChange)="set('tipo_persona', $event)"
+              name="tipo_persona"
+            >
+              <option [ngValue]="null">Selecciona…</option>
+              <option value="2">De una persona (está a mi nombre)</option>
+              <option value="1">De una empresa (S.A.S., Ltda., …)</option>
+            </select>
+          </label>
+
+          @if (obligadaPorSerJuridica()) {
+            <p class="fac__nota fac__campo--ancho">
+              <lucide-icon name="triangle-alert" [size]="14"></lucide-icon>
+              Una empresa está obligada a facturar electrónicamente <strong>siempre</strong>, sin
+              importar cuánto venda.
+            </p>
+          }
+
+          <label class="fac__campo">
+            <span>Tipo de documento</span>
+            <select
+              class="fac__input"
+              [ngModel]="get('tipo_documento')"
+              (ngModelChange)="set('tipo_documento', $event)"
+              name="tipo_documento"
+            >
+              <option [ngValue]="null">Selecciona…</option>
+              <option value="31">NIT</option>
+              <option value="13">Cédula de ciudadanía</option>
+              <option value="22">Cédula de extranjería</option>
+              <option value="41">Pasaporte</option>
+            </select>
+          </label>
+
+          <label class="fac__campo">
+            <span>Número</span>
+            <input
+              class="fac__input"
+              type="text"
+              inputmode="numeric"
+              placeholder="900123456"
+              [ngModel]="get('numero_documento')"
+              (ngModelChange)="set('numero_documento', $event)"
+              name="numero_documento"
+            />
+            <small>Sin puntos ni guiones. Si escribes puntos, los quitamos.</small>
+          </label>
+
+          @if (get('tipo_documento') === '31') {
+            <label class="fac__campo">
+              <span>Dígito de verificación</span>
+              <input
+                class="fac__input fac__input--corto"
+                type="text"
+                inputmode="numeric"
+                maxlength="1"
+                placeholder="—"
+                [ngModel]="get('dv')"
+                (ngModelChange)="set('dv', $event)"
+                name="dv"
+              />
+              <!-- El DV es una función del NIT: si se deja vacío lo calcula el backend. Y si
+                   se escribe uno que no corresponde, lo rechaza diciendo cuál era. -->
+              <small>Déjalo vacío y lo calculamos. Es el número después del guion en tu RUT.</small>
+            </label>
+          }
+
+          @if (esPersonaNatural()) {
+            <label class="fac__campo">
+              <span>Primer apellido</span>
+              <input class="fac__input" type="text"
+                [ngModel]="get('primer_apellido')"
+                (ngModelChange)="set('primer_apellido', $event)" name="primer_apellido" />
+            </label>
+            <label class="fac__campo">
+              <span>Segundo apellido</span>
+              <input class="fac__input" type="text"
+                [ngModel]="get('segundo_apellido')"
+                (ngModelChange)="set('segundo_apellido', $event)" name="segundo_apellido" />
+            </label>
+            <label class="fac__campo">
+              <span>Primer nombre</span>
+              <input class="fac__input" type="text"
+                [ngModel]="get('primer_nombre')"
+                (ngModelChange)="set('primer_nombre', $event)" name="primer_nombre" />
+            </label>
+            <label class="fac__campo">
+              <span>Otros nombres</span>
+              <input class="fac__input" type="text"
+                [ngModel]="get('otros_nombres')"
+                (ngModelChange)="set('otros_nombres', $event)" name="otros_nombres" />
+            </label>
+          } @else {
+            <label class="fac__campo fac__campo--ancho">
+              <span>Razón social</span>
+              <input
+                class="fac__input"
+                type="text"
+                [ngModel]="get('razon_social')"
+                (ngModelChange)="set('razon_social', $event)"
+                name="razon_social"
+              />
+              <small>
+                Tal como aparece en el RUT, no el nombre con el que te conocen los clientes.
+              </small>
+            </label>
+          }
+
+          <label class="fac__campo fac__campo--ancho">
+            <span>Nombre comercial</span>
+            <input class="fac__input" type="text"
+              [ngModel]="get('nombre_comercial')"
+              (ngModelChange)="set('nombre_comercial', $event)" name="nombre_comercial" />
+            <small>El que ve el cliente en la factura. Puede ser distinto del anterior.</small>
+          </label>
+        </div>
+      </article>
+
+      <article class="fac__card">
+        <h2 class="fac__card-title">Régimen e impuestos</h2>
+
+        <div class="fac__grid">
+          <label class="fac__campo fac__campo--ancho">
+            <span>Responsabilidades fiscales</span>
+            <input
+              class="fac__input"
+              type="text"
+              placeholder="O-47, R-99-PN"
+              [ngModel]="responsabilidadesTexto()"
+              (ngModelChange)="fijarResponsabilidades($event)"
+              name="responsabilidades"
+            />
+            <small>Los códigos que aparecen en tu RUT, separados por coma.</small>
+          </label>
+
+          <div class="fac__campo fac__campo--ancho">
+            <span>¿Qué impuesto cobras?</span>
+            <div class="fac__chips">
+              <button type="button" class="fac__chip"
+                [class.is-activo]="esTributoActivo('01')" (click)="alternarTributo('01')">
+                IVA
+              </button>
+              <button type="button" class="fac__chip"
+                [class.is-activo]="esTributoActivo('04')" (click)="alternarTributo('04')">
+                Impoconsumo (8%)
+              </button>
+              <button type="button" class="fac__chip"
+                [class.is-activo]="esTributoActivo('ZZ')" (click)="alternarTributo('ZZ')">
+                Ninguno
+              </button>
+            </div>
+            <!-- El restaurante NO cobra IVA sino impoconsumo. Es el error tributario más fácil
+                 de cometer aquí, así que se dice en la propia pantalla. -->
+            <small>
+              Los restaurantes normalmente cobran <strong>impoconsumo</strong>, no IVA. Si tienes
+              dudas, confírmalo con tu contador: nosotros no lo decidimos por ti.
+            </small>
+          </div>
+
+          <label class="fac__campo">
+            <span>Régimen</span>
+            <select class="fac__input" [ngModel]="get('regimen')"
+              (ngModelChange)="set('regimen', $event)" name="regimen">
+              <option [ngValue]="null">Selecciona…</option>
+              <option value="ORDINARIO">Ordinario</option>
+              <option value="SIMPLE">Régimen Simple</option>
+            </select>
+          </label>
+
+          <label class="fac__campo">
+            <span>Tipo de contribuyente</span>
+            <select class="fac__input" [ngModel]="get('tipo_contribuyente')"
+              (ngModelChange)="set('tipo_contribuyente', $event)" name="tipo_contribuyente">
+              <option [ngValue]="null">Selecciona…</option>
+              <option value="GRAN_CONTRIBUYENTE">Gran contribuyente</option>
+              <option value="DECLARANTE">Declarante de renta</option>
+              <option value="NO_DECLARANTE">No declarante</option>
+            </select>
+          </label>
+        </div>
+      </article>
+
+      <article class="fac__card">
+        <h2 class="fac__card-title">Dirección y contacto</h2>
+
+        <div class="fac__grid">
+          <label class="fac__campo fac__campo--ancho">
+            <span>Dirección fiscal</span>
+            <input class="fac__input" type="text"
+              [ngModel]="get('direccion_fiscal')"
+              (ngModelChange)="set('direccion_fiscal', $event)" name="direccion_fiscal" />
+          </label>
+
+          <label class="fac__campo">
+            <span>Departamento</span>
+            <select class="fac__input" [ngModel]="get('departamento_dane')"
+              (ngModelChange)="set('departamento_dane', $event)" name="departamento_dane">
+              <option [ngValue]="null">Selecciona…</option>
+              @for (d of catalogos().departamentos; track d.codigo) {
+                <option [value]="d.codigo">{{ d.nombre }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="fac__campo">
+            <span>Municipio (código DANE)</span>
+            <input class="fac__input" type="text" inputmode="numeric" maxlength="5"
+              placeholder="05001"
+              [ngModel]="get('municipio_dane')"
+              (ngModelChange)="set('municipio_dane', $event)" name="municipio_dane" />
+            <!-- El catálogo completo de municipios llega en FE-2 desde el proveedor; sembrar
+                 aquí una lista parcial sería peor que no tenerla. -->
+            <small>Son 5 dígitos. Medellín es 05001, Bogotá 11001.</small>
+          </label>
+
+          <label class="fac__campo">
+            <span>Correo de facturación</span>
+            <input class="fac__input" type="email"
+              [ngModel]="get('correo_facturacion')"
+              (ngModelChange)="set('correo_facturacion', $event)" name="correo_facturacion" />
+            <small>Donde te llegan las copias. Suele ser el del contador.</small>
+          </label>
+
+          <label class="fac__campo">
+            <span>Teléfono de facturación</span>
+            <input class="fac__input" type="tel"
+              [ngModel]="get('telefono_facturacion')"
+              (ngModelChange)="set('telefono_facturacion', $event)" name="telefono_facturacion" />
+          </label>
+        </div>
+
+        <div class="fac__acciones">
+          <button type="button" class="fac__btn fac__btn--primario"
+            [disabled]="guardando()" (click)="guardar()">
+            @if (guardando()) {
+              <lucide-icon name="loader-2" [size]="16" class="fac__spin"></lucide-icon>
+            } @else {
+              <lucide-icon name="save" [size]="16"></lucide-icon>
+            }
+            Guardar datos
+          </button>
+        </div>
+      </article>
+
+      <!-- ════════ Activación ════════ -->
+      <article class="fac__card">
+        <h2 class="fac__card-title">Activar la facturación</h2>
+
+        @if (puedeEmitir()) {
+          <p class="fac__ayuda fac__ayuda--ok">
+            <lucide-icon name="circle-check" [size]="16"></lucide-icon>
+            Los datos están completos.
+          </p>
+        } @else if (faltantes().length > 0) {
+          <!-- Esta lista la redacta el BACKEND. Aquí solo se pinta: si se escribiera aquí,
+               habría dos sitios que actualizar cada vez que la DIAN cambie lo que exige. -->
+          <div class="fac__faltan">
+            <p><strong>Para poder emitir todavía falta:</strong></p>
+            <ul>
+              @for (f of faltantes(); track trackTexto($index, f)) {
+                <li>{{ f }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="fac__opciones">
+          <button type="button" class="fac__opcion"
+            [class.is-activa]="ficha()?.modo_facturacion === 'NINGUNO'"
+            [disabled]="guardando()" (click)="declararModo('NINGUNO')">
+            <strong>Apagada</strong>
+            <span>No se transmite nada a la DIAN</span>
+          </button>
+
+          <button type="button" class="fac__opcion"
+            [class.is-activa]="ficha()?.modo_facturacion === 'POS'"
+            [disabled]="guardando()" (click)="declararModo('POS')">
+            <strong>Tiquete POS electrónico</strong>
+            <span>Y factura de venta cuando el cliente la pida</span>
+          </button>
+
+          <button type="button" class="fac__opcion"
+            [class.is-activa]="ficha()?.modo_facturacion === 'COMPLETO'"
+            [disabled]="guardando()" (click)="declararModo('COMPLETO')">
+            <strong>Completa</strong>
+            <span>POS electrónico y factura de venta automática</span>
+          </button>
+        </div>
+
+        <p class="fac__nota">
+          <lucide-icon name="info" [size]="14"></lucide-icon>
+          Activarla aquí guarda tu elección. Todavía falta conectar el proveedor tecnológico y tu
+          resolución de numeración de la DIAN: hasta entonces no se transmite nada.
+        </p>
+      </article>
+    }
+  }
+</section>
