@@ -1,0 +1,131 @@
+<!--
+  Documentos legales públicos. Sin guardia: quien quiere ejercer sus derechos como titular de
+  datos no tiene por qué tener cuenta.
+
+  La forma es la de la landing —banda oscura con el degradado de marca arriba, tarjeta blanca
+  elevada que la monta— porque el visitante llega aquí desde el pie de la landing y no debería
+  sentir que se cayó a otro sitio.
+-->
+<div class="lg">
+  <!-- ═══════════ Banda de marca ═══════════ -->
+  <header class="lg__hero">
+    <div class="lg__hero-inner">
+      <nav class="lg__nav">
+        <a routerLink="/" class="lg__marca" aria-label="Ir al inicio de EscalApp">
+          <img
+            [src]="assetService.getAssetPath('escalapplogo.png')"
+            alt="EscalApp"
+            class="lg__logo"
+          />
+        </a>
+        <div class="lg__nav-links">
+          @for (o of otros(); track o.ruta) {
+            <a [routerLink]="o.ruta">{{ o.titulo }}</a>
+          }
+          <a routerLink="/" class="lg__nav-cta">Volver al inicio</a>
+        </div>
+      </nav>
+
+      <div class="lg__hero-texto">
+        <span class="lg__pastilla">Documento legal</span>
+        <h1 class="lg__titulo">{{ doc().titulo }}</h1>
+        <p class="lg__bajada">{{ doc().bajada }}</p>
+        <p class="lg__meta">
+          Versión {{ version }}
+          @if (vigenteDesde) {
+            · Vigente desde {{ vigenteDesde }}
+          } @else {
+            · Sin fecha de entrada en vigencia
+          }
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <main class="lg__main">
+    <div class="lg__tarjeta">
+      @if (borrador) {
+        <!-- Publicar un texto legal sin revisar como si fuera definitivo lo haría vinculante.
+             Mientras no lo apruebe un abogado, la página lo dice sin disimulo. -->
+        <div class="lg__borrador" role="note">
+          <span class="lg__borrador-punto" aria-hidden="true"></span>
+          <p>
+            <strong>Versión preliminar.</strong> Este documento está pendiente de revisión legal y
+            <strong>todavía no es vinculante</strong>. Se publica para consulta; la versión
+            definitiva se anunciará en esta misma dirección.
+          </p>
+        </div>
+      }
+
+      <!-- Índice. Sin numeración propia: los títulos ya traen su número y ponerlo dos veces
+           producía «1. 1. Responsable del tratamiento». -->
+      <nav class="lg__indice" aria-label="Índice del documento">
+        <button
+          type="button"
+          class="lg__indice-btn"
+          (click)="alternarIndice()"
+          [attr.aria-expanded]="indiceAbierto()"
+        >
+          Contenido del documento
+        </button>
+        <ul class="lg__indice-lista" [class.is-abierto]="indiceAbierto()">
+          @for (s of secciones(); track s.id) {
+            <li>
+              <!-- `routerLink` + `fragment`, NO `href="#id"`: un href de solo fragmento se
+                   resuelve contra el <base href> del documento, no contra la URL actual, así que
+                   con <base href="/admin/"> mandaba a la landing en vez de a la cláusula. -->
+              <a [routerLink]="[]" [fragment]="s.id">
+                @if (s.numero) {
+                  <span class="lg__indice-num">{{ s.numero }}</span>
+                }
+                <span>{{ s.texto }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+
+      <article class="lg__doc">
+        @for (s of secciones(); track s.id) {
+          <section class="lg__seccion" [id]="s.id">
+            <h2 class="lg__seccion-titulo">
+              @if (s.numero) {
+                <span class="lg__seccion-num" aria-hidden="true">{{ s.numero }}</span>
+              }
+              <span>{{ s.texto }}</span>
+            </h2>
+            <!-- HTML propio, compilado con la app: no hay entrada de usuario. Aun así pasa por
+                 el sanitizador de Angular. -->
+            <div class="lg__seccion-cuerpo" [innerHTML]="s.html"></div>
+          </section>
+        }
+      </article>
+    </div>
+
+    <aside class="lg__ayuda">
+      <h2>¿Dudas sobre este documento?</h2>
+      <p>
+        Si quieres ejercer tus derechos como titular de datos o tienes preguntas sobre lo que aquí
+        se dice, escríbenos: respondemos en los plazos indicados en el documento.
+      </p>
+      <p class="lg__ayuda-links">
+        @for (o of otros(); track o.ruta) {
+          <a [routerLink]="o.ruta">{{ o.titulo }}</a>
+          <span aria-hidden="true">·</span>
+        }
+        <a routerLink="/">Volver al inicio</a>
+      </p>
+    </aside>
+  </main>
+
+  <footer class="lg__pie">
+    <p>&copy; {{ anio }} EscalApp. Todos los derechos reservados.</p>
+    <!-- El pie lista los tres, incluido el que se está leyendo: aquí el enlace no es para
+         navegar sino para decir qué documentos existen. -->
+    <div class="lg__pie-links">
+      @for (d of todos; track d.ruta) {
+        <a [routerLink]="d.ruta">{{ d.titulo }}</a>
+      }
+    </div>
+  </footer>
+</div>
