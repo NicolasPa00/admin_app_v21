@@ -6,11 +6,24 @@ import {
   OnDestroy,
   ChangeDetectionStrategy,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
-  Bell, BellOff, CheckCheck, AlertTriangle, Clock, X,
+  Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle,
 } from 'lucide-angular';
 import { NotificacionService } from '../../data-access/notificacion.service';
 import { Notificacion } from '../../models/notificacion.models';
+
+/**
+ * Qué notificaciones llevan a algún sitio, y a cuál.
+ *
+ * Una notificación que solo se marca como leída es un recordatorio de que hay trabajo en otra
+ * pantalla; la de un escalado es lo contrario — el cliente ya tiene prometido que le contesta una
+ * persona, así que el único gesto útil es abrir la conversación. La tabla vive aquí y no en un
+ * `switch` dentro del manejador para que añadir un tipo sea una línea.
+ */
+const DESTINO: Record<string, string> = {
+  CONVERSACION_ESCALADA: '/admin/bandeja',
+};
 
 @Component({
   selector: 'app-notificaciones-bell',
@@ -21,7 +34,7 @@ import { Notificacion } from '../../models/notificacion.models';
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ Bell, BellOff, CheckCheck, AlertTriangle, Clock, X }),
+      useValue: new LucideIconProvider({ Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle }),
     },
   ],
   template: `
@@ -282,6 +295,7 @@ import { Notificacion } from '../../models/notificacion.models';
 })
 export class NotificacionesBellComponent implements OnInit, OnDestroy {
   readonly notificacionService = inject(NotificacionService);
+  private readonly router = inject(Router);
 
   protected readonly isOpen = signal(false);
   protected readonly loading = signal(false);
@@ -319,6 +333,14 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
     if (!notif.leida) {
       this.notificacionService.marcarLeida(notif.id_notificacion, notif.id_negocio).subscribe();
     }
+    // Navegar no espera a que la marca de leída viaje: el destino no depende de ella, y hacer que
+    // dependiera dejaría el clic sin efecto cuando la red va lenta, que es justo cuando más prisa
+    // hay por abrir la conversación.
+    const destino = DESTINO[notif.tipo];
+    if (destino) {
+      this.isOpen.set(false);
+      this.router.navigate([destino]);
+    }
   }
 
   protected marcarTodasLeidas(): void {
@@ -331,6 +353,7 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
   protected getIcon(tipo: string): string {
     switch (tipo) {
       case 'VENCIMIENTO_PLAN': return 'alert-triangle';
+      case 'CONVERSACION_ESCALADA': return 'message-circle';
       default: return 'bell';
     }
   }
