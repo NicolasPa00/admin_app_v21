@@ -39,14 +39,36 @@
 
   &__logo-wrap {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: var(--spacing-md);
     z-index: 1;
   }
 
-  &__logo {
-    width: 500px;
-    height: 275px;
-    filter: brightness(0) invert(1);
+  /**
+   * Este panel es SIEMPRE un degradado índigo oscuro, así que el icono va sobre una
+   * pastilla blanca: el archivo tiene el interior del hexágono transparente y sin fondo
+   * claro la E —azul marino— se pierde contra el degradado.
+   *
+   * El logotipo anterior se resolvía con `brightness(0) invert(1)`, que lo dejaba en
+   * blanco. Sobre este no vale: aplanaría los índigos y la E en una silueta.
+   */
+  &__icono {
+    width: 76px;
+    height: 76px;
+    box-sizing: content-box;
+    padding: 10px;
+    background: #ffffff;
+    border-radius: 22px;
+    flex-shrink: 0;
+  }
+
+  &__nombre {
+    font-size: clamp(1.9rem, 3vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    white-space: nowrap;
   }
 
   &__content {
@@ -159,7 +181,9 @@
 
   &__mobile-logo {
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: var(--spacing-sm);
     margin-bottom: var(--spacing-xl);
 
     @media (min-width: 900px) {
@@ -167,14 +191,26 @@
     }
   }
 
-  &__mobile-logo-svg {
-    width: 100%;
-    max-width: 180px;
-    height: auto;
+  // Aquí el fondo sigue al tema, así que la pastilla solo hace falta en oscuro.
+  &__mobile-icono {
+    height: 44px;
+    width: auto;
+    flex-shrink: 0;
 
     :root[data-theme='dark'] & {
-      filter: brightness(0) invert(1);
+      box-sizing: content-box;
+      padding: 6px;
+      background: #ffffff;
+      border-radius: 14px;
     }
+  }
+
+  &__mobile-nombre {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+    white-space: nowrap;
   }
 }
 

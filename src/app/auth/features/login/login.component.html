@@ -2,7 +2,13 @@
   <!-- ===== Panel izquierdo — Branding ===== -->
   <aside class="login-brand">
     <div class="login-brand__logo-wrap">
-      <img class="login-brand__logo" [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" />
+      <img
+        class="login-brand__icono"
+        [src]="assetService.getAssetPath('icono-escalapp.png')"
+        alt=""
+        aria-hidden="true"
+      />
+      <span class="login-brand__nombre">EscalApp</span>
     </div>
 
     <div class="login-brand__content">
@@ -42,7 +48,13 @@
   <main class="login-form-panel">
     <!-- Logo móvil -->
     <div class="login-form-panel__mobile-logo">
-      <img class="login-form-panel__mobile-logo-svg" [src]="assetService.getAssetPath('escalapplogo.png')" alt="EscalApp" />
+      <img
+        class="login-form-panel__mobile-icono"
+        [src]="assetService.getAssetPath('icono-escalapp.png')"
+        alt=""
+        aria-hidden="true"
+      />
+      <span class="login-form-panel__mobile-nombre">EscalApp</span>
     </div>
 
     <div class="auth-card">

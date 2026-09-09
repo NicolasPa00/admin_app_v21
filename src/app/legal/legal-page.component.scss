@@ -39,14 +39,35 @@
     margin-bottom: 3rem;
   }
 
-  &__logo {
-    /* Dos cosas heredadas de la landing: el token de altura que usa su barra de navegación —el
-       archivo trae bastante aire alrededor, así que a 44px la marca se leía diminuta— y la
-       inversión a blanco, porque el logo es oscuro y aquí va sobre el degradado. */
-    height: var(--es-logo-height-sm);
+  &__marca {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    text-decoration: none;
+  }
+
+  /* Sobre el degradado oscuro de esta banda, la pastilla blanca: el icono tiene el
+     interior del hexágono transparente y sin ella la E —azul marino— no se ve.
+     La inversión a blanco que llevaba el logotipo anterior aquí no sirve, porque
+     aplanaría los índigos y la E en una silueta. */
+  &__icono {
+    height: 40px;
     width: auto;
     display: block;
-    filter: brightness(0) invert(1);
+    flex-shrink: 0;
+    box-sizing: content-box;
+    padding: 6px;
+    background: #ffffff;
+    border-radius: 13px;
+  }
+
+  &__nombre {
+    font-family: var(--es-font-sans);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--es-text-on-dark);
+    white-space: nowrap;
   }
 
   &__nav-links {

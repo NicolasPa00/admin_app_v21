@@ -13,10 +13,12 @@
       <nav class="lg__nav">
         <a routerLink="/" class="lg__marca" aria-label="Ir al inicio de EscalApp">
           <img
-            [src]="assetService.getAssetPath('escalapplogo.png')"
-            alt="EscalApp"
-            class="lg__logo"
+            [src]="assetService.getAssetPath('icono-escalapp.png')"
+            alt=""
+            aria-hidden="true"
+            class="lg__icono"
           />
+          <span class="lg__nombre">EscalApp</span>
         </a>
         <div class="lg__nav-links">
           @for (o of otros(); track o.ruta) {
