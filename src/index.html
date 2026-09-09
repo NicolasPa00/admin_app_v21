@@ -1,11 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>AdminAppV21</title>
+  <title>EscalApp</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/png" href="/images/icono.png">
+  <!-- Icono de marca.
+       Las rutas van SIN barra inicial a propósito: se resuelven contra el <base href>,
+       que el build reescribe a /admin/, /restaurante/ o /reserva/ según la app. Con
+       "/images/icono.png" el navegador las pedía a la raíz del dominio, donde no están. -->
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#4338CA">
+  <!-- Nombre bajo el icono al añadir a la pantalla de inicio en iOS. -->
+  <meta name="apple-mobile-web-app-title" content="EscalApp">
 </head>
 <body>
   <app-root></app-root>
