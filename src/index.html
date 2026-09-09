@@ -5,6 +5,18 @@
   <title>EscalApp</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Inter.
+       Los DOS sistemas de tokens la declaran primera —`--es-font-sans` en tokens.css y
+       `--font-family` en _theme.scss— pero no se cargaba en ninguna parte, así que todo
+       caía al siguiente de la lista: Segoe UI en Windows, San Francisco en Mac, Roboto en
+       Android. La marca se veía distinta en cada máquina, y de ahí la sensación de que el
+       nombre cambiaba de fuente entre unas pantallas y otras. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  >
   <!-- Icono de marca.
        Las rutas van SIN barra inicial a propósito: se resuelven contra el <base href>,
        que el build reescribe a /admin/, /restaurante/ o /reserva/ según la app. Con
