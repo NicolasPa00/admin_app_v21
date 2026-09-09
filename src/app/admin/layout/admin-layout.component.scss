@@ -50,19 +50,31 @@
 .adm__brand {
   display: flex;
   align-items: center;
+  gap: var(--spacing-sm);
   min-width: 0;
   text-decoration: none;
 }
 
-.adm__logo {
-  height: 46px;
+/**
+ * Sin el `brightness(0) invert(1)` que llevaba el logotipo antiguo: aquel era gris y
+ * el filtro lo pasaba a blanco en tema oscuro. Sobre este icono lo dejaría en una
+ * silueta blanca, sin índigos ni E. El que cambia con el tema es el nombre.
+ */
+.adm__icono {
+  height: 30px;
   width: auto;
-  max-width: 180px;
+  flex-shrink: 0;
   object-fit: contain;
+}
 
-  :root[data-theme='dark'] & {
-    filter: brightness(0) invert(1);
-  }
+.adm__nombre {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .adm__collapse-btn {

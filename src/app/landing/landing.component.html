@@ -22,12 +22,17 @@
 <!-- ═══════════════ HEADER / NAVBAR ═══════════════ -->
 <header class="lp-header">
   <nav class="lp-nav container">
+    <!-- Marca: el icono es una imagen; el nombre va como TEXTO, no dentro del PNG.
+         Así se ve nítido en cualquier pantalla, cambia de color con el tema y no
+         obliga a regenerar el archivo cada vez que se toque la tipografía. -->
     <a class="lp-nav__brand" (click)="scrollTo('hero'); $event.preventDefault()" href="#">
       <img
-        [src]="assetService.getAssetPath('escalapplogo.png')"
-        alt="EscalApp"
-        class="lp-nav__logo"
+        [src]="assetService.getAssetPath('icono-escalapp.png')"
+        alt=""
+        aria-hidden="true"
+        class="lp-nav__icono"
       />
+      <span class="lp-nav__nombre">EscalApp</span>
     </a>
 
     <ul class="lp-nav__links">
@@ -611,11 +616,15 @@
 
     <!-- Marca (minimalista, centrada) -->
     <div class="lp-final__brand">
-      <img
-        [src]="assetService.getAssetPath('escalapplogo.png')"
-        alt="EscalApp"
-        class="lp-final__logo"
-      />
+      <span class="lp-final__marca">
+        <img
+          [src]="assetService.getAssetPath('icono-escalapp.png')"
+          alt=""
+          aria-hidden="true"
+          class="lp-final__icono"
+        />
+        <span class="lp-final__nombre">EscalApp</span>
+      </span>
       <p class="lp-final__tagline">
         La plataforma para gestionar y hacer crecer cualquier negocio.
       </p>

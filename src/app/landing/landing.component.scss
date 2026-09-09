@@ -98,19 +98,30 @@
   &__brand {
     display: flex;
     align-items: center;
+    gap: var(--es-spacing-2);
     text-decoration: none;
     flex-shrink: 0;
   }
 
-  &__logo {
-    height: var(--es-logo-height);
+  /**
+   * El icono NO lleva el `brightness(0) invert(1)` que llevaba el logotipo antiguo.
+   * Aquel era gris y el filtro servía para pasarlo a blanco en tema oscuro; aplicarlo
+   * a este lo convertiría en una silueta blanca y se perderían los índigos y la E.
+   * Quien cambia de color con el tema es el nombre, que es texto.
+   */
+  &__icono {
+    height: 34px;
     width: auto;
-    filter: none;
-    transition: filter var(--es-transition);
+    flex-shrink: 0;
+  }
 
-    :root[data-theme='dark'] & {
-      filter: brightness(0) invert(1);
-    }
+  &__nombre {
+    font-family: var(--es-font-sans);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--es-text-primary);
+    white-space: nowrap;
   }
 
   &__links {
@@ -1427,10 +1438,38 @@
   }
 }
 
-.lp-final__logo {
-  height: 72px;
+/**
+ * Aquí el fondo es oscuro siempre, así que el nombre va en blanco fijo.
+ *
+ * El icono va sobre una pastilla blanca, y no es un adorno: el archivo tiene el interior
+ * del hexágono transparente, así que sobre el morado del pie la E —que es azul marino—
+ * se pierde y el contorno apenas se despega del fondo. La pastilla le devuelve el fondo
+ * claro que el dibujo da por supuesto. Sobra el día que tengamos el PNG con el interior
+ * blanco de verdad; entonces basta con quitar `background` y `padding`.
+ */
+.lp-final__marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--es-spacing-3);
+}
+
+.lp-final__icono {
+  height: 44px;
   width: auto;
-  filter: brightness(0) invert(1);
+  flex-shrink: 0;
+  box-sizing: content-box;
+  padding: 6px;
+  background: #ffffff;
+  border-radius: 14px;
+}
+
+.lp-final__nombre {
+  font-family: var(--es-font-sans);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--es-text-on-dark);
+  white-space: nowrap;
 }
 
 .lp-final__tagline {
