@@ -38,10 +38,10 @@
 export const BORRADOR = false;
 
 /** Sube esto en cada cambio material. Es lo que hay que guardar junto a la aceptación. */
-export const VERSION = '1.0';
+export const VERSION = '1.1';
 
 /** Fecha de entrada en vigencia. Vacía mientras sea borrador. */
-export const VIGENTE_DESDE = '3 de septiembre de 2026';
+export const VIGENTE_DESDE = '10 de septiembre de 2026';
 
 export interface SeccionLegal {
   /** Ancla para el índice y el enlace directo. */
@@ -223,6 +223,12 @@ export const TERMINOS: DocumentoLegal = {
           <li>El número que conectes <strong>dejará de funcionar en la aplicación móvil de
           WhatsApp</strong>, con pérdida del historial de ese dispositivo. Te lo advertimos antes de
           conectarlo.</li>
+          <li>Si conectas <strong>tu propia cuenta de WhatsApp Business</strong>, nos autorizas a
+          actuar como tu <strong>proveedor de tecnología</strong> ante Meta y a usar el acceso que
+          concedas <strong>solo</strong> para operar tu servicio. Puedes revocarlo cuando quieras
+          desde tu Administrador Comercial de Meta, sin pasar por nosotros; al hacerlo el asistente
+          deja de poder enviar y recibir por ese número. El detalle está en la Política de
+          Tratamiento de Datos, §8.</li>
         </ul>`,
     },
     {
@@ -402,8 +408,41 @@ export const PRIVACIDAD: DocumentoLegal = {
         inteligencia artificial</strong>. El asistente no los necesita para funcionar.</p>`,
     },
     {
+      /*
+       * Existe porque lo que le declaramos a Meta en el App Review —que accedemos a los activos
+       * de WhatsApp de nuestros clientes— no estaba dicho en ninguna parte para el titular. El
+       * revisor contrasta la justificación escrita contra esta página, y una política que no
+       * menciona lo que la solicitud describe es una discrepancia que se paga con un rechazo.
+       * Cubre además lo que exigen los Términos de la Plataforma de Meta (§4): qué se Trata, cómo,
+       * con qué fin y cómo pedir su eliminación.
+       */
+      id: 'meta-negocio',
+      titulo: '8. Cuando un negocio conecta su propio número de WhatsApp',
+      html: `
+        <p>Hoy la mayoría de negocios atiende desde un número operado por EscalApp. Esta sección
+        aplica al negocio que conecta <strong>el suyo</strong>, y describe tanto lo que ocurre como
+        lo que <strong>no</strong> ocurre. La conexión se hace desde el flujo de Meta y es el
+        negocio quien concede el acceso.</p>
+        <p><strong>Qué recibimos de Meta:</strong> el identificador de su cuenta de WhatsApp
+        Business y de sus números, el perfil público del negocio, sus plantillas de mensaje, el
+        contenido y los metadatos de los mensajes que entran y salen por ese número, y una
+        credencial de acceso emitida por Meta a nombre de ese negocio.</p>
+        <p><strong>Para qué lo usamos:</strong> únicamente para operar el servicio de ese negocio
+        —recibir sus mensajes, responderlos, registrar su número ante la Cloud API y crear o
+        consultar sus plantillas—. Ninguna otra finalidad, ni propia ni de terceros.</p>
+        <p><strong>Lo que no hacemos:</strong> no accedemos a activos de ningún negocio que no nos
+        los haya concedido, no mezclamos los datos de un negocio con los de otro, y no usamos el
+        contenido de esas conversaciones para fines comerciales propios ni para entrenar modelos.</p>
+        <p><strong>La credencial de acceso</strong> se guarda cifrada y se usa solo contra los
+        activos de ese negocio. <strong>El negocio puede revocarla cuando quiera</strong> desde su
+        Administrador Comercial de Meta, sin pasar por nosotros: al hacerlo perdemos el acceso de
+        inmediato. También la eliminamos al terminar la relación contractual.</p>
+        <p>En todo esto seguimos siendo <strong>Encargados</strong>: el Responsable de los datos de
+        los clientes finales sigue siendo el negocio (sección 2).</p>`,
+    },
+    {
       id: 'conservacion',
-      titulo: '8. Cuánto tiempo los conservamos',
+      titulo: '9. Cuánto tiempo los conservamos',
       html: `
         <p>Mientras exista la relación contractual y después durante los plazos legales de
         prescripción.</p>
@@ -415,7 +454,7 @@ export const PRIVACIDAD: DocumentoLegal = {
     },
     {
       id: 'seguridad',
-      titulo: '9. Seguridad',
+      titulo: '10. Seguridad',
       html: `
         <p>Aplicamos medidas técnicas y administrativas razonables y proporcionadas al tamaño de la
         operación: cifrado en tránsito (TLS), contraseñas almacenadas con funciones de derivación,
@@ -427,7 +466,7 @@ export const PRIVACIDAD: DocumentoLegal = {
     },
     {
       id: 'rnbd',
-      titulo: '10. Registro Nacional de Bases de Datos',
+      titulo: '11. Registro Nacional de Bases de Datos',
       html: `
         <p>A la fecha de esta versión, EscalApp no está obligada a inscribirse en el RNBD: esa
         obligación recae sobre sociedades con activos totales superiores a 100.000 UVT y EscalApp
@@ -435,7 +474,7 @@ export const PRIVACIDAD: DocumentoLegal = {
     },
     {
       id: 'vigencia',
-      titulo: '11. Vigencia y cambios',
+      titulo: '12. Vigencia y cambios',
       html: `
         <p>Los cambios materiales se publicarán en escalapp.cloud y se avisarán a los usuarios
         registrados. Las bases de datos se conservarán mientras se mantengan las finalidades
@@ -584,7 +623,14 @@ export const ELIMINACION: DocumentoLegal = {
         <p>Esta página cubre los datos que tratamos <strong>nosotros</strong>. Para eliminar lo que
         tenga Meta —tu cuenta de WhatsApp, tu cuenta de Facebook o los datos asociados a ellas— hay
         que pedírselo a Meta desde la configuración de tu cuenta: nosotros no tenemos acceso a eso
-        ni podemos borrarlo por ti.</p>`,
+        ni podemos borrarlo por ti.</p>
+        <p><strong>Si eres un negocio que conectó su propia cuenta de WhatsApp Business:</strong>
+        puedes cortar nuestro acceso tú mismo y en cualquier momento, sin escribirnos, desde el
+        <strong>Administrador Comercial de Meta → Configuración del negocio → Apps</strong>,
+        quitando allí a EscalApp. Perdemos el acceso de inmediato y eliminamos la credencial que
+        Meta nos había emitido. Los datos que ya estén en tu cuenta de EscalApp —pedidos, citas,
+        conversaciones— se eliminan por la vía normal de esta página, porque son tuyos y no de
+        Meta.</p>`,
     },
     {
       id: 'quejas',
