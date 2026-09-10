@@ -12,6 +12,25 @@ export interface ApiResponse<T = unknown> {
   errors?: unknown[];
 }
 
+/**
+ * Un oficio que se puede contratar, tal como lo devuelve `GET /admin/rubros` (público).
+ *
+ * El **rubro** es lo que el cliente dice tener («heladería»); el **módulo** es el software que
+ * se le monta («RESTAURANTE»). La landing pinta el rubro y promete las funciones del módulo.
+ */
+export interface RubroPublico {
+  id_tipo_negocio: number;
+  /** Clave en mayúsculas y sin tildes; es lo que se manda al registrarse. */
+  nombre: string;
+  /** Lo que ve el visitante: 'Salón de belleza'. */
+  etiqueta: string;
+  icono: string | null;
+  color_hex: string | null;
+  orden: number;
+  id_tipo_modulo: number;
+  modulo: string;
+}
+
 // ===================== Usuario =====================
 
 export interface UserRol {

@@ -11,6 +11,8 @@ import {
   UpdateNegocioRequest,
   TipoNegocio,
   TiposNegocioResponse,
+  Rubro,
+  RubrosResponse,
   Plan,
   PlanesResponse,
   UsuarioBusqueda,
@@ -60,6 +62,18 @@ export class NegociosAdminService {
   getTipos(): Observable<TipoNegocio[]> {
     return this.http
       .get<TiposNegocioResponse>(`${this.API}/tipos-negocio`)
+      .pipe(map((res) => res.data ?? []));
+  }
+
+  /**
+   * Los oficios que se le pueden ofrecer a un cliente, con su módulo detrás.
+   *
+   * Ya vienen filtrados por el backend: solo los que tienen un módulo capaz de atenderlos.
+   * Es lo que debe alimentar el desplegable de crear/editar, no `getTipos()`.
+   */
+  getRubros(): Observable<Rubro[]> {
+    return this.http
+      .get<RubrosResponse>(`${this.API}/rubros`)
       .pipe(map((res) => res.data ?? []));
   }
 

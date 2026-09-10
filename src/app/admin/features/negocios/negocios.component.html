@@ -33,10 +33,10 @@
       <option value="I">Inactivos</option>
       <option value="ALL">Todos</option>
     </select>
-    <select class="input neg__select" [value]="tipoFilter()" (change)="onTipo($event)" aria-label="Tipo">
-      <option value="ALL">Todos los tipos</option>
-      @for (t of tipos(); track t.id_tipo_negocio) {
-        <option [value]="t.id_tipo_negocio">{{ t.nombre }}</option>
+    <select class="input neg__select" [value]="tipoFilter()" (change)="onTipo($event)" aria-label="Módulo">
+      <option value="ALL">Todos los módulos</option>
+      @for (m of modulos(); track m.id) {
+        <option [value]="m.id">{{ m.nombre }}</option>
       }
     </select>
   </div>
@@ -294,12 +294,19 @@
               </div>
               <div class="neg-form__field">
                 <label class="neg-form__label">Tipo de negocio *</label>
-                <select class="input" [value]="createForm().id_tipo_negocio" (change)="updateCreate('id_tipo_negocio', $event)">
+                <select class="input" [value]="createForm().id_rubro" (change)="updateCreate('id_rubro', $event)">
                   <option value="" disabled>Selecciona…</option>
-                  @for (t of tiposSeleccionables(); track t.id_tipo_negocio) {
-                    <option [value]="t.id_tipo_negocio">{{ t.nombre }}</option>
+                  @for (g of rubrosPorModulo(); track g.modulo) {
+                    <optgroup [label]="'Módulo ' + g.modulo">
+                      @for (r of g.rubros; track r.id_tipo_negocio) {
+                        <option [value]="r.id_tipo_negocio">{{ r.etiqueta }}</option>
+                      }
+                    </optgroup>
                   }
                 </select>
+                <small class="neg-form__hint">
+                  El oficio queda en la ficha del cliente; el módulo es el software que se le monta.
+                </small>
               </div>
               <div class="neg-form__field">
                 <label class="neg-form__label">País *</label>
@@ -380,11 +387,18 @@
               </div>
               <div class="neg-form__field">
                 <label class="neg-form__label">Tipo de negocio</label>
-                <select class="input" (change)="updateEdit('id_tipo_negocio', $event)">
-                  @for (t of tiposEdit(); track t.id_tipo_negocio) {
-                    <option [value]="t.id_tipo_negocio" [selected]="esTipoEdit(t.id_tipo_negocio)">{{ t.nombre }}</option>
+                <select class="input" (change)="updateEdit('id_rubro', $event)">
+                  @for (g of rubrosEditPorModulo(); track g.modulo) {
+                    <optgroup [label]="'Módulo ' + g.modulo">
+                      @for (r of g.rubros; track r.id_tipo_negocio) {
+                        <option [value]="r.id_tipo_negocio" [selected]="esRubroEdit(r.id_tipo_negocio)">{{ r.etiqueta }}</option>
+                      }
+                    </optgroup>
                   }
                 </select>
+                <small class="neg-form__hint">
+                  Cambiar de módulo traduce los roles del equipo; cambiar solo de oficio, no.
+                </small>
               </div>
               <div class="neg-form__field">
                 <label class="neg-form__label">País *</label>

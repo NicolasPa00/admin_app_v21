@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, afterNextRender, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -35,6 +36,13 @@ import {
   PiggyBank,
   Landmark,
   Dumbbell,
+  Croissant,
+  IceCreamCone,
+  Sandwich,
+  Pizza,
+  Flower2,
+  Hand,
+  Stethoscope,
   Clock,
   Loader2,
   CheckCheck,
@@ -55,19 +63,19 @@ import { environment } from '../../environments/environment';
 
 interface TipoNegocio {
   id: number;
-  /** Lo que se manda al backend. Debe existir en TIPO_NEGOCIO_MAPA de registroTrialService.js. */
+  /** La clave que viaja al backend; tiene que existir en `gener_tipo_negocio.nombre`. */
   nombre: string;
   icon: string;
   label: string;
   disponible: boolean;
   /**
-   * Los oficios vecinos que caben en el mismo motor, en una línea.
+   * El motor que lo atiende: 'RESTAURANTE' o 'RESERVA'.
    *
-   * Va aquí y no como chips propios: «Arepería», «Heladería» o «Depilación» son el mismo
-   * software con otro nombre, y ponerlos sueltos convierte el selector en una lista de
-   * sinónimos que no ayuda a nadie a elegir. Se enseña bajo el chip seleccionado.
+   * Es lo que decide qué funciones se le prometen en los planes. Una heladería y una pizzería
+   * son oficios distintos y el mismo software, así que la lista de funciones cuelga de aquí y
+   * no del oficio: si colgara del oficio habría catorce copias casi idénticas.
    */
-  adaptaPara: string;
+  modulo: string;
 }
 
 interface PlanBase {
@@ -90,53 +98,56 @@ interface Feature {
 }
 
 /**
- * Los tipos de negocio del selector.
+ * Los oficios que se ofrecen, **como respaldo**.
  *
- * ## La regla: solo se ofrece lo que se puede operar HOY
+ * La lista de verdad vive en `general.gener_tipo_negocio` y llega por `GET /admin/rubros`. Esta
+ * copia existe porque la landing se **prerenderiza**: sin ella, el HTML que sirve Caddy saldría
+ * sin un solo chip y el visitante vería el hueco hasta que respondiera la API. También cubre que
+ * la API esté caída, que en una página de marketing no puede significar página rota.
  *
- * Detrás de estos chips hay **dos motores desplegados**, no diez: restaurante (POS, cocina, menú
- * digital) y reserva (agenda de citas), más el asistente de WhatsApp encima de ambos. Parqueadero,
- * gimnasio y tienda tienen código pero **no están en producción**, así que anunciarlos como
- * disponibles es vender algo que el cliente no va a poder usar el lunes.
- *
- * Barbería y salón de belleza sí están disponibles aunque no tengan motor propio: los atiende el
- * vertical de **reserva**, en producción desde el 2026-08-24. La traducción de chip a tipo real la
- * hace `TIPO_NEGOCIO_MAPA` en el backend, y ahí está explicado por qué «BARBERIA» no va al tipo
- * `BARBERIA` de la base.
- *
- * ⚠️ Al añadir o quitar un chip disponible hay que tocar además **tres sitios**: el validador de
- * `registroVerificacionController.js`, el mapa `TIPO_NEGOCIO_MAPA` de `registroTrialService.js` y
- * `FEATURES_POR_NEGOCIO` aquí abajo. Si falta el primero, el registro contesta 400; si falta el
- * segundo, el negocio nace sin vertical.
+ * Que se desincronice no rompe nada, y esa es la diferencia con antes: lo que el visitante elija
+ * se valida contra la base al registrarse, así que un chip de más da un error claro en vez de
+ * crear un negocio sin vertical, que es lo que pasaba cuando esta lista era la única fuente.
  *
  * El `id` es solo para la plantilla (`track` y chip activo); lo que viaja al backend es `nombre`.
  */
-const TIPOS_NEGOCIO: TipoNegocio[] = [
-  // ── Disponibles: motor restaurante ──
-  { id: 1,  nombre: 'RESTAURANTE',   icon: 'utensils-crossed', label: 'Restaurante',      disponible: true,
-    adaptaPara: 'También para bares, comidas rápidas y cocinas ocultas.' },
-  { id: 11, nombre: 'CAFETERIA',     icon: 'coffee',           label: 'Cafetería',        disponible: true,
-    adaptaPara: 'También para panaderías, heladerías y reposterías.' },
+const RUBROS_RESPALDO: TipoNegocio[] = [
+  // ── Motor restaurante ──
+  { id: 1,  nombre: 'RESTAURANTE',            icon: 'utensils-crossed', label: 'Restaurante',            disponible: true, modulo: 'RESTAURANTE' },
+  { id: 2,  nombre: 'CAFETERIA',              icon: 'coffee',           label: 'Cafetería',              disponible: true, modulo: 'RESTAURANTE' },
+  { id: 3,  nombre: 'PANADERIA Y REPOSTERIA', icon: 'croissant',        label: 'Panadería / Repostería', disponible: true, modulo: 'RESTAURANTE' },
+  { id: 4,  nombre: 'HELADERIA',              icon: 'ice-cream-cone',   label: 'Heladería',              disponible: true, modulo: 'RESTAURANTE' },
+  { id: 5,  nombre: 'BAR',                    icon: 'beer',             label: 'Bar',                    disponible: true, modulo: 'RESTAURANTE' },
+  { id: 6,  nombre: 'COMIDAS RAPIDAS',        icon: 'sandwich',         label: 'Comidas rápidas',        disponible: true, modulo: 'RESTAURANTE' },
+  { id: 7,  nombre: 'PIZZERIA',               icon: 'pizza',            label: 'Pizzería',               disponible: true, modulo: 'RESTAURANTE' },
 
-  // ── Disponibles: motor reserva ──
-  { id: 5,  nombre: 'BARBERIA',      icon: 'scissors',         label: 'Barbería',         disponible: true,
-    adaptaPara: 'También para peluquerías y barber shops.' },
-  { id: 6,  nombre: 'SALON_BELLEZA', icon: 'sparkles',         label: 'Salón de belleza', disponible: true,
-    adaptaPara: 'También para spa, uñas, estética y depilación.' },
-
-  // ── Próximamente: hay código, pero no están en producción ──
-  { id: 2,  nombre: 'PARQUEADERO',   icon: 'car',              label: 'Parqueadero',      disponible: false, adaptaPara: '' },
-  { id: 3,  nombre: 'GIMNASIO',      icon: 'dumbbell',         label: 'Gimnasio',         disponible: false, adaptaPara: '' },
-  { id: 4,  nombre: 'TIENDA',        icon: 'shopping-bag',     label: 'Tienda',           disponible: false, adaptaPara: '' },
-
-  // ── Próximamente: sin construir ──
-  { id: 7,  nombre: 'SUPERMERCADO',              icon: 'shopping-cart', label: 'Supermercado',      disponible: false, adaptaPara: '' },
-  { id: 8,  nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',        label: 'Taller automotriz', disponible: false, adaptaPara: '' },
-  { id: 9,  nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',    label: 'Fondo de ahorros',  disponible: false, adaptaPara: '' },
-  { id: 10, nombre: 'FINANCIERA_PRESTAMOS',      icon: 'landmark',      label: 'Financiera',        disponible: false, adaptaPara: '' },
+  // ── Motor reserva ──
+  { id: 8,  nombre: 'BARBERIA',            icon: 'scissors',    label: 'Barbería',         disponible: true, modulo: 'RESERVA' },
+  { id: 9,  nombre: 'SALON DE BELLEZA',    icon: 'sparkles',    label: 'Salón de belleza', disponible: true, modulo: 'RESERVA' },
+  { id: 10, nombre: 'PELUQUERIA',          icon: 'scissors',    label: 'Peluquería',       disponible: true, modulo: 'RESERVA' },
+  { id: 11, nombre: 'SPA Y ESTETICA',      icon: 'flower-2',    label: 'Spa / Estética',   disponible: true, modulo: 'RESERVA' },
+  { id: 12, nombre: 'MANICURE Y PEDICURE', icon: 'hand',        label: 'Uñas',             disponible: true, modulo: 'RESERVA' },
+  { id: 13, nombre: 'MASAJES',             icon: 'hand-heart',  label: 'Masajes',          disponible: true, modulo: 'RESERVA' },
+  { id: 14, nombre: 'CONSULTORIO',         icon: 'stethoscope', label: 'Consultorio',      disponible: true, modulo: 'RESERVA' },
 ];
 
-const TIPOS_NEGOCIO_REGISTRO = TIPOS_NEGOCIO.filter((t) => t.disponible);
+/**
+ * Lo que se enseña pero **no se puede contratar** todavía. Es copy de marketing, no catálogo, y
+ * por eso vive aquí y no en la base. Un tipo pasa de esta lista a la de arriba el día que su
+ * módulo se despliegue, y entonces basta con apuntarlo en `gener_tipo_negocio.id_tipo_modulo`.
+ */
+const PROXIMAMENTE: TipoNegocio[] = [
+  // Hay código, pero no están en producción.
+  { id: 101, nombre: 'PARQUEADERO', icon: 'car',          label: 'Parqueadero', disponible: false, modulo: '' },
+  { id: 102, nombre: 'GIMNASIO',    icon: 'dumbbell',     label: 'Gimnasio',    disponible: false, modulo: '' },
+  { id: 103, nombre: 'TIENDA',      icon: 'shopping-bag', label: 'Tienda',      disponible: false, modulo: '' },
+
+  // Sin construir.
+  { id: 104, nombre: 'SUPERMERCADO',              icon: 'shopping-cart', label: 'Supermercado',      disponible: false, modulo: '' },
+  { id: 105, nombre: 'GESTION_TALLER_AUTOMOTRIZ', icon: 'wrench',        label: 'Taller automotriz', disponible: false, modulo: '' },
+  { id: 106, nombre: 'FONDO_AHORROS',             icon: 'piggy-bank',    label: 'Fondo de ahorros',  disponible: false, modulo: '' },
+  { id: 107, nombre: 'FINANCIERA_PRESTAMOS',      icon: 'landmark',      label: 'Financiera',        disponible: false, modulo: '' },
+];
 
 const PLANES_BASE: PlanBase[] = [
   {
@@ -150,27 +161,25 @@ const PLANES_BASE: PlanBase[] = [
 ];
 
 /**
- * Qué incluye el plan para cada tipo disponible.
+ * Qué incluye el plan, **por motor**.
  *
- * Solo tiene entradas para los chips `disponible: true`: a los demás la plantilla les enseña
- * `FEATURES_PROXIMAMENTE`, así que una entrada aquí para parqueadero o gimnasio sería una lista
- * que nadie puede ver y que envejecería sin que se note. Cuando esas verticales salgan a
- * producción se añaden aquí junto con el chip.
+ * Antes estaba indexado por oficio y había una entrada por chip. Con catorce oficios eso serían
+ * catorce listas casi idénticas que envejecerían por separado: la de pizzería diría una cosa y
+ * la de heladería otra, aunque sean literalmente el mismo software. Lo que se promete depende
+ * del motor, no del rótulo, así que se indexa por motor.
  *
- * El acceso tiene respaldo (`?? RESTAURANTE`), así que activar un chip sin acordarse de esta
- * lista degrada a las features de restaurante en vez de romper la página.
+ * Los chips `disponible: false` no aparecen aquí: la plantilla les enseña
+ * `FEATURES_PROXIMAMENTE`, y una entrada para parqueadero o gimnasio sería una lista que nadie
+ * puede ver y que envejecería sin que se note.
+ *
+ * El acceso tiene respaldo (`?? RESTAURANTE`), así que un motor nuevo sin lista degrada a la de
+ * restaurante en vez de romper la página.
  */
-const FEATURES_POR_NEGOCIO: Record<string, string[][]> = {
+const FEATURES_POR_MODULO: Record<string, string[][]> = {
   RESTAURANTE: [
-    ['Hasta 5 personas en tu equipo', 'Menú digital con pedidos', 'Comandas a cocina', 'Mesas y domicilios', 'Caja y reportes de ventas'],
+    ['Hasta 5 personas en tu equipo', 'Carta digital con pedidos', 'Comandas a cocina', 'Mesas y domicilios', 'Caja y reportes de ventas'],
   ],
-  CAFETERIA: [
-    ['Hasta 5 personas en tu equipo', 'Carta digital con pedidos', 'Punto de venta rápido', 'Control de inventario', 'Caja y reportes de ventas'],
-  ],
-  BARBERIA: [
-    ['Hasta 5 personas en tu equipo', 'Agenda de citas', 'Gestión de profesionales', 'Control de servicios', 'Recordatorios automáticos', 'Reportes de ingresos'],
-  ],
-  SALON_BELLEZA: [
+  RESERVA: [
     ['Hasta 5 personas en tu equipo', 'Agenda de citas', 'Gestión de profesionales', 'Control de servicios', 'Recordatorios automáticos', 'Reportes de ingresos'],
   ],
 };
@@ -265,6 +274,10 @@ type ModalStep = 'form' | 'otp' | 'success';
         UtensilsCrossed, Coffee, Sparkles, Beer, CakeSlice, Bike, HandHeart,
         Car, Scissors, ShoppingCart, ShoppingBag,
         Wrench, PiggyBank, Landmark, Dumbbell,
+        // Los oficios que se añadieron al abrir el catálogo (2026-09-10). lucide-angular
+        // registra los iconos de uno en uno: si falta uno aquí el chip se pinta sin dibujo
+        // y no falla nada al compilar, así que no se nota hasta verlo.
+        Croissant, IceCreamCone, Sandwich, Pizza, Flower2, Hand, Stethoscope,
       }),
     },
   ],
@@ -275,8 +288,13 @@ export class LandingComponent {
   protected readonly assetService   = inject(AssetService);
   private   readonly authService    = inject(AuthService);
 
-  protected readonly tiposNegocio        = TIPOS_NEGOCIO;
-  protected readonly tiposNegocioRegistro = TIPOS_NEGOCIO_REGISTRO;
+  /**
+   * Los oficios ofrecibles. Arranca con el respaldo (para el prerender) y se reemplaza con lo
+   * que diga la API en cuanto el navegador la responde. Ver `RUBROS_RESPALDO`.
+   */
+  private   readonly rubros = signal<TipoNegocio[]>(RUBROS_RESPALDO);
+  protected readonly tiposNegocio         = computed(() => [...this.rubros(), ...PROXIMAMENTE]);
+  protected readonly tiposNegocioRegistro = computed(() => this.rubros());
   protected readonly features            = FEATURES;
   protected readonly stats               = STATS;
   protected readonly ecosistema          = ECOSISTEMA;
@@ -302,6 +320,37 @@ export class LandingComponent {
 
   constructor() {
     const destroyRef = inject(DestroyRef);
+
+    // Los chips reales, en cuanto el navegador puede pedirlos.
+    //
+    // Va en `afterNextRender` porque durante el prerender no hay a quién preguntarle: la página
+    // se genera en el build, con la API apagada. Si la llamada falla se conserva el respaldo, que
+    // es lo que ya está pintado — una landing sin chips sería peor que unos chips desactualizados.
+    afterNextRender(() => {
+      this.authService.getRubrosPublicos()
+        .pipe(takeUntilDestroyed(destroyRef))
+        .subscribe({
+          next: (rubros) => {
+            if (!rubros.length) return;
+            const mapeados: TipoNegocio[] = rubros.map((r, i) => ({
+              id: r.id_tipo_negocio ?? i,
+              nombre: r.nombre,
+              icon: r.icono || 'store',
+              label: r.etiqueta || r.nombre,
+              disponible: true,
+              modulo: r.modulo,
+            }));
+            this.rubros.set(mapeados);
+            // Si el que estaba seleccionado ya no existe, se vuelve al primero.
+            if (!mapeados.some((t) => t.nombre === this.selectedTipo().nombre)
+                && this.selectedTipo().disponible) {
+              this.selectedTipo.set(mapeados[0]);
+            }
+          },
+          error: () => { /* se conserva RUBROS_RESPALDO */ },
+        });
+    });
+
     afterNextRender(() => {
       this.ctaBtnText.set(this.ctaPhrases[0]);
       this.charIndex   = this.ctaPhrases[0].length;
@@ -357,7 +406,7 @@ export class LandingComponent {
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   /** Tipo seleccionado en el selector de planes */
-  protected readonly selectedTipo = signal<TipoNegocio>(TIPOS_NEGOCIO[0]);
+  protected readonly selectedTipo = signal<TipoNegocio>(RUBROS_RESPALDO[0]);
   protected readonly selectedDisponible = computed(() => this.selectedTipo().disponible);
 
   /* ── Imagen representativa por tipo de negocio ── */
@@ -368,25 +417,37 @@ export class LandingComponent {
    * la de restaurante, que es el mismo motor.
    */
   private readonly tipoImagenMap: Record<string, string | null> = {
-    RESTAURANTE:   'pulpo_restaurante.png',
-    CAFETERIA:     'pulpo_restaurante.png',
-    BARBERIA:      'pulpo_barberia.png',
-    SALON_BELLEZA: 'pulpo_salonbelleza.png',
-    PARQUEADERO:   'pulpo_parqueadero.png',
-    GIMNASIO:      'pulpo_gym.png',
-    TIENDA:        'pulpo_tienda.png',
-    SUPERMERCADO:  'pulpo_tienda.png',
+    RESTAURANTE:        'pulpo_restaurante.png',
+    BARBERIA:           'pulpo_barberia.png',
+    'SALON DE BELLEZA': 'pulpo_salonbelleza.png',
+    PARQUEADERO:        'pulpo_parqueadero.png',
+    GIMNASIO:           'pulpo_gym.png',
+    TIENDA:             'pulpo_tienda.png',
+    SUPERMERCADO:       'pulpo_tienda.png',
+  };
+
+  /**
+   * Solo hay seis ilustraciones y catorce oficios, así que los que no tienen la suya caen a la
+   * de su motor: una pizzería enseña el pulpo de restaurante y una manicurista el de barbería.
+   * Es preferible a dejar el hueco, que se lee como un fallo de la página.
+   */
+  private readonly imagenPorModulo: Record<string, string> = {
+    RESTAURANTE: 'pulpo_restaurante.png',
+    RESERVA:     'pulpo_barberia.png',
   };
 
   protected readonly tipoImagenSrc = computed(() => {
-    const filename = this.tipoImagenMap[this.selectedTipo().nombre] ?? null;
+    const tipo = this.selectedTipo();
+    const filename = this.tipoImagenMap[tipo.nombre]
+      ?? this.imagenPorModulo[tipo.modulo]
+      ?? null;
     return filename ? this.assetService.getAssetPath(filename) : null;
   });
 
   protected readonly planes = computed<PlanConFeatures[]>(() => {
     const tipo = this.selectedTipo();
     const features = tipo.disponible
-      ? (FEATURES_POR_NEGOCIO[tipo.nombre] ?? FEATURES_POR_NEGOCIO['RESTAURANTE'])
+      ? (FEATURES_POR_MODULO[tipo.modulo] ?? FEATURES_POR_MODULO['RESTAURANTE'])
       : FEATURES_PROXIMAMENTE;
     return PLANES_BASE.map((plan, i) => ({ ...plan, features: features[i] ?? [] }));
   });

@@ -17,7 +17,7 @@ import { AuthService } from '../../../auth/data-access/auth.service';
 import { SUPER_ADMIN_ROL } from '../../guards/admin.guard';
 import { NegociosAdminService } from '../../data-access/negocios-admin.service';
 import {
-  NegocioAdmin, TipoNegocio, Plan, PlanInfo, LoadingState,
+  NegocioAdmin, TipoNegocio, Rubro, Plan, PlanInfo, LoadingState,
   RegistrarClienteRequest, UsuarioBusqueda,
 } from '../../models/admin.models';
 
@@ -26,7 +26,7 @@ type UserMode = 'nuevo' | 'existente';
 type PlanTone = 'success' | 'warning' | 'error';
 
 interface CreateForm {
-  nombre: string; id_tipo_negocio: string; nit: string;
+  nombre: string; id_rubro: string; nit: string;
   email_contacto: string; telefono: string; direccion: string; pais: string;
   id_plan: string; meses: string;
   a_primer_nombre: string; a_primer_apellido: string;
@@ -35,7 +35,7 @@ interface CreateForm {
 
 interface EditForm {
   id_negocio: number; nombre: string; nit: string;
-  email_contacto: string; telefono: string; direccion: string; id_tipo_negocio: string;
+  email_contacto: string; telefono: string; direccion: string; id_rubro: string;
   pais: string;
 }
 
@@ -53,7 +53,7 @@ const PAISES: ReadonlyArray<{ codigo: string; nombre: string }> = [
 ];
 
 const EMPTY_CREATE: CreateForm = {
-  nombre: '', id_tipo_negocio: '', nit: '', email_contacto: '', telefono: '', direccion: '', pais: 'CO',
+  nombre: '', id_rubro: '', nit: '', email_contacto: '', telefono: '', direccion: '', pais: 'CO',
   id_plan: '', meses: '1',
   a_primer_nombre: '', a_primer_apellido: '', a_num_identificacion: '', a_email: '', a_password: '',
 };
@@ -91,29 +91,69 @@ export class NegociosComponent implements OnInit, OnDestroy {
   protected readonly tipos = signal<TipoNegocio[]>([]);
 
   /**
-   * Los tipos que se pueden **elegir** al crear un negocio.
+   * Los oficios que se le pueden ofrecer a un cliente.
    *
-   * `tipos()` completo sigue alimentando el filtro de la tabla, porque hay negocios antiguos de
-   * tipos sin módulo y deben poder listarse. Pero ofrecerlos al crear es lo que dejó al primer
-   * cliente de reserva fuera de su propia app: se creó como BARBERIA, un tipo sin pantallas.
-   * Un backend anterior no manda la bandera; en ese caso no se filtra nada y la última palabra
-   * la tiene el servidor, que también lo valida.
+   * Es lo que va en el desplegable de crear y editar — **no** `tipos()`, que es el catálogo
+   * entero e incluye media docena de filas sin módulo detrás. Ofrecer una de esas fue lo que
+   * dejó al primer cliente de reserva fuera de su propia app (se creó como BARBERIA, 2026-09-09).
+   *
+   * El backend ya las filtra; aquí solo se agrupan para pintarlas.
    */
-  protected readonly tiposSeleccionables = computed(() =>
-    this.tipos().filter((t) => t.operativo !== false),
-  );
+  protected readonly rubros = signal<Rubro[]>([]);
 
   /**
-   * Los tipos del desplegable de edición: los seleccionables más el actual del negocio, aunque
-   * ya no lo sea. Sin esa excepción el desplegable mostraría un tipo distinto al real y guardar
-   * cualquier otro campo cambiaría el tipo sin querer.
+   * Los mismos oficios agrupados por el módulo que los atiende, para los `optgroup`.
+   *
+   * Enseñar el módulo importa: quien crea el cliente tiene que ver de un vistazo que «Heladería»
+   * y «Pizzería» son el mismo software, porque de ahí depende lo que le promete al cliente.
    */
-  protected readonly tiposEdit = computed(() => {
-    const actual = this.editForm()?.id_tipo_negocio;
-    const lista = this.tiposSeleccionables();
-    if (!actual || lista.some((t) => String(t.id_tipo_negocio) === actual)) return lista;
+  protected readonly rubrosPorModulo = computed(() => {
+    const grupos = new Map<string, Rubro[]>();
+    for (const r of this.rubros()) {
+      const lista = grupos.get(r.modulo) ?? [];
+      lista.push(r);
+      grupos.set(r.modulo, lista);
+    }
+    return [...grupos.entries()].map(([modulo, lista]) => ({ modulo, rubros: lista }));
+  });
+
+  /**
+   * Igual, pero incluyendo el oficio actual del negocio que se edita aunque ya no se ofrezca.
+   * Sin esa excepción el desplegable mostraría otro oficio distinto al real, y guardar cualquier
+   * otro campo lo cambiaría sin querer.
+   */
+  protected readonly rubrosEditPorModulo = computed(() => {
+    const actual = this.editForm()?.id_rubro;
+    const grupos = this.rubrosPorModulo();
+    if (!actual || this.rubros().some((r) => String(r.id_tipo_negocio) === actual)) return grupos;
+
     const suelto = this.tipos().find((t) => String(t.id_tipo_negocio) === actual);
-    return suelto ? [...lista, suelto] : lista;
+    if (!suelto) return grupos;
+    return [...grupos, {
+      modulo: 'Sin módulo',
+      rubros: [{
+        id_tipo_negocio: suelto.id_tipo_negocio,
+        nombre: suelto.nombre,
+        etiqueta: suelto.descripcion || suelto.nombre,
+        icono: suelto.icono ?? null,
+        color_hex: suelto.color_hex ?? null,
+        orden: 999,
+        id_tipo_modulo: suelto.id_tipo_negocio,
+        modulo: 'Sin módulo',
+      } as Rubro],
+    }];
+  });
+
+  /**
+   * Los módulos, para el filtro de la tabla.
+   *
+   * El filtro va por MÓDULO y no por oficio a propósito: «enséñame todos los restaurantes» es
+   * una pregunta útil, «enséñame las heladerías» con dos clientes no lo es todavía.
+   */
+  protected readonly modulos = computed(() => {
+    const vistos = new Map<number, string>();
+    for (const r of this.rubros()) vistos.set(r.id_tipo_modulo, r.modulo);
+    return [...vistos.entries()].map(([id, nombre]) => ({ id, nombre }));
   });
   protected readonly planes = signal<Plan[]>([]);
 
@@ -185,7 +225,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
   protected readonly createValid = computed(() => {
     const f = this.createForm();
-    const base = f.nombre.trim().length > 0 && f.id_tipo_negocio !== '';
+    const base = f.nombre.trim().length > 0 && f.id_rubro !== '';
     if (this.userMode() === 'existente') return base && this.usuarioSeleccionado() !== null;
     return (
       base &&
@@ -276,7 +316,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
     const negocioPayload = {
       nombre: f.nombre.trim(),
-      id_tipo_negocio: Number(f.id_tipo_negocio),
+      id_rubro: Number(f.id_rubro),
       nit: f.nit.trim() || null,
       email_contacto: f.email_contacto.trim() || null,
       telefono: f.telefono.trim() || null,
@@ -321,7 +361,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
       email_contacto: n.email_contacto ?? '',
       telefono: n.telefono ?? '',
       direccion: n.direccion ?? '',
-      id_tipo_negocio: String(n.id_tipo_negocio),
+      id_rubro: String(n.id_rubro ?? n.id_tipo_negocio),
       pais: n.pais ?? 'CO',
     });
     this.formError.set(null);
@@ -345,7 +385,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
       email_contacto: f.email_contacto.trim() || null,
       telefono: f.telefono.trim() || null,
       direccion: f.direccion.trim() || null,
-      id_tipo_negocio: f.id_tipo_negocio ? Number(f.id_tipo_negocio) : undefined,
+      id_rubro: f.id_rubro ? Number(f.id_rubro) : undefined,
       pais: f.pais || 'CO',
     }).subscribe({
       next: () => { this.saving.set(false); this.closeModal(); this.load(); },
@@ -361,9 +401,9 @@ export class NegociosComponent implements OnInit, OnDestroy {
     this.editForm.set(null);
   }
 
-  /** ¿El tipo dado es el del negocio en edición? (para marcar la opción). */
-  protected esTipoEdit(idTipo: number): boolean {
-    return String(idTipo) === this.editForm()?.id_tipo_negocio;
+  /** ¿El oficio dado es el del negocio en edición? (para marcar la opción). */
+  protected esRubroEdit(idRubro: number): boolean {
+    return String(idRubro) === this.editForm()?.id_rubro;
   }
 
   // ── Activar / desactivar ────────────────────────────────────
@@ -407,11 +447,13 @@ export class NegociosComponent implements OnInit, OnDestroy {
     forkJoin({
       negocios: this.service.getNegocios(),
       tipos: this.service.getTipos(),
+      rubros: this.service.getRubros(),
       planes: this.service.getPlanes(),
     }).subscribe({
-      next: ({ negocios, tipos, planes }) => {
+      next: ({ negocios, tipos, rubros, planes }) => {
         this._negocios.set(negocios);
         this.tipos.set(tipos);
+        this.rubros.set(rubros);
         this.planes.set(planes);
         this.loadingState.set('success');
       },

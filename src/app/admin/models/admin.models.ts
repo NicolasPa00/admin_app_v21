@@ -70,6 +70,30 @@ export interface TipoNegocioConRoles extends TipoNegocio {
 // ===================== Response types =====================
 
 export type TiposNegocioResponse = ApiResponse<TipoNegocio[]>;
+
+/**
+ * Un **rubro** es el oficio que el cliente dice tener; el **módulo** es el software que se le
+ * monta. Una heladería y una pizzería son rubros distintos y el mismo módulo (RESTAURANTE);
+ * una barbería y un spa, lo mismo con RESERVA.
+ *
+ * La lista sale de `GET /admin/rubros` y ya viene filtrada: solo aparecen los oficios cuyo
+ * módulo existe de verdad. Antes esta decisión estaba escrita a mano en cuatro sitios.
+ */
+export interface Rubro {
+  id_tipo_negocio: number;
+  /** Clave en mayúsculas y sin tildes: 'SALON DE BELLEZA'. */
+  nombre: string;
+  /** Lo que se le enseña al usuario: 'Salón de belleza'. */
+  etiqueta: string;
+  icono: string | null;
+  color_hex: string | null;
+  orden: number;
+  id_tipo_modulo: number;
+  /** Nombre del módulo que lo atiende: 'RESTAURANTE' | 'RESERVA'. */
+  modulo: string;
+}
+
+export type RubrosResponse = ApiResponse<Rubro[]>;
 export type RolesResponse       = ApiResponse<Rol[]>;
 
 // ===================== Estado de carga =====================
@@ -205,7 +229,12 @@ export interface NegocioAdmin {
   email_contacto: string | null;
   telefono: string | null;
   direccion: string | null;
+  /** El MÓDULO sobre el que corre. De aquí cuelgan los permisos. */
   id_tipo_negocio: number;
+  /** El OFICIO que dijo ser el cliente. Puede coincidir con el módulo o no. */
+  id_rubro: number | null;
+  /** Nombre del módulo, para cuando hace falta distinguirlo del oficio. */
+  modulo_nombre: string | null;
   /**
    * País del negocio (ISO 3166-1 alfa-2). Decide cómo se normaliza el teléfono de sus
    * clientes: un salón chileno guarda +56 y uno colombiano +57. Por defecto 'CO'.
@@ -247,13 +276,19 @@ export interface UsuarioBusqueda {
 export interface RegistrarClienteRequest {
   negocio: {
     nombre: string;
-    id_tipo_negocio: number;
+    /**
+     * El MÓDULO. Solo para llamadas anteriores a los rubros: hoy se manda `id_rubro` y el
+     * backend deriva el módulo de ahí. Debe venir uno de los dos.
+     */
+    id_tipo_negocio?: number;
     nit?: string | null;
     email_contacto?: string | null;
     telefono?: string | null;
     direccion?: string | null;
     /** ISO 3166-1 alfa-2. Si no se manda, el backend lo deja en 'CO'. */
     pais?: string | null;
+    /** El oficio elegido. El backend deriva de aquí el módulo. */
+    id_rubro?: number | null;
   };
   plan?: { id_plan: number; meses?: number } | null;
   /** Modo A: vincular usuario existente (se excluye mutuamente con admin). */
@@ -270,6 +305,8 @@ export interface UpdateNegocioRequest {
   telefono?: string | null;
   direccion?: string | null;
   id_tipo_negocio?: number;
+  /** El oficio elegido. El backend deriva de aquí el módulo y traduce los roles si cambia. */
+  id_rubro?: number | null;
   /** ISO 3166-1 alfa-2. Decide la normalización del teléfono de sus clientes. */
   pais?: string | null;
 }

@@ -6,6 +6,8 @@ import { Observable, of, tap, map, catchError, throwError } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import {
+  ApiResponse,
+  RubroPublico,
   User,
   LoginRequest,
   LoginResponse,
@@ -290,6 +292,19 @@ export class AuthService {
    */
   changePassword(data: ChangePasswordRequest): Observable<ApiOkResponse> {
     return this.http.post<ApiOkResponse>(`${this.API}/auth/change-password`, data);
+  }
+
+  /**
+   * Los oficios que se pueden contratar hoy, con el motor que los atiende.
+   * GET /admin/rubros — pública, la landing la llama sin sesión.
+   *
+   * Es la fuente de la que salen los chips del selector. La landing lleva además una copia de
+   * respaldo para el prerender; si esta llamada falla, se queda con ella.
+   */
+  getRubrosPublicos(): Observable<RubroPublico[]> {
+    return this.http
+      .get<ApiResponse<RubroPublico[]>>(`${this.API}/rubros`)
+      .pipe(map((res) => res.data ?? []));
   }
 
   /**

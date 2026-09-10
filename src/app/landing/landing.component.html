@@ -481,7 +481,7 @@
     <div class="lp-tipo-selector">
       <p class="lp-tipo-selector__label">¿Qué tipo de negocio tienes?</p>
       <div class="lp-tipo-selector__grid">
-        @for (tipo of tiposNegocio; track tipo.id) {
+        @for (tipo of tiposNegocio(); track tipo.id) {
           <button
             type="button"
             class="lp-tipo-chip"
@@ -505,14 +505,21 @@
       </div>
 
       <!--
-        La variedad de oficios va aquí, en una línea bajo el chip elegido — no como chips propios.
-        «Arepería», «heladería» o «depilación» son el mismo software con otro nombre: sueltos
-        convertirían el selector en una lista de sinónimos que estorba para elegir.
+        Antes aquí iba una línea de sinónimos («También para heladerías, reposterías…») porque
+        solo había cuatro chips y el resto de oficios no cabía. Desde 2026-09-10 cada oficio es
+        su propio chip y se guarda con su nombre, así que la línea sobra: el visitante ya se ve
+        en la lista en vez de tener que reconocerse en la letra pequeña.
+
+        En su lugar se dice a qué motor va, que es la información que sí le falta al elegir.
       -->
-      @if (selectedTipo().adaptaPara) {
+      @if (selectedTipo().disponible && selectedTipo().modulo) {
         <p class="lp-tipo-selector__adapta">
           <lucide-icon name="check" [size]="14" aria-hidden="true" />
-          {{ selectedTipo().adaptaPara }}
+          @if (selectedTipo().modulo === 'RESERVA') {
+            Agenda de citas, profesionales y recordatorios automáticos.
+          } @else {
+            Punto de venta, carta digital, cocina y domicilios.
+          }
         </p>
       }
     </div>
@@ -778,7 +785,7 @@
                 (blur)="trialTipoTouched.set(true)"
               >
                 <option value="" disabled selected>Selecciona una opción</option>
-                @for (tipo of tiposNegocioRegistro; track tipo.id) {
+                @for (tipo of tiposNegocioRegistro(); track tipo.id) {
                   <option [value]="tipo.nombre">{{ tipo.label }}</option>
                 }
               </select>
