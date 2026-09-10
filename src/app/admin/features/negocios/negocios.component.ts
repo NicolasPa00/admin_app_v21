@@ -45,11 +45,16 @@ interface EditForm {
  * No es decoración: de esto depende que el teléfono de un cliente se guarde como número
  * utilizable o se descarte. Hasta 2026-09-09 todo era Colombia y no había dónde decirlo, así
  * que los móviles del primer cliente chileno se habrían tirado en silencio.
- * La lista viva está en `app_core/helpers/telefono.js` del backend, que además la valida.
+ * Desde 2026-09-10 el país decide además la **moneda** con la que el inquilino ve sus precios,
+ * así que la lista creció con los mercados a los que se puede vender de inmediato.
+ * La lista viva está en `app_core/helpers/paises.js` del backend, que además la valida.
  */
 const PAISES: ReadonlyArray<{ codigo: string; nombre: string }> = [
   { codigo: 'CO', nombre: 'Colombia (+57)' },
   { codigo: 'CL', nombre: 'Chile (+56)' },
+  { codigo: 'PE', nombre: 'Perú (+51)' },
+  { codigo: 'EC', nombre: 'Ecuador (+593)' },
+  { codigo: 'MX', nombre: 'México (+52)' },
 ];
 
 const EMPTY_CREATE: CreateForm = {
