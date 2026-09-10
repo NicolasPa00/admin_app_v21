@@ -22,6 +22,14 @@ export interface TipoNegocio {
   color_hex?: string | null;
   /** 'A' = activo, 'I' = inactivo */
   estado: 'A' | 'I';
+  /**
+   * ¿El tipo tiene módulo de verdad, o es solo una fila del catálogo?
+   *
+   * El catálogo lista bastantes más tipos de los que tienen vertical construida. Crear un
+   * negocio sobre uno de los otros produce una cuenta en la que nadie puede entrar, así que solo
+   * los `operativo` se ofrecen al crear. Opcional para no romper contra un backend anterior.
+   */
+  operativo?: boolean;
   fecha_creacion: string;
   fecha_actualizacion: string;
 }
@@ -198,6 +206,11 @@ export interface NegocioAdmin {
   telefono: string | null;
   direccion: string | null;
   id_tipo_negocio: number;
+  /**
+   * País del negocio (ISO 3166-1 alfa-2). Decide cómo se normaliza el teléfono de sus
+   * clientes: un salón chileno guarda +56 y uno colombiano +57. Por defecto 'CO'.
+   */
+  pais: string;
   tipo_nombre: string | null;
   tipo_icono: string | null;
   tipo_color: string | null;
@@ -239,6 +252,8 @@ export interface RegistrarClienteRequest {
     email_contacto?: string | null;
     telefono?: string | null;
     direccion?: string | null;
+    /** ISO 3166-1 alfa-2. Si no se manda, el backend lo deja en 'CO'. */
+    pais?: string | null;
   };
   plan?: { id_plan: number; meses?: number } | null;
   /** Modo A: vincular usuario existente (se excluye mutuamente con admin). */
@@ -255,6 +270,8 @@ export interface UpdateNegocioRequest {
   telefono?: string | null;
   direccion?: string | null;
   id_tipo_negocio?: number;
+  /** ISO 3166-1 alfa-2. Decide la normalización del teléfono de sus clientes. */
+  pais?: string | null;
 }
 
 /** PUT /admin/usuarios/admin/:id/perfil — edición de datos del usuario. */

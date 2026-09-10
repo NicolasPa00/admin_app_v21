@@ -27,7 +27,7 @@ type PlanTone = 'success' | 'warning' | 'error';
 
 interface CreateForm {
   nombre: string; id_tipo_negocio: string; nit: string;
-  email_contacto: string; telefono: string; direccion: string;
+  email_contacto: string; telefono: string; direccion: string; pais: string;
   id_plan: string; meses: string;
   a_primer_nombre: string; a_primer_apellido: string;
   a_num_identificacion: string; a_email: string; a_password: string;
@@ -36,10 +36,24 @@ interface CreateForm {
 interface EditForm {
   id_negocio: number; nombre: string; nit: string;
   email_contacto: string; telefono: string; direccion: string; id_tipo_negocio: string;
+  pais: string;
 }
 
+/**
+ * Los países que la plataforma sabe manejar.
+ *
+ * No es decoración: de esto depende que el teléfono de un cliente se guarde como número
+ * utilizable o se descarte. Hasta 2026-09-09 todo era Colombia y no había dónde decirlo, así
+ * que los móviles del primer cliente chileno se habrían tirado en silencio.
+ * La lista viva está en `app_core/helpers/telefono.js` del backend, que además la valida.
+ */
+const PAISES: ReadonlyArray<{ codigo: string; nombre: string }> = [
+  { codigo: 'CO', nombre: 'Colombia (+57)' },
+  { codigo: 'CL', nombre: 'Chile (+56)' },
+];
+
 const EMPTY_CREATE: CreateForm = {
-  nombre: '', id_tipo_negocio: '', nit: '', email_contacto: '', telefono: '', direccion: '',
+  nombre: '', id_tipo_negocio: '', nit: '', email_contacto: '', telefono: '', direccion: '', pais: 'CO',
   id_plan: '', meses: '1',
   a_primer_nombre: '', a_primer_apellido: '', a_num_identificacion: '', a_email: '', a_password: '',
 };
@@ -73,7 +87,34 @@ export class NegociosComponent implements OnInit, OnDestroy {
   // ── Estado de datos ─────────────────────────────────────────
   protected readonly loadingState = signal<LoadingState>('idle');
   private readonly _negocios = signal<NegocioAdmin[]>([]);
+  protected readonly paises = PAISES;
   protected readonly tipos = signal<TipoNegocio[]>([]);
+
+  /**
+   * Los tipos que se pueden **elegir** al crear un negocio.
+   *
+   * `tipos()` completo sigue alimentando el filtro de la tabla, porque hay negocios antiguos de
+   * tipos sin módulo y deben poder listarse. Pero ofrecerlos al crear es lo que dejó al primer
+   * cliente de reserva fuera de su propia app: se creó como BARBERIA, un tipo sin pantallas.
+   * Un backend anterior no manda la bandera; en ese caso no se filtra nada y la última palabra
+   * la tiene el servidor, que también lo valida.
+   */
+  protected readonly tiposSeleccionables = computed(() =>
+    this.tipos().filter((t) => t.operativo !== false),
+  );
+
+  /**
+   * Los tipos del desplegable de edición: los seleccionables más el actual del negocio, aunque
+   * ya no lo sea. Sin esa excepción el desplegable mostraría un tipo distinto al real y guardar
+   * cualquier otro campo cambiaría el tipo sin querer.
+   */
+  protected readonly tiposEdit = computed(() => {
+    const actual = this.editForm()?.id_tipo_negocio;
+    const lista = this.tiposSeleccionables();
+    if (!actual || lista.some((t) => String(t.id_tipo_negocio) === actual)) return lista;
+    const suelto = this.tipos().find((t) => String(t.id_tipo_negocio) === actual);
+    return suelto ? [...lista, suelto] : lista;
+  });
   protected readonly planes = signal<Plan[]>([]);
 
   // ── Filtros ─────────────────────────────────────────────────
@@ -240,6 +281,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
       email_contacto: f.email_contacto.trim() || null,
       telefono: f.telefono.trim() || null,
       direccion: f.direccion.trim() || null,
+      pais: f.pais || 'CO',
     };
     const planPayload = f.id_plan ? { id_plan: Number(f.id_plan), meses: Number(f.meses) || 1 } : null;
 
@@ -280,6 +322,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
       telefono: n.telefono ?? '',
       direccion: n.direccion ?? '',
       id_tipo_negocio: String(n.id_tipo_negocio),
+      pais: n.pais ?? 'CO',
     });
     this.formError.set(null);
     this.modalMode.set('edit');
@@ -303,6 +346,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
       telefono: f.telefono.trim() || null,
       direccion: f.direccion.trim() || null,
       id_tipo_negocio: f.id_tipo_negocio ? Number(f.id_tipo_negocio) : undefined,
+      pais: f.pais || 'CO',
     }).subscribe({
       next: () => { this.saving.set(false); this.closeModal(); this.load(); },
       error: (err) => {

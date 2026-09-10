@@ -296,10 +296,19 @@
                 <label class="neg-form__label">Tipo de negocio *</label>
                 <select class="input" [value]="createForm().id_tipo_negocio" (change)="updateCreate('id_tipo_negocio', $event)">
                   <option value="" disabled>Selecciona…</option>
-                  @for (t of tipos(); track t.id_tipo_negocio) {
+                  @for (t of tiposSeleccionables(); track t.id_tipo_negocio) {
                     <option [value]="t.id_tipo_negocio">{{ t.nombre }}</option>
                   }
                 </select>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">País *</label>
+                <select class="input" [value]="createForm().pais" (change)="updateCreate('pais', $event)">
+                  @for (p of paises; track p.codigo) {
+                    <option [value]="p.codigo" [selected]="p.codigo === createForm().pais">{{ p.nombre }}</option>
+                  }
+                </select>
+                <small class="neg-form__hint">Decide el indicativo con el que se guardan los teléfonos de sus clientes.</small>
               </div>
               <div class="neg-form__field">
                 <label class="neg-form__label">NIT</label>
@@ -372,10 +381,19 @@
               <div class="neg-form__field">
                 <label class="neg-form__label">Tipo de negocio</label>
                 <select class="input" (change)="updateEdit('id_tipo_negocio', $event)">
-                  @for (t of tipos(); track t.id_tipo_negocio) {
+                  @for (t of tiposEdit(); track t.id_tipo_negocio) {
                     <option [value]="t.id_tipo_negocio" [selected]="esTipoEdit(t.id_tipo_negocio)">{{ t.nombre }}</option>
                   }
                 </select>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label">País *</label>
+                <select class="input" [value]="f.pais" (change)="updateEdit('pais', $event)">
+                  @for (p of paises; track p.codigo) {
+                    <option [value]="p.codigo" [selected]="p.codigo === f.pais">{{ p.nombre }}</option>
+                  }
+                </select>
+                <small class="neg-form__hint">Decide el indicativo con el que se guardan los teléfonos de sus clientes.</small>
               </div>
               <div class="neg-form__field">
                 <label class="neg-form__label">NIT</label>
