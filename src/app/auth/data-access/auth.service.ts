@@ -29,6 +29,7 @@ import {
   TrialEnviarCodigoResponse,
   TrialVerificarRequest,
   TrialVerificarResponse,
+  UserNegocio,
 } from '../models/auth.models';
 
 /**
@@ -69,6 +70,31 @@ export class AuthService {
   /** ¿La sesión actual es una impersonación de super admin? */
   private readonly _impersonating = signal(false);
   readonly isImpersonating = this._impersonating.asReadonly();
+
+  /**
+   * El negocio del usuario cuyo plan venció y está gastando los días de gracia.
+   *
+   * Si tiene varios, manda el más urgente (al que le quedan menos días). Vale
+   * `null` cuando ninguno está en esa situación —y siempre para el super admin,
+   * que no tiene negocios propios.
+   */
+  readonly negocioEnGracia = computed<UserNegocio | null>(() => {
+    const negocios = (this.currentUser()?.negocios ?? []).filter(
+      (n) => n.plan?.en_gracia === true,
+    );
+    if (negocios.length === 0) return null;
+
+    return negocios.reduce((masUrgente, n) =>
+      (n.plan?.dias_gracia_restantes ?? 99) < (masUrgente.plan?.dias_gracia_restantes ?? 99)
+        ? n
+        : masUrgente,
+    );
+  });
+
+  /** Días de gracia que le quedan al negocio más urgente (0 si no aplica). */
+  readonly diasGraciaPlan = computed(
+    () => this.negocioEnGracia()?.plan?.dias_gracia_restantes ?? 0,
+  );
 
   // ===================== Init =====================
 

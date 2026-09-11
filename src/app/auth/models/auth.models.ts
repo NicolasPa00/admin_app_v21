@@ -42,6 +42,26 @@ export interface UserNegocio {
   id_negocio: number;
   nombre: string;
   roles: UserRol[];
+  /** ¿Puede operar? Incluye los días de gracia posteriores al vencimiento. */
+  plan_activo?: boolean;
+  /** Detalle del plan: vencimiento y días de gracia. */
+  plan?: EstadoPlan | null;
+}
+
+/**
+ * Estado del plan de un negocio, tal como lo calcula `planHelper` en el backend.
+ *
+ * Un plan vencido no corta el acceso de inmediato: hay 5 días de gracia
+ * (`estado: 'GRACIA'`, `activo: true`) en los que el negocio sigue trabajando
+ * mientras las apps le avisan cuántos días le quedan para pagar.
+ */
+export interface EstadoPlan {
+  estado: 'ACTIVO' | 'GRACIA' | 'VENCIDO' | 'SIN_PLAN';
+  activo: boolean;
+  en_gracia: boolean;
+  dias_gracia_restantes: number | null;
+  fecha_fin: string | null;
+  fecha_limite_gracia: string | null;
 }
 
 /**

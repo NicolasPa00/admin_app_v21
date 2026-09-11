@@ -37,6 +37,8 @@ import {
   Menu,
   PanelLeft,
   PanelLeftClose,
+  TriangleAlert,
+  X,
 } from 'lucide-angular';
 
 import { AuthService } from '../../auth/data-access/auth.service';
@@ -55,6 +57,9 @@ interface NavItem {
 
 /** Clave de localStorage para recordar si el sidebar quedó colapsado. */
 const COLLAPSE_KEY = 'admin_sidebar_collapsed';
+
+/** Dónde se recuerda que el usuario ya cerró el aviso de plan vencido. */
+const PLAN_AVISO_KEY = 'admin_plan_aviso_oculto';
 
 /**
  * AdminLayoutComponent — Shell del panel administrativo.
@@ -86,7 +91,7 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, Bot, MessageSquare,
         FileText,
         Sun, Moon, LogOut,
-        ChevronRight, Menu, PanelLeft, PanelLeftClose,
+        ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X,
       }),
     },
   ],
@@ -131,6 +136,40 @@ export class AdminLayoutComponent {
   // ── Estado de UI ────────────────────────────────────────────
   protected readonly collapsed = signal(this.readCollapsed());
   protected readonly mobileOpen = signal(false);
+
+  // ── Aviso de plan vencido (periodo de gracia) ───────────────
+  /**
+   * El plan venció pero el negocio sigue operando sus 5 días de gracia.
+   * La "X" oculta el aviso solo para ESTA sesión: lo cerrado se guarda contra el
+   * token actual, así que al volver a iniciar sesión vuelve a aparecer.
+   */
+  private readonly planAvisoCerrado = signal(this.readPlanAvisoCerrado());
+  protected readonly negocioEnGracia = this.auth.negocioEnGracia;
+  protected readonly diasGraciaPlan = this.auth.diasGraciaPlan;
+  protected readonly mostrarAvisoPlan = computed(
+    () => !!this.negocioEnGracia() && !this.planAvisoCerrado(),
+  );
+
+  protected ocultarAvisoPlan(): void {
+    this.planAvisoCerrado.set(true);
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      localStorage.setItem(PLAN_AVISO_KEY, this.auth.getAccessToken() ?? '');
+    } catch {
+      // No-op: sin almacenamiento el aviso simplemente reaparece al recargar.
+    }
+  }
+
+  private readPlanAvisoCerrado(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return false;
+    try {
+      const guardado = localStorage.getItem(PLAN_AVISO_KEY);
+      const token = this.auth.getAccessToken();
+      return !!guardado && !!token && guardado === token;
+    } catch {
+      return false;
+    }
+  }
 
   // ── Derivados de sesión ─────────────────────────────────────
   protected readonly user = this.auth.currentUser;

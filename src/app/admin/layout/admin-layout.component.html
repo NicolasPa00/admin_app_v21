@@ -110,6 +110,23 @@
       </div>
     </header>
 
+    <!-- Aviso de plan vencido: el negocio sigue operando sus días de gracia -->
+    @if (mostrarAvisoPlan()) {
+      <div class="adm__plan-aviso" role="status">
+        <lucide-icon name="triangle-alert" [size]="16" aria-hidden="true" />
+        <span>
+          <strong>El plan de {{ negocioEnGracia()?.nombre }} está vencido.</strong>
+          Tienes {{ diasGraciaPlan() }} {{ diasGraciaPlan() === 1 ? 'día' : 'días' }}
+          para actualizar tu pago; después se bloqueará el acceso al sistema.
+        </span>
+        <a class="adm__plan-aviso-btn" routerLink="/admin/configuracion">Ver mi plan</a>
+        <button type="button" class="adm__plan-aviso-close" aria-label="Ocultar aviso"
+                (click)="ocultarAvisoPlan()">
+          <lucide-icon name="x" [size]="15" aria-hidden="true" />
+        </button>
+      </div>
+    }
+
     <!-- Banner de impersonación (super admin actuando como otro usuario) -->
     @if (isImpersonating()) {
       <div class="adm__impersonation" role="status">

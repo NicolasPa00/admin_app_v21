@@ -356,6 +356,62 @@
   }
 }
 
+// ── Aviso de plan vencido (días de gracia) ──────────────────
+.adm__plan-aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: color-mix(in srgb, var(--color-warning, #d97706) 14%, transparent);
+  color: var(--color-text);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 40%, transparent);
+  font-size: 0.88rem;
+
+  lucide-icon {
+    flex: 0 0 auto;
+    color: var(--color-warning, #d97706);
+  }
+
+  span { flex: 1; line-height: 1.35; }
+}
+
+.adm__plan-aviso-btn {
+  flex: 0 0 auto;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-warning, #d97706);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover { filter: brightness(1.08); }
+}
+
+.adm__plan-aviso-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 0;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover { background: color-mix(in srgb, var(--color-warning, #d97706) 20%, transparent); }
+}
+
+@media (max-width: 767px) {
+  .adm__plan-aviso {
+    flex-wrap: wrap;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.82rem;
+  }
+  .adm__plan-aviso span { flex-basis: 100%; order: 2; }
+}
+
 // ── Overlay (móvil) ─────────────────────────────────────────
 .adm__overlay {
   display: none;
