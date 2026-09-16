@@ -41,15 +41,14 @@
     </select>
     <select
       class="input usr__select"
-      [value]="planFilter()"
       (change)="onPlanFilter($event)"
       aria-label="Filtrar por plan"
     >
-      <option value="ALL">Todos los planes</option>
-      <option value="ACTIVO">Con plan vigente</option>
-      <option value="SIN">Sin plan</option>
+      <option value="ALL" [selected]="planFilter() === 'ALL'">Todos los planes</option>
+      <option value="ACTIVO" [selected]="planFilter() === 'ACTIVO'">Con plan vigente</option>
+      <option value="SIN" [selected]="planFilter() === 'SIN'">Sin plan</option>
       @for (nombre of planNombres(); track nombre) {
-        <option [value]="nombre">{{ nombre }}</option>
+        <option [value]="nombre" [selected]="planFilter() === nombre">{{ nombre }}</option>
       }
     </select>
   </div>
@@ -125,7 +124,9 @@
               </td>
 
               <!-- Email -->
-              <td class="usr__col-email usr__email">{{ u.email }}</td>
+              <td class="usr__col-email usr__email">
+                @if (u.email) { {{ u.email }} } @else { <span class="usr__muted">—</span> }
+              </td>
 
               <!-- Negocios -->
               <td>
@@ -146,6 +147,7 @@
                     [class.es-badge--success]="planTone(p) === 'success'"
                     [class.es-badge--warning]="planTone(p) === 'warning'"
                     [class.es-badge--error]="planTone(p) === 'error'"
+                    [class.es-badge--info]="planTone(p) === 'info'"
                   >{{ p.nombre }}</span>
                   @if (planesConDatos(u) > 1) {
                     <span class="usr__muted usr__plan-extra">+{{ planesConDatos(u) - 1 }}</span>
@@ -207,21 +209,23 @@
                     }
                   </button>
 
+                  <!-- Encender/apagar: el mismo icono que activar/desactivar en Negocios -->
                   <button
                     type="button"
                     class="usr__icon-btn"
                     [class.usr__icon-btn--danger]="u.estado === 'A'"
+                    [class.usr__icon-btn--success]="u.estado !== 'A'"
                     [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
-                    (click)="toggleEstado(u)"
+                    (click)="pedirCambioEstado(u)"
                     [title]="u.es_admin_principal
                       ? 'No se puede suspender al administrador principal'
                       : (u.estado === 'A' ? 'Suspender' : 'Reactivar')"
                     [attr.aria-label]="u.estado === 'A' ? 'Suspender usuario' : 'Reactivar usuario'"
                   >
-                    @if (u.estado === 'A') {
-                      <lucide-icon name="user-x" [size]="17" aria-hidden="true" />
+                    @if (actionId() === u.id_usuario) {
+                      <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" />
                     } @else {
-                      <lucide-icon name="user-check" [size]="17" aria-hidden="true" />
+                      <lucide-icon name="power" [size]="16" aria-hidden="true" />
                     }
                   </button>
                 </div>
@@ -235,7 +239,12 @@
 
 </div>
 
-<!-- ════════════ Modal de detalles ════════════ -->
+<!--
+  Todos los modales comparten estructura: cabecera y pie fijos, cuerpo desplazable. Así los
+  botones nunca quedan escondidos debajo del contenido.
+-->
+
+<!-- ════════════ Modal de detalles (solo lectura) ════════════ -->
 @if (selected(); as u) {
   <div class="usr-modal">
     <div
@@ -244,7 +253,6 @@
       aria-modal="true"
       aria-labelledby="usr-modal-title"
     >
-      <div class="usr-modal__scroll">
       <header class="usr-modal__head">
         <div class="usr__user-cell">
           <span class="usr__avatar usr__avatar--lg" aria-hidden="true">{{ initials(u) }}</span>
@@ -258,114 +266,84 @@
         </button>
       </header>
 
-      <dl class="usr-modal__grid">
-        <div class="usr-modal__row">
-          <dt>Email</dt>
-          <dd>{{ u.email }}</dd>
-        </div>
-        <div class="usr-modal__row">
-          <dt>Estado</dt>
-          <dd>
-            <span
-              class="es-badge"
-              [class.es-badge--success]="u.estado === 'A'"
-              [class.es-badge--error]="u.estado === 'I'"
-            >
-              {{ u.estado === 'A' ? 'Activo' : 'Suspendido' }}
-            </span>
-          </dd>
-        </div>
-        <div class="usr-modal__row">
-          <dt>Registrado</dt>
-          <dd>{{ formatDate(u.fecha_creacion) }}</dd>
-        </div>
-        <div class="usr-modal__row">
-          <dt>Registrado</dt>
-          <dd>{{ formatDate(u.fecha_creacion) }}</dd>
-        </div>
-      </dl>
+      <div class="usr-modal__body">
+        <dl class="usr-modal__grid">
+          <div class="usr-modal__row">
+            <dt>Email</dt>
+            <dd>{{ u.email || 'Sin correo' }}</dd>
+          </div>
+          <div class="usr-modal__row">
+            <dt>Estado</dt>
+            <dd>
+              <span
+                class="es-badge"
+                [class.es-badge--success]="u.estado === 'A'"
+                [class.es-badge--error]="u.estado === 'I'"
+              >
+                {{ u.estado === 'A' ? 'Activo' : 'Suspendido' }}
+              </span>
+            </dd>
+          </div>
+          <div class="usr-modal__row">
+            <dt>Registrado</dt>
+            <dd>{{ formatDate(u.fecha_creacion) }}</dd>
+          </div>
+          <div class="usr-modal__row">
+            <dt>Rol</dt>
+            <dd>{{ u.es_admin_principal ? 'Administrador principal' : 'Administrador' }}</dd>
+          </div>
+        </dl>
 
-      <section class="usr-modal__section">
-        <h3 class="usr-modal__section-title">Negocios y plan</h3>
-        <ul class="usr-modal__negocios">
-          @for (np of u.planes; track np.id_negocio) {
-            <li class="usr-modal__neg">
-              <div class="usr-modal__neg-head">
-                <lucide-icon name="building-2" [size]="15" aria-hidden="true" />
-                <span class="usr-modal__role-neg">{{ np.negocio_nombre ?? 'Sin negocio' }}</span>
-                @if (np.plan; as p) {
-                  <span
-                    class="es-badge usr-modal__neg-badge"
-                    [class.es-badge--success]="planTone(p) === 'success'"
-                    [class.es-badge--warning]="planTone(p) === 'warning'"
-                    [class.es-badge--error]="planTone(p) === 'error'"
-                  >{{ p.nombre }}</span>
-                } @else {
-                  <span class="usr__muted usr-modal__neg-badge">Sin plan</span>
-                }
-              </div>
+        <section class="usr-modal__section">
+          <div class="usr-modal__section-head">
+            <h3 class="usr-modal__section-title">Negocios y plan</h3>
+            <a routerLink="/admin/negocios" class="usr-modal__link" (click)="closeDetails()">
+              Gestionar en Negocios
+              <lucide-icon name="arrow-right" [size]="14" aria-hidden="true" />
+            </a>
+          </div>
+          <p class="usr-modal__hint">
+            El plan pertenece a cada negocio; sus usuarios solo lo usan. Se cambia desde Negocios → Editar.
+          </p>
 
-              @if (np.plan?.fecha_fin) {
-                <span class="usr-modal__neg-meta">
-                  Vence {{ formatDate(np.plan!.fecha_fin) }}
-                  @if (np.plan!.dias_restantes !== null) {
-                    ({{ np.plan!.dias_restantes }} días)
+          <ul class="usr-modal__negocios">
+            @for (np of u.planes; track np.id_negocio) {
+              <li class="usr-modal__neg">
+                <div class="usr-modal__neg-head">
+                  <lucide-icon name="building-2" [size]="15" aria-hidden="true" />
+                  <span class="usr-modal__role-neg">{{ np.negocio_nombre ?? 'Sin negocio' }}</span>
+                  @if (np.plan; as p) {
+                    <span
+                      class="es-badge usr-modal__neg-badge"
+                      [class.es-badge--success]="planTone(p) === 'success'"
+                      [class.es-badge--warning]="planTone(p) === 'warning'"
+                      [class.es-badge--error]="planTone(p) === 'error'"
+                      [class.es-badge--info]="planTone(p) === 'info'"
+                    >{{ p.nombre }}</span>
+                  } @else {
+                    <span class="usr__muted usr-modal__neg-badge">Sin plan</span>
                   }
-                </span>
-              }
+                </div>
 
-              <div class="usr-modal__plan-edit">
-                <div class="usr-modal__plan-field usr-modal__plan-field--full">
-                  <label class="usr-modal__plan-label">Plan</label>
-                  <select
-                    class="input"
-                    (change)="onPlanField(np.id_negocio, 'id_plan', $event)"
-                    aria-label="Plan"
-                  >
-                    <option value="" disabled [selected]="!planEdit()[np.id_negocio]?.id_plan">Selecciona…</option>
-                    @for (pl of planesCatalogo(); track pl.id_plan) {
-                      <option [value]="pl.id_plan" [selected]="esPlanSel(np.id_negocio, pl.id_plan)">
-                        {{ pl.nombre }} — {{ formatPrecio(pl) }}
-                      </option>
+                @if (np.plan; as p) {
+                  <div class="usr-modal__vig">
+                    <span><small>Inicia</small>{{ formatearDia(diaBogota(p.fecha_inicio)) }}</span>
+                    <span class="usr-modal__vig-flecha" aria-hidden="true">→</span>
+                    <span><small>Termina</small>{{ p.fecha_fin ? formatearDia(diaBogota(p.fecha_fin)) : 'Sin fecha de fin' }}</span>
+                    @if (p.vigente && p.dias_restantes !== null) {
+                      <span class="usr-modal__vig-dias">
+                        {{ p.dias_restantes }} {{ p.dias_restantes === 1 ? 'día' : 'días' }}
+                      </span>
                     }
-                  </select>
-                </div>
-                <div class="usr-modal__plan-field">
-                  <label class="usr-modal__plan-label">Inicio</label>
-                  <input
-                    type="date"
-                    class="input"
-                    [value]="planEdit()[np.id_negocio]?.inicio ?? ''"
-                    (change)="onPlanField(np.id_negocio, 'inicio', $event)"
-                  />
-                </div>
-                <div class="usr-modal__plan-field">
-                  <label class="usr-modal__plan-label">Fin</label>
-                  <input
-                    type="date"
-                    class="input"
-                    [value]="planEdit()[np.id_negocio]?.fin ?? ''"
-                    (change)="onPlanField(np.id_negocio, 'fin', $event)"
-                  />
-                </div>
-                <div class="usr-modal__plan-field usr-modal__plan-field--full">
-                  <button
-                    type="button"
-                    class="btn btn--primary usr-modal__apply"
-                    [disabled]="!planEdit()[np.id_negocio]?.id_plan || applyingNegocio() === np.id_negocio"
-                    (click)="aplicarPlan(np.id_negocio)"
-                  >
-                    <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
-                    {{ applyingNegocio() === np.id_negocio ? 'Aplicando…' : 'Aplicar plan' }}
-                  </button>
-                </div>
-              </div>
-            </li>
-          } @empty {
-            <li class="usr__muted">Sin negocios administrados.</li>
-          }
-        </ul>
-      </section>
+                  </div>
+                }
+              </li>
+            } @empty {
+              <li class="usr__muted">Sin negocios administrados.</li>
+            }
+          </ul>
+        </section>
+      </div>
 
       <footer class="usr-modal__foot">
         <button type="button" class="btn btn--outline" (click)="closeDetails()">
@@ -377,20 +355,16 @@
         </button>
         <button
           type="button"
-          class="btn btn--primary"
+          class="btn"
+          [class.btn--primary]="u.estado !== 'A'"
+          [class.usr-btn--danger]="u.estado === 'A'"
           [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
-          (click)="toggleEstado(u)"
+          (click)="pedirCambioEstado(u)"
         >
-          @if (u.estado === 'A') {
-            <lucide-icon name="user-x" [size]="16" aria-hidden="true" />
-            Suspender
-          } @else {
-            <lucide-icon name="user-check" [size]="16" aria-hidden="true" />
-            Reactivar
-          }
+          <lucide-icon name="power" [size]="16" aria-hidden="true" />
+          {{ u.estado === 'A' ? 'Suspender' : 'Reactivar' }}
         </button>
       </footer>
-      </div><!-- /usr-modal__scroll -->
     </div>
   </div>
 }
@@ -399,49 +373,55 @@
 @if (editForm(); as f) {
   <div class="usr-modal">
     <div class="usr-modal__card" role="dialog" aria-modal="true" aria-labelledby="usr-edit-title">
-      <div class="usr-modal__scroll">
-        <header class="usr-modal__head">
-          <h2 id="usr-edit-title" class="usr-modal__name">Editar usuario</h2>
-          <button type="button" class="usr__icon-btn" (click)="closeEdit()" aria-label="Cerrar">
-            <lucide-icon name="x" [size]="18" aria-hidden="true" />
-          </button>
-        </header>
+      <header class="usr-modal__head">
+        <h2 id="usr-edit-title" class="usr-modal__name">Editar usuario</h2>
+        <button type="button" class="usr__icon-btn" (click)="closeEdit()" aria-label="Cerrar">
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
 
-        @if (editError()) {
-          <div class="usr__alert" role="alert">
-            <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
-            <span>{{ editError() }}</span>
-          </div>
-        }
-
+      <div class="usr-modal__body">
         <div class="usr-edit__grid">
           <div class="usr-edit__field">
-            <label class="usr-edit__label">Primer nombre *</label>
-            <input class="input" [value]="f.primer_nombre" (input)="updateEdit('primer_nombre', $event)" />
+            <label class="usr-edit__label" for="usr-e-nombre">Primer nombre *</label>
+            <input id="usr-e-nombre" class="input" [value]="f.primer_nombre" (input)="updateEdit('primer_nombre', $event)" />
           </div>
           <div class="usr-edit__field">
-            <label class="usr-edit__label">Segundo nombre</label>
-            <input class="input" [value]="f.segundo_nombre" (input)="updateEdit('segundo_nombre', $event)" />
+            <label class="usr-edit__label" for="usr-e-nombre2">Segundo nombre</label>
+            <input id="usr-e-nombre2" class="input" [value]="f.segundo_nombre" (input)="updateEdit('segundo_nombre', $event)" />
           </div>
           <div class="usr-edit__field">
-            <label class="usr-edit__label">Primer apellido *</label>
-            <input class="input" [value]="f.primer_apellido" (input)="updateEdit('primer_apellido', $event)" />
+            <label class="usr-edit__label" for="usr-e-apellido">Primer apellido *</label>
+            <input id="usr-e-apellido" class="input" [value]="f.primer_apellido" (input)="updateEdit('primer_apellido', $event)" />
           </div>
           <div class="usr-edit__field">
-            <label class="usr-edit__label">Segundo apellido</label>
-            <input class="input" [value]="f.segundo_apellido" (input)="updateEdit('segundo_apellido', $event)" />
+            <label class="usr-edit__label" for="usr-e-apellido2">Segundo apellido</label>
+            <input id="usr-e-apellido2" class="input" [value]="f.segundo_apellido" (input)="updateEdit('segundo_apellido', $event)" />
           </div>
           <div class="usr-edit__field">
-            <label class="usr-edit__label">Identificación *</label>
-            <input class="input" [value]="f.num_identificacion" (input)="updateEdit('num_identificacion', $event)" />
+            <label class="usr-edit__label" for="usr-e-id">Identificación *</label>
+            <input id="usr-e-id" class="input" [value]="f.num_identificacion" (input)="updateEdit('num_identificacion', $event)" />
           </div>
           <div class="usr-edit__field">
-            <label class="usr-edit__label">Email *</label>
-            <input class="input" type="email" [value]="f.email" (input)="updateEdit('email', $event)" />
+            <label class="usr-edit__label" for="usr-e-email">
+              Email <span class="usr-edit__optional">(opcional)</span>
+            </label>
+            <input
+              id="usr-e-email"
+              class="input"
+              type="email"
+              [value]="f.email"
+              (input)="updateEdit('email', $event)"
+              [attr.aria-invalid]="editEmailInvalido() ? 'true' : null"
+            />
+            @if (editEmailInvalido()) {
+              <small class="usr-edit__error">Revisa el formato del correo.</small>
+            }
           </div>
           <div class="usr-edit__field usr-edit__field--full">
-            <label class="usr-edit__label">Nueva contraseña</label>
+            <label class="usr-edit__label" for="usr-e-pass">Nueva contraseña</label>
             <input
+              id="usr-e-pass"
               class="input"
               type="text"
               [value]="f.password"
@@ -468,23 +448,102 @@
             }
           </div>
         </div>
-
-        <footer class="usr-modal__foot">
-          <button type="button" class="btn btn--outline" (click)="closeEdit()">Cancelar</button>
-          <button type="button" class="btn btn--primary" [disabled]="!editValid() || editSaving()" (click)="submitEdit()">
-            @if (editSaving()) {
-              <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Guardando…
-            } @else {
-              <lucide-icon name="check" [size]="16" aria-hidden="true" /> Guardar cambios
-            }
-          </button>
-        </footer>
       </div>
+
+      @if (editError()) {
+        <div class="usr__alert usr-modal__alert" role="alert">
+          <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+          <span>{{ editError() }}</span>
+        </div>
+      }
+
+      <footer class="usr-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="closeEdit()">Cancelar</button>
+        <button type="button" class="btn btn--primary" [disabled]="!editValid() || editSaving()" (click)="submitEdit()">
+          @if (editSaving()) {
+            <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Guardando…
+          } @else {
+            <lucide-icon name="check" [size]="16" aria-hidden="true" /> Guardar cambios
+          }
+        </button>
+      </footer>
     </div>
   </div>
 }
 
-<!-- ════════════ Modal confirmar impersonación ════════════ -->
+<!-- ════════════ Confirmar suspender / reactivar ════════════ -->
+@if (confirmEstado(); as u) {
+  <div class="usr-modal" (click)="cancelarCambioEstado()">
+    <div
+      class="usr-modal__card usr-modal__card--sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="usr-est-title"
+      aria-describedby="usr-est-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="usr-modal__head">
+        <div class="usr__user-cell">
+          <span
+            class="usr-confirm__icon"
+            [class.usr-confirm__icon--danger]="u.estado === 'A'"
+            aria-hidden="true"
+          >
+            <lucide-icon name="power" [size]="18" />
+          </span>
+          <h2 id="usr-est-title" class="usr-modal__name">
+            {{ u.estado === 'A' ? 'Suspender usuario' : 'Reactivar usuario' }}
+          </h2>
+        </div>
+        <button
+          type="button"
+          class="usr__icon-btn"
+          (click)="cancelarCambioEstado()"
+          [disabled]="actionId() !== null"
+          aria-label="Cerrar"
+        >
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div class="usr-modal__body" id="usr-est-desc">
+        @if (u.estado === 'A') {
+          <p class="usr-confirm__lead">
+            <strong>{{ u.nombre_completo }}</strong> no podrá iniciar sesión hasta que lo reactives.
+          </p>
+          <p class="usr-confirm__note">Sus negocios y su plan no cambian.</p>
+        } @else {
+          <p class="usr-confirm__lead">
+            <strong>{{ u.nombre_completo }}</strong> podrá volver a iniciar sesión.
+          </p>
+        }
+      </div>
+
+      <footer class="usr-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cancelarCambioEstado()" [disabled]="actionId() !== null">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [class.usr-btn--danger]="u.estado === 'A'"
+          [class.btn--primary]="u.estado !== 'A'"
+          [disabled]="actionId() !== null"
+          (click)="confirmarCambioEstado()"
+        >
+          @if (actionId() !== null) {
+            <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" />
+          } @else {
+            <lucide-icon name="power" [size]="16" aria-hidden="true" />
+          }
+          {{ u.estado === 'A' ? 'Suspender' : 'Reactivar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Confirmar «Entrar como este usuario» ════════════ -->
 @if (confirmUser(); as u) {
   <div class="usr-modal" (click)="cancelImpersonar()">
     <div
@@ -494,49 +553,51 @@
       aria-labelledby="usr-imp-title"
       (click)="$event.stopPropagation()"
     >
-      <div class="usr-modal__scroll">
-        <header class="usr-modal__head">
-          <div class="usr__user-cell">
-            <span class="usr__avatar" aria-hidden="true">
-              <lucide-icon name="log-in" [size]="18" aria-hidden="true" />
-            </span>
-            <div class="usr__user-text">
-              <h2 id="usr-imp-title" class="usr-modal__name">Entrar como usuario</h2>
-            </div>
-          </div>
-          <button type="button" class="usr__icon-btn" (click)="cancelImpersonar()" aria-label="Cerrar">
-            <lucide-icon name="x" [size]="18" aria-hidden="true" />
-          </button>
-        </header>
-
-        <div class="usr-imp__body">
-          <p class="usr-imp__lead">
-            Vas a entrar al sistema como <strong>{{ u.nombre_completo }}</strong>.
-          </p>
-          <p class="usr-imp__note">
-            Tu sesión de super administrador se guardará para poder regresar, y esta
-            acción quedará registrada en la auditoría.
-          </p>
+      <header class="usr-modal__head">
+        <div class="usr__user-cell">
+          <span class="usr-confirm__icon" aria-hidden="true">
+            <lucide-icon name="log-in" [size]="18" />
+          </span>
+          <h2 id="usr-imp-title" class="usr-modal__name">Entrar como usuario</h2>
         </div>
+        <button
+          type="button"
+          class="usr__icon-btn"
+          (click)="cancelImpersonar()"
+          [disabled]="impersonateId() !== null"
+          aria-label="Cerrar"
+        >
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
 
-        <footer class="usr-modal__foot">
-          <button type="button" class="btn btn--outline" (click)="cancelImpersonar()">
-            Cancelar
-          </button>
-          <button
-            type="button"
-            class="btn btn--primary"
-            [disabled]="impersonateId() !== null"
-            (click)="confirmImpersonar()"
-          >
-            @if (impersonateId() !== null) {
-              <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Entrando…
-            } @else {
-              <lucide-icon name="log-in" [size]="16" aria-hidden="true" /> Entrar como este usuario
-            }
-          </button>
-        </footer>
+      <div class="usr-modal__body">
+        <p class="usr-confirm__lead">
+          Vas a entrar al sistema como <strong>{{ u.nombre_completo }}</strong>.
+        </p>
+        <p class="usr-confirm__note">
+          Tu sesión de super administrador se guarda para que puedas volver, y el acceso queda
+          registrado en la auditoría. Si cierras sesión, la impersonación termina.
+        </p>
       </div>
+
+      <footer class="usr-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cancelImpersonar()" [disabled]="impersonateId() !== null">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          [disabled]="impersonateId() !== null"
+          (click)="confirmImpersonar()"
+        >
+          @if (impersonateId() !== null) {
+            <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" /> Entrando…
+          } @else {
+            <lucide-icon name="log-in" [size]="16" aria-hidden="true" /> Entrar
+          }
+        </button>
+      </footer>
     </div>
   </div>
 }

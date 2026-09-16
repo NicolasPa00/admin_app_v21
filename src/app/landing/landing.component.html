@@ -690,18 +690,47 @@
         <lucide-icon name="x" [size]="20" aria-hidden="true" />
       </button>
 
+      <!-- Cabecera fija del paso. Cabecera y pie no se desplazan: solo el contenido, para que el
+           botón del paso nunca quede escondido debajo del formulario. -->
+      @if (modalStep() === 'form') {
+        <div class="lp-modal__header">
+          <div class="lp-modal__icon lp-modal__icon--blue">
+            <lucide-icon name="rocket" [size]="28" aria-hidden="true" />
+          </div>
+          <h2 class="lp-modal__title">Prueba EscalApp gratis</h2>
+          <p class="lp-modal__subtitle">7 días sin costo · Sin tarjeta de crédito</p>
+        </div>
+      }
+      @if (modalStep() === 'otp') {
+        <div class="lp-modal__header">
+          <div class="lp-modal__icon lp-modal__icon--green">
+            <lucide-icon name="mail" [size]="28" aria-hidden="true" />
+          </div>
+          <h2 class="lp-modal__title">Revisa tu correo</h2>
+          <p class="lp-modal__subtitle">
+            Enviamos un código de 6 dígitos a<br />
+            <strong>{{ trialEmail() }}</strong>
+          </p>
+        </div>
+      }
+      @if (modalStep() === 'success') {
+        <div class="lp-modal__header">
+          <div class="lp-modal__icon lp-modal__icon--success">
+            <lucide-icon name="check-check" [size]="36" aria-hidden="true" />
+          </div>
+          <h2 class="lp-modal__title">¡Tu cuenta está lista!</h2>
+          <p class="lp-modal__subtitle">
+            Hola, <strong>{{ trialSuccessNombre() }}</strong
+            >. Tu prueba gratuita de 7 días ya está activa.
+          </p>
+        </div>
+      }
+
       <div class="lp-modal__scroll">
         <!-- ── PASO 1: Formulario ── -->
         @if (modalStep() === 'form') {
-          <div class="lp-modal__header">
-            <div class="lp-modal__icon lp-modal__icon--blue">
-              <lucide-icon name="rocket" [size]="28" aria-hidden="true" />
-            </div>
-            <h2 class="lp-modal__title">Prueba EscalApp gratis</h2>
-            <p class="lp-modal__subtitle">7 días sin costo · Sin tarjeta de crédito</p>
-          </div>
-
           <form
+            id="lp-trial-datos"
             class="lp-trial-form"
             (submit)="$event.preventDefault(); onEnviarCodigo()"
             novalidate
@@ -821,32 +850,6 @@
             @if (trialError()) {
               <div class="lp-trial-form__server-error">{{ trialError() }}</div>
             }
-
-            <button
-              type="submit"
-              class="es-btn es-btn--primary es-btn--block"
-              [disabled]="trialLoading()"
-            >
-              @if (trialLoading()) {
-                <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
-                Enviando código...
-              } @else {
-                Enviar código de verificación
-                <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
-              }
-            </button>
-
-            <!-- Aquí es donde de verdad se acepta: es el punto en que alguien entra a la
-               plataforma. Cuando se implemente el registro de aceptaciones, hay que guardar
-               usuario, VERSION del documento y fecha — «aceptó los términos» sin decir cuáles no
-               prueba gran cosa. -->
-            <p class="lp-trial-form__legal">
-              Al continuar aceptas los
-              <a routerLink="/terminos" (click)="closeModal()">Términos y condiciones</a>
-              y la
-              <a routerLink="/privacidad" (click)="closeModal()">Política de tratamiento de datos</a
-              >, incluida la transferencia de tus datos a servidores ubicados fuera de Colombia.
-            </p>
           </form>
 
           <p class="lp-modal__login-hint">
@@ -857,18 +860,8 @@
 
         <!-- ── PASO 2: Verificar OTP ── -->
         @if (modalStep() === 'otp') {
-          <div class="lp-modal__header">
-            <div class="lp-modal__icon lp-modal__icon--green">
-              <lucide-icon name="mail" [size]="28" aria-hidden="true" />
-            </div>
-            <h2 class="lp-modal__title">Revisa tu correo</h2>
-            <p class="lp-modal__subtitle">
-              Enviamos un código de 6 dígitos a<br />
-              <strong>{{ trialEmail() }}</strong>
-            </p>
-          </div>
-
           <form
+            id="lp-trial-otp"
             class="lp-trial-form"
             (submit)="$event.preventDefault(); onVerificarCodigo()"
             novalidate
@@ -902,50 +895,11 @@
             @if (trialError()) {
               <div class="lp-trial-form__server-error">{{ trialError() }}</div>
             }
-
-            <button
-              type="submit"
-              class="es-btn es-btn--primary es-btn--block"
-              [disabled]="trialLoading()"
-            >
-              @if (trialLoading()) {
-                <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
-                Creando tu cuenta...
-              } @else {
-                Verificar y crear mi cuenta
-                <lucide-icon name="check-check" [size]="18" aria-hidden="true" />
-              }
-            </button>
           </form>
-
-          <div class="lp-modal__resend">
-            <button
-              type="button"
-              class="lp-modal__resend-btn"
-              [disabled]="trialResendDisabled"
-              (click)="onReenviarCodigo()"
-            >
-              @if (trialLoading()) {
-                <lucide-icon name="loader-2" [size]="14" class="spin" aria-hidden="true" />
-              }
-              {{ trialResendLabel }}
-            </button>
-          </div>
         }
 
         <!-- ── PASO 3: Éxito ── -->
         @if (modalStep() === 'success') {
-          <div class="lp-modal__header">
-            <div class="lp-modal__icon lp-modal__icon--success">
-              <lucide-icon name="check-check" [size]="36" aria-hidden="true" />
-            </div>
-            <h2 class="lp-modal__title">¡Tu cuenta está lista!</h2>
-            <p class="lp-modal__subtitle">
-              Hola, <strong>{{ trialSuccessNombre() }}</strong
-              >. Tu prueba gratuita de 7 días ya está activa.
-            </p>
-          </div>
-
           <div class="lp-trial-success">
             <div class="lp-trial-success__cred-box">
               <div class="lp-trial-success__cred-row">
@@ -966,18 +920,85 @@
               </p>
             </div>
 
-            <a
-              routerLink="/auth/login"
-              class="es-btn es-btn--primary es-btn--block"
-              (click)="closeModal()"
-            >
-              Ir a iniciar sesión
-              <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
-            </a>
           </div>
         }
       </div>
       <!-- /lp-modal__scroll -->
+
+      <!-- Pie fijo: la acción del paso siempre a la vista. Los botones de envío apuntan a su
+           formulario con `form=`, porque viven fuera de él. -->
+      <div class="lp-modal__foot">
+        @if (modalStep() === 'form') {
+          <button
+            type="submit"
+            form="lp-trial-datos"
+            class="es-btn es-btn--primary es-btn--block"
+            [disabled]="trialLoading()"
+          >
+            @if (trialLoading()) {
+              <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
+              Enviando código...
+            } @else {
+              Enviar código de verificación
+              <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+            }
+          </button>
+
+          <!-- Aquí es donde de verdad se acepta: es el punto en que alguien entra a la
+             plataforma, y el aviso va pegado al botón. Cuando se implemente el registro de
+             aceptaciones, hay que guardar usuario, VERSION del documento y fecha — «aceptó los
+             términos» sin decir cuáles no prueba gran cosa. -->
+          <p class="lp-trial-form__legal">
+            Al continuar aceptas los
+            <a routerLink="/terminos" (click)="closeModal()">Términos y condiciones</a>
+            y la
+            <a routerLink="/privacidad" (click)="closeModal()">Política de tratamiento de datos</a
+            >, incluida la transferencia de tus datos a servidores ubicados fuera de Colombia.
+          </p>
+        }
+
+        @if (modalStep() === 'otp') {
+          <button
+            type="submit"
+            form="lp-trial-otp"
+            class="es-btn es-btn--primary es-btn--block"
+            [disabled]="trialLoading()"
+          >
+            @if (trialLoading()) {
+              <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
+              Creando tu cuenta...
+            } @else {
+              Verificar y crear mi cuenta
+              <lucide-icon name="check-check" [size]="18" aria-hidden="true" />
+            }
+          </button>
+
+          <div class="lp-modal__resend">
+            <button
+              type="button"
+              class="lp-modal__resend-btn"
+              [disabled]="trialResendDisabled"
+              (click)="onReenviarCodigo()"
+            >
+              @if (trialLoading()) {
+                <lucide-icon name="loader-2" [size]="14" class="spin" aria-hidden="true" />
+              }
+              {{ trialResendLabel }}
+            </button>
+          </div>
+        }
+
+        @if (modalStep() === 'success') {
+          <a
+            routerLink="/auth/login"
+            class="es-btn es-btn--primary es-btn--block"
+            (click)="closeModal()"
+          >
+            Ir a iniciar sesión
+            <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+          </a>
+        }
+      </div>
     </div>
   </div>
 }

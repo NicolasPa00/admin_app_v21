@@ -37,6 +37,15 @@ export const routes: Routes = [
     title: 'Cómo eliminar tus datos — EscalApp',
   },
 
+  // Portal de pagos — SIN guardia a propósito: exigir login para pagar es la forma más eficaz de
+  // que no paguen. Con el número de identificación del administrador se consulta y se paga.
+  // Se prerenderiza como estática; los datos llegan después, desde el navegador.
+  {
+    path: 'pagar',
+    loadComponent: () => import('./pagos/pagar-page.component').then((m) => m.PagarPageComponent),
+    title: 'Paga tu mensualidad — EscalApp',
+  },
+
   // Módulo de autenticación — /auth/login, /auth/register, etc.
   { path: 'auth', children: authRoutes },
 

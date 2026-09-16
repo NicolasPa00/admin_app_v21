@@ -1714,10 +1714,27 @@
     to   { transform: translateY(0);    opacity: 1; }
   }
 
+  /* Cabecera (icono + título del paso) y pie (la acción del paso) quedan fijos; solo esto se
+     desplaza. `min-height: 0` es lo que deja al hijo flex encoger y mostrar la barra: sin él el
+     formulario empujaba el botón fuera del modal en pantallas bajas. */
   &__scroll {
-    overflow-y: auto;
     flex: 1;
-    padding: var(--es-spacing-12);
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--es-spacing-2) var(--es-spacing-12) var(--es-spacing-6);
+  }
+
+  &__foot {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--es-spacing-2);
+    padding: var(--es-spacing-4) var(--es-spacing-12) var(--es-spacing-6);
+    border-top: 1px solid var(--es-border);
+    background: var(--es-bg-card);
+
+    .lp-modal__resend { margin-top: 0; }
   }
 
   &__close {
@@ -1743,8 +1760,9 @@
   }
 
   &__header {
+    flex: none;
     text-align: center;
-    margin-bottom: var(--es-spacing-8);
+    padding: var(--es-spacing-8) var(--es-spacing-12) var(--es-spacing-4);
   }
 
   &__icon {

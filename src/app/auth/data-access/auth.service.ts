@@ -112,7 +112,12 @@ export class AuthService {
         } catch {
           localStorage.removeItem('app_token');
           localStorage.removeItem('app_user_meta');
+          this.limpiarImpersonacion();
         }
+      } else {
+        // Sin sesión no puede haber impersonación: una sesión de super admin guardada aquí es un
+        // resto de otra que se cerró por fuera y haría aparecer el aviso en el próximo login.
+        this.limpiarImpersonacion();
       }
     }
   }
@@ -136,6 +141,11 @@ export class AuthService {
       .pipe(
         tap((res) => {
           if (res.data) {
+            // Un login es una sesión nueva: no puede heredar la impersonación de otra. La sesión de
+            // super admin guardada se queda huérfana cuando se sale por fuera de esta app (p. ej.
+            // desde la del negocio, que vive en otro origen y no ve este localStorage), y sin
+            // esta limpieza el aviso «Estás usando el sistema como…» reaparecía al volver a entrar.
+            this.limpiarImpersonacion();
             this._accessToken.set(res.data.token);
             this.currentUser.set(res.data.usuario);
             if (isPlatformBrowser(this.platformId)) {
@@ -146,6 +156,15 @@ export class AuthService {
           }
         }),
       );
+  }
+
+  /** Olvida la sesión de super admin guardada por una impersonación y apaga el aviso. */
+  private limpiarImpersonacion(): void {
+    this._impersonating.set(false);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user_meta');
+    }
   }
 
   /**

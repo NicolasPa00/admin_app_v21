@@ -1,0 +1,380 @@
+<!--
+  Cobranza (Super Admin): la cartera de EscalApp — quién nos paga, quién nos debe y cuánto
+  llegó de verdad al banco. Ver admin_ws/docs/cobro-mensualidades.md.
+-->
+<div class="cob">
+  <!-- Cabecera -->
+  <header class="cob__head">
+    <div>
+      <h1 class="cob__title">Cobranza</h1>
+      <p class="cob__subtitle">Mensualidades de los negocios suscritos</p>
+    </div>
+    <div class="cob__acciones-head">
+      <!-- Confirmar un pago de Wompi por su id: en local ni el webhook ni la vuelta con ?id=
+           llegan, y en producción sirve cuando un cliente pagó y el webhook se perdió. -->
+      <form class="cob__verificar" (submit)="$event.preventDefault(); verificarPagoWompi()">
+        <input class="input" type="text" maxlength="120" placeholder="Id de transacción Wompi"
+               aria-label="Id de transacción de Wompi"
+               [value]="fIdTransaccion()"
+               (input)="fIdTransaccion.set($any($event.target).value)" />
+        <button type="submit" class="btn btn--ghost"
+                [disabled]="guardando() || !fIdTransaccion().trim()">
+          <lucide-icon name="check-circle-2" [size]="16" aria-hidden="true" />
+          Verificar pago
+        </button>
+      </form>
+      <button type="button" class="btn btn--ghost" (click)="cargar()" [disabled]="guardando()">
+        <lucide-icon name="rotate-ccw" [size]="16" aria-hidden="true" />
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- Indicadores -->
+  <section class="cob__kpis" aria-label="Resumen de cobranza">
+    <article class="cob__kpi">
+      <span class="cob__kpi-label">Negocios al día</span>
+      <strong class="cob__kpi-value">{{ activos() }}</strong>
+    </article>
+
+    <article class="cob__kpi" [class.is-alert]="morosos() > 0">
+      <span class="cob__kpi-label">Con saldo pendiente</span>
+      <strong class="cob__kpi-value">{{ morosos() }}</strong>
+    </article>
+
+    <article class="cob__kpi">
+      <span class="cob__kpi-label">Deuda total</span>
+      <strong class="cob__kpi-value">{{ dinero(totalDeuda()) }}</strong>
+    </article>
+
+    @if (mesActual(); as mes) {
+      <article class="cob__kpi">
+        <span class="cob__kpi-label">Facturado {{ mes.mes }}</span>
+        <strong class="cob__kpi-value">{{ dinero(mes.facturado) }}</strong>
+        <!--
+          El neto no es un detalle: entre lo facturado y esto están la comisión de la pasarela
+          y la retención en la fuente del cliente empresa. Verlo aquí evita la conversación de
+          «el banco no cuadra».
+        -->
+        <span class="cob__kpi-foot">
+          <lucide-icon name="trending-up" [size]="13" aria-hidden="true" />
+          Neto {{ dinero(mes.neto) }}
+          @if (fugaMes() > 0) {
+            · −{{ dinero(fugaMes()) }} en comisiones y retenciones
+          }
+        </span>
+      </article>
+    }
+  </section>
+
+  <!-- Filtros -->
+  <div class="cob__filters">
+    <label class="cob__search">
+      <lucide-icon name="search" [size]="16" aria-hidden="true" />
+      <input
+        class="input" type="search" placeholder="Buscar negocio…"
+        [value]="busqueda()"
+        (input)="busqueda.set($any($event.target).value)"
+        (keydown.enter)="cargar()"
+        aria-label="Buscar negocio"
+      />
+    </label>
+
+    <!-- [selected] por opción, no [value] en el select: con @for, el value se aplica antes de
+         que existan las opciones y no selecciona nada. -->
+    <select class="input cob__select" aria-label="Filtrar por estado"
+            (change)="fEstado.set($any($event.target).value); cargar()">
+      <option value="" [selected]="fEstado() === ''">Todos los estados</option>
+      @for (o of opcionesEstado; track o.valor) {
+        <option [value]="o.valor" [selected]="fEstado() === o.valor">{{ o.etiqueta }}</option>
+      }
+    </select>
+
+    <button type="button" class="btn btn--ghost" (click)="limpiarFiltros()">Limpiar</button>
+  </div>
+
+  <!-- Avisos -->
+  @if (aviso(); as texto) {
+    <p class="cob__aviso" role="status">
+      <lucide-icon name="check-circle-2" [size]="16" aria-hidden="true" />
+      {{ texto }}
+    </p>
+  }
+  @if (linkPago(); as url) {
+    <p class="cob__aviso" role="status">
+      <lucide-icon name="credit-card" [size]="16" aria-hidden="true" />
+      Link de pago para el cliente:
+      <a [href]="url" target="_blank" rel="noopener noreferrer">{{ url }}</a>
+    </p>
+  }
+  @if (error(); as texto) {
+    <p class="cob__error" role="alert">
+      <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+      {{ texto }}
+    </p>
+  }
+
+  <!-- Cartera -->
+  @if (estado() === 'loading') {
+    <p class="cob__vacio">
+      <lucide-icon name="loader-2" [size]="18" class="cob__spin" aria-hidden="true" />
+      Cargando cartera…
+    </p>
+  } @else if (estado() === 'error') {
+    <!-- El error ya se muestra arriba. Sin esta rama caía en la de «vacío» y la pantalla afirmaba
+         que no hay suscripciones cuando lo que pasó es que no se pudieron cargar. -->
+  } @else if (cartera().length === 0) {
+    <p class="cob__vacio">
+      <lucide-icon name="wallet" [size]="18" aria-hidden="true" />
+      Ningún negocio tiene suscripción de cobro configurada todavía.
+    </p>
+  } @else {
+    <div class="cob__tabla-wrap">
+      <table class="cob__tabla">
+        <thead>
+          <tr>
+            <th scope="col"></th>
+            <th scope="col">Negocio</th>
+            <th scope="col">Plan</th>
+            <th scope="col">Cobro</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acceso hasta</th>
+            <th scope="col" class="is-num">Deuda</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (fila of cartera(); track fila.id_suscripcion) {
+            <tr class="cob__fila" [class.is-open]="expandido() === fila.id_negocio">
+              <td>
+                <button type="button" class="cob__toggle"
+                        (click)="alternarDetalle(fila)"
+                        [attr.aria-expanded]="expandido() === fila.id_negocio"
+                        [attr.aria-label]="'Ver facturas de ' + fila.negocio">
+                  <lucide-icon
+                    [name]="expandido() === fila.id_negocio ? 'chevron-down' : 'chevron-right'"
+                    [size]="16" aria-hidden="true" />
+                </button>
+              </td>
+
+              <!-- Un <td> con display:flex rompe los bordes de celda: spans en bloque. -->
+              <td>
+                <span class="cob__negocio">{{ fila.negocio }}</span>
+                @if (fila.email_contacto) {
+                  <span class="cob__meta">{{ fila.email_contacto }}</span>
+                }
+              </td>
+
+              <td>
+                <span>{{ fila.plan }}</span>
+                <span class="cob__meta">{{ fila.ciclo }} · {{ fila.moneda }}</span>
+              </td>
+
+              <td>
+                <span>{{ fila.pasarela }}</span>
+                @if (fila.es_retenedor) {
+                  <!-- No es decorativo: a este cliente NO se le puede debitar el 100%. -->
+                  <span class="cob__chip cob__chip--info">retiene en la fuente</span>
+                }
+              </td>
+
+              <td>
+                <span class="cob__chip" [class]="'cob__chip--' + fila.estado">
+                  {{ ESTADOS[fila.estado] }}
+                </span>
+              </td>
+
+              <td>{{ fecha(fila.plan_hasta) }}</td>
+
+              <td class="is-num">
+                @if (fila.facturas_pendientes > 0) {
+                  <strong class="cob__deuda">{{ dinero(fila.deuda, fila.moneda) }}</strong>
+                  <span class="cob__meta">
+                    {{ fila.facturas_pendientes }} pendiente(s) desde {{ fecha(fila.pendiente_desde) }}
+                  </span>
+                } @else {
+                  <span class="cob__meta">Sin saldo</span>
+                }
+              </td>
+
+              <td>
+                <!-- Solo con el plan vencido o por vencer: es la ventana del cobro automático. -->
+                <button type="button" class="btn btn--sm"
+                        (click)="generarFactura(fila)"
+                        [disabled]="guardando() || !puedeGenerar(fila)"
+                        [title]="puedeGenerar(fila)
+                          ? 'Generar el cobro de la renovación'
+                          : 'El plan está vigente: el cobro se genera solo, 5 días antes de vencer'">
+                  <lucide-icon name="file-plus-2" [size]="15" aria-hidden="true" />
+                  Generar cobro
+                </button>
+              </td>
+            </tr>
+
+            <!-- Detalle: las facturas del negocio -->
+            @if (expandido() === fila.id_negocio) {
+              <tr class="cob__detalle">
+                <td colspan="8">
+                  @if (cargandoDetalle()) {
+                    <p class="cob__vacio">
+                      <lucide-icon name="loader-2" [size]="16" class="cob__spin" aria-hidden="true" />
+                      Cargando facturas…
+                    </p>
+                  } @else if (detalle(); as d) {
+                    @if (d.precio === null) {
+                      <p class="cob__error" role="alert">
+                        <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+                        No hay precio configurado para {{ d.suscripcion?.moneda }} en este plan:
+                        no se pueden generar cobros hasta fijarlo.
+                      </p>
+                    }
+
+                    @if (d.facturas.length === 0) {
+                      <p class="cob__vacio">Sin facturas todavía.</p>
+                    } @else {
+                      <table class="cob__subtabla">
+                        <thead>
+                          <tr>
+                            <th scope="col">Referencia</th>
+                            <th scope="col">Período</th>
+                            <th scope="col" class="is-num">Total</th>
+                            <th scope="col" class="is-num">Neto recibido</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Pago</th>
+                            <th scope="col"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (f of d.facturas; track f.id_factura) {
+                            <tr>
+                              <td>
+                                <span class="cob__ref">{{ f.referencia }}</span>
+                                @if (f.numero_factura) {
+                                  <span class="cob__meta">FE {{ f.numero_factura }}</span>
+                                }
+                              </td>
+                              <td>{{ fecha(f.periodo_inicio) }} → {{ fecha(f.periodo_fin) }}</td>
+                              <td class="is-num">{{ dinero(f.total, f.moneda) }}</td>
+                              <td class="is-num">
+                                @if (f.estado === 'pagada') {
+                                  {{ dinero(f.neto_recibido, f.moneda) }}
+                                } @else {
+                                  <span class="cob__meta">—</span>
+                                }
+                              </td>
+                              <td>
+                                <span class="cob__chip" [class]="'cob__chip--' + f.estado">{{ f.estado }}</span>
+                              </td>
+                              <td>
+                                @if (f.fecha_pago) {
+                                  <span>{{ fecha(f.fecha_pago) }}</span>
+                                  <span class="cob__meta">{{ f.medio_pago_texto }}</span>
+                                } @else {
+                                  <span class="cob__meta">—</span>
+                                }
+                              </td>
+                              <td>
+                                @if (f.estado === 'pendiente') {
+                                  <!--
+                                    Solo para pasarelas de verdad: en modo manual no hay a quién
+                                    llamar, el cobro lo confirma una persona.
+                                  -->
+                                  @if (f.pasarela !== 'manual') {
+                                    <button type="button" class="btn btn--sm" (click)="cobrarPorPasarela(f)"
+                                            [disabled]="guardando()">
+                                      <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
+                                      Cobrar por {{ f.pasarela }}
+                                    </button>
+                                  }
+                                  <button type="button" class="btn btn--sm" (click)="abrirPago(f)"
+                                          [disabled]="guardando()">
+                                    <lucide-icon name="check-circle-2" [size]="15" aria-hidden="true" />
+                                    Registrar pago
+                                  </button>
+                                  <button type="button" class="btn btn--sm btn--ghost" (click)="anular(f)"
+                                          [disabled]="guardando()">
+                                    <lucide-icon name="ban" [size]="15" aria-hidden="true" />
+                                    Anular
+                                  </button>
+                                }
+                              </td>
+                            </tr>
+
+                            <!-- Formulario de confirmación de transferencia -->
+                            @if (pagando()?.id_factura === f.id_factura) {
+                              <tr>
+                                <td colspan="7">
+                                  <form class="cob__form" (submit)="$event.preventDefault(); confirmarPago()">
+                                    <p class="cob__form-titulo">
+                                      Confirmar el pago de {{ f.referencia }} ({{ dinero(f.total, f.moneda) }})
+                                    </p>
+
+                                    <label class="cob__campo">
+                                      <span>Fecha del pago</span>
+                                      <input class="input" type="date" [value]="fFecha()"
+                                             (input)="fFecha.set($any($event.target).value)" />
+                                    </label>
+
+                                    <label class="cob__campo">
+                                      <span>Medio</span>
+                                      <input class="input" type="text" maxlength="120"
+                                             placeholder="Transferencia Bancolombia"
+                                             [value]="fMedio()"
+                                             (input)="fMedio.set($any($event.target).value)" />
+                                    </label>
+
+                                    <label class="cob__campo">
+                                      <span>Comisión</span>
+                                      <input class="input" type="number" min="0" step="1"
+                                             [value]="fComision()"
+                                             (input)="fComision.set($any($event.target).value)" />
+                                    </label>
+
+                                    <!--
+                                      La retención se TECLEA porque la practica el cliente y solo
+                                      se sabe al ver lo que consignó. No la calculamos nosotros.
+                                    -->
+                                    <label class="cob__campo">
+                                      <span>Retención en la fuente</span>
+                                      <input class="input" type="number" min="0" step="1"
+                                             [value]="fRetencion()"
+                                             (input)="fRetencion.set($any($event.target).value)" />
+                                    </label>
+
+                                    <label class="cob__campo">
+                                      <span>N.º de factura</span>
+                                      <input class="input" type="text" maxlength="40"
+                                             placeholder="EA-001"
+                                             [value]="fNumeroFactura()"
+                                             (input)="fNumeroFactura.set($any($event.target).value)" />
+                                    </label>
+
+                                    <div class="cob__form-acciones">
+                                      <button type="submit" class="btn" [disabled]="guardando()">
+                                        @if (guardando()) {
+                                          <lucide-icon name="loader-2" [size]="15" class="cob__spin" aria-hidden="true" />
+                                        }
+                                        Confirmar y extender el plan
+                                      </button>
+                                      <button type="button" class="btn btn--ghost" (click)="cancelarPago()">
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  </form>
+                                </td>
+                              </tr>
+                            }
+                          }
+                        </tbody>
+                      </table>
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

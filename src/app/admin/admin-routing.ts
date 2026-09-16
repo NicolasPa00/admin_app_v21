@@ -104,6 +104,24 @@ export const adminRoutes: Routes = [
         title: 'Intelligence',
       },
       {
+        // Mis pagos: la mensualidad vista por el DUEÑO del negocio. No es de super admin — el
+        // backend decide qué negocios le enseña cruzando el token con sus roles.
+        path: 'mis-pagos',
+        loadComponent: () =>
+          import('./features/mis-pagos/mis-pagos.component').then((m) => m.MisPagosComponent),
+        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        title: 'Mis pagos',
+      },
+      {
+        // Cobranza: lo que nos pagan los inquilinos. Solo super admin — aquí se confirma
+        // dinero y se extiende el acceso de un cliente.
+        path: 'cobranza',
+        loadComponent: () =>
+          import('./features/cobranza/cobranza.component').then((m) => m.CobranzaComponent),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Cobranza',
+      },
+      {
         path: 'auditoria',
         loadComponent: () =>
           import('./features/auditoria/auditoria.component').then(

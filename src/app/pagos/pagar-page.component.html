@@ -1,0 +1,136 @@
+<!--
+  Portal público de pagos. Sin guardia: con el número de identificación del administrador se
+  consulta lo que debe cada negocio y se paga en el checkout de la pasarela.
+-->
+<div class="pg">
+  <header class="pg__hero">
+    <div class="pg__hero-inner">
+      <nav class="pg__nav">
+        <a routerLink="/" class="pg__marca" aria-label="Ir al inicio de EscalApp">
+          <img [src]="assetService.getAssetPath('icono-escalapp.png')" alt="" aria-hidden="true" class="pg__icono" />
+          <span class="pg__nombre">EscalApp</span>
+        </a>
+        <a routerLink="/auth/login" class="pg__nav-cta">Iniciar sesión</a>
+      </nav>
+
+      <h1 class="pg__titulo">Paga tu mensualidad</h1>
+      <p class="pg__bajada">Sin iniciar sesión: con tu número de identificación ves lo que tienes pendiente.</p>
+    </div>
+  </header>
+
+  <main class="pg__tarjeta">
+    @if (volvioDePagar()) {
+      <!-- Cada mensaje dice lo que el backend confirmó con la pasarela, no lo que suponemos. -->
+      @switch (confirmacion()) {
+        @case ('confirmando') {
+          <p class="pg__aviso pg__aviso--ok" role="status">Confirmando tu pago con la pasarela…</p>
+        }
+        @case ('aprobada') {
+          <p class="pg__aviso pg__aviso--ok" role="status">
+            ¡Pago confirmado! Tu plan quedó activo. Ya puedes seguir usando EscalApp.
+          </p>
+        }
+        @case ('rechazada') {
+          <p class="pg__aviso pg__aviso--error" role="alert">
+            La pasarela no aprobó el pago. No se te cobró nada: puedes intentarlo de nuevo con otro
+            medio.
+          </p>
+        }
+        @default {
+          <p class="pg__aviso pg__aviso--ok" role="status">
+            Recibimos tu intento de pago. En cuanto la pasarela lo confirme —normalmente en pocos
+            minutos— tu plan se extiende solo. No necesitas hacer nada más.
+          </p>
+        }
+      }
+    }
+
+    @if (error(); as texto) {
+      <p class="pg__aviso pg__aviso--error" role="alert">{{ texto }}</p>
+    }
+
+    @if (paso() !== 'resultado') {
+      <form class="pg__form" (submit)="$event.preventDefault(); consultar()">
+        <label class="pg__campo">
+          <span>Número de identificación del administrador</span>
+          <input
+            class="pg__input" type="text" inputmode="numeric" autocomplete="off"
+            maxlength="20" placeholder="Ej. 1234567890"
+            [value]="identificacion()"
+            (input)="identificacion.set($any($event.target).value)"
+          />
+        </label>
+        <button type="submit" class="pg__boton" [disabled]="paso() === 'buscando'">
+          {{ paso() === 'buscando' ? 'Consultando…' : 'Consultar' }}
+        </button>
+      </form>
+    } @else {
+      <div class="pg__resultado-head">
+        @if (cobros().length) {
+          <p class="pg__resumen">
+            Tienes <strong>{{ dinero(totalAdeudado()) }}</strong> pendiente{{ cobros().length > 1 ? ' entre tus negocios' : '' }}.
+          </p>
+        }
+        <button type="button" class="pg__enlace" (click)="volver()">Consultar otro número</button>
+      </div>
+
+      @if (cobros().length === 0) {
+        <!-- El mismo mensaje exista o no el número: no confirmamos quién es cliente. -->
+        <p class="pg__vacio">
+          No encontramos cobros pendientes para ese número. Si crees que es un error, revisa que sea
+          la identificación del administrador del negocio.
+        </p>
+      }
+
+      @for (c of cobros(); track c.negocio) {
+        <section class="pg__negocio">
+          <header class="pg__negocio-head">
+            <h2>{{ c.negocio }}</h2>
+            <span>{{ c.plan }}</span>
+          </header>
+
+          @for (f of c.facturas; track f.referencia) {
+            <article class="pg__factura">
+              <div class="pg__factura-datos">
+                <span class="pg__periodo">{{ fecha(f.periodo_inicio) }} → {{ fecha(f.periodo_fin) }}</span>
+                <strong class="pg__monto">{{ dinero(f.total, f.moneda) }}</strong>
+                <span class="pg__ref">Ref. {{ f.referencia }}</span>
+              </div>
+
+              <div class="pg__acciones">
+                @if (c.pasarelas.length === 0) {
+                  <!-- Sin pasarela disponible no hay botón: mejor decirlo que dejar un hueco. -->
+                  <span class="pg__ref">
+                    El pago en línea no está disponible en este momento. Intenta de nuevo más tarde.
+                  </span>
+                }
+                @for (p of c.pasarelas; track p.codigo) {
+                  <button
+                    type="button" class="pg__boton" [class.pg__boton--sec]="p.codigo === 'manual'"
+                    [disabled]="procesando() !== null"
+                    (click)="pagar(f, p.codigo)"
+                  >
+                    {{ procesando() === f.referencia + ':' + p.codigo ? 'Abriendo…' : etiquetaPasarela(p.codigo, p.nombre) }}
+                  </button>
+                }
+              </div>
+
+              @if (transferencia()?.referencia === f.referencia) {
+                <div class="pg__transferencia" role="status">
+                  <p><strong>Transfiere {{ dinero(transferencia()!.total, transferencia()!.moneda) }}</strong></p>
+                  <p>{{ transferencia()!.instrucciones }}</p>
+                  <p>Referencia: <code>{{ transferencia()!.referencia }}</code></p>
+                </div>
+              }
+            </article>
+          }
+        </section>
+      }
+    }
+
+    <p class="pg__legal">
+      Los pagos con tarjeta, PSE o Nequi se procesan en la página segura de la pasarela: EscalApp
+      nunca ve ni guarda los datos de tu tarjeta.
+    </p>
+  </main>
+</div>

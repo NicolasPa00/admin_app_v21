@@ -1,0 +1,244 @@
+/*
+  Portal público de pagos, con la identidad de la landing (tokens `--es-*`, NO `--color-*`).
+  Misma forma que las páginas legales: banda de marca arriba y tarjeta blanca que la monta.
+*/
+.pg {
+  min-height: 100dvh;
+  background: var(--es-bg);
+  color: var(--es-text-primary);
+  font-family: var(--es-font-sans);
+
+  &__hero {
+    background: var(--es-gradient-hero);
+    padding: 1.5rem 1.5rem 6rem;
+  }
+
+  &__hero-inner {
+    max-width: 44rem;
+    margin: 0 auto;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+  }
+
+  &__marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--es-text-on-dark);
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  &__icono { height: 2rem; width: auto; }
+
+  &__nav-cta {
+    color: var(--es-text-on-dark);
+    border: 1px solid var(--es-border-on-dark-strong);
+    border-radius: var(--es-radius-full);
+    padding: 0.4rem 1rem;
+    font-size: var(--es-font-size-sm);
+    text-decoration: none;
+
+    &:hover { background: color-mix(in srgb, var(--es-text-on-dark) 10%, transparent); }
+  }
+
+  &__titulo {
+    margin: 0;
+    color: var(--es-text-on-dark);
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    line-height: 1.15;
+  }
+
+  &__bajada {
+    margin: 0.5rem 0 0;
+    color: var(--es-text-on-dark-secondary);
+  }
+
+  /* ── Tarjeta ── */
+  &__tarjeta {
+    max-width: 44rem;
+    margin: -4.5rem auto 3rem;
+    padding: 1.75rem;
+    background: var(--es-bg-card);
+    border-radius: var(--es-radius-xl);
+    box-shadow: var(--es-shadow-xl);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    @media (max-width: 40rem) {
+      margin-inline: 1rem;
+      padding: 1.25rem;
+    }
+  }
+
+  &__aviso {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: var(--es-radius-md);
+    font-size: var(--es-font-size-sm);
+
+    &--ok {
+      background: var(--es-success-subtle);
+      color: var(--es-success);
+    }
+
+    &--error {
+      background: var(--es-form-error-bg);
+      border: 1px solid var(--es-form-error-border);
+      color: var(--es-form-error-text);
+    }
+  }
+
+  /* ── Consulta ── */
+  &__form {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  &__campo {
+    flex: 1 1 16rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+  }
+
+  &__input {
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--es-border-strong);
+    border-radius: var(--es-radius-md);
+    font-size: var(--es-font-size-lg);
+    color: var(--es-text-primary);
+    background: var(--es-bg);
+
+    &:focus {
+      outline: none;
+      border-color: var(--es-primary);
+      box-shadow: var(--es-focus-ring);
+    }
+  }
+
+  &__boton {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: var(--es-radius-md);
+    background: var(--es-primary);
+    color: var(--es-on-primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--es-transition-fast);
+
+    &:hover:not(:disabled) { background: var(--es-primary-hover); }
+    &:disabled { opacity: 0.6; cursor: progress; }
+
+    &--sec {
+      background: transparent;
+      color: var(--es-primary);
+      border: 1px solid var(--es-primary);
+
+      &:hover:not(:disabled) { background: var(--es-primary-subtle-bg); }
+    }
+  }
+
+  &__enlace {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--es-primary);
+    cursor: pointer;
+    font-size: var(--es-font-size-sm);
+    text-decoration: underline;
+  }
+
+  /* ── Resultado ── */
+  &__resultado-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__resumen { margin: 0; }
+
+  &__vacio {
+    margin: 0;
+    color: var(--es-text-secondary);
+  }
+
+  &__negocio {
+    border: 1px solid var(--es-border);
+    border-radius: var(--es-radius-lg);
+    overflow: hidden;
+  }
+
+  &__negocio-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--es-surface-alt);
+
+    h2 {
+      margin: 0;
+      font-size: var(--es-font-size-base);
+      letter-spacing: 0.02em;
+    }
+
+    span {
+      font-size: var(--es-font-size-sm);
+      color: var(--es-text-secondary);
+    }
+  }
+
+  &__factura {
+    padding: 1rem;
+    border-top: 1px solid var(--es-border-light);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  &__factura-datos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 1rem;
+  }
+
+  &__periodo { color: var(--es-text-secondary); font-size: var(--es-font-size-sm); }
+  &__monto { font-size: var(--es-font-size-xl); }
+  &__ref { font-family: var(--es-font-mono); font-size: var(--es-font-size-xs); color: var(--es-text-muted); }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__transferencia {
+    padding: 0.75rem 1rem;
+    background: var(--es-primary-subtle-bg);
+    border-radius: var(--es-radius-md);
+    font-size: var(--es-font-size-sm);
+
+    p { margin: 0.2rem 0; }
+    code { font-family: var(--es-font-mono); }
+  }
+
+  &__legal {
+    margin: 0;
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-muted);
+  }
+}

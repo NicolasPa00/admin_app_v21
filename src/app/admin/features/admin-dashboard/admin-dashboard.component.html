@@ -1,7 +1,7 @@
 <!-- ============================================================
   AdminDashboardComponent — Template
   Vive dentro de AdminLayoutComponent (sidebar + header).
-  Muestra los NEGOCIOS ACTIVOS del usuario; clic → entra a la vertical.
+  Muestra los NEGOCIOS ACTIVOS del usuario; clic → revisa el plan → entra a la vertical.
   ============================================================ -->
 
 <div class="dashboard">
@@ -92,6 +92,7 @@
         <article
           class="neg-card"
           role="listitem"
+          [class.neg-card--bloqueado]="negocio.vencimiento && !negocio.vencimiento.puedeEntrar"
           [attr.aria-label]="negocio.nombre + ' — ' + (negocio.tipoNombre | titlecase)"
         >
           <!-- Icono + nombre + tipo -->
@@ -104,6 +105,30 @@
               <span class="neg-card__type">{{ negocio.tipoNombre | titlecase }}</span>
             </div>
           </header>
+
+          <!-- Identificador del plan: salta a la vista si está vencido o no ha iniciado -->
+          @if (negocio.vencimiento; as v) {
+            <div class="neg-card__plan" [class]="'neg-card__plan neg-card__plan--' + v.tono">
+              <span
+                class="es-badge"
+                [class.es-badge--success]="v.tono === 'success'"
+                [class.es-badge--warning]="v.tono === 'warning'"
+                [class.es-badge--error]="v.tono === 'error'"
+                [class.es-badge--info]="v.tono === 'info'"
+              >
+                @switch (v.clave) {
+                  @case ('VENCIDO') { <lucide-icon name="lock" [size]="12" aria-hidden="true" /> }
+                  @case ('SIN_PLAN') { <lucide-icon name="lock" [size]="12" aria-hidden="true" /> }
+                  @case ('PENDIENTE') { <lucide-icon name="calendar-clock" [size]="12" aria-hidden="true" /> }
+                  @case ('GRACIA') { <lucide-icon name="triangle-alert" [size]="12" aria-hidden="true" /> }
+                  @case ('POR_VENCER') { <lucide-icon name="triangle-alert" [size]="12" aria-hidden="true" /> }
+                  @default { <lucide-icon name="calendar-range" [size]="12" aria-hidden="true" /> }
+                }
+                {{ v.etiqueta }}
+              </span>
+              <span class="neg-card__plan-txt">{{ detallePlan(v) }}</span>
+            </div>
+          }
 
           <!-- Datos del negocio (siempre las 3 filas, para altura uniforme) -->
           <dl class="neg-card__meta">
@@ -138,9 +163,12 @@
             <button
               type="button"
               class="btn btn--primary neg-card__enter-btn"
-              (click)="entrarAlNegocio(negocio)"
-              [attr.aria-label]="'Entrar a ' + negocio.nombre"
+              (click)="administrar(negocio)"
+              [attr.aria-label]="'Administrar ' + negocio.nombre"
             >
+              @if (negocio.vencimiento && !negocio.vencimiento.puedeEntrar) {
+                <lucide-icon name="lock" [size]="16" aria-hidden="true" />
+              }
               Administrar
               <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
             </button>
@@ -151,3 +179,120 @@
   }
 
 </div>
+
+<!-- ════════════ Aviso del plan antes de entrar ════════════ -->
+@if (aviso(); as n) {
+  @if (n.vencimiento; as v) {
+    <div class="dash-modal" (click)="cerrarAviso()">
+      <div
+        class="dash-modal__card"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="dash-aviso-title"
+        aria-describedby="dash-aviso-desc"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="dash-modal__head">
+          <span class="dash-modal__icon" [class]="'dash-modal__icon dash-modal__icon--' + v.tono" aria-hidden="true">
+            @switch (v.clave) {
+              @case ('GRACIA') { <lucide-icon name="triangle-alert" [size]="20" /> }
+              @case ('PENDIENTE') { <lucide-icon name="calendar-clock" [size]="20" /> }
+              @default { <lucide-icon name="lock" [size]="20" /> }
+            }
+          </span>
+          <h2 id="dash-aviso-title" class="dash-modal__title">
+            @switch (v.clave) {
+              @case ('GRACIA') { Tu plan está vencido }
+              @case ('VENCIDO') { Acceso bloqueado }
+              @case ('PENDIENTE') { El plan aún no inicia }
+              @default { Sin plan activo }
+            }
+          </h2>
+          <button type="button" class="dash-modal__close" (click)="cerrarAviso()" aria-label="Cerrar">
+            <lucide-icon name="x" [size]="18" aria-hidden="true" />
+          </button>
+        </header>
+
+        <div class="dash-modal__body" id="dash-aviso-desc">
+          @switch (v.clave) {
+            @case ('GRACIA') {
+              <p class="dash-modal__lead">
+                El plan de <strong>{{ n.nombre }}</strong> venció el
+                <strong>{{ formatearDia(v.fin) }}</strong>.
+              </p>
+              <p class="dash-modal__note">
+                Puedes seguir entrando
+                @if (v.dias !== null) { {{ v.dias }} {{ v.dias === 1 ? 'día' : 'días' }} más, }
+                hasta el <strong>{{ formatearDia(v.limiteGracia) }}</strong>. Después el acceso se
+                bloquea hasta que pagues el plan.
+              </p>
+            }
+            @case ('VENCIDO') {
+              <p class="dash-modal__lead">
+                El plan de <strong>{{ n.nombre }}</strong> venció el
+                <strong>{{ formatearDia(v.fin) }}</strong>.
+              </p>
+              <p class="dash-modal__note">
+                El plazo de {{ diasGracia }} días terminó el
+                <strong>{{ formatearDia(v.limiteGracia) }}</strong>. Para volver a administrar el
+                negocio hay que pagar el plan.
+              </p>
+            }
+            @case ('PENDIENTE') {
+              <p class="dash-modal__lead">
+                El plan de <strong>{{ n.nombre }}</strong> inicia el
+                <strong>{{ formatearDia(v.inicio) }}</strong>.
+              </p>
+              <p class="dash-modal__note">
+                Podrás administrar el negocio desde ese día
+                @if (v.dias !== null && v.dias > 0) { (faltan {{ v.dias }} {{ v.dias === 1 ? 'día' : 'días' }}) }.
+              </p>
+            }
+            @default {
+              <p class="dash-modal__lead">
+                <strong>{{ n.nombre }}</strong> no tiene un plan activo.
+              </p>
+              <p class="dash-modal__note">Para administrar el negocio hay que activar un plan.</p>
+            }
+          }
+        </div>
+
+        <!--
+          Pagar es cosa del ADMINISTRADOR del negocio: /admin/mis-pagos está cerrado al resto.
+          A los demás roles se les dice a quién acudir, en vez de ofrecerles un botón que el
+          guard les va a bloquear.
+        -->
+        <footer class="dash-modal__foot">
+          @if (!puedePagarAviso() && v.clave !== 'PENDIENTE') {
+            <p class="dash-modal__aviso-rol">
+              Para renovar el plan, consulta al administrador del negocio.
+            </p>
+          }
+          @switch (v.clave) {
+            @case ('GRACIA') {
+              @if (puedePagarAviso()) {
+                <button type="button" class="btn btn--outline" (click)="irAPagar()">
+                  <lucide-icon name="wallet" [size]="16" aria-hidden="true" /> Pagar plan
+                </button>
+              }
+              <button type="button" class="btn btn--primary" (click)="continuarAlNegocio()">
+                Continuar <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
+              </button>
+            }
+            @case ('PENDIENTE') {
+              <button type="button" class="btn btn--primary" (click)="cerrarAviso()">Entendido</button>
+            }
+            @default {
+              <button type="button" class="btn btn--outline" (click)="cerrarAviso()">Cerrar</button>
+              @if (puedePagarAviso()) {
+                <button type="button" class="btn btn--primary" (click)="irAPagar()">
+                  <lucide-icon name="wallet" [size]="16" aria-hidden="true" /> Pagar plan
+                </button>
+              }
+            }
+          }
+        </footer>
+      </div>
+    </div>
+  }
+}

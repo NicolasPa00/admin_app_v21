@@ -15,6 +15,9 @@ const PUBLIC_URLS = [
   '/auth/login',
   '/auth/forgot-password',
   '/auth/reset-password',
+  // Portal de pagos sin sesión (/pagar). Declararlo aquí evita que un visitante con una sesión
+  // vieja en el navegador reciba un logout forzado por consultar lo que debe.
+  '/publico/',
 ];
 
 function isPublicUrl(url: string): boolean {

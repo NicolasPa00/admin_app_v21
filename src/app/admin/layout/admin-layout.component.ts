@@ -30,6 +30,7 @@ import {
   Bot,
   MessageSquare,
   FileText,
+  Wallet,
   Sun,
   Moon,
   LogOut,
@@ -89,7 +90,7 @@ const PLAN_AVISO_KEY = 'admin_plan_aviso_oculto';
       multi: true,
       useValue: new LucideIconProvider({
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, Bot, MessageSquare,
-        FileText,
+        FileText, Wallet,
         Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X,
       }),
@@ -116,6 +117,9 @@ export class AdminLayoutComponent {
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion' },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
+    // Sin `superAdmin`: es la mensualidad vista por el dueño del negocio.
+    { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos' },
+    { label: 'Cobranza', icon: 'wallet', route: '/admin/cobranza', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },
   ];
@@ -129,8 +133,21 @@ export class AdminLayoutComponent {
   });
 
   /** Ítems de navegación visibles según el rol. */
+  /** ¿Administra algún negocio? Solo entonces «Mis pagos» tiene sentido para él. */
+  private readonly esAdminDeNegocio = computed(() =>
+    !!this.user()?.negocios.some((n) =>
+      n.roles.some((r) => r.descripcion.trim().toUpperCase() === 'ADMINISTRADOR'),
+    ),
+  );
+
   protected readonly visibleNavItems = computed<NavItem[]>(() =>
-    this.navItems.filter((item) => !item.superAdmin || this.isSuperAdmin()),
+    this.navItems.filter((item) => {
+      if (item.superAdmin && !this.isSuperAdmin()) return false;
+      // «Mis pagos» lo bloquea `adminGuard(['ADMINISTRADOR'])`: enseñarlo a un cajero solo lleva
+      // a un portazo. El super admin lo conserva para acompañar a un cliente.
+      if (item.route === '/admin/mis-pagos') return this.esAdminDeNegocio() || this.isSuperAdmin();
+      return true;
+    }),
   );
 
   // ── Estado de UI ────────────────────────────────────────────
@@ -217,6 +234,7 @@ export class AdminLayoutComponent {
     if (url.includes('/bandeja')) return 'Conversaciones';
     if (url.includes('/intelligence')) return 'Intelligence';
     if (url.includes('/personas')) return 'Ficha 360';
+    if (url.includes('/cobranza')) return 'Cobranza';
     if (url.includes('/auditoria')) return 'Auditoría';
     if (url.includes('/tipos-negocio')) return 'Roles del negocio';
     return 'Inicio';

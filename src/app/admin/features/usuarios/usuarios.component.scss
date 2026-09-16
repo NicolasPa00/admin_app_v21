@@ -228,6 +228,7 @@
   justify-content: center;
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
@@ -247,6 +248,12 @@
     background: var(--color-error-bg);
   }
 
+  &--success:hover:not(:disabled) {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background: var(--color-success-bg);
+  }
+
   &:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
@@ -255,6 +262,20 @@
   &:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+}
+
+// Botón de acción destructiva (suspender). No hay `.btn--danger` en el tema.
+.usr-btn--danger {
+  background-color: var(--color-error);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-error) 85%, #000000);
+  }
+
+  &:focus-visible {
+    box-shadow: var(--focus-ring-error);
   }
 }
 
@@ -321,7 +342,11 @@
   }
 }
 
-// ════════════ Modal de detalles ════════════
+// ════════════ Modales ════════════
+//
+// Cabecera y pie fijos, cuerpo desplazable. La tarjeta es una columna flex con tope de alto;
+// `overflow: hidden` recorta la barra al radio de las esquinas y `min-height: 0` en el cuerpo es
+// lo que le deja encoger por debajo de su contenido (sin él el pie se salía de la pantalla).
 .usr-modal {
   position: fixed;
   inset: 0;
@@ -330,14 +355,14 @@
   align-items: center;
   justify-content: center;
   padding: var(--spacing-md);
-  background: var(--color-overlay, rgba(0, 0, 0, 0.5));
   background: rgba(0, 0, 0, 0.5);
 }
 
 .usr-modal__card {
   width: 100%;
-  max-width: 520px;
+  max-width: 540px;
   max-height: 90vh;
+  max-height: calc(100dvh - 2 * var(--spacing-md));
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -347,42 +372,70 @@
   box-shadow: var(--shadow-xl, var(--shadow-lg));
 }
 
-.usr-modal__card--sm {
-  max-width: 420px;
-}
-
-.usr-modal__scroll {
-  overflow-y: auto;
-  flex: 1;
-  padding: var(--spacing-xl);
-}
-
-// ── Modal confirmar impersonación ───────────────────────────
-.usr-imp__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-}
-
-.usr-imp__lead {
-  font-size: var(--font-size-md, 1rem);
-  color: var(--color-text);
-  margin: 0;
-}
-
-.usr-imp__note {
-  font-size: var(--font-size-sm, 0.875rem);
-  color: var(--color-text-muted, var(--color-text-secondary));
-  margin: 0;
-  line-height: 1.5;
-}
-
 .usr-modal__head {
+  flex: none;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.usr-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-lg);
+}
+
+.usr-modal__foot {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.usr-modal__alert {
+  flex: none;
+  margin: 0 var(--spacing-lg) var(--spacing-md);
+}
+
+// Confirmaciones: tarjeta estrecha y sin líneas divisorias, que en tres frases sobran.
+.usr-modal__card--sm {
+  max-width: 440px;
+
+  .usr-modal__head {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .usr-modal__body {
+    padding-block: var(--spacing-md);
+  }
+
+  .usr-modal__foot {
+    border-top: none;
+    padding-top: 0;
+    padding-bottom: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .usr-modal { padding: var(--spacing-sm); }
+  .usr-modal__card { max-height: calc(100dvh - 2 * var(--spacing-sm)); }
+  .usr-modal__head,
+  .usr-modal__body,
+  .usr-modal__foot { padding-inline: var(--spacing-md); }
+
+  // En pantallas angostas los botones ocupan el ancho: nada se parte a media palabra.
+  .usr-modal__foot .btn { flex: 1 1 auto; }
 }
 
 .usr-modal__name {
@@ -393,6 +446,38 @@
   line-height: 1.2;
 }
 
+// ── Confirmaciones ──────────────────────────────────────────
+.usr-confirm__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+
+  &--danger {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+  }
+}
+
+.usr-confirm__lead {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.usr-confirm__note {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+// ── Detalles ────────────────────────────────────────────────
 .usr-modal__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -420,11 +505,38 @@
   }
 }
 
+.usr-modal__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
 .usr-modal__section-title {
   font-size: var(--font-size-sm);
   font-weight: 700;
   color: var(--color-text-primary);
-  margin: 0 0 var(--spacing-sm);
+  margin: 0;
+}
+
+.usr-modal__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+
+  &:hover { text-decoration: underline; }
+  &:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+}
+
+.usr-modal__hint {
+  margin: 4px 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .usr-modal__negocios {
@@ -463,50 +575,37 @@
   flex-shrink: 0;
 }
 
-.usr-modal__neg-meta {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
-.usr-modal__plan-edit {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-xs);
-}
-
-.usr-modal__plan-field {
+.usr-modal__vig {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
 
-  &--full { grid-column: 1 / -1; }
+  span:not(.usr-modal__vig-flecha):not(.usr-modal__vig-dias) {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
 
-  .input { width: 100%; min-width: 0; }
+  small {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
 }
 
-.usr-modal__plan-label {
+.usr-modal__vig-flecha {
+  color: var(--color-text-muted);
+}
+
+.usr-modal__vig-dias {
+  margin-left: auto;
   font-size: var(--font-size-xs);
   font-weight: 600;
-  color: var(--color-text-muted);
-  margin-bottom: 3px;
-}
-
-.usr-modal__apply {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-  white-space: nowrap;
-}
-
-.usr-modal__foot {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-xl);
-  flex-wrap: wrap;
+  color: var(--color-text-secondary);
 }
 
 // ════════════ Modal editar usuario ════════════
@@ -535,6 +634,16 @@
   font-weight: 600;
   color: var(--color-text-muted);
   margin-bottom: 3px;
+}
+
+.usr-edit__optional {
+  font-weight: 400;
+}
+
+.usr-edit__error {
+  margin-top: 3px;
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
 }
 
 // ── Checklist de requisitos de contraseña ───────────────────

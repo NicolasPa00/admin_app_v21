@@ -1,0 +1,146 @@
+<!--
+  Mis pagos (administrador del negocio): la mensualidad de cada negocio que administra.
+  El estado sale de la VIGENCIA DEL PLAN (la misma lógica del dashboard), no de la suscripción.
+-->
+<div class="mp">
+  <header class="mp__head">
+    <h1 class="mp__title">Mis pagos</h1>
+    <p class="mp__subtitle">La mensualidad de EscalApp de tus negocios</p>
+  </header>
+
+  @if (error(); as texto) {
+    <p class="mp__error" role="alert">
+      <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+      {{ texto }}
+    </p>
+  }
+
+  @if (estado() === 'loading') {
+    <p class="mp__vacio">
+      <lucide-icon name="loader-2" [size]="18" class="mp__spin" aria-hidden="true" />
+      Cargando…
+    </p>
+  } @else if (estado() === 'success' && vistas().length === 0) {
+    <p class="mp__vacio">
+      <lucide-icon name="wallet" [size]="18" aria-hidden="true" />
+      No administras negocios con mensualidad de EscalApp.
+    </p>
+  }
+
+  @for (c of vistas(); track c.id_negocio ?? c.negocio) {
+    <section class="mp__negocio">
+      <header class="mp__negocio-head">
+        <div class="mp__negocio-titulo">
+          <h2>{{ c.negocio }}</h2>
+          <span class="mp__meta">{{ c.plan }}</span>
+        </div>
+        <span [class]="'mp__chip mp__chip--' + c.vencimiento.tono">{{ c.vencimiento.etiqueta }}</span>
+      </header>
+
+      <!-- Una sola fecha, la que importa: cuándo vence o venció el plan. -->
+      <p class="mp__vigencia" [class.mp__vigencia--alerta]="!estaAlDia(c.vencimiento)">
+        <lucide-icon name="clock" [size]="14" aria-hidden="true" />
+        {{ detalleVigencia(c.vencimiento) }}
+      </p>
+
+      <!--
+        Cambio de plan. El plan nunca cambia sin pagar: lo elegido queda pendiente y se aplica
+        cuando se paga el cobro correspondiente.
+      -->
+      @if (c.planes?.length) {
+        <div class="mp__plan">
+          @if (c.plan_solicitado) {
+            <p class="mp__plan-pendiente">
+              <lucide-icon name="clock" [size]="14" aria-hidden="true" />
+              Pasarás al <strong>{{ c.plan_solicitado }}</strong> cuando pagues tu próximo cobro.
+            </p>
+          }
+          <button type="button" class="mp__plan-toggle" (click)="alternarPlanes(c)">
+            {{ planesAbiertos() === c.id_negocio ? 'Cancelar' : 'Cambiar de plan' }}
+          </button>
+
+          @if (planesAbiertos() === c.id_negocio) {
+            <ul class="mp__planes">
+              @for (p of c.planes; track p.id_plan) {
+                <li class="mp__plan-item" [class.mp__plan-item--actual]="p.id_plan === c.id_plan">
+                  <div>
+                    <strong>{{ p.nombre }}</strong>
+                    <span class="mp__meta">{{ dinero(p.precio, p.moneda) }} al mes</span>
+                  </div>
+                  @if (p.id_plan === c.id_plan) {
+                    <span class="mp__chip mp__chip--activa">Tu plan actual</span>
+                  } @else {
+                    <button type="button" class="btn btn--sm" [disabled]="cambiandoPlan()"
+                            (click)="cambiarPlan(c, p.id_plan)">
+                      @if (cambiandoPlan()) {
+                        <lucide-icon name="loader-2" [size]="15" class="mp__spin" aria-hidden="true" />
+                      }
+                      Elegir
+                    </button>
+                  }
+                </li>
+              }
+            </ul>
+          }
+
+          @if (avisoPlan(); as texto) {
+            <p class="mp__plan-aviso" role="status">
+              <lucide-icon name="check-circle-2" [size]="15" aria-hidden="true" />
+              {{ texto }}
+            </p>
+          }
+        </div>
+      }
+
+      @if (c.facturas.length === 0) {
+        @if (estaAlDia(c.vencimiento)) {
+          <div class="mp__ok" role="status">
+            <span class="mp__ok-icono">
+              <lucide-icon name="check-circle-2" [size]="22" aria-hidden="true" />
+            </span>
+            <div class="mp__ok-texto">
+              <strong>No tienes facturas pendientes</strong>
+              <span class="mp__meta">Tu próximo cobro se genera 5 días antes del vencimiento.</span>
+            </div>
+          </div>
+        } @else {
+          <!-- Plan vencido y sin cobro todavía: nada de ✓ verde, porque no está todo bien. -->
+          <div class="mp__sin-cobro" role="status">
+            <lucide-icon name="clock" [size]="18" aria-hidden="true" />
+            <span>Aún no hay un cobro para renovar tu plan. Aparecerá aquí en cuanto esté listo.</span>
+          </div>
+        }
+      }
+
+      @for (f of c.facturas; track f.referencia) {
+        <article class="mp__factura">
+          <div class="mp__factura-datos">
+            <span class="mp__concepto">Mensualidad · {{ c.plan }}</span>
+            <strong class="mp__monto">{{ dinero(f.total, f.moneda) }}</strong>
+            <span class="mp__meta">{{ efectoDelPago(c.vencimiento) }}</span>
+          </div>
+
+          <div class="mp__acciones">
+            @if (c.pasarelas.length === 0) {
+              <span class="mp__meta">
+                El pago en línea no está disponible en este momento. Intenta de nuevo más tarde.
+              </span>
+            }
+            @for (p of c.pasarelas; track p.codigo) {
+              <button type="button" class="btn" [disabled]="procesando() !== null"
+                      (click)="pagar(f, p.codigo)">
+                @if (procesando() === f.referencia + ':' + p.codigo) {
+                  <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
+                } @else {
+                  <lucide-icon name="credit-card" [size]="16" aria-hidden="true" />
+                }
+                Pagar con {{ etiqueta(p.codigo, p.nombre) }}
+              </button>
+            }
+            <span class="mp__ref">Ref. {{ f.referencia }}</span>
+          </div>
+        </article>
+      }
+    </section>
+  }
+</div>

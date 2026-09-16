@@ -143,7 +143,8 @@ export interface RegisterRequest {
   segundo_apellido?: string;
   num_identificacion: string;
   telefono?: string;
-  email: string;
+  /** Opcional: el login va por identificación. */
+  email?: string;
   password: string;
   fecha_nacimiento?: string;
   id_negocio?: number;

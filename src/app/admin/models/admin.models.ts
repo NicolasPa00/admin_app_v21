@@ -143,6 +143,11 @@ export interface Negocio {
   /** 'A' = activo, 'I' = inactivo */
   estado:         'A' | 'I';
   fecha_registro: string;
+  /**
+   * Plan del negocio (GET /admin/mis-negocios). `null` = sin plan; ausente = backend anterior
+   * que no lo manda, y entonces no se bloquea nada desde aquí.
+   */
+  plan?: PlanInfo | null;
 }
 
 export type NegociosResponse = ApiResponse<Negocio[]>;
@@ -172,6 +177,18 @@ export interface PlanInfo {
   fecha_fin: string | null;
   vigente: boolean;
   dias_restantes: number | null;
+  /**
+   * Estado calculado por `planHelper` en el backend. PENDIENTE = su fecha de inicio aún no
+   * llega. Ver `core/utils/estado-plan.ts` para cómo se muestra.
+   */
+  estado?: 'ACTIVO' | 'GRACIA' | 'VENCIDO' | 'SIN_PLAN' | 'PENDIENTE';
+  /** ¿Puede operar? Incluye los días de gracia. */
+  activo?: boolean;
+  en_gracia?: boolean;
+  dias_gracia_restantes?: number | null;
+  /** Último instante de acceso: `fecha_fin` + 5 días de gracia. */
+  fecha_limite_gracia?: string | null;
+  dias_para_iniciar?: number | null;
 }
 
 /** Plan de un negocio que el usuario administra. */
@@ -193,7 +210,8 @@ export interface UsuarioAdmin {
   primer_apellido: string;
   segundo_apellido: string | null;
   num_identificacion: string;
-  email: string;
+  /** Opcional: el login va por identificación. */
+  email: string | null;
   estado: 'A' | 'I';
   fecha_creacion: string;
   es_admin_principal: boolean;
@@ -258,7 +276,8 @@ export interface AdminUsuarioNuevo {
   segundo_apellido?: string | null;
   num_identificacion: string;
   telefono?: string | null;
-  email: string;
+  /** Opcional: el login va por identificación. */
+  email?: string | null;
   password: string;
 }
 
@@ -267,7 +286,7 @@ export interface UsuarioBusqueda {
   id_usuario: number;
   primer_nombre: string;
   primer_apellido: string;
-  email: string;
+  email: string | null;
   num_identificacion: string;
   telefono?: string | null;
 }
@@ -290,7 +309,11 @@ export interface RegistrarClienteRequest {
     /** El oficio elegido. El backend deriva de aquí el módulo. */
     id_rubro?: number | null;
   };
-  plan?: { id_plan: number; meses?: number } | null;
+  /**
+   * Vigencia del negocio. Con `id_plan`: `meses` desde `fecha_inicio`. Con `id_plan: null` y
+   * `fecha_inicio`: prueba de 7 días (Plan Básico) desde ese día.
+   */
+  plan?: { id_plan: number | null; meses?: number; fecha_inicio?: string } | null;
   /** Modo A: vincular usuario existente (se excluye mutuamente con admin). */
   id_usuario_existente?: number | null;
   /** Modo B: crear usuario nuevo (se excluye mutuamente con id_usuario_existente). */
@@ -318,7 +341,8 @@ export interface UpdateUsuarioPerfilRequest {
   primer_apellido: string;
   segundo_apellido?: string | null;
   num_identificacion: string;
-  email: string;
+  /** Opcional: `null` deja al usuario sin correo. */
+  email: string | null;
   /** Solo se envía si el admin quiere cambiar la contraseña. */
   password?: string;
 }
@@ -327,4 +351,6 @@ export interface UpdateUsuarioPerfilRequest {
 export interface UsuariosAdminFiltros {
   search?: string;
   estado?: 'A' | 'I' | 'ALL';
+  /** Solo el personal de ese negocio, con los roles que tiene EN ese negocio. */
+  id_negocio?: number;
 }

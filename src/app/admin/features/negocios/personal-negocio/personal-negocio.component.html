@@ -1,0 +1,185 @@
+<!--
+  Personal adscrito a un negocio. El backend filtra por `id_negocio`, así que los roles que se
+  ven aquí son los de ESTE negocio, no todos los de la persona.
+-->
+<div class="pers" (click)="cerrar.emit()">
+  <div class="pers__card" role="dialog" aria-modal="true" aria-labelledby="pers-title"
+       (click)="$event.stopPropagation()">
+    <header class="pers__head">
+      <div>
+        <h2 id="pers-title" class="pers__title">
+          <lucide-icon name="user-round" [size]="18" aria-hidden="true" />
+          Personal del negocio
+        </h2>
+        <p class="pers__sub">
+          {{ nombreNegocio() }}
+          @if (estado() === 'success') {
+            · {{ personal().length }} {{ personal().length === 1 ? 'persona' : 'personas' }},
+            {{ activos() }} {{ activos() === 1 ? 'activa' : 'activas' }}
+          }
+        </p>
+      </div>
+      <button type="button" class="pers__icon-btn" (click)="cerrar.emit()" aria-label="Cerrar">
+        <lucide-icon name="x" [size]="18" aria-hidden="true" />
+      </button>
+    </header>
+
+    <div class="pers__body">
+      @if (aviso(); as texto) {
+        <p class="pers__aviso" role="status">
+          <lucide-icon name="check" [size]="15" aria-hidden="true" /> {{ texto }}
+        </p>
+      }
+      @if (error(); as texto) {
+        <p class="pers__error" role="alert">
+          <lucide-icon name="alert-circle" [size]="15" aria-hidden="true" /> {{ texto }}
+        </p>
+      }
+
+      @if (estado() === 'loading') {
+        <p class="pers__vacio">
+          <lucide-icon name="loader-2" [size]="18" class="pers__spin" aria-hidden="true" />
+          Cargando personal…
+        </p>
+      } @else if (estado() === 'success' && personal().length === 0) {
+        <p class="pers__vacio">
+          <lucide-icon name="user-round" [size]="18" aria-hidden="true" />
+          Este negocio todavía no tiene personal asignado.
+        </p>
+      } @else if (estado() === 'success') {
+        <div class="pers__tabla-wrap">
+          <table class="pers__tabla">
+            <thead>
+              <tr>
+                <th scope="col">Persona</th>
+                <th scope="col">Identificación</th>
+                <th scope="col">Rol en este negocio</th>
+                <th scope="col">Estado</th>
+                <th scope="col"></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of personal(); track u.id_usuario) {
+                <tr [class.pers__fila--inactiva]="u.estado === 'I'">
+                  <td>
+                    <span class="pers__nombre">{{ u.nombre_completo }}</span>
+                    @if (u.es_admin_principal) {
+                      <span class="pers__chip pers__chip--admin">
+                        <lucide-icon name="shield-check" [size]="12" aria-hidden="true" />
+                        Administrador principal
+                      </span>
+                    }
+                    @if (u.email) { <span class="pers__meta">{{ u.email }}</span> }
+                  </td>
+                  <td>{{ u.num_identificacion }}</td>
+                  <td>{{ rolEnNegocio(u) }}</td>
+                  <td>
+                    <span class="pers__chip" [class.pers__chip--ok]="u.estado === 'A'"
+                          [class.pers__chip--off]="u.estado === 'I'">
+                      {{ u.estado === 'A' ? 'Activo' : 'Inhabilitado' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="pers__acciones">
+                      <button type="button" class="pers__icon-btn" (click)="editar(u)"
+                              title="Editar ficha" aria-label="Editar ficha">
+                        <lucide-icon name="pencil" [size]="15" aria-hidden="true" />
+                      </button>
+                      <button type="button" class="pers__icon-btn"
+                              [class.pers__icon-btn--danger]="u.estado === 'A'"
+                              [disabled]="ocupado() === u.id_usuario"
+                              (click)="pedirCambioEstado(u)"
+                              [title]="u.estado === 'A' ? 'Inhabilitar' : 'Habilitar'"
+                              [attr.aria-label]="u.estado === 'A' ? 'Inhabilitar persona' : 'Habilitar persona'">
+                        @if (ocupado() === u.id_usuario) {
+                          <lucide-icon name="loader-2" [size]="15" class="pers__spin" aria-hidden="true" />
+                        } @else {
+                          <lucide-icon name="power" [size]="15" aria-hidden="true" />
+                        }
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Edición de la ficha, en la misma fila para no perder de vista a quién se edita -->
+                @if (form()?.id_usuario === u.id_usuario) {
+                  <tr>
+                    <td colspan="5">
+                      <form class="pers__form" (submit)="$event.preventDefault(); guardar()">
+                        <label class="pers__campo">
+                          <span>Primer nombre *</span>
+                          <input class="input" type="text" [value]="form()!.primer_nombre"
+                                 (input)="cambiar('primer_nombre', $event)" />
+                        </label>
+                        <label class="pers__campo">
+                          <span>Segundo nombre</span>
+                          <input class="input" type="text" [value]="form()!.segundo_nombre"
+                                 (input)="cambiar('segundo_nombre', $event)" />
+                        </label>
+                        <label class="pers__campo">
+                          <span>Primer apellido *</span>
+                          <input class="input" type="text" [value]="form()!.primer_apellido"
+                                 (input)="cambiar('primer_apellido', $event)" />
+                        </label>
+                        <label class="pers__campo">
+                          <span>Segundo apellido</span>
+                          <input class="input" type="text" [value]="form()!.segundo_apellido"
+                                 (input)="cambiar('segundo_apellido', $event)" />
+                        </label>
+                        <label class="pers__campo">
+                          <span>Identificación *</span>
+                          <input class="input" type="text" [value]="form()!.num_identificacion"
+                                 (input)="cambiar('num_identificacion', $event)" />
+                        </label>
+                        <label class="pers__campo">
+                          <span>Correo</span>
+                          <input class="input" type="email" [value]="form()!.email"
+                                 (input)="cambiar('email', $event)" />
+                        </label>
+
+                        <div class="pers__form-acciones">
+                          <button type="button" class="btn btn--outline" (click)="cancelarEdicion()">
+                            Cancelar
+                          </button>
+                          <button type="submit" class="btn btn--primary" [disabled]="guardando()">
+                            @if (guardando()) {
+                              <lucide-icon name="loader-2" [size]="15" class="pers__spin" aria-hidden="true" />
+                            }
+                            Guardar
+                          </button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <!-- Inhabilitar afecta a TODO el sistema, no solo a este negocio: conviene decirlo antes. -->
+    @if (porCambiarEstado(); as u) {
+      <div class="pers__confirm" role="alertdialog" aria-labelledby="pers-confirm-title">
+        <h3 id="pers-confirm-title" class="pers__confirm-title">
+          {{ u.estado === 'A' ? 'Inhabilitar a ' + u.nombre_completo : 'Habilitar a ' + u.nombre_completo }}
+        </h3>
+        <p class="pers__confirm-texto">
+          @if (u.estado === 'A') {
+            No podrá iniciar sesión en <strong>ningún</strong> negocio, no solo en este. Sus datos
+            y su historial se conservan.
+          } @else {
+            Volverá a poder iniciar sesión con los roles que ya tenía.
+          }
+        </p>
+        <div class="pers__confirm-acciones">
+          <button type="button" class="btn btn--outline" (click)="cancelarCambioEstado()">Cancelar</button>
+          <button type="button" class="btn btn--primary" (click)="confirmarCambioEstado()">
+            {{ u.estado === 'A' ? 'Inhabilitar' : 'Habilitar' }}
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>
