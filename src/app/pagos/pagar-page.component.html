@@ -97,23 +97,77 @@
                 <span class="pg__ref">Ref. {{ f.referencia }}</span>
               </div>
 
-              <div class="pg__acciones">
-                @if (c.pasarelas.length === 0) {
-                  <!-- Sin pasarela disponible no hay botón: mejor decirlo que dejar un hueco. -->
-                  <span class="pg__ref">
-                    El pago en línea no está disponible en este momento. Intenta de nuevo más tarde.
-                  </span>
-                }
-                @for (p of c.pasarelas; track p.codigo) {
-                  <button
-                    type="button" class="pg__boton" [class.pg__boton--sec]="p.codigo === 'manual'"
-                    [disabled]="procesando() !== null"
-                    (click)="pagar(f, p.codigo)"
-                  >
-                    {{ procesando() === f.referencia + ':' + p.codigo ? 'Abriendo…' : etiquetaPasarela(p.codigo, p.nombre) }}
-                  </button>
-                }
-              </div>
+              <!--
+                Elegir y después pagar. El select se abre en la pasarela recomendada para el país
+                del negocio (lo decide el backend), así que quien no quiera elegir solo pulsa
+                «Pagar».
+              -->
+              @if (c.pasarelas.length === 0) {
+                <!-- Sin pasarela disponible no hay botón: mejor decirlo que dejar un hueco. -->
+                <span class="pg__ref">
+                  El pago en línea no está disponible en este momento. Intenta de nuevo más tarde.
+                </span>
+              } @else {
+                <div class="pg__pago">
+                  @let sel = elegida(f.referencia, c.pasarelas);
+                  @let m = marca(sel);
+
+                  <fieldset class="pg__medios">
+                    <legend class="pg__medios-label">¿Con cuál quieres pagar?</legend>
+
+                    <div class="pg__medios-lista">
+                      @for (p of c.pasarelas; track p.codigo) {
+                        @let mp = marca(p.codigo, p.nombre);
+                        <!--
+                          Radio de verdad, no un div con (click): así funciona con teclado, con
+                          lector de pantalla y con las flechas del grupo, gratis.
+                        -->
+                        <label
+                          class="pg__medio"
+                          [class.pg__medio--activo]="p.codigo === sel"
+                          [style.--marca]="mp.color"
+                        >
+                          <input
+                            type="radio"
+                            class="pg__medio-radio"
+                            [name]="'pasarela-' + f.referencia"
+                            [value]="p.codigo"
+                            [checked]="p.codigo === sel"
+                            [disabled]="procesando() !== null"
+                            (change)="seleccionar(f.referencia, p.codigo)"
+                          />
+                          <span class="pg__medio-marca">
+                            @if (logo(p.codigo); as src) {
+                              <img
+                                class="pg__medio-logo"
+                                [src]="src"
+                                [alt]="mp.marca"
+                                (error)="logoFallo(p.codigo)"
+                              />
+                            } @else {
+                              <span class="pg__medio-nombre">{{ mp.marca }}</span>
+                            }
+                          </span>
+                          <span class="pg__medio-medios">{{ mp.medios }}</span>
+                          @if (p.recomendada) {
+                            <span class="pg__medio-badge">Recomendada</span>
+                          }
+                        </label>
+                      }
+                    </div>
+                  </fieldset>
+
+                  <div class="pg__acciones">
+                    <button
+                      type="button" class="pg__boton"
+                      [disabled]="procesando() !== null"
+                      (click)="pagar(f, c.pasarelas)"
+                    >
+                      {{ procesando() === f.referencia ? 'Abriendo…' : 'Pagar ' + dinero(f.total, f.moneda) + ' con ' + m.marca }}
+                    </button>
+                  </div>
+                </div>
+              }
 
               @if (transferencia()?.referencia === f.referencia) {
                 <div class="pg__transferencia" role="status">

@@ -175,7 +175,20 @@ export interface CobroNegocio {
    */
   vigencia?: PlanConVencimiento | null;
   facturas: FacturaPendiente[];
-  pasarelas: { codigo: CodigoPasarela; nombre: string }[];
+  pasarelas: PasarelaElegible[];
+}
+
+/**
+ * Una pasarela entre las que el cliente elige.
+ *
+ * `recomendada` la calcula el BACKEND a partir del país del negocio (Wompi en Colombia, dLocal
+ * fuera). No se deduce aquí: el frontend no conoce el país, y duplicar la regla es garantizar que
+ * un día digan cosas distintas.
+ */
+export interface PasarelaElegible {
+  codigo: CodigoPasarela;
+  nombre: string;
+  recomendada?: boolean;
 }
 
 /**
@@ -189,6 +202,11 @@ export interface InicioPago {
   total: number;
   moneda: string;
   urlPago: string | null;
+  /**
+   * Id de la transacción en la pasarela. Se guarda antes de salir al checkout para poder
+   * confirmar la vuelta: Wompi la devuelve en la URL (`?id=`), pero dLocal no devuelve nada.
+   */
+  idExterno?: string | null;
   instrucciones?: string;
   mensaje?: string | null;
 }

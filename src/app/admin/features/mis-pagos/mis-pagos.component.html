@@ -8,6 +8,40 @@
     <p class="mp__subtitle">La mensualidad de EscalApp de tus negocios</p>
   </header>
 
+  <!--
+    Vuelta del checkout, sin salir de la sesión. Cada mensaje dice lo que el backend confirmó con
+    la pasarela, no lo que suponemos por haber vuelto.
+  -->
+  @switch (confirmacion()) {
+    @case ('confirmando') {
+      <p class="mp__aviso mp__aviso--info" role="status">
+        <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
+        Confirmando tu pago con la pasarela…
+      </p>
+    }
+    @case ('aprobada') {
+      <p class="mp__aviso mp__aviso--ok" role="status">
+        <lucide-icon name="check-circle-2" [size]="16" aria-hidden="true" />
+        ¡Pago confirmado! Tu plan ya está activo.
+      </p>
+    }
+    @case ('rechazada') {
+      <p class="mp__aviso mp__aviso--error" role="alert">
+        <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+        La pasarela no aprobó el pago, así que no se te cobró nada. Puedes intentarlo de nuevo con
+        otro medio.
+      </p>
+    }
+    @case (null) {}
+    @default {
+      <p class="mp__aviso mp__aviso--info" role="status">
+        <lucide-icon name="clock" [size]="16" aria-hidden="true" />
+        Recibimos tu intento de pago. En cuanto la pasarela lo confirme —normalmente en pocos
+        minutos— tu plan se extiende solo.
+      </p>
+    }
+  }
+
   @if (error(); as texto) {
     <p class="mp__error" role="alert">
       <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
@@ -120,24 +154,82 @@
             <span class="mp__meta">{{ efectoDelPago(c.vencimiento) }}</span>
           </div>
 
-          <div class="mp__acciones">
+          <!--
+            Elegir y después pagar. El select se abre en la pasarela recomendada para el país del
+            negocio (lo decide el backend), así que quien no quiera elegir solo pulsa «Pagar».
+          -->
+          <div class="mp__pago">
             @if (c.pasarelas.length === 0) {
               <span class="mp__meta">
                 El pago en línea no está disponible en este momento. Intenta de nuevo más tarde.
               </span>
+            } @else {
+              @let sel = elegida(f.referencia, c.pasarelas);
+              @let m = marca(sel);
+
+              <fieldset class="mp__medios">
+                <legend class="mp__medios-label">¿Con cuál quieres pagar?</legend>
+
+                <div class="mp__medios-lista">
+                  @for (p of c.pasarelas; track p.codigo) {
+                    @let mp = marca(p.codigo, p.nombre);
+                    <!--
+                      Radio de verdad, no un div con (click): así funciona con teclado, con
+                      lector de pantalla y con las flechas del grupo, gratis.
+                    -->
+                    <label
+                      class="mp__medio"
+                      [class.mp__medio--activo]="p.codigo === sel"
+                      [style.--marca]="mp.color"
+                    >
+                      <input
+                        type="radio"
+                        class="mp__medio-radio"
+                        [name]="'pasarela-' + f.referencia"
+                        [value]="p.codigo"
+                        [checked]="p.codigo === sel"
+                        [disabled]="procesando() !== null"
+                        (change)="seleccionar(f.referencia, p.codigo)"
+                      />
+                      <span class="mp__medio-marca">
+                        @if (logo(p.codigo); as src) {
+                          <img
+                            class="mp__medio-logo"
+                            [src]="src"
+                            [alt]="mp.marca"
+                            (error)="logoFallo(p.codigo)"
+                          />
+                        } @else {
+                          <span class="mp__medio-nombre">{{ mp.marca }}</span>
+                        }
+                      </span>
+                      <span class="mp__medio-medios">{{ mp.medios }}</span>
+                      @if (p.recomendada) {
+                        <span class="mp__medio-badge">Recomendada</span>
+                      }
+                    </label>
+                  }
+                </div>
+              </fieldset>
+
+              <div class="mp__acciones">
+                <button type="button" class="btn" [disabled]="procesando() !== null"
+                        (click)="pagar(f, c.pasarelas)">
+                  @if (procesando() === f.referencia) {
+                    <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
+                  } @else {
+                    <lucide-icon name="credit-card" [size]="16" aria-hidden="true" />
+                  }
+                  Pagar {{ dinero(f.total, f.moneda) }} con {{ m.marca }}
+                </button>
+                <span class="mp__ref">Ref. {{ f.referencia }}</span>
+              </div>
+
+              <p class="mp__legal">
+                El pago se procesa en la página segura de {{ m.marca }}. EscalApp nunca ve ni guarda
+                los datos de tu tarjeta.
+              </p>
             }
-            @for (p of c.pasarelas; track p.codigo) {
-              <button type="button" class="btn" [disabled]="procesando() !== null"
-                      (click)="pagar(f, p.codigo)">
-                @if (procesando() === f.referencia + ':' + p.codigo) {
-                  <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
-                } @else {
-                  <lucide-icon name="credit-card" [size]="16" aria-hidden="true" />
-                }
-                Pagar con {{ etiqueta(p.codigo, p.nombre) }}
-              </button>
-            }
-            <span class="mp__ref">Ref. {{ f.referencia }}</span>
           </div>
         </article>
       }

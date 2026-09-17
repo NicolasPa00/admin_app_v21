@@ -14,10 +14,22 @@ import {
 } from 'lucide-angular';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
-import { CobroNegocio, CodigoPasarela, FacturaPendiente } from '../../models/cobranza.models';
+import {
+  CobroNegocio,
+  CodigoPasarela,
+  FacturaPendiente,
+  PasarelaElegible,
+} from '../../models/cobranza.models';
 import { LoadingState } from '../../models/admin.models';
 import { Vencimiento, evaluarVencimiento } from '../../../core/utils/estado-plan';
 import { hoyBogota } from '../../../core/utils/vigencia';
+import { environment } from '../../../../environments/environment';
+import {
+  MarcaPasarela,
+  marcaDe,
+  recordarPago,
+  tomarPagoEnCurso,
+} from '../../../core/utils/pasarelas';
 
 /** Un negocio con su vigencia ya traducida a estado, etiqueta y tono. */
 type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
@@ -70,8 +82,44 @@ export class MisPagosComponent implements OnInit {
     this.cobros().map((c) => ({ ...c, vencimiento: evaluarVencimiento(c.vigencia ?? null) })),
   );
 
+  // ── Vuelta del checkout ─────────────────────────────────────
+  //
+  // El administrador que paga desde aquí vuelve AQUÍ, con su sesión intacta. Antes toda vuelta
+  // caía en `/pagar` —el portal público— y lo sacaba de la sesión: la URL de retorno ahora la
+  // elige el backend según de dónde salió el pago.
+
+  protected readonly confirmacion = signal<
+    'confirmando' | 'aprobada' | 'pendiente' | 'rechazada' | 'desconocida' | null
+  >(null);
+
   ngOnInit(): void {
     this.cargar();
+    this.confirmarSiVuelveDePagar();
+  }
+
+  /**
+   * Wompi vuelve con `?id=<transacción>`; dLocal no devuelve nada, así que se usa el id que se
+   * guardó antes de salir. Se prefiere el de la URL cuando existe: lo pone la pasarela.
+   */
+  private confirmarSiVuelveDePagar(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const enCurso = tomarPagoEnCurso();
+    const idUrl = new URLSearchParams(window.location.search).get('id');
+    const pasarela = enCurso?.pasarela ?? 'wompi';
+    const id = idUrl || enCurso?.idExterno;
+    if (!id) return;
+
+    this.confirmacion.set('confirmando');
+    this.api.confirmarPago(pasarela, id).subscribe({
+      next: (r) => {
+        this.confirmacion.set(r?.estado ?? 'pendiente');
+        // Si el pago entró, las facturas y la vigencia que están en pantalla ya no valen.
+        if (r?.estado === 'aprobada') this.cargar();
+      },
+      // No poder confirmar ahora no es un rechazo: el webhook puede cerrarlo en minutos.
+      error: () => this.confirmacion.set('pendiente'),
+    });
   }
 
   protected cargar(): void {
@@ -135,16 +183,61 @@ export class MisPagosComponent implements OnInit {
     });
   }
 
-  protected pagar(factura: FacturaPendiente, pasarela: CodigoPasarela): void {
+  // ── Elegir con qué pagar ────────────────────────────────────
+  //
+  // Dos pasos (elegir y después pagar) en vez de un botón por pasarela: con dos marcas, una fila
+  // de botones obliga a decidir y a actuar en el mismo gesto, y no deja sitio para decir cuál
+  // conviene. El select se abre en la recomendada, así que quien no quiera pensarlo solo pulsa
+  // «Pagar».
+
+  /** Pasarela elegida por referencia de factura. Sin entrada = todavía manda la recomendada. */
+  private readonly seleccion = signal<Record<string, CodigoPasarela>>({});
+
+  /** Logos que no cargaron: se cae al distintivo de texto y no se reintenta en cada render. */
+  private readonly logosRotos = signal<Set<string>>(new Set());
+
+  protected elegida(referencia: string, pasarelas: PasarelaElegible[]): CodigoPasarela {
+    const guardada = this.seleccion()[referencia];
+    if (guardada && pasarelas.some((p) => p.codigo === guardada)) return guardada;
+    return (pasarelas.find((p) => p.recomendada) ?? pasarelas[0])?.codigo ?? 'wompi';
+  }
+
+  protected seleccionar(referencia: string, codigo: string): void {
+    this.seleccion.update((m) => ({ ...m, [referencia]: codigo as CodigoPasarela }));
+  }
+
+  protected marca(codigo: CodigoPasarela, nombre = ''): MarcaPasarela {
+    return marcaDe(codigo, nombre);
+  }
+
+  protected logo(codigo: CodigoPasarela): string | null {
+    const archivo = marcaDe(codigo).logo;
+    if (!archivo || this.logosRotos().has(archivo)) return null;
+    return `${environment.assetPath}/${archivo}`;
+  }
+
+  /** Un logo que falta no es un error: la marca se sigue leyendo como texto. */
+  protected logoFallo(codigo: CodigoPasarela): void {
+    const archivo = marcaDe(codigo).logo;
+    this.logosRotos.update((s) => new Set(s).add(archivo));
+  }
+
+  protected pagar(factura: FacturaPendiente, pasarelas: PasarelaElegible[]): void {
     if (!factura.id_factura) return;
 
-    this.procesando.set(`${factura.referencia}:${pasarela}`);
+    const pasarela = this.elegida(factura.referencia, pasarelas);
+    this.procesando.set(factura.referencia);
     this.error.set(null);
 
     this.api.pagarFactura(factura.id_factura, pasarela).subscribe({
       next: (r) => {
         this.procesando.set(null);
         if (r?.urlPago) {
+          // Se recuerda ANTES de salir: al volver, esto es lo único que identifica el pago
+          // cuando la pasarela no devuelve un id en la URL (el caso de dLocal).
+          if (r.idExterno) {
+            recordarPago({ pasarela, idExterno: r.idExterno, referencia: factura.referencia });
+          }
           if (isPlatformBrowser(this.platformId)) window.location.href = r.urlPago;
           return;
         }
@@ -191,12 +284,6 @@ export class MisPagosComponent implements OnInit {
       return 'Al pagar, tu plan queda activo.';
     }
     return 'Al pagar, tu plan se renueva por un mes.';
-  }
-
-  protected etiqueta(codigo: CodigoPasarela, nombre: string): string {
-    if (codigo === 'wompi') return 'PSE, Nequi o tarjeta';
-    if (codigo === 'dlocal') return 'tarjeta o medios locales';
-    return nombre;
   }
 
   protected dinero(valor: number | string, moneda = 'COP'): string {

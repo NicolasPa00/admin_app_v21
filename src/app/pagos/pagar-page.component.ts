@@ -18,7 +18,14 @@ import {
   CodigoPasarela,
   FacturaPendiente,
   InicioPago,
+  PasarelaElegible,
 } from '../admin/models/cobranza.models';
+import {
+  MarcaPasarela,
+  marcaDe,
+  recordarPago,
+  tomarPagoEnCurso,
+} from '../core/utils/pasarelas';
 
 type Paso = 'consulta' | 'buscando' | 'resultado';
 
@@ -89,12 +96,18 @@ export class PagarPageComponent {
     // Solo en el navegador: la ruta se prerenderiza y ahí no hay query ni a quién preguntar.
     if (!isPlatformBrowser(this.platformId)) return;
 
-    const id = this.route.snapshot.queryParamMap.get('id');
+    // Wompi vuelve con `?id=<transacción>`; dLocal no devuelve identificador ninguno, así que se
+    // usa el que se guardó antes de salir al checkout. El de la URL manda cuando existe: lo pone
+    // la pasarela, no nosotros.
+    const enCurso = tomarPagoEnCurso();
+    const idUrl = this.route.snapshot.queryParamMap.get('id');
+    const id = idUrl || enCurso?.idExterno;
     if (!id) return;
 
-    // Hoy solo Wompi devuelve con `?id=`. Cuando dLocal tenga su vuelta, se distingue aquí.
+    const pasarela = enCurso?.pasarela === 'dlocal' && !idUrl ? 'dlocal' : 'wompi';
+
     this.confirmacion.set('confirmando');
-    this.api.confirmar('wompi', id).subscribe({
+    this.api.confirmar(pasarela, id).subscribe({
       next: (r) => this.confirmacion.set(r?.estado ?? 'pendiente'),
       // Si no se pudo confirmar ahora, no es un rechazo: el webhook puede cerrarlo después.
       error: () => this.confirmacion.set('pendiente'),
@@ -128,9 +141,43 @@ export class PagarPageComponent {
     });
   }
 
-  protected pagar(factura: FacturaPendiente, pasarela: CodigoPasarela): void {
-    const clave = `${factura.referencia}:${pasarela}`;
-    this.procesando.set(clave);
+  // ── Elegir con qué pagar ────────────────────────────────────
+
+  /** Pasarela elegida por referencia. Sin entrada = manda la recomendada para el país. */
+  private readonly seleccion = signal<Record<string, CodigoPasarela>>({});
+
+  /** Logos que no cargaron: se cae al distintivo de texto y no se reintenta en cada render. */
+  private readonly logosRotos = signal<Set<string>>(new Set());
+
+  protected elegida(referencia: string, pasarelas: PasarelaElegible[]): CodigoPasarela {
+    const guardada = this.seleccion()[referencia];
+    if (guardada && pasarelas.some((p) => p.codigo === guardada)) return guardada;
+    return (pasarelas.find((p) => p.recomendada) ?? pasarelas[0])?.codigo ?? 'wompi';
+  }
+
+  protected seleccionar(referencia: string, codigo: string): void {
+    this.seleccion.update((m) => ({ ...m, [referencia]: codigo as CodigoPasarela }));
+  }
+
+  protected marca(codigo: CodigoPasarela, nombre = ''): MarcaPasarela {
+    return marcaDe(codigo, nombre);
+  }
+
+  protected logo(codigo: CodigoPasarela): string | null {
+    const archivo = marcaDe(codigo).logo;
+    if (!archivo || this.logosRotos().has(archivo)) return null;
+    return this.assetService.getAssetPath(archivo);
+  }
+
+  /** Un logo que falta no es un error: la marca se sigue leyendo como texto. */
+  protected logoFallo(codigo: CodigoPasarela): void {
+    const archivo = marcaDe(codigo).logo;
+    this.logosRotos.update((s) => new Set(s).add(archivo));
+  }
+
+  protected pagar(factura: FacturaPendiente, pasarelas: PasarelaElegible[]): void {
+    const pasarela = this.elegida(factura.referencia, pasarelas);
+    this.procesando.set(factura.referencia);
     this.error.set(null);
     this.transferencia.set(null);
 
@@ -140,6 +187,11 @@ export class PagarPageComponent {
         if (!r) return;
 
         if (r.urlPago) {
+          // Se recuerda ANTES de salir: al volver, esto es lo único que identifica el pago
+          // cuando la pasarela no devuelve un id en la URL (el caso de dLocal).
+          if (r.idExterno) {
+            recordarPago({ pasarela, idExterno: r.idExterno, referencia: factura.referencia });
+          }
           // Solo en el navegador: esta ruta se prerenderiza y en el servidor no hay `window`.
           if (isPlatformBrowser(this.platformId)) window.location.href = r.urlPago;
           return;
@@ -170,13 +222,6 @@ export class PagarPageComponent {
 
   protected fecha(valor: string): string {
     return String(valor ?? '').slice(0, 10);
-  }
-
-  protected etiquetaPasarela(codigo: CodigoPasarela, nombre: string): string {
-    if (codigo === 'wompi') return 'PSE, Nequi o tarjeta';
-    if (codigo === 'dlocal') return 'Tarjeta o medios locales';
-    if (codigo === 'manual') return 'Transferencia bancaria';
-    return nombre;
   }
 
   private mensajeDeError(err: unknown, porDefecto: string): string {

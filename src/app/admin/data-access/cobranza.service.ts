@@ -125,6 +125,25 @@ export class CobranzaService {
       .pipe(map((res) => res.data ?? null));
   }
 
+  /**
+   * Confirma un pago al volver del checkout, desde la app con sesión.
+   *
+   * Usa el endpoint **público** de confirmación a propósito: es el mismo camino que el webhook
+   * —le pregunta el estado a la pasarela y solo entonces aplica el pago—, es idempotente, y del
+   * navegador únicamente acepta el id. No hace falta una segunda ruta autenticada que mantener.
+   */
+  confirmarPago(
+    pasarela: CodigoPasarela,
+    idTransaccion: string,
+  ): Observable<{ estado: 'aprobada' | 'pendiente' | 'rechazada' | 'desconocida' } | null> {
+    return this.http
+      .post<ApiResponse<{ estado: 'aprobada' | 'pendiente' | 'rechazada' | 'desconocida' }>>(
+        `${this.API}/publico/cobranza/confirmar`,
+        { pasarela, id_transaccion: idTransaccion },
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
   registrarPago(idFactura: number, pago: PagoManual): Observable<Factura | null> {
     return this.http
       .post<ApiResponse<Factura>>(`${this.API}/cobranza/facturas/${idFactura}/pago-manual`, pago)
