@@ -16,6 +16,7 @@ import {
 
 import { AuthService } from '../../data-access/auth.service';
 import { RegisterRequest } from '../../models/auth.models';
+import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
 
 /**
  * RegisterComponent — Creación de cuenta de usuario.
@@ -30,7 +31,7 @@ import { RegisterRequest } from '../../models/auth.models';
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, LucideAngularModule, TelefonoPaisComponent],
   providers: [
     { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Loader2 }) },
   ],
@@ -98,7 +99,8 @@ export class RegisterComponent {
 
   readonly emailError = computed(() => {
     const val = this.email().trim();
-    if (!val) return 'El email es obligatorio';
+    // Opcional: el login va por identificación. Solo se valida el formato si se escribió.
+    if (!val) return null;
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val))
       return 'Formato de email inválido';
     return null;
@@ -196,8 +198,8 @@ export class RegisterComponent {
       primer_nombre:   this.primerNombre().trim(),
       primer_apellido: this.primerApellido().trim(),
       num_identificacion: this.numIdentificacion().trim(),
-      email:    this.email().trim(),
       password: this.password(),
+      ...(this.email().trim()           ? { email:            this.email().trim() }            : {}),
       ...(this.segundoNombre().trim()   ? { segundo_nombre:   this.segundoNombre().trim() }   : {}),
       ...(this.segundoApellido().trim() ? { segundo_apellido: this.segundoApellido().trim() } : {}),
       ...(this.telefono().trim()        ? { telefono:         this.telefono().trim() }         : {}),

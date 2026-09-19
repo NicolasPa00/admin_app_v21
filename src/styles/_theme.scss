@@ -306,6 +306,11 @@ body {
     background-color: rgba(var(--color-primary-rgb), 0.12);
     color: var(--color-primary);
   }
+  // Informativo, sin juicio: «por iniciar» no es un error ni un aviso.
+  &--info {
+    background-color: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+    color: var(--color-accent-blue);
+  }
 }
 
 // --- Card base ---
@@ -383,6 +388,14 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+// --- Modales: la página de fondo no se desplaza ---
+// Con un diálogo abierto solo se desplaza el cuerpo del modal; cabecera y pie quedan fijos para
+// que los botones no se escondan. Si la ventana siguiera respondiendo a la rueda, al llegar al
+// final del cuerpo el scroll saltaría a la página y parecería que el modal se mueve.
+html:has([aria-modal='true']) {
+  overflow: hidden;
 }
 
 // --- Focus visible global ---

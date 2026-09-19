@@ -351,7 +351,13 @@
     color: var(--color-text-secondary);
   }
 
+  /* Solo el cuerpo se desplaza. `min-height: 0` es lo que lo permite: un hijo flex no encoge
+     por debajo de su contenido, así que sin él el cuerpo desbordaba la caja (que recorta con
+     overflow:hidden) y la conversación larga quedaba cortada sin barra de scroll. */
   &__modal-body {
+    flex: 1;
+    min-height: 0;
+    overscroll-behavior: contain;
     padding: 1rem;
     overflow-y: auto;
     display: flex;

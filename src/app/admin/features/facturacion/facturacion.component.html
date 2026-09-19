@@ -357,12 +357,15 @@
             <small>Donde te llegan las copias. Suele ser el del contador.</small>
           </label>
 
-          <label class="fac__campo">
+          <!-- `div` y no `label`: dentro hay un botón (el indicativo) y una etiqueta que envuelve
+               un botón lo activa al pulsar el texto, abriendo el desplegable sin querer. -->
+          <div class="fac__campo">
             <span>Teléfono de facturación</span>
-            <input class="fac__input" type="tel"
-              [ngModel]="get('telefono_facturacion')"
-              (ngModelChange)="set('telefono_facturacion', $event)" name="telefono_facturacion" />
-          </label>
+            <app-telefono-pais
+              campoId="fac-telefono"
+              [valor]="get('telefono_facturacion')"
+              (valorChange)="set('telefono_facturacion', $event || null)" />
+          </div>
         </div>
 
         <div class="fac__acciones">

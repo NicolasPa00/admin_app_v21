@@ -119,19 +119,17 @@
         <label for="reg-telefono" class="form-group__label">
           Teléfono <span class="form-group__optional">(opcional)</span>
         </label>
-        <input
-          id="reg-telefono"
-          type="tel"
-          class="input"
-          autocomplete="tel"
-          placeholder="+57 300 000 0000"
-          [value]="telefono()"
-          (input)="updateField(telefono, $event)" />
+        <app-telefono-pais
+          campoId="reg-telefono"
+          [valor]="telefono()"
+          (valorChange)="telefono.set($event)" />
       </div>
 
-      <!-- ── Email ── -->
+      <!-- ── Email (opcional) ── -->
       <div class="form-group">
-        <label for="reg-email" class="form-group__label">Email</label>
+        <label for="reg-email" class="form-group__label">
+          Email <span class="form-group__optional">(opcional)</span>
+        </label>
         <input
           id="reg-email"
           type="email"

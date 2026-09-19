@@ -26,6 +26,7 @@ import {
 import { AdminService } from '../../data-access/admin.service';
 import { FacturacionService } from '../../data-access/facturacion.service';
 import { Negocio } from '../../models/admin.models';
+import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
 import {
   CatalogosFiscales,
   Declaracion,
@@ -81,7 +82,7 @@ import {
 @Component({
   selector: 'app-facturacion',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule, LucideAngularModule, TelefonoPaisComponent],
   templateUrl: './facturacion.component.html',
   styleUrl: './facturacion.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

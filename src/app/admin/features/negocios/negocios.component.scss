@@ -236,11 +236,17 @@
   background: rgba(0, 0, 0, 0.5);
 }
 
+/*
+  Cabecera y pie fijos, cuerpo desplazable. La tarjeta es una columna flex con tope de alto:
+  `overflow: hidden` recorta la barra de scroll al radio de las esquinas, y `min-height: 0` en el
+  cuerpo es lo que le deja encoger por debajo de su contenido (sin él un hijo flex no encoge y
+  el pie acababa fuera de la pantalla).
+*/
 .neg-modal__card {
   width: 100%;
-  max-width: 640px;
+  max-width: 680px;
   max-height: 90vh;
-  /* overflow:hidden clips the scrollbar al border-radius — no overflow-y aquí */
+  max-height: calc(100dvh - 2 * var(--spacing-md));
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -250,19 +256,36 @@
   box-shadow: var(--shadow-xl, var(--shadow-lg));
 }
 
-/* El scroll va acá, DENTRO del card redondeado */
-.neg-modal__scroll {
-  overflow-y: auto;
-  flex: 1;
-  padding: var(--spacing-xl);
-}
-
 .neg-modal__head {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.neg-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-lg);
+}
+
+.neg-modal__alert {
+  flex: none;
+  margin: var(--spacing-sm) var(--spacing-xl) 0;
+}
+
+@media (max-width: 520px) {
+  .neg-modal { padding: var(--spacing-sm); }
+  .neg-modal__card { max-height: calc(100dvh - 2 * var(--spacing-sm)); }
+  .neg-modal__head,
+  .neg-modal__foot { padding-inline: var(--spacing-md); }
+  .neg-modal__body { padding-inline: var(--spacing-md); }
+  .neg-modal__alert { margin-inline: var(--spacing-md); }
 }
 
 .neg-modal__title {
@@ -311,11 +334,188 @@
 }
 
 .neg-modal__foot {
+  flex: none;
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-xl);
   flex-wrap: wrap;
+  padding: var(--spacing-md) var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.neg-form__hint--block {
+  margin: var(--spacing-xs) 0 0;
+  color: var(--color-text-secondary);
+}
+
+.neg-form__optional {
+  font-size: var(--font-size-xs);
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.neg-form__error {
+  display: block;
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+/* Valor fijo en el hueco de un campo (la duración de la prueba no se elige). */
+.neg-form__static {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 var(--spacing-md);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.neg__plan-fin {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+// ── Vista previa de la vigencia ─────────────────────────────
+.neg-vig {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--spacing-xs) var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
+}
+
+.neg-vig__icon { color: var(--color-primary); }
+
+.neg-vig__rango {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
+}
+
+.neg-vig__punto {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+
+  small {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  strong {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+}
+
+.neg-vig__flecha { color: var(--color-text-muted); }
+
+.neg-vig__nota {
+  grid-column: 2;
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+// ── Plan actual y cambio de plan (modal de edición) ─────────
+.neg-plan-actual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+
+  &--success { border-left-color: var(--color-success); }
+  &--warning { border-left-color: var(--color-warning); }
+  &--error   { border-left-color: var(--color-error); }
+  &--info    { border-left-color: var(--color-accent-blue); }
+}
+
+.neg-plan-actual__top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.neg-plan-actual__titulo {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.neg-plan-actual__vacio {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.neg-plan-campos {
+  margin-top: var(--spacing-md);
+}
+
+// ── Columna Vencimiento ─────────────────────────────────────
+.neg__venc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.neg__venc-fecha {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.neg-plan-cambio__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin: var(--spacing-sm) 0 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+
+  lucide-icon { flex-shrink: 0; margin-top: 2px; }
+}
+
+.neg-link {
+  display: inline-block;
+  margin-top: var(--spacing-sm);
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover { color: var(--color-primary-hover); }
+  &:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 }
 
 .neg__spin { animation: neg-spin 0.8s linear infinite; }

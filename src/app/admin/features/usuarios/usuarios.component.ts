@@ -6,14 +6,17 @@ import {
   signal,
   computed,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
-  Search, Users, Eye, UserCheck, UserX, Building2, AlertCircle,
-  X, CreditCard, ShieldCheck, Pencil, Check, Loader2, LogIn,
+  Search, Users, Eye, Building2, AlertCircle, ArrowRight,
+  X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power,
 } from 'lucide-angular';
 
 import { UsuariosAdminService } from '../../data-access/usuarios-admin.service';
 import { AuthService } from '../../../auth/data-access/auth.service';
+import { diaBogota, formatearDia } from '../../../core/utils/vigencia';
+import { TonoVencimiento, evaluarVencimiento } from '../../../core/utils/estado-plan';
 import {
   UsuarioAdmin, LoadingState, Plan, PlanInfo, UpdateUsuarioPerfilRequest,
 } from '../../models/admin.models';
@@ -26,44 +29,44 @@ interface EditUserForm {
   primer_apellido: string;
   segundo_apellido: string;
   num_identificacion: string;
+  /** Opcional: vacío = sin correo. */
   email: string;
   /** Vacío = conservar la contraseña actual. */
   password: string;
 }
+
+/** Formato mínimo de correo; el backend hace la validación de verdad. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /** ¿La descripción del rol corresponde a un administrador/dueño? */
 function esRolAdministrador(descripcion: string): boolean {
   return descripcion.toUpperCase().includes('ADMINISTRADOR');
 }
 
-type PlanTone = 'success' | 'warning' | 'error';
-
-/** Estado editable del plan de un negocio dentro del modal. */
-interface PlanEdit {
-  id_plan: string;
-  inicio: string; // 'YYYY-MM-DD'
-  fin: string;    // 'YYYY-MM-DD'
-}
+type PlanTone = TonoVencimiento;
 
 /**
  * UsuariosComponent — Vista de Super Admin con los usuarios del sistema.
  *
- * Muestra a los **administradores** de negocio (no empleados), con búsqueda,
- * filtro por estado y por plan, y acciones de suspender / reactivar /
- * cambiar plan / ver detalles.
+ * Muestra a los **administradores** de negocio (no empleados), con búsqueda, filtro por estado y
+ * por plan, y acciones de ver detalles / editar / entrar como / suspender-reactivar.
+ *
+ * El plan se **consulta** aquí pero no se cambia: pertenece al negocio (`gener_negocio_plan`) y
+ * se gestiona en Negocios → Editar. Un usuario con dos negocios tiene dos planes, y cambiarlo
+ * desde la ficha del usuario hacía parecer que el plan era suyo.
  */
 @Component({
   selector: 'app-usuarios',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule],
+  imports: [LucideAngularModule, RouterLink],
   providers: [
     {
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        Search, Users, Eye, UserCheck, UserX, Building2, AlertCircle,
-        X, CreditCard, ShieldCheck, Pencil, Check, Loader2, LogIn,
+        Search, Users, Eye, Building2, AlertCircle, ArrowRight,
+        X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power,
       }),
     },
   ],
@@ -74,16 +77,20 @@ export class UsuariosComponent implements OnInit {
   private readonly service = inject(UsuariosAdminService);
   private readonly auth = inject(AuthService);
 
+  protected readonly formatearDia = formatearDia;
+  protected readonly diaBogota = diaBogota;
+
   /** id del usuario que se está impersonando (para estado de carga del botón). */
   protected readonly impersonateId = signal<number | null>(null);
   /** Usuario pendiente de confirmar para impersonar (abre el modal). */
   protected readonly confirmUser = signal<UsuarioAdmin | null>(null);
+  /** Usuario pendiente de confirmar para suspender o reactivar (abre el modal). */
+  protected readonly confirmEstado = signal<UsuarioAdmin | null>(null);
 
   // ── Estado ──────────────────────────────────────────────────
   protected readonly loadingState = signal<LoadingState>('idle');
   private readonly _usuarios = signal<UsuarioAdmin[]>([]);
   private readonly _planes = signal<Plan[]>([]);
-  protected readonly planesCatalogo = this._planes.asReadonly();
 
   protected readonly search = signal('');
   protected readonly estadoFilter = signal<'A' | 'I' | 'ALL'>('A');
@@ -116,6 +123,12 @@ export class UsuariosComponent implements OnInit {
     return c.length && c.upper && c.number;
   });
 
+  /** El correo es opcional; si se escribe, tiene que tener forma de correo. */
+  protected readonly editEmailInvalido = computed(() => {
+    const e = this.editForm()?.email.trim() ?? '';
+    return e.length > 0 && !EMAIL_RE.test(e);
+  });
+
   /** ¿El formulario de edición es válido para enviar? */
   protected readonly editValid = computed(() => {
     const f = this.editForm();
@@ -124,14 +137,10 @@ export class UsuariosComponent implements OnInit {
       f.primer_nombre.trim().length > 0 &&
       f.primer_apellido.trim().length > 0 &&
       f.num_identificacion.trim().length > 0 &&
-      f.email.includes('@') &&
+      !this.editEmailInvalido() &&
       this.editPasswordValid()
     );
   });
-
-  /** Estado editable del plan por negocio dentro del modal (id_negocio → {id_plan, inicio, fin}). */
-  protected readonly planEdit = signal<Record<number, PlanEdit>>({});
-  protected readonly applyingNegocio = signal<number | null>(null);
 
   // ── Derivados ───────────────────────────────────────────────
 
@@ -162,7 +171,10 @@ export class UsuariosComponent implements OnInit {
       if (!term) return true;
       return (
         u.nombre_completo.toLowerCase().includes(term) ||
-        u.email.toLowerCase().includes(term) ||
+        // El correo puede venir vacío: en el vertical de reservas es opcional desde que quedó
+        // claro que la credencial de acceso es el documento. Sin este guardia, buscar cualquier
+        // cosa reventaba la lista entera al toparse con uno de esos usuarios.
+        (u.email ?? '').toLowerCase().includes(term) ||
         u.num_identificacion.toLowerCase().includes(term)
       );
     });
@@ -186,9 +198,22 @@ export class UsuariosComponent implements OnInit {
     this.planFilter.set((event.target as HTMLSelectElement).value);
   }
 
-  // ── Acciones ────────────────────────────────────────────────
-  protected toggleEstado(u: UsuarioAdmin): void {
+  // ── Suspender / reactivar (con confirmación) ────────────────
+
+  /** Abre la confirmación. Suspender deja al usuario fuera del sistema: nunca va directo. */
+  protected pedirCambioEstado(u: UsuarioAdmin): void {
     if (u.es_admin_principal || this.actionId() !== null) return;
+    this.confirmEstado.set(u);
+  }
+
+  protected cancelarCambioEstado(): void {
+    if (this.actionId() !== null) return;
+    this.confirmEstado.set(null);
+  }
+
+  protected confirmarCambioEstado(): void {
+    const u = this.confirmEstado();
+    if (!u || this.actionId() !== null) return;
 
     const nuevo: 'A' | 'I' = u.estado === 'A' ? 'I' : 'A';
     this.actionId.set(u.id_usuario);
@@ -203,71 +228,21 @@ export class UsuariosComponent implements OnInit {
           this.selected.update((s) => (s ? { ...s, estado: nuevo } : s));
         }
         this.actionId.set(null);
+        this.confirmEstado.set(null);
       },
       error: (err) => {
         this.actionError.set(
           err.error?.message ?? 'No se pudo actualizar el estado del usuario.',
         );
         this.actionId.set(null);
+        this.confirmEstado.set(null);
       },
     });
   }
 
-  protected onPlanField(idNegocio: number, field: keyof PlanEdit, event: Event): void {
-    const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
-    this.planEdit.update((m) => ({
-      ...m,
-      [idNegocio]: { ...(m[idNegocio] ?? { id_plan: '', inicio: '', fin: '' }), [field]: value },
-    }));
-  }
-
-  protected aplicarPlan(idNegocio: number): void {
-    const st = this.planEdit()[idNegocio];
-    if (!st?.id_plan || this.applyingNegocio() !== null) return;
-
-    this.applyingNegocio.set(idNegocio);
-    this.actionError.set(null);
-
-    this.service.cambiarPlan(idNegocio, Number(st.id_plan), {
-      fechaInicio: st.inicio || undefined,
-      fechaFin: st.fin || undefined,
-    }).subscribe({
-      next: () => this.refreshUsuarios(this.selected()?.id_usuario),
-      error: (err) => {
-        this.actionError.set(err.error?.message ?? 'No se pudo cambiar el plan.');
-        this.applyingNegocio.set(null);
-      },
-    });
-  }
-
+  // ── Modal: detalles ─────────────────────────────────────────
   protected openDetails(u: UsuarioAdmin): void {
-    this.planEdit.set(this.buildPlanEdit(u));
     this.selected.set(u);
-  }
-
-  /** Construye el estado editable del plan a partir de los negocios del usuario. */
-  private buildPlanEdit(u: UsuarioAdmin): Record<number, PlanEdit> {
-    const map: Record<number, PlanEdit> = {};
-    for (const np of u.planes) {
-      map[np.id_negocio] = {
-        id_plan: np.plan?.id_plan ? String(np.plan.id_plan) : '',
-        inicio: np.plan?.fecha_inicio ? this.toDateInput(np.plan.fecha_inicio) : this.todayInput(),
-        fin: np.plan?.fecha_fin ? this.toDateInput(np.plan.fecha_fin) : '',
-      };
-    }
-    return map;
-  }
-
-  private toDateInput(iso: string): string {
-    const d = new Date(iso);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  private todayInput(): string {
-    return this.toDateInput(new Date().toISOString());
   }
 
   protected closeDetails(): void {
@@ -312,7 +287,7 @@ export class UsuariosComponent implements OnInit {
       primer_apellido: f.primer_apellido.trim(),
       segundo_apellido: f.segundo_apellido.trim() || null,
       num_identificacion: f.num_identificacion.trim(),
-      email: f.email.trim(),
+      email: f.email.trim() || null,
       ...(f.password ? { password: f.password } : {}),
     };
 
@@ -329,9 +304,9 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  /**
-   * Abre el modal de confirmación para entrar al sistema como el usuario dado.
-   */
+  // ── Entrar como este usuario ────────────────────────────────
+
+  /** Abre el modal de confirmación para entrar al sistema como el usuario dado. */
   protected impersonar(u: UsuarioAdmin): void {
     if (u.estado !== 'A' || this.impersonateId() !== null) return;
     this.confirmUser.set(u);
@@ -339,12 +314,11 @@ export class UsuariosComponent implements OnInit {
 
   /** Cierra el modal de confirmación de impersonación. */
   protected cancelImpersonar(): void {
+    if (this.impersonateId() !== null) return;
     this.confirmUser.set(null);
   }
 
-  /**
-   * Confirma la impersonación (super admin): el backend valida el rol y audita el acceso.
-   */
+  /** Confirma la impersonación (super admin): el backend valida el rol y audita el acceso. */
   protected confirmImpersonar(): void {
     const u = this.confirmUser();
     if (!u || this.impersonateId() !== null) return;
@@ -383,24 +357,14 @@ export class UsuariosComponent implements OnInit {
     return u.planes.filter((p) => p.plan).length;
   }
 
-  /** ¿El plan dado es el seleccionado para ese negocio? (para [selected]). */
-  protected esPlanSel(idNegocio: number, idPlan: number): boolean {
-    return String(idPlan) === this.planEdit()[idNegocio]?.id_plan;
-  }
-
+  /** Mismo criterio que Negocios y el dashboard (`core/utils/estado-plan.ts`). */
   protected planTone(plan: PlanInfo): PlanTone {
-    if (!plan.vigente) return 'error';
-    if (plan.dias_restantes !== null && plan.dias_restantes <= 15) return 'warning';
-    return 'success';
+    return evaluarVencimiento(plan).tono;
   }
 
   protected planInicioTexto(u: UsuarioAdmin): string {
     const p = this.planPrincipal(u);
     return p?.fecha_inicio ? this.formatDate(p.fecha_inicio) : '—';
-  }
-
-  protected formatPrecio(plan: Plan): string {
-    return `${Number(plan.precio).toLocaleString('es-CO')} ${plan.moneda}`;
   }
 
   // ── Helpers de presentación ─────────────────────────────────
@@ -439,7 +403,7 @@ export class UsuariosComponent implements OnInit {
     });
   }
 
-  /** Recarga usuarios tras un cambio de plan, conservando el modal abierto. */
+  /** Recarga usuarios tras editar, conservando abierto el modal de detalles si lo estaba. */
   private refreshUsuarios(keepSelectedId?: number): void {
     this.service.getUsuarios({ estado: 'ALL' }).subscribe({
       next: (usuarios) => {
@@ -448,12 +412,9 @@ export class UsuariosComponent implements OnInit {
           ? usuarios.find((u) => u.id_usuario === keepSelectedId) ?? null
           : null;
         this.selected.set(sel);
-        if (sel) this.planEdit.set(this.buildPlanEdit(sel));
-        this.applyingNegocio.set(null);
       },
       error: () => {
-        this.applyingNegocio.set(null);
-        this.actionError.set('El plan se cambió, pero no se pudo refrescar la lista.');
+        this.actionError.set('El usuario se guardó, pero no se pudo refrescar la lista.');
       },
     });
   }

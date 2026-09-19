@@ -1,0 +1,58 @@
+<div class="tel" [class.tel--off]="deshabilitado()">
+  <button
+    type="button"
+    class="tel__pais"
+    (click)="alternar()"
+    [disabled]="deshabilitado()"
+    [attr.aria-expanded]="abierto()"
+    aria-haspopup="listbox"
+    [attr.aria-label]="'Indicativo del país: ' + (elegido()?.nombre || '')"
+  >
+    <app-bandera [codigo]="pais()" [nombre]="elegido()?.nombre || ''" />
+    <span class="tel__cc">{{ elegido()?.indicativo || '+57' }}</span>
+    <lucide-icon name="chevron-down" [size]="14" aria-hidden="true" />
+  </button>
+
+  <input
+    class="tel__num input"
+    type="tel"
+    inputmode="numeric"
+    autocomplete="tel-national"
+    [id]="campoId()"
+    [value]="numero()"
+    [disabled]="deshabilitado()"
+    [attr.maxlength]="largoEsperado()"
+    [placeholder]="ejemplo()"
+    (input)="escribir($any($event.target).value)"
+  />
+
+  @if (abierto()) {
+    <ul class="tel__lista" role="listbox">
+      @for (p of paises(); track p.codigo) {
+        <li>
+          <button
+            type="button"
+            class="tel__opcion"
+            role="option"
+            [attr.aria-selected]="p.codigo === pais()"
+            [class.tel__opcion--on]="p.codigo === pais()"
+            (click)="elegir(p.codigo)"
+          >
+            <app-bandera [codigo]="p.codigo" [nombre]="p.nombre" />
+            <span class="tel__opcion-cc">{{ p.indicativo }}</span>
+            <span class="tel__opcion-nombre">{{ p.nombre }}</span>
+          </button>
+        </li>
+      } @empty {
+        <li class="tel__vacio">Cargando países…</li>
+      }
+    </ul>
+  }
+</div>
+
+@if (largoMal()) {
+  <small class="tel__aviso">
+    <lucide-icon name="triangle-alert" [size]="12" aria-hidden="true" />
+    {{ elegido()?.nombre }} usa {{ largoEsperado() }} dígitos.
+  </small>
+}

@@ -77,6 +77,21 @@ export class NegociosAdminService {
       .pipe(map((res) => res.data ?? []));
   }
 
+  /**
+   * Asigna o cambia el plan de un negocio: cierra la vigencia actual y abre una nueva.
+   *
+   * `prueba: true` asigna la prueba de 7 días (Plan Básico) y no lleva `id_plan`. Con plan
+   * pagado, la vigencia va de `fecha_inicio` a esa fecha + `meses`.
+   */
+  cambiarPlan(
+    idNegocio: number,
+    body: { id_plan?: number | null; prueba?: boolean; meses?: number; fecha_inicio: string },
+  ): Observable<void> {
+    return this.http
+      .patch<ApiResponse>(`${this.API}/negocios/${idNegocio}/plan`, body)
+      .pipe(map(() => undefined));
+  }
+
   getPlanes(): Observable<Plan[]> {
     return this.http
       .get<PlanesResponse>(`${this.API}/planes`)

@@ -31,6 +31,11 @@ export class UsuariosAdminService {
     if (filtros.search?.trim()) {
       params = params.set('search', filtros.search.trim());
     }
+    // Con `id_negocio`, el backend devuelve solo su personal y los roles de ESE negocio: es lo que
+    // pinta el modal de personal en Negocios.
+    if (filtros.id_negocio) {
+      params = params.set('id_negocio', String(filtros.id_negocio));
+    }
 
     return this.http
       .get<UsuariosAdminResponse>(`${this.API}/usuarios/admin`, { params })
@@ -51,27 +56,15 @@ export class UsuariosAdminService {
       .pipe(map(() => undefined));
   }
 
-  /** Catálogo de planes activos. */
+  /**
+   * Catálogo de planes activos (solo para el filtro de la tabla).
+   *
+   * Cambiar el plan ya no se hace desde aquí: el plan es del negocio, no del usuario, y vive en
+   * `NegociosAdminService.cambiarPlan`.
+   */
   getPlanes(): Observable<Plan[]> {
     return this.http
       .get<PlanesResponse>(`${this.API}/planes`)
       .pipe(map((res) => res.data ?? []));
-  }
-
-  /** Asigna/cambia el plan de un negocio, con fechas de vigencia opcionales. */
-  cambiarPlan(
-    idNegocio: number,
-    idPlan: number,
-    opts: { fechaInicio?: string; fechaFin?: string; meses?: number } = {},
-  ): Observable<void> {
-    const body: { id_plan: number; meses?: number; fecha_inicio?: string; fecha_fin?: string } = {
-      id_plan: idPlan,
-    };
-    if (opts.meses) body.meses = opts.meses;
-    if (opts.fechaInicio) body.fecha_inicio = opts.fechaInicio;
-    if (opts.fechaFin) body.fecha_fin = opts.fechaFin;
-    return this.http
-      .patch<ApiResponse>(`${this.API}/negocios/${idNegocio}/plan`, body)
-      .pipe(map(() => undefined));
   }
 }
