@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed }    from '@angular/core/testing';
 import { Router }     from '@angular/router';
 import { signal }     from '@angular/core';
@@ -29,7 +30,7 @@ function runGuard(
   TestBed.configureTestingModule({
     providers: [
       { provide: AuthService, useValue: authServiceMock },
-      { provide: Router, useValue: { navigate: jasmine.createSpy('navigate') } },
+      { provide: Router, useValue: { navigate: vi.fn() } },
     ],
   });
 
@@ -43,11 +44,11 @@ function runGuard(
 // ---------------------------------------------------------------------------
 
 describe('adminGuard', () => {
-  let routerSpy: { navigate: jasmine.Spy };
+  let routerSpy: { navigate: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    routerSpy = { navigate: jasmine.createSpy('navigate') };
+    routerSpy = { navigate: vi.fn() };
   });
 
   // --- No autenticado ---
@@ -69,7 +70,7 @@ describe('adminGuard', () => {
       adminGuard()({} as never, {} as never),
     );
 
-    expect(result).toBeFalse();
+    expect(result).toBe(false);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
   });
 
@@ -96,7 +97,7 @@ describe('adminGuard', () => {
       adminGuard()({} as never, {} as never),
     );
 
-    expect(result).toBeTrue();
+    expect(result).toBe(true);
     expect(routerSpy.navigate).not.toHaveBeenCalled();
   });
 
@@ -129,7 +130,7 @@ describe('adminGuard', () => {
       adminGuard(['ADMINISTRADOR RESTAURANTE'])({} as never, {} as never),
     );
 
-    expect(result).toBeTrue();
+    expect(result).toBe(true);
   });
 
   // --- Sin rol adecuado ---
@@ -161,7 +162,7 @@ describe('adminGuard', () => {
       adminGuard(['ADMINISTRADOR RESTAURANTE'])({} as never, {} as never),
     );
 
-    expect(result).toBeFalse();
+    expect(result).toBe(false);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
   });
 });

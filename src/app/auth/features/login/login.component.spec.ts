@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -9,11 +9,10 @@ import { LoginComponent } from './login.component';
 /**
  * Tests unitarios para LoginComponent.
  *
- * Verifican:
- *  • Validaciones de email y password.
- *  • El formulario no se envía si es inválido.
- *  • Se muestra error de servidor.
- *  • El toggle de tema funciona.
+ * Reescritos contra los signals reales del componente: el login es por `numIdentificacion`
+ * (EscalApp inicia sesión con el número de documento, no con email), y no hay un campo de
+ * "tenant" en el formulario. La versión anterior probaba `component.email`/`emailError()` y un
+ * input `#login-tenant` que no existen — deuda de un scaffold no actualizado.
  */
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -38,29 +37,24 @@ describe('LoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  describe('Validaciones de email', () => {
-    it('debería mostrar error cuando el email está vacío', () => {
-      component.email.set('');
-      expect(component.emailError()).toBe('El email es obligatorio');
+  describe('Validaciones de número de identificación', () => {
+    it('debería mostrar error cuando está vacío', () => {
+      component.numIdentificacion.set('');
+      expect(component.numIdentificacionError()).toBe(
+        'El número de identificación es obligatorio',
+      );
     });
 
-    it('debería mostrar error con email inválido', () => {
-      component.email.set('not-an-email');
-      expect(component.emailError()).toBe('Formato de email inválido');
-    });
-
-    it('debería no tener error con email válido', () => {
-      component.email.set('user@example.com');
-      expect(component.emailError()).toBeNull();
+    it('debería no tener error con un valor no vacío', () => {
+      component.numIdentificacion.set('1000000001');
+      expect(component.numIdentificacionError()).toBeNull();
     });
   });
 
   describe('Validaciones de password', () => {
     it('debería mostrar error cuando la contraseña está vacía', () => {
       component.password.set('');
-      expect(component.passwordError()).toBe(
-        'La contraseña es obligatoria',
-      );
+      expect(component.passwordError()).toBe('La contraseña es obligatoria');
     });
 
     it('debería mostrar error con contraseña menor a 8 caracteres', () => {
@@ -76,13 +70,13 @@ describe('LoginComponent', () => {
 
   describe('formValid', () => {
     it('debería ser false cuando hay errores', () => {
-      component.email.set('');
+      component.numIdentificacion.set('');
       component.password.set('');
       expect(component.formValid()).toBe(false);
     });
 
     it('debería ser true cuando todos los campos son válidos', () => {
-      component.email.set('user@example.com');
+      component.numIdentificacion.set('1000000001');
       component.password.set('validPassword123');
       expect(component.formValid()).toBe(true);
     });
@@ -109,11 +103,10 @@ describe('LoginComponent', () => {
       expect(title?.textContent?.trim()).toBe('Iniciar sesión');
     });
 
-    it('debería tener inputs de email, password y tenant', () => {
+    it('debería tener inputs de número de identificación y contraseña', () => {
       const compiled = fixture.nativeElement as HTMLElement;
-      expect(compiled.querySelector('#login-email')).toBeTruthy();
+      expect(compiled.querySelector('#login-num-id')).toBeTruthy();
       expect(compiled.querySelector('#login-password')).toBeTruthy();
-      expect(compiled.querySelector('#login-tenant')).toBeTruthy();
     });
 
     it('debería tener labels con for asociados a inputs', () => {

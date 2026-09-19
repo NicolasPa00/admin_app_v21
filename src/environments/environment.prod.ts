@@ -20,4 +20,13 @@ export const environment = {
   assetPath: 'images',
   /** WhatsApp de soporte (wa.me URL) */
   whatsappUrl: 'https://wa.me/573114682492',
+  /**
+   * App ID de Meta y config ID de Embedded Signup (ver environment.ts para el porqué).
+   * "EscalApp — Registro insertado", creada el 2026-09-19.
+   * ⚠️ El config ID por sí solo no basta: falta autorizar `escalapp.cloud` en "Administrar
+   * dominios" (checklist de developers.facebook.com) antes de que el SDK funcione de verdad
+   * desde producción — sin eso, Meta rechaza el origen aunque el config ID sea correcto.
+   */
+  metaAppId: '1552342763052863',
+  metaConfigId: '3007420636275811',
 };

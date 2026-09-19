@@ -958,33 +958,6 @@
     background: rgba(49, 46, 129, 0.06);
     lucide-icon { color: var(--es-secondary-dark); }
   }
-
-  &__grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: var(--es-spacing-8);
-  }
-
-  &__mascot {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 1 auto;
-  }
-
-  &__mascot-img {
-    width: 100%;
-    max-width: 320px;
-    height: 320px;
-    object-fit: contain;
-    filter: drop-shadow(var(--es-shadow-md));
-    transition: opacity var(--es-transition);
-
-    @media (min-width: 600px) { max-width: 420px; height: 360px; }
-    @media (min-width: 900px) { max-width: 500px; height: 400px; }
-  }
 }
 
 /* ── Selector de tipo de negocio ── */
@@ -1004,6 +977,19 @@
     flex-shrink: 0;
     color: var(--es-primary);
   }
+}
+
+/* «También se adapta a…» — los oficios sin chip propio. Más discreta que `__adapta`: es
+   información de respaldo, no la respuesta principal a la pregunta del selector. */
+.lp-tipo-selector__otros {
+  margin: var(--es-spacing-2) 0 0;
+  font-size: var(--es-font-size-xs);
+  color: var(--es-text-secondary);
+  text-align: center;
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.85;
 }
 
 .lp-tipo-selector {
@@ -1093,127 +1079,396 @@
   }
 }
 
-/* ── Plan cards ── */
-.lp-plan-card {
+/* ── Asistente de WhatsApp ── */
+.lp-whatsapp {
+  padding: var(--es-spacing-20) 0;
+  background-color: var(--es-bg);
+}
+
+.lp-whatsapp__capacidades {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--es-spacing-6);
+  margin-bottom: var(--es-spacing-12);
+
+  @media (min-width: 700px) { grid-template-columns: repeat(3, 1fr); }
+}
+
+.lp-whatsapp__conexion {
+  max-width: 780px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.lp-whatsapp__conexion-title {
+  font-size: var(--es-font-size-lg);
+  font-weight: 700;
+  color: var(--es-text-primary);
+  margin: 0 0 var(--es-spacing-6);
+}
+
+.lp-whatsapp__conexion-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--es-spacing-4);
+  text-align: left;
+
+  @media (min-width: 600px) { grid-template-columns: repeat(2, 1fr); }
+}
+
+.lp-whatsapp__conexion-card {
+  padding: var(--es-spacing-6);
+  background-color: var(--es-bg-card);
+  border: 1px solid var(--es-border);
+  border-radius: var(--es-radius-lg);
+  transition: border-color var(--es-transition-fast);
+
+  &:hover { border-color: var(--es-primary); }
+}
+
+.lp-whatsapp__conexion-nombre {
+  font-size: var(--es-font-size-base);
+  font-weight: 700;
+  color: var(--es-text-primary);
+  margin: 0 0 var(--es-spacing-1);
+}
+
+.lp-whatsapp__conexion-desc {
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.lp-whatsapp__conexion-nota {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--es-spacing-1-5, 6px);
+  margin: var(--es-spacing-6) 0 0;
+  font-size: var(--es-font-size-xs);
+  color: var(--es-text-secondary);
+  text-align: center;
+
+  lucide-icon { flex-shrink: 0; color: var(--es-accent-green); }
+}
+
+/* ── Configurador de precio ("arma tu Mac") ──
+   Dos columnas en escritorio: opciones a la izquierda, resumen pegajoso a la derecha — el
+   resumen es la respuesta a "¿cuánto cuesta?" y por eso nunca se pierde de vista. En móvil se
+   apilan, resumen primero: es lo primero que hay que poder leer sin buscar.
+
+   Desde el ancho de escritorio ancho (1180px) se abre una tercera columna para la mascota: antes
+   vivía metida al final de las opciones, pequeña y descentrada porque ahí era el único hueco que
+   quedaba. Usar el ancho real de la pantalla le da un sitio propio en vez de un rincón. */
+.lp-config {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--es-spacing-8);
+  align-items: start;
+  max-width: 1240px;
+  margin: 0 auto;
+
+  @media (min-width: 900px) {
+    grid-template-columns: 1fr 360px;
+  }
+  @media (min-width: 1180px) {
+    grid-template-columns: 1fr 300px 360px;
+    gap: var(--es-spacing-6);
+  }
+}
+
+.lp-config__opciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--es-spacing-8);
+  grid-column: 1;
+  order: 2;
+
+  @media (min-width: 900px) { order: 1; }
+}
+
+.lp-config__paso {
+  display: flex;
+  gap: var(--es-spacing-4);
+}
+
+.lp-config__paso-num {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--es-secondary-dark);
+  color: var(--es-on-primary);
+  font-size: var(--es-font-size-sm);
+  font-weight: 700;
+}
+
+.lp-config__paso-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.lp-config__paso-title {
+  display: flex;
+  align-items: center;
+  gap: var(--es-spacing-2);
+  margin: 0 0 var(--es-spacing-1);
+  font-size: var(--es-font-size-lg);
+  font-weight: 700;
+  color: var(--es-text-primary);
+}
+
+.lp-config__paso-hint {
+  margin: 0 0 var(--es-spacing-4);
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+}
+
+.lp-config__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--es-spacing-3);
+}
+
+/* Cada opción es su propia tarjeta clicable — no un radio invisible detrás de un label, para
+   que el precio de cada opción se vea sin tener que elegirla primero (como Apple lo hace con
+   memoria/almacenamiento). */
+.lp-config__pill {
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: var(--es-spacing-8);
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--es-spacing-3) var(--es-spacing-4);
+  min-width: 132px;
   background-color: var(--es-bg-card);
-  border: 1px solid var(--es-secondary-dark);
+  border: 2px solid var(--es-border);
   border-radius: var(--es-radius-lg);
-  transition: transform var(--es-transition), box-shadow var(--es-transition), border-color var(--es-transition);
-  min-height: 480px;
-  width: 100%;
-  max-width: 380px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--es-font-sans);
+  transition: border-color var(--es-transition-fast), box-shadow var(--es-transition-fast);
 
-  &:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--es-shadow-md);
+  &:hover { border-color: var(--es-secondary-dark); }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--es-focus-ring);
+  }
+
+  &--active {
     border-color: var(--es-primary);
+    box-shadow: 0 0 0 1px var(--es-primary);
+    background-color: color-mix(in srgb, var(--es-primary) 6%, var(--es-bg-card));
   }
+}
 
-  &--featured {
-    border-color: var(--es-secondary-dark);
-    border-width: 2px;
-    box-shadow: var(--es-shadow-featured);
+.lp-config__pill-badge {
+  position: absolute;
+  top: -10px;
+  right: var(--es-spacing-3);
+  padding: 2px var(--es-spacing-2);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--es-on-primary);
+  background-color: var(--es-secondary-dark);
+  border-radius: var(--es-radius-full);
+  white-space: nowrap;
+}
+
+.lp-config__pill-nombre {
+  font-size: var(--es-font-size-sm);
+  font-weight: 600;
+  color: var(--es-text-primary);
+}
+
+.lp-config__pill-precio {
+  font-size: var(--es-font-size-sm);
+  font-weight: 700;
+  color: var(--es-primary);
+}
+
+.lp-config__pill-detalle {
+  font-size: 11px;
+  color: var(--es-text-secondary);
+}
+
+.lp-config__mascot-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 1;
+  order: 3;
+
+  /* Entre 900 y 1180px sigue bajo las opciones, ya de buen tamaño. Recién a los 1180px se muda
+     a su propia columna, entre las opciones y el resumen — ahí es donde sobra ancho de verdad.
+     La columna sigue fija en 300px (ver `.lp-config`): ni opciones ni resumen se enteran de qué
+     tan grande se dibuje la imagen adentro. */
+  @media (min-width: 1180px) {
+    grid-column: 2;
+    grid-row: 1;
+    order: 2;
+    align-self: stretch;
+    position: relative; /* ancla para que la imagen se salga del cajón sin moverlo */
   }
+}
 
-  &__badge {
+.lp-config__mascot {
+  width: 100%;
+  max-width: 260px;
+  object-fit: contain;
+  filter: drop-shadow(var(--es-shadow-md));
+
+  /* Desde 1180px la imagen se saca del flujo (`position: absolute`) y se dibuja más grande que
+     su columna de 300px, centrada sobre ella — el desbordamiento cae en el espacio vacío entre
+     opciones y resumen, así que crece sin empujar ni una ni la otra ni un píxel. El grid nunca
+     mide el tamaño real de un elemento con posición absoluta: es la única forma de garantizar
+     que agrandarla no mueve nada, no una casualidad del navegador. */
+  @media (min-width: 1180px) {
     position: absolute;
-    top: -12px;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    padding: var(--es-spacing-1) var(--es-spacing-4);
-    font-size: var(--es-font-size-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--es-on-primary);
-    background-color: var(--es-secondary-dark);
-    border-radius: var(--es-radius-full);
-    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    max-width: none;
   }
+}
 
-  &__nombre {
-    font-size: var(--es-font-size-xl);
-    font-weight: 700;
-    color: var(--es-text-primary);
-    margin: 0 0 var(--es-spacing-1);
+/* La tarjeta de resumen: el precio total, siempre a la vista.
+   `min-height` fija el alto al escenario más largo (Avanzado + tramo XL, seis líneas de
+   características) para que la tarjeta NO cambie de tamaño al cambiar de plan o de tramo — antes
+   crecía y encogía con cada clic y corría el resto de la página con ella. Escenarios más cortos
+   simplemente dejan aire abajo: es preferible a que la página salte. */
+.lp-config__resumen {
+  position: relative;
+  grid-column: 1;
+  order: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 42rem;
+  padding: var(--es-spacing-6);
+  background-color: var(--es-bg-card);
+  border: 2px solid var(--es-secondary-dark);
+  border-radius: var(--es-radius-lg);
+  box-shadow: var(--es-shadow-featured);
+
+  @media (min-width: 900px) {
+    grid-column: 2;
+    order: 2;
+    position: sticky;
+    top: calc(var(--es-spacing-8) + 64px);
   }
-
-  &__header {
-    margin-bottom: var(--es-spacing-4);
+  @media (min-width: 1180px) {
+    grid-column: 3;
   }
+}
 
-  &__desc {
-    font-size: var(--es-font-size-sm);
-    color: var(--es-text-secondary);
-    margin: 0 0 var(--es-spacing-6);
-    line-height: 1.5;
-  }
+.lp-config__resumen-badge {
+  align-self: flex-start;
+  margin-bottom: var(--es-spacing-2);
+  padding: var(--es-spacing-1) var(--es-spacing-3);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--es-on-primary);
+  background-color: var(--es-secondary-dark);
+  border-radius: var(--es-radius-full);
+}
 
-  &__precio {
-    margin-bottom: var(--es-spacing-6);
-  }
+.lp-config__resumen-nombre {
+  font-size: var(--es-font-size-xl);
+  font-weight: 700;
+  color: var(--es-text-primary);
+  margin: 0 0 var(--es-spacing-1);
+}
 
-  &__monto {
-    font-size: clamp(1.5rem, 3vw, 2rem);
-    font-weight: 800;
-    color: var(--es-text-primary);
-  }
+.lp-config__resumen-desc {
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+  margin: 0 0 var(--es-spacing-4);
+  line-height: 1.5;
+}
 
-  &__periodo {
-    font-size: var(--es-font-size-sm);
-    color: var(--es-text-secondary);
-    margin-left: var(--es-spacing-1);
-  }
+.lp-config__resumen-precio {
+  display: flex;
+  align-items: baseline;
+  gap: var(--es-spacing-1);
+}
 
-  &__trial-note {
+.lp-config__resumen-monto {
+  font-size: clamp(2rem, 4vw, 2.5rem);
+  font-weight: 800;
+  color: var(--es-text-primary);
+  /* La cifra cambia de plan/tramo en cada clic — una transición corta evita que el salto de
+     número se lea como un parpadeo de error. */
+  transition: color var(--es-transition-fast);
+}
+
+.lp-config__resumen-periodo {
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+}
+
+.lp-config__resumen-desglose {
+  margin: var(--es-spacing-1) 0 0;
+  font-size: var(--es-font-size-xs);
+  color: var(--es-text-secondary);
+}
+
+.lp-config__resumen-trial {
+  display: flex;
+  align-items: center;
+  gap: var(--es-spacing-1);
+  margin: var(--es-spacing-2) 0 var(--es-spacing-4);
+  font-size: var(--es-font-size-xs);
+  font-weight: 600;
+  color: var(--es-accent-green);
+
+  lucide-icon { color: var(--es-accent-green); }
+}
+
+.lp-config__resumen-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--es-spacing-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--es-spacing-2);
+
+  li {
     display: flex;
     align-items: center;
-    gap: var(--es-spacing-1);
-    font-size: var(--es-font-size-xs);
-    color: var(--es-accent-green);
-    font-weight: 600;
-    margin-top: var(--es-spacing-1);
-
-    lucide-icon { color: var(--es-accent-green); }
-  }
-
-  &__features {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 var(--es-spacing-8);
-    display: flex;
-    flex-direction: column;
     gap: var(--es-spacing-2);
-    flex-grow: 1;
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-primary);
 
-    li {
-      display: flex;
-      align-items: center;
-      gap: var(--es-spacing-2);
-      font-size: var(--es-font-size-sm);
-      color: var(--es-text-primary);
-
-      lucide-icon { color: var(--es-accent-green); flex-shrink: 0; }
-    }
-
-    .lp-plan-card__soon-msg {
-      color: var(--es-text-secondary);
-      font-style: italic;
-
-      lucide-icon { color: var(--es-warning); }
-    }
+    lucide-icon { color: var(--es-accent-green); flex-shrink: 0; }
   }
 
-  &__cta {
-    width: 100%;
-    text-align: center;
-    text-decoration: none;
-    margin-top: auto;
+  .lp-config__resumen-feature--extra {
+    font-weight: 600;
+    lucide-icon { color: var(--es-primary); }
   }
+
+  .lp-config__resumen-feature--soon {
+    color: var(--es-text-secondary);
+    font-style: italic;
+    lucide-icon { color: var(--es-warning); }
+  }
+}
+
+.lp-config__resumen-cta {
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  margin-top: auto;
 }
 
 /* ── Barra de anuncio ── */
@@ -2118,6 +2373,7 @@
   .lp-features,
   .lp-eco,
   .lp-why,
+  .lp-whatsapp,
   .lp-planes {
     background-color: var(--es-dark-surface-base);
   }
@@ -2145,7 +2401,9 @@
   /* Contenedores elevados → superficie elevada */
   .lp-how__step,
   .lp-feature-card,
-  .lp-plan-card,
+  .lp-config__pill,
+  .lp-config__resumen,
+  .lp-whatsapp__conexion-card,
   .lp-how__callout,
   .lp-why__metric {
     background-color: var(--es-dark-surface-elevated);
@@ -2167,6 +2425,7 @@
   /* Overrides para texto #312e81 → claro en dark mode */
   .lp-how,
   .lp-why,
+  .lp-whatsapp,
   .lp-planes {
     .lp-section-header__title { color: var(--es-text-on-dark); }
     .lp-section-header .lp-badge {
@@ -2177,6 +2436,12 @@
     }
   }
 
+  .lp-whatsapp__conexion-title { color: var(--es-text-on-dark); }
+  .lp-whatsapp__conexion-card {
+    border-color: var(--es-dark-surface-border);
+    &:hover { border-color: var(--es-primary); }
+  }
+
   .lp-how__step {
     border-color: var(--es-dark-surface-border);
     &:hover { border-color: var(--es-primary); }
@@ -2185,9 +2450,11 @@
   .lp-how__step-num { background: var(--es-primary); }
   .lp-why__reason h3 { color: var(--es-text-on-dark); }
   .lp-tipo-selector__label { color: var(--es-text-on-dark); }
-  .lp-plan-card { border-color: var(--es-dark-surface-border); }
-  .lp-plan-card--featured { border-color: var(--es-primary); }
-  .lp-plan-card__badge { background-color: var(--es-primary); }
+  .lp-config__pill { border-color: var(--es-dark-surface-border); }
+  .lp-config__pill--active { border-color: var(--es-primary); }
+  .lp-config__resumen { border-color: var(--es-primary); }
+  .lp-config__resumen-badge,
+  .lp-config__pill-badge { background-color: var(--es-primary); }
   .lp-tipo-chip {
     &:hover { color: var(--es-primary); border-color: var(--es-primary); }
     &--active {

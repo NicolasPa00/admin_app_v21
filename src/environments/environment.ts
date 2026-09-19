@@ -23,4 +23,13 @@ export const environment = {
   assetPath: '/images',
   /** WhatsApp de soporte (wa.me URL) */
   whatsappUrl: 'https://wa.me/573114682492',
+  /**
+   * App ID de Meta y config ID de Embedded Signup — para el SDK de JS de la pantalla
+   * "Conectar WhatsApp" del panel. El config ID sale del checklist manual de
+   * developers.facebook.com (ver admin_ws/docs/embedded-signup.md §1); no se automatiza.
+   * En desarrollo puede quedar vacío: el botón de "tu propio número" se deshabilita si falta.
+   */
+  metaAppId: '1552342763052863',
+  /** "EscalApp — Registro insertado", creada el 2026-09-19. */
+  metaConfigId: '3007420636275811',
 };

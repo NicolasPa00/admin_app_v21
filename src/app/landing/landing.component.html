@@ -463,6 +463,55 @@
   </div>
 </section>
 
+<!-- ═══════════════ ASISTENTE DE WHATSAPP ═══════════════ -->
+<section class="lp-whatsapp" id="whatsapp">
+  <div class="container">
+    <div class="lp-section-header">
+      <span class="lp-badge">
+        <lucide-icon name="message-circle" [size]="14" aria-hidden="true" />
+        Asistente de WhatsApp
+      </span>
+      <h2 class="lp-section-header__title">Tu WhatsApp, trabajando solo</h2>
+      <p class="lp-section-header__subtitle">
+        Incluido en el Plan Avanzado — el vendedor que nunca se cansa, nunca deja esperando y
+        nunca se toma el día libre.
+      </p>
+    </div>
+
+    <div class="lp-whatsapp__capacidades">
+      @for (cap of capacidadesWhatsapp; track cap.titulo) {
+        <article class="lp-feature-card">
+          <div class="lp-feature-card__icon">
+            <lucide-icon [name]="cap.icon" [size]="24" aria-hidden="true" />
+          </div>
+          <h3 class="lp-feature-card__title">{{ cap.titulo }}</h3>
+          <p class="lp-feature-card__desc">{{ cap.descripcion }}</p>
+        </article>
+      }
+    </div>
+
+    <div class="lp-whatsapp__conexion">
+      <h3 class="lp-whatsapp__conexion-title">Conéctalo como quieras</h3>
+      <div class="lp-whatsapp__conexion-grid">
+        @for (op of opcionesWhatsapp; track op.titulo) {
+          <article class="lp-whatsapp__conexion-card">
+            <div class="lp-feature-card__icon">
+              <lucide-icon [name]="op.icon" [size]="22" aria-hidden="true" />
+            </div>
+            <h4 class="lp-whatsapp__conexion-nombre">{{ op.titulo }}</h4>
+            <p class="lp-whatsapp__conexion-desc">{{ op.descripcion }}</p>
+          </article>
+        }
+      </div>
+      <p class="lp-whatsapp__conexion-nota">
+        <lucide-icon name="check" [size]="14" aria-hidden="true" />
+        Con tu propio número, tú ves y pagas directamente el costo de WhatsApp ante Meta —
+        nosotros solo cobramos el software.
+      </p>
+    </div>
+  </div>
+</section>
+
 <!-- ═══════════════ PLANES (PRICING) ═══════════════ -->
 <section class="lp-planes" id="planes">
   <div class="container">
@@ -471,7 +520,7 @@
         <lucide-icon name="star" [size]="14" aria-hidden="true" />
         Planes
       </span>
-      <h2 class="lp-section-header__title">Un solo plan, todo incluido</h2>
+      <h2 class="lp-section-header__title">Un plan para cada etapa de tu negocio</h2>
       <p class="lp-section-header__subtitle">
         Sin contratos. Cancela cuando quieras.
         <strong>7 días de prueba gratuita</strong> para empezar.
@@ -504,14 +553,6 @@
         }
       </div>
 
-      <!--
-        Antes aquí iba una línea de sinónimos («También para heladerías, reposterías…») porque
-        solo había cuatro chips y el resto de oficios no cabía. Desde 2026-09-10 cada oficio es
-        su propio chip y se guarda con su nombre, así que la línea sobra: el visitante ya se ve
-        en la lista en vez de tener que reconocerse en la letra pequeña.
-
-        En su lugar se dice a qué motor va, que es la información que sí le falta al elegir.
-      -->
       @if (selectedTipo().disponible && selectedTipo().modulo) {
         <p class="lp-tipo-selector__adapta">
           <lucide-icon name="check" [size]="14" aria-hidden="true" />
@@ -522,65 +563,157 @@
           }
         </p>
       }
+
+      <!--
+        Desde 2026-09-19 el selector solo muestra los oficios más reconocibles de cada motor
+        (NOMBRES_DESTACADOS) para no abrumar con 14 chips. Los que no tienen botón propio no
+        desaparecen del producto — el registro los sigue ofreciendo todos — solo se nombran aquí
+        para que nadie piense que su negocio no cabe.
+      -->
+      @if (otrosDelModulo().length > 0) {
+        <p class="lp-tipo-selector__otros">
+          Nuestro sistema también se adapta a negocios de tipo
+          {{ otrosDelModulo().join(', ') }}.
+        </p>
+      }
     </div>
 
-    <div class="lp-planes__grid">
-      @for (plan of planes(); track plan.nombre) {
-        <article class="lp-plan-card" [class.lp-plan-card--featured]="plan.destacado">
-          @if (plan.destacado) {
-            <span class="lp-plan-card__badge">Más popular</span>
-          }
-          <div class="lp-plan-card__header">
-            <h3 class="lp-plan-card__nombre">{{ plan.nombre }}</h3>
-            <p class="lp-plan-card__desc">{{ plan.descripcion }}</p>
-            <div class="lp-plan-card__precio">
-              <span class="lp-plan-card__monto">{{ formatPrice(plan.precio) }}</span>
-              <span class="lp-plan-card__periodo">COP {{ plan.periodo }}</span>
-            </div>
-            <p class="lp-plan-card__trial-note">
-              <lucide-icon name="check" [size]="14" aria-hidden="true" />
-              7 días gratis para probar
-            </p>
-          </div>
-
-          <ul class="lp-plan-card__features">
-            @if (selectedDisponible()) {
-              @for (feat of plan.features; track feat) {
-                <li>
-                  <lucide-icon name="check" [size]="16" aria-hidden="true" />
-                  {{ feat }}
-                </li>
+    <!--
+      Configurador de precio (2026-09-19), al estilo "arma tu Mac": se elige en pasos y el precio
+      vive en una tarjeta de resumen que no se mueve — antes eran dos tarjetas de plan y, más
+      abajo, una sección aparte de facturación que casi nadie llegaba a ver.
+    -->
+    <div class="lp-config">
+      <div class="lp-config__opciones">
+        <div class="lp-config__paso">
+          <span class="lp-config__paso-num">1</span>
+          <div class="lp-config__paso-body">
+            <h3 class="lp-config__paso-title">Elige tu plan</h3>
+            <div class="lp-config__pills">
+              @for (plan of planes(); track plan.nombre) {
+                <button
+                  type="button"
+                  class="lp-config__pill"
+                  [class.lp-config__pill--active]="planElegido().nombre === plan.nombre"
+                  (click)="elegirPlan(plan)"
+                  [attr.aria-pressed]="planElegido().nombre === plan.nombre"
+                >
+                  @if (plan.destacado) {
+                    <span class="lp-config__pill-badge">Más popular</span>
+                  }
+                  <span class="lp-config__pill-nombre">{{ plan.nombre }}</span>
+                  <span class="lp-config__pill-precio">{{ formatPrice(plan.precio) }}/mes</span>
+                </button>
               }
-            } @else {
-              <li class="lp-plan-card__soon-msg">
-                <lucide-icon name="clock" [size]="16" aria-hidden="true" />
-                Módulo en desarrollo — disponible próximamente
-              </li>
-            }
-          </ul>
+            </div>
+          </div>
+        </div>
 
-          <button
-            type="button"
-            class="es-btn lp-plan-card__cta"
-            [class.es-btn--primary]="plan.destacado"
-            [class.es-btn--outline]="!plan.destacado"
-            (click)="openModal()"
-          >
-            {{ plan.cta }}
-            <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
-          </button>
-        </article>
-      }
+        @if (mostrarPasoFacturacion()) {
+          <div class="lp-config__paso">
+            <span class="lp-config__paso-num">2</span>
+            <div class="lp-config__paso-body">
+              <h3 class="lp-config__paso-title">
+                <lucide-icon name="file-text" [size]="16" aria-hidden="true" />
+                ¿Necesitas facturación electrónica?
+              </h3>
+              <p class="lp-config__paso-hint">
+                Opcional. Cuota fija por tramo de volumen — nunca por documento.
+              </p>
+              <div class="lp-config__pills">
+                <button
+                  type="button"
+                  class="lp-config__pill"
+                  [class.lp-config__pill--active]="!tramoElegido()"
+                  (click)="elegirTramo(null)"
+                  [attr.aria-pressed]="!tramoElegido()"
+                >
+                  <span class="lp-config__pill-nombre">No, gracias</span>
+                </button>
+                @for (t of tramosFacturacion; track trackTramo($index, t)) {
+                  <button
+                    type="button"
+                    class="lp-config__pill"
+                    [class.lp-config__pill--active]="tramoElegido()?.tramo === t.tramo"
+                    (click)="elegirTramo(t)"
+                    [attr.aria-pressed]="tramoElegido()?.tramo === t.tramo"
+                  >
+                    <span class="lp-config__pill-nombre">Tramo {{ t.tramo }}</span>
+                    <span class="lp-config__pill-precio">+{{ formatPrice(t.precio) }}/mes</span>
+                    <span class="lp-config__pill-detalle">{{ t.documentosMes }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
 
       @if (tipoImagenSrc()) {
-        <div class="lp-planes__mascot">
+        <div class="lp-config__mascot-wrap" aria-hidden="true">
           <img
             [src]="tipoImagenSrc()"
             [alt]="'Ilustración EscalApp — ' + selectedTipo().label"
-            class="lp-planes__mascot-img"
+            class="lp-config__mascot"
           />
         </div>
       }
+
+      <!-- La tarjeta de resumen: pegajosa en escritorio, siempre a la vista — es el precio. -->
+      <aside class="lp-config__resumen">
+        @if (planElegido().destacado) {
+          <span class="lp-config__resumen-badge">Más popular</span>
+        }
+        <h3 class="lp-config__resumen-nombre">{{ planElegido().nombre }}</h3>
+        <p class="lp-config__resumen-desc">{{ planElegido().descripcion }}</p>
+
+        <div class="lp-config__resumen-precio">
+          <span class="lp-config__resumen-monto">{{ formatPrice(precioTotal()) }}</span>
+          <span class="lp-config__resumen-periodo">COP /mes</span>
+        </div>
+        @if (mostrarPasoFacturacion() && tramoElegido(); as tramo) {
+          <p class="lp-config__resumen-desglose">
+            {{ formatPrice(planElegido().precio) }} del plan + {{ formatPrice(tramo.precio) }} de
+            facturación (tramo {{ tramo.tramo }})
+          </p>
+        }
+
+        <p class="lp-config__resumen-trial">
+          <lucide-icon name="check" [size]="14" aria-hidden="true" />
+          7 días gratis para probar
+        </p>
+
+        <ul class="lp-config__resumen-features">
+          @if (selectedDisponible()) {
+            @for (feat of planElegido().features; track feat) {
+              <li>
+                <lucide-icon name="check" [size]="16" aria-hidden="true" />
+                {{ feat }}
+              </li>
+            }
+            @if (mostrarPasoFacturacion() && tramoElegido(); as tramo) {
+              <li class="lp-config__resumen-feature--extra">
+                <lucide-icon name="file-text" [size]="16" aria-hidden="true" />
+                Facturación electrónica — tramo {{ tramo.tramo }} ({{ tramo.documentosMes }})
+              </li>
+            }
+          } @else {
+            <li class="lp-config__resumen-feature--soon">
+              <lucide-icon name="clock" [size]="16" aria-hidden="true" />
+              Módulo en desarrollo — disponible próximamente
+            </li>
+          }
+        </ul>
+
+        <button
+          type="button"
+          class="es-btn es-btn--primary lp-config__resumen-cta"
+          (click)="openModal()"
+        >
+          {{ planElegido().cta }}
+          <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
+        </button>
+      </aside>
     </div>
   </div>
 </section>

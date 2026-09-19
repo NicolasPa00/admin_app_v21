@@ -94,6 +94,17 @@ export const adminRoutes: Routes = [
         title: 'Facturación electrónica',
       },
       {
+        // Conectar WhatsApp (F8-D). Tampoco es de super admin: quien decide si conserva su
+        // número o lo dejamos gestionado por EscalApp es el dueño del negocio.
+        path: 'canal-whatsapp',
+        loadComponent: () =>
+          import('./features/canal-whatsapp/canal-whatsapp.component').then(
+            (m) => m.CanalWhatsappComponent,
+          ),
+        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        title: 'Conectar WhatsApp',
+      },
+      {
         // Intelligence Console (F5-E): la Observabilidad del asistente, solo lectura.
         path: 'intelligence',
         loadComponent: () =>

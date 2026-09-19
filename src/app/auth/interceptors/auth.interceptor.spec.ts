@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import {
-  provideHttpClient,
-  withInterceptors,
-  HttpClient,
-} from '@angular/common/http';
+import { provideHttpClient, withInterceptors, HttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -18,10 +14,10 @@ import { LoginResponse, User } from '../models/auth.models';
 /**
  * Tests unitarios para authInterceptor.
  *
- * Verifican:
- *  • Adjunta header Authorization cuando hay token.
- *  • No adjunta header para endpoints públicos de auth.
- *  • Intenta refresh en 401 y reintenta la petición original.
+ * Reescritos contra el interceptor real: no hay refresh de token (el JWT dura 24h, sin retry —
+ * ver su propio comentario de cabecera), un 401 llama a `logout()` sin más, y las URLs públicas
+ * son `/auth/login`, `/auth/forgot-password`, `/auth/reset-password`. La versión anterior probaba
+ * un flujo de refresh que nunca existió aquí.
  */
 describe('authInterceptor', () => {
   let httpClient: HttpClient;
@@ -29,12 +25,21 @@ describe('authInterceptor', () => {
   let authService: AuthService;
   let routerSpy: { navigate: ReturnType<typeof vi.fn> };
 
+  const API = 'http://localhost:3000/admin';
+
   const mockUser: User = {
-    id: '1',
-    name: 'Test',
+    id_usuario: 1,
+    primer_nombre: 'Test',
+    primer_apellido: 'User',
     email: 'test@test.com',
-    roles: ['admin'],
-    tenantId: 't1',
+    negocios: [],
+    roles_globales: [],
+  };
+
+  const mockLoginResponse: LoginResponse = {
+    success: true,
+    message: 'ok',
+    data: { token: 'my-token', usuario: mockUser },
   };
 
   beforeEach(() => {
@@ -54,71 +59,39 @@ describe('authInterceptor', () => {
   });
 
   it('debería adjuntar Authorization header cuando hay token', () => {
-    // Simular login para tener token
-    authService
-      .login({ email: 'test@test.com', password: '12345678' })
-      .subscribe();
-    httpTesting
-      .expectOne('http://localhost:3000/api/v1/auth/login')
-      .flush({
-        accessToken: 'my-token',
-        user: mockUser,
-      } as LoginResponse);
+    authService.login({ num_identificacion: '1', password: '12345678' }).subscribe();
+    httpTesting.expectOne(`${API}/auth/login`).flush(mockLoginResponse);
 
-    // Ahora hacer una petición protegida
-    httpClient.get('/api/data').subscribe();
-    const req = httpTesting.expectOne('/api/data');
+    httpClient.get(`${API}/negocios`).subscribe();
+    const req = httpTesting.expectOne(`${API}/negocios`);
 
-    expect(req.request.headers.get('Authorization')).toBe(
-      'Bearer my-token',
-    );
+    expect(req.request.headers.get('Authorization')).toBe('Bearer my-token');
     req.flush({});
   });
 
-  it('no debería adjuntar header para endpoints públicos de auth', () => {
-    httpClient
-      .post('http://localhost:3000/api/v1/auth/login', {})
-      .subscribe();
+  it('no debería adjuntar header para /auth/login', () => {
+    httpClient.post(`${API}/auth/login`, {}).subscribe();
 
-    const req = httpTesting.expectOne(
-      'http://localhost:3000/api/v1/auth/login',
-    );
+    const req = httpTesting.expectOne(`${API}/auth/login`);
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
   });
 
-  it('debería intentar refresh al recibir 401', () => {
-    // Simular login
-    authService
-      .login({ email: 'test@test.com', password: '12345678' })
-      .subscribe();
-    httpTesting
-      .expectOne('http://localhost:3000/api/v1/auth/login')
-      .flush({
-        accessToken: 'old-token',
-        user: mockUser,
-      } as LoginResponse);
+  it('debería cerrar sesión (logout) al recibir un 401, sin reintentar', () => {
+    authService.login({ num_identificacion: '1', password: '12345678' }).subscribe();
+    httpTesting.expectOne(`${API}/auth/login`).flush(mockLoginResponse);
 
-    // Petición protegida que recibe 401
-    httpClient.get('/api/data').subscribe();
-    const failedReq = httpTesting.expectOne('/api/data');
-    failedReq.flush(null, { status: 401, statusText: 'Unauthorized' });
+    httpClient.get(`${API}/negocios`).subscribe({
+      error: (err) => expect(err.status).toBe(401),
+    });
+    const req = httpTesting.expectOne(`${API}/negocios`);
+    req.flush(null, { status: 401, statusText: 'Unauthorized' });
 
-    // El interceptor debería intentar refresh
-    const refreshReq = httpTesting.expectOne(
-      'http://localhost:3000/api/v1/auth/refresh',
-    );
-    refreshReq.flush({ accessToken: 'new-token' });
+    expect(authService.getAccessToken()).toBeNull();
+    expect(authService.currentUser()).toBeNull();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
 
-    // Y reintentar la petición original con el nuevo token
-    const retryReq = httpTesting.expectOne('/api/data');
-    expect(retryReq.request.headers.get('Authorization')).toBe(
-      'Bearer new-token',
-    );
-    retryReq.flush({ data: 'ok' });
-  });
-
-  it('no debería haber peticiones pendientes', () => {
+    // Sin refresh: no debe quedar ninguna otra petición pendiente.
     httpTesting.verify();
   });
 });

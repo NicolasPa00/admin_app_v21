@@ -1,0 +1,156 @@
+<!--
+  Conectar WhatsApp (F8-D).
+
+  No abre con un formulario ni con un selector técnico: abre con la pregunta real — "¿te importa
+  conservar tu WhatsApp de siempre?" — como dos tarjetas explicadas en palabras. Ver la cabecera
+  del componente.
+-->
+<section class="cw">
+  <header class="cw__head">
+    <div>
+      <h1 class="cw__title">
+        <lucide-icon name="message-circle" [size]="20"></lucide-icon>
+        Conectar WhatsApp
+      </h1>
+      <p class="cw__sub">
+        Así llega el asistente a tus clientes por WhatsApp — automatizado, respondiendo pedidos y
+        citas por ti.
+      </p>
+    </div>
+
+    @if (negocios().length > 1) {
+      <label class="cw__selector">
+        <span class="cw__selector-label">Negocio</span>
+        <select
+          class="cw__input"
+          [ngModel]="idNegocio()"
+          (ngModelChange)="seleccionar(+$event)"
+          name="negocio"
+        >
+          @for (n of negocios(); track trackNegocio($index, n)) {
+            <option [value]="n.id_negocio">{{ n.nombre }}</option>
+          }
+        </select>
+      </label>
+    }
+  </header>
+
+  @if (error()) {
+    <div class="cw__alerta cw__alerta--error" role="alert">
+      <lucide-icon name="alert-circle" [size]="18"></lucide-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="cw__cargando">
+      <lucide-icon name="loader-2" [size]="22" class="cw__spin"></lucide-icon>
+      <span>Cargando…</span>
+    </div>
+  } @else if (negocios().length === 0) {
+    <div class="cw__vacio">
+      <lucide-icon name="store" [size]="28"></lucide-icon>
+      <p>No tienes ningún negocio activo.</p>
+    </div>
+  } @else if (conectado()) {
+    <!-- ════════ Ya conectado ════════ -->
+    <article class="cw__card cw__card--ok">
+      <h2 class="cw__card-title">
+        <lucide-icon name="circle-check" [size]="18"></lucide-icon>
+        WhatsApp conectado
+      </h2>
+      <p class="cw__ayuda">
+        @if (esPropio()) {
+          Tu propio número está conectado
+          @if (estadoCanal()?.numeroE164) { ({{ estadoCanal()?.numeroE164 }}) }
+          y respondiendo por ti. La factura de WhatsApp la ves y la pagas directamente en tu
+          cuenta de Meta — nosotros solo cobramos el software.
+        } @else {
+          Tu WhatsApp está gestionado por EscalApp. Si quieres conectar tu propio número más
+          adelante, escríbenos.
+        }
+      </p>
+
+      @if (esPropio()) {
+        @if (!confirmandoDesconectar()) {
+          <button type="button" class="cw__boton cw__boton--peligro" (click)="pedirConfirmacionDesconectar()">
+            <lucide-icon name="unlink" [size]="16"></lucide-icon>
+            Desconectar este número
+          </button>
+        } @else {
+          <div class="cw__confirmar">
+            <p class="cw__confirmar-texto">
+              <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+              El asistente deja de responder por este número hasta que lo vuelvas a conectar.
+              ¿Seguro?
+            </p>
+            <div class="cw__confirmar-botones">
+              <button type="button" class="cw__boton cw__boton--outline" (click)="cancelarDesconectar()" [disabled]="desconectando()">
+                Cancelar
+              </button>
+              <button type="button" class="cw__boton cw__boton--peligro" (click)="confirmarDesconectar()" [disabled]="desconectando()">
+                @if (desconectando()) {
+                  <lucide-icon name="loader-2" [size]="16" class="cw__spin"></lucide-icon>
+                  Desconectando…
+                } @else {
+                  Sí, desconectar
+                }
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </article>
+  } @else {
+    <!-- ════════ Las dos opciones ════════ -->
+    <div class="cw__opciones">
+      <article class="cw__card">
+        <h2 class="cw__card-title">
+          <lucide-icon name="store" [size]="18"></lucide-icon>
+          Gestionado por EscalApp
+        </h2>
+        <p class="cw__ayuda">
+          Te damos un número listo para usar, sin ningún trámite en Meta de tu parte. Si ya usas
+          WhatsApp Business con otro número, <strong>ese historial no se conserva</strong> al
+          migrarlo — lo hacemos nosotros a mano, contigo avisado antes de tocar nada.
+        </p>
+        <a class="cw__boton cw__boton--outline" [href]="whatsappSoporte" target="_blank" rel="noopener">
+          Escríbenos para activarlo
+        </a>
+      </article>
+
+      <article class="cw__card">
+        <h2 class="cw__card-title">
+          <lucide-icon name="smartphone" [size]="18"></lucide-icon>
+          Tu propio número
+        </h2>
+        <p class="cw__ayuda">
+          Conserva tu número, tu historial y tu app de WhatsApp Business tal como están hoy.
+          Deberás vincular tu propio método de pago en Meta: lo que WhatsApp cobre por los
+          mensajes te llega a ti directamente — nosotros solo cobramos el software.
+        </p>
+
+        @if (!embeddedSignupDisponible()) {
+          <p class="cw__ayuda cw__ayuda--pendiente">
+            <lucide-icon name="history" [size]="16"></lucide-icon>
+            Esta opción está en preparación. Escríbenos y te avisamos en cuanto esté lista.
+          </p>
+        }
+
+        <button
+          type="button"
+          class="cw__boton"
+          [disabled]="!embeddedSignupDisponible() || conectando()"
+          (click)="iniciarConexionPropia()"
+        >
+          @if (conectando()) {
+            <lucide-icon name="loader-2" [size]="16" class="cw__spin"></lucide-icon>
+            Conectando…
+          } @else {
+            Conectar mi número
+          }
+        </button>
+      </article>
+    </div>
+  }
+</section>

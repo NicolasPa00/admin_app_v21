@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import {
-  provideHttpClient,
-  withInterceptors,
-} from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
@@ -11,42 +8,44 @@ import {
 import { Router } from '@angular/router';
 
 import { AuthService } from './auth.service';
-import {
-  LoginResponse,
-  RegisterResponse,
-  User,
-} from '../models/auth.models';
+import { LoginResponse, RegisterResponse, User } from '../models/auth.models';
 
 /**
  * Tests unitarios para AuthService.
  *
- * Verifican:
- *  • login() almacena accessToken en memoria y setea currentUser.
- *  • logout() limpia estado y navega a /auth/login.
- *  • register() almacena token y usuario.
- *  • refreshAccessToken$() actualiza el token en memoria.
- *  • isAuthenticated se calcula correctamente.
+ * Reescritos contra el contrato REAL del servicio (login por `num_identificacion`, respuesta
+ * envuelta en `ApiResponse<{token, usuario}>`, `environment.apiUrl` = `http://localhost:3000/admin`).
+ * La versión anterior probaba un servicio que nunca existió aquí — login por email a
+ * `/api/v1/auth/login`, `refreshAccessToken$()`, `resetPassword({token, newPassword})` — deuda de
+ * un scaffold que no se actualizó cuando se implementó el backend real.
  */
 describe('AuthService', () => {
   let service: AuthService;
   let httpTesting: HttpTestingController;
   let routerSpy: { navigate: ReturnType<typeof vi.fn> };
 
+  const API = 'http://localhost:3000/admin';
+
   const mockUser: User = {
-    id: '1',
-    name: 'Test User',
+    id_usuario: 1,
+    primer_nombre: 'Test',
+    primer_apellido: 'User',
     email: 'test@example.com',
-    roles: ['admin'],
-    tenantId: 'restaurant-1',
+    negocios: [],
+    roles_globales: [],
   };
 
   const mockLoginResponse: LoginResponse = {
-    accessToken: 'mock-access-token',
-    user: mockUser,
+    success: true,
+    message: 'Login correcto',
+    data: { token: 'mock-token', usuario: mockUser },
   };
 
   beforeEach(() => {
     routerSpy = { navigate: vi.fn() };
+    // El constructor de AuthService rehidrata la sesión desde localStorage: sin limpiarlo, un
+    // login exitoso de un test anterior se filtra al siguiente en cuanto se instancia el servicio.
+    localStorage.clear();
 
     TestBed.configureTestingModule({
       providers: [
@@ -71,55 +70,43 @@ describe('AuthService', () => {
   });
 
   describe('login()', () => {
-    it('debería almacenar accessToken en memoria y setear currentUser', () => {
+    it('debería almacenar el token en memoria, setear currentUser y navegar a /admin/dashboard', () => {
       service
-        .login({ email: 'test@example.com', password: 'password123' })
+        .login({ num_identificacion: '1000000001', password: 'Admin123*' })
         .subscribe();
 
-      const req = httpTesting.expectOne(
-        'http://localhost:3000/api/v1/auth/login',
-      );
+      const req = httpTesting.expectOne(`${API}/auth/login`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual({
-        email: 'test@example.com',
-        password: 'password123',
+        num_identificacion: '1000000001',
+        password: 'Admin123*',
       });
-      expect(req.request.withCredentials).toBe(true);
 
       req.flush(mockLoginResponse);
 
-      expect(service.getAccessToken()).toBe('mock-access-token');
+      expect(service.getAccessToken()).toBe('mock-token');
       expect(service.currentUser()).toEqual(mockUser);
       expect(service.isAuthenticated()).toBe(true);
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/dashboard']);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin/dashboard']);
     });
 
-    it('debería incluir tenantId cuando se proporciona', () => {
-      service
-        .login({
-          email: 'test@example.com',
-          password: 'password123',
-          tenantId: 'restaurant-1',
-        })
-        .subscribe();
+    it('no cambia el estado si la respuesta no trae `data`', () => {
+      service.login({ num_identificacion: '1', password: 'x' }).subscribe();
 
-      const req = httpTesting.expectOne(
-        'http://localhost:3000/api/v1/auth/login',
-      );
-      expect(req.request.body.tenantId).toBe('restaurant-1');
-      req.flush(mockLoginResponse);
+      const req = httpTesting.expectOne(`${API}/auth/login`);
+      req.flush({ success: false, message: 'Credenciales inválidas' });
+
+      expect(service.getAccessToken()).toBeNull();
+      expect(service.currentUser()).toBeNull();
     });
   });
 
   describe('logout()', () => {
     it('debería limpiar estado y navegar a /auth/login', () => {
-      // Simular sesión activa
       service
-        .login({ email: 'test@example.com', password: 'password123' })
+        .login({ num_identificacion: '1000000001', password: 'Admin123*' })
         .subscribe();
-      httpTesting
-        .expectOne('http://localhost:3000/api/v1/auth/login')
-        .flush(mockLoginResponse);
+      httpTesting.expectOne(`${API}/auth/login`).flush(mockLoginResponse);
 
       service.logout();
 
@@ -131,96 +118,82 @@ describe('AuthService', () => {
   });
 
   describe('register()', () => {
-    it('debería almacenar token y usuario tras registro', () => {
+    it('debería postear a /usuarios (ruta protegida, no /auth/register)', () => {
       const registerResponse: RegisterResponse = {
-        user: mockUser,
-        accessToken: 'new-access-token',
+        success: true,
+        message: 'Usuario creado',
+        data: { id_usuario: 2 },
       };
 
       service
         .register({
-          name: 'Test User',
-          email: 'test@example.com',
-          password: 'password123',
-          tenantId: 'restaurant-1',
+          primer_nombre: 'Nueva',
+          primer_apellido: 'Persona',
+          num_identificacion: '999',
+          email: 'nueva@example.com',
+          password: 'Password123*',
         })
-        .subscribe();
+        .subscribe((res) => {
+          expect(res.data?.id_usuario).toBe(2);
+        });
 
-      const req = httpTesting.expectOne(
-        'http://localhost:3000/api/v1/auth/register',
-      );
+      const req = httpTesting.expectOne(`${API}/usuarios`);
       expect(req.request.method).toBe('POST');
       req.flush(registerResponse);
-
-      expect(service.getAccessToken()).toBe('new-access-token');
-      expect(service.currentUser()).toEqual(mockUser);
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/dashboard']);
-    });
-  });
-
-  describe('refreshAccessToken$()', () => {
-    it('debería actualizar el token en memoria', () => {
-      service.refreshAccessToken$().subscribe((token) => {
-        expect(token).toBe('refreshed-token');
-      });
-
-      const req = httpTesting.expectOne(
-        'http://localhost:3000/api/v1/auth/refresh',
-      );
-      expect(req.request.method).toBe('POST');
-      expect(req.request.withCredentials).toBe(true);
-
-      req.flush({ accessToken: 'refreshed-token' });
-
-      expect(service.getAccessToken()).toBe('refreshed-token');
-    });
-
-    it('debería hacer logout si el refresh falla', () => {
-      service.refreshAccessToken$().subscribe({
-        error: () => {
-          expect(service.getAccessToken()).toBeNull();
-          expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
-        },
-      });
-
-      httpTesting
-        .expectOne('http://localhost:3000/api/v1/auth/refresh')
-        .flush(null, { status: 401, statusText: 'Unauthorized' });
     });
   });
 
   describe('requestForgotPassword()', () => {
-    it('debería enviar la solicitud correctamente', () => {
-      service
-        .requestForgotPassword({ email: 'test@example.com' })
-        .subscribe((res) => {
-          expect(res.ok).toBe(true);
-        });
+    it('debería mandar el email en el cuerpo, a /auth/forgot-password', () => {
+      service.requestForgotPassword('test@example.com').subscribe((res) => {
+        expect(res.success).toBe(true);
+      });
 
-      const req = httpTesting.expectOne(
-        'http://localhost:3000/api/v1/auth/forgot-password',
-      );
+      const req = httpTesting.expectOne(`${API}/auth/forgot-password`);
       expect(req.request.method).toBe('POST');
-      req.flush({ ok: true });
+      expect(req.request.body).toEqual({ email: 'test@example.com' });
+      req.flush({ success: true, message: 'Código enviado si el correo existe' });
     });
   });
 
   describe('resetPassword()', () => {
-    it('debería enviar token y nueva contraseña', () => {
-      service
-        .resetPassword({ token: 'reset-token', newPassword: 'newPass123' })
-        .subscribe((res) => {
-          expect(res.ok).toBe(true);
-        });
-
-      const req = httpTesting.expectOne(
-        'http://localhost:3000/api/v1/auth/reset-password',
-      );
-      expect(req.request.body).toEqual({
-        token: 'reset-token',
-        newPassword: 'newPass123',
+    it('debería mandar email, code y newPassword — argumentos posicionales, no un objeto', () => {
+      service.resetPassword('test@example.com', '123456', 'NuevaClave123*').subscribe((res) => {
+        expect(res.success).toBe(true);
       });
-      req.flush({ ok: true });
+
+      const req = httpTesting.expectOne(`${API}/auth/reset-password`);
+      expect(req.request.body).toEqual({
+        email: 'test@example.com',
+        code: '123456',
+        newPassword: 'NuevaClave123*',
+      });
+      req.flush({ success: true, message: 'Contraseña actualizada' });
+    });
+  });
+
+  describe('loadProfile()', () => {
+    it('debería setear currentUser con lo que devuelve GET /usuarios/perfil', () => {
+      service.loadProfile().subscribe((user) => {
+        expect(user).toEqual(mockUser);
+      });
+
+      const req = httpTesting.expectOne(`${API}/usuarios/perfil`);
+      expect(req.request.method).toBe('GET');
+      req.flush({ success: true, message: 'ok', data: mockUser });
+
+      expect(service.currentUser()).toEqual(mockUser);
+    });
+  });
+
+  describe('getRubrosPublicos()', () => {
+    it('debería devolver un arreglo vacío si la respuesta no trae `data`', () => {
+      service.getRubrosPublicos().subscribe((rubros) => {
+        expect(rubros).toEqual([]);
+      });
+
+      const req = httpTesting.expectOne(`${API}/rubros`);
+      req.flush({ success: true, message: 'ok' });
     });
   });
 

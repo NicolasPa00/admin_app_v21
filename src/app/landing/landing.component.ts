@@ -51,6 +51,8 @@ import {
   Facebook,
   Instagram,
   Youtube,
+  FileText,
+  MessageCircle,
 } from 'lucide-angular';
 
 import { AssetService } from '../core/services/asset.service';
@@ -132,9 +134,27 @@ const RUBROS_RESPALDO: TipoNegocio[] = [
 ];
 
 /**
+ * Los oficios que se enseñan como chips en el selector — un subconjunto de `RUBROS_RESPALDO`.
+ *
+ * Antes se mostraban los 14 (7 por motor) y se veía como una pared de botones. La lista completa
+ * sigue existiendo y sigue siendo la que se puede contratar de verdad (`tiposNegocioRegistro`,
+ * usada en el desplegable del registro) — esto es solo una curaduría visual de los más
+ * reconocibles por motor. Los que faltan no desaparecen: se nombran en la frase de abajo del
+ * selector («también se adapta a…»), así que nadie pierde la información de que su negocio cabe.
+ */
+const NOMBRES_DESTACADOS = new Set([
+  'RESTAURANTE', 'CAFETERIA', 'BAR', 'COMIDAS RAPIDAS',
+  'BARBERIA', 'SALON DE BELLEZA', 'SPA Y ESTETICA', 'CONSULTORIO',
+]);
+
+/**
  * Lo que se enseña pero **no se puede contratar** todavía. Es copy de marketing, no catálogo, y
  * por eso vive aquí y no en la base. Un tipo pasa de esta lista a la de arriba el día que su
  * módulo se despliegue, y entonces basta con apuntarlo en `gener_tipo_negocio.id_tipo_modulo`.
+ *
+ * ⚠️ Oculta del selector desde 2026-09-19 (no se borra, por si se reactiva): ver
+ * `tiposNegocio` — mientras ningún módulo de esta lista esté desplegado, mostrar sus chips solo
+ * añade botones que no llevan a ningún lado.
  */
 const PROXIMAMENTE: TipoNegocio[] = [
   // Hay código, pero no están en producción.
@@ -158,6 +178,33 @@ const PLANES_BASE: PlanBase[] = [
     destacado: false,
     cta: 'Probar gratis 7 días',
   },
+  {
+    nombre: 'Plan Avanzado',
+    precio: 59999,
+    periodo: '/mes',
+    descripcion: 'Todo el sistema, más el asistente de WhatsApp que atiende a tus clientes por ti.',
+    destacado: true,
+    cta: 'Probar gratis 7 días',
+  },
+];
+
+/**
+ * El add-on de Facturación Electrónica, por tramos de volumen — ver
+ * `admin_ws/docs/precios-y-planes.md` §3. No es un plan más (no tiene `features` propias): se
+ * contrata sobre el plan Avanzado, y el tramo se mide y se ajusta con el primer mes real, nunca
+ * se asigna por lo que el negocio dice que va a vender.
+ */
+interface TramoFacturacion {
+  tramo: string;
+  documentosMes: string;
+  precio: number;
+}
+
+const TRAMOS_FACTURACION: TramoFacturacion[] = [
+  { tramo: 'S', documentosMes: 'hasta 100 documentos/mes', precio: 39000 },
+  { tramo: 'M', documentosMes: 'hasta 500 documentos/mes', precio: 59000 },
+  { tramo: 'L', documentosMes: 'hasta 1.200 documentos/mes', precio: 79000 },
+  { tramo: 'XL', documentosMes: 'hasta 2.500 documentos/mes', precio: 99000 },
 ];
 
 /**
@@ -178,13 +225,28 @@ const PLANES_BASE: PlanBase[] = [
 const FEATURES_POR_MODULO: Record<string, string[][]> = {
   RESTAURANTE: [
     ['Hasta 5 personas en tu equipo', 'Carta digital con pedidos', 'Comandas a cocina', 'Mesas y domicilios', 'Caja y reportes de ventas'],
+    [
+      'Todo lo del Plan Básico',
+      'Inventario y sucursales',
+      'Asistente de WhatsApp: responde, toma pedidos y agenda — 24/7, sin costo adicional de software',
+      'Conecta tu propio número (pagas tú a Meta) o usa el nuestro, sin trámites',
+      'Reportes avanzados',
+    ],
   ],
   RESERVA: [
     ['Hasta 5 personas en tu equipo', 'Agenda de citas', 'Gestión de profesionales', 'Control de servicios', 'Recordatorios automáticos', 'Reportes de ingresos'],
+    [
+      'Todo lo del Plan Básico',
+      'Sucursales adicionales',
+      'Asistente de WhatsApp: responde, agenda y confirma citas — 24/7, sin costo adicional de software',
+      'Conecta tu propio número (pagas tú a Meta) o usa el nuestro, sin trámites',
+      'Reportes avanzados',
+    ],
   ],
 };
 
 const FEATURES_PROXIMAMENTE: string[][] = [
+  ['Módulo en desarrollo — disponible próximamente'],
   ['Módulo en desarrollo — disponible próximamente'],
 ];
 
@@ -224,6 +286,43 @@ const FEATURES: Feature[] = [
     titulo: 'Crece sin límites',
     descripcion:
       'Empieza hoy y expande cuando quieras. La plataforma crece contigo sin cambiar de sistema ni perder información.',
+  },
+];
+
+/**
+ * Lo que hace el asistente de WhatsApp — antes solo se mencionaba en una línea del hero y en dos
+ * viñetas del Plan Avanzado. Es la característica más diferenciadora del producto (el "todo el
+ * sistema" ya lo prometen todos los competidores) y no tenía su propia sección.
+ */
+const CAPACIDADES_WHATSAPP: Feature[] = [
+  {
+    icon: 'zap',
+    titulo: 'Responde al instante',
+    descripcion: 'A cualquier hora, sin que tu equipo suelte lo que está haciendo para contestar un mensaje.',
+  },
+  {
+    icon: 'shopping-bag',
+    titulo: 'Toma pedidos y agenda citas',
+    descripcion: 'Solo, de principio a fin — el cliente pide o agenda por WhatsApp y la orden ya está en tu sistema.',
+  },
+  {
+    icon: 'users',
+    titulo: 'Sabe cuándo pasarte el turno',
+    descripcion: 'Si el cliente necesita a una persona, avisa a tu equipo — nunca inventa una respuesta.',
+  },
+];
+
+/** Las dos formas de conectar el número — mismo criterio que ya usa el panel de administración. */
+const OPCIONES_WHATSAPP: Feature[] = [
+  {
+    icon: 'store',
+    titulo: 'Gestionado por EscalApp',
+    descripcion: 'Te damos un número listo para usar, sin ningún trámite en Meta de tu parte. Actívalo en minutos.',
+  },
+  {
+    icon: 'smartphone',
+    titulo: 'Tu propio número',
+    descripcion: 'Conserva tu número, tu historial y tu app de WhatsApp Business tal como están hoy.',
   },
 ];
 
@@ -270,7 +369,7 @@ type ModalStep = 'form' | 'otp' | 'success';
         Sun, Moon, Rocket, Shield, Users, BarChart3,
         ChevronRight, Check, Star, Zap, Store, Smartphone,
         ArrowRight, Menu, X, Clock, Loader2, CheckCheck,
-        Mail, Building2, Facebook, Instagram, Youtube,
+        Mail, Building2, Facebook, Instagram, Youtube, FileText, MessageCircle,
         UtensilsCrossed, Coffee, Sparkles, Beer, CakeSlice, Bike, HandHeart,
         Car, Scissors, ShoppingCart, ShoppingBag,
         Wrench, PiggyBank, Landmark, Dumbbell,
@@ -293,9 +392,35 @@ export class LandingComponent {
    * que diga la API en cuanto el navegador la responde. Ver `RUBROS_RESPALDO`.
    */
   private   readonly rubros = signal<TipoNegocio[]>(RUBROS_RESPALDO);
-  protected readonly tiposNegocio         = computed(() => [...this.rubros(), ...PROXIMAMENTE]);
+
+  /**
+   * Los chips que se muestran — la curaduría de `NOMBRES_DESTACADOS`, no los 14 disponibles.
+   * Próximamente queda fuera a propósito (ver su cabecera). Si por lo que sea la curaduría no
+   * encuentra ningún nombre en la lista que llegó de la API (un catálogo muy distinto al de
+   * respaldo), se cae a mostrarlos todos antes que dejar el selector vacío.
+   */
+  protected readonly tiposNegocio = computed(() => {
+    const destacados = this.rubros().filter((r) => NOMBRES_DESTACADOS.has(r.nombre));
+    return destacados.length > 0 ? destacados : this.rubros();
+  });
+
+  /** El desplegable del registro sí ofrece los 14: aquí no sobra ninguno. */
   protected readonly tiposNegocioRegistro = computed(() => this.rubros());
+
+  /**
+   * Los oficios del mismo motor que el seleccionado y que NO tienen chip propio — la frase
+   * «también se adapta a…» sale de aquí. Así un chip oculto no es información perdida: solo deja
+   * de tener botón propio.
+   */
+  protected readonly otrosDelModulo = computed(() => {
+    const actual = this.selectedTipo();
+    return this.rubros()
+      .filter((r) => r.modulo === actual.modulo && !NOMBRES_DESTACADOS.has(r.nombre))
+      .map((r) => r.label);
+  });
   protected readonly features            = FEATURES;
+  protected readonly capacidadesWhatsapp = CAPACIDADES_WHATSAPP;
+  protected readonly opcionesWhatsapp    = OPCIONES_WHATSAPP;
   protected readonly stats               = STATS;
   protected readonly ecosistema          = ECOSISTEMA;
   protected readonly mobileMenuOpen      = signal(false);
@@ -451,6 +576,66 @@ export class LandingComponent {
       : FEATURES_PROXIMAMENTE;
     return PLANES_BASE.map((plan, i) => ({ ...plan, features: features[i] ?? [] }));
   });
+
+  /**
+   * El add-on de facturación electrónica, por tramos — solo tiene sentido sobre el Plan
+   * Avanzado. Se enseña para cualquier oficio contratable, no solo restaurante: una barbería o
+   * un spa facturan electrónicamente igual que un restaurante, la DIAN no distingue por motor.
+   */
+  protected readonly tramosFacturacion = TRAMOS_FACTURACION;
+  protected readonly mostrarFacturacion = computed(() => this.selectedTipo().disponible);
+
+  /* ── Configurador de precio, al estilo "arma tu Mac" ──
+   *
+   * Antes esto eran dos tarjetas de plan lado a lado y, más abajo — fuera de la primera
+   * pantalla —, una sección aparte con los tramos de facturación. El precio importaba y
+   * costaba encontrarlo. Aquí es al revés: se elige en pasos (plan → facturación opcional) y el
+   * precio total vive en una tarjeta de resumen que no se mueve, igual que el configurador de
+   * Apple mantiene el total a la vista mientras eliges memoria o almacenamiento.
+   */
+
+  /** El nombre del plan elegido en el configurador — no el objeto, porque `planes()` genera
+   *  objetos nuevos cada vez que cambia el tipo de negocio (el `nombre` es lo único estable). */
+  protected readonly nombrePlanElegido = signal<string>('Plan Avanzado');
+
+  /** El plan elegido, ya con las features del tipo de negocio actual. Cae al destacado si el
+   *  nombre guardado no existe en la lista de hoy (no debería pasar, pero nunca hay que reventar
+   *  el precio por un nombre que no calza). */
+  protected readonly planElegido = computed<PlanConFeatures>(() => {
+    const lista = this.planes();
+    return (
+      lista.find((p) => p.nombre === this.nombrePlanElegido()) ??
+      lista.find((p) => p.destacado) ??
+      lista[0]
+    );
+  });
+
+  /** El tramo de facturación añadido, si hay uno. `null` = "no, gracias". */
+  protected readonly tramoElegido = signal<TramoFacturacion | null>(null);
+
+  /** El paso 2 (facturación) solo aparece sobre el Plan Avanzado — es la pareja que ya está
+   *  vendida en `precios-y-planes.md` §3, no una combinación libre. */
+  protected readonly mostrarPasoFacturacion = computed(
+    () => this.mostrarFacturacion() && this.planElegido().nombre === 'Plan Avanzado',
+  );
+
+  /** El precio que de verdad se ve: el del plan, más el tramo si aplica y está elegido. */
+  protected readonly precioTotal = computed(
+    () => this.planElegido().precio + (this.mostrarPasoFacturacion() ? (this.tramoElegido()?.precio ?? 0) : 0),
+  );
+
+  protected elegirPlan(plan: PlanConFeatures): void {
+    this.nombrePlanElegido.set(plan.nombre);
+    // Bajar a Básico quita la facturación de la cuenta — no tiene sentido dejarla "elegida pero
+    // escondida": si vuelve a subir a Avanzado, que la vuelva a pedir.
+    if (plan.nombre !== 'Plan Avanzado') this.tramoElegido.set(null);
+  }
+
+  protected elegirTramo(tramo: TramoFacturacion | null): void {
+    this.tramoElegido.set(tramo);
+  }
+
+  protected trackTramo = (_: number, t: TramoFacturacion) => t.tramo;
 
   // =================== Modal Trial Registration ===================
 

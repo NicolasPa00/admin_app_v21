@@ -29,6 +29,7 @@ import {
   History,
   Bot,
   MessageSquare,
+  MessageCircle,
   FileText,
   Sun,
   Moon,
@@ -89,7 +90,7 @@ const PLAN_AVISO_KEY = 'admin_plan_aviso_oculto';
       multi: true,
       useValue: new LucideIconProvider({
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, Bot, MessageSquare,
-        FileText,
+        MessageCircle, FileText,
         Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X,
       }),
@@ -115,6 +116,8 @@ export class AdminLayoutComponent {
     { label: 'Conversaciones', icon: 'message-square', route: '/admin/bandeja' },
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion' },
+    // Tampoco: quien conecta su número es el dueño del negocio, no el desarrollador.
+    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/canal-whatsapp' },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },
