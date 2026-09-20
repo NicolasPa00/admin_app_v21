@@ -3,6 +3,19 @@
    Sistema de diseño --es-* (tokens.css)
    ============================================================ */
 
+/* ── Iconos ──
+   Un lucide-icon es un elemento inline con un SVG dentro, así que el dibujo se apoya
+   en la línea base del texto y queda un par de píxeles alto dentro de su caja — se nota en cada
+   chip, en cada botón y en cada viñeta de la página. Convertirlo en caja flex centra el SVG
+   dentro del elemento, y un SVG en block mata el espacio de línea base que sobra. */
+lucide-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  svg { display: block; }
+}
+
 /* ── Botones del sistema de diseño ── */
 .es-btn {
   display: inline-flex;
@@ -13,7 +26,10 @@
   font-size: var(--es-font-size-base);
   font-family: var(--es-font-sans);
   font-weight: 600;
-  border: none;
+  /* Borde transparente, no `none`: la variante de contorno sí lo lleva, y sin esto el botón
+     primario medía 2px menos de alto que el de contorno puesto a su lado (se veía en el par
+     «Iniciar sesión» / «Prueba gratis» del header). */
+  border: 1px solid transparent;
   border-radius: var(--es-radius-md);
   cursor: pointer;
   text-decoration: none;
@@ -53,9 +69,14 @@
     }
   }
 
+  /* Alto fijo en vez de padding vertical: con padding, dos botones con distinto contenido o
+     distinto elemento (un <a> y un <button>) acababan con alturas distintas. 35px es el par del
+     header —«Iniciar sesión» y «Prueba gratis»— medido en el diseño. */
   &--sm {
-    padding: var(--es-spacing-1) var(--es-spacing-4);
+    height: 35px;
+    padding: 0 var(--es-spacing-4);
     font-size: var(--es-font-size-sm);
+    line-height: 1;
   }
 
   &--lg {
@@ -92,8 +113,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: var(--es-header-height);
-  gap: var(--es-spacing-4);
+  flex-wrap: wrap;
+  padding: var(--es-spacing-2) 0;
+  gap: var(--es-spacing-2) var(--es-spacing-4);
+
+  @media (min-width: 768px) {
+    flex-wrap: nowrap;
+    height: var(--es-header-height);
+    padding: 0;
+  }
 
   &__brand {
     display: flex;
@@ -120,100 +148,78 @@
     font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    color: var(--es-text-primary);
+    color: var(--es-secondary-dark);
     white-space: nowrap;
   }
 
+  /* En móvil los enlaces bajan a una segunda fila que se desliza de lado, y en escritorio
+     vuelven al centro de la barra. Antes vivían detrás de una hamburguesa: un toque de más para
+     llegar a Planes, y con el menú abierto la página desaparecía debajo. */
   &__links {
-    display: none;
+    display: flex;
     list-style: none;
-    gap: var(--es-spacing-8);
+    gap: var(--es-spacing-5);
     margin: 0;
     padding: 0;
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
 
-    @media (min-width: 768px) { display: flex; }
+    &::-webkit-scrollbar { display: none; }
+
+    @media (min-width: 768px) {
+      order: 0;
+      width: auto;
+      overflow: visible;
+      gap: var(--es-spacing-8);
+    }
 
     a {
-      color: var(--es-text-secondary);
+      color: var(--es-secondary-dark);
       text-decoration: none;
       font-size: var(--es-font-size-sm);
       font-weight: 500;
+      white-space: nowrap;
       transition: color var(--es-transition-fast);
       cursor: pointer;
 
-      &:hover { color: var(--es-primary); }
+      &:hover { color: var(--lp-blue); }
+    }
+  }
+
+  /* «Paga tu plan» no es una sección de la página, es una gestión: va marcado para que quien
+     entra a pagar no tenga que buscarlo entre los anclajes. */
+  &__pagar {
+    font-weight: 700;
+
+    &::before {
+      content: '·';
+      margin-right: var(--es-spacing-2);
+      color: var(--es-border-strong);
+    }
+
+    @media (min-width: 768px) {
+      &::before { content: none; }
     }
   }
 
   &__actions {
-    display: none;
-    align-items: center;
-    gap: var(--es-spacing-2);
-
-    @media (min-width: 768px) { display: flex; }
-  }
-
-  &__hamburger {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: var(--es-surface-alt);
-    border: 1px solid var(--es-border-strong);
-    border-radius: var(--es-radius-md);
-    color: var(--es-text-primary);
-    cursor: pointer;
-    padding: var(--es-spacing-1);
-
-    &:hover {
-      border-color: var(--es-primary);
-      color: var(--es-primary);
-      background: var(--es-bg-card);
-    }
-
-    @media (min-width: 768px) { display: none; }
+    gap: var(--es-spacing-2);
   }
 }
 
-/* ── Mobile menu ── */
-.lp-mobile-menu {
-  display: flex;
-  flex-direction: column;
-  gap: var(--es-spacing-6);
-  padding: var(--es-spacing-6);
-  background: var(--es-surface-alt);
-  border-top: 1px solid var(--es-border);
-
-  @media (min-width: 768px) { display: none; }
-
-  &__links {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--es-spacing-4);
-
-    a {
-      color: var(--es-text-primary);
-      text-decoration: none;
-      font-size: var(--es-font-size-lg);
-      font-weight: 500;
-      cursor: pointer;
-
-      &:hover { color: var(--es-primary); }
-    }
+/* Por debajo de 420px el par de botones no cabe junto a la marca sin encogerlos un punto. */
+@media (max-width: 420px) {
+  .lp-nav__actions .es-btn--sm {
+    padding: 0 var(--es-spacing-3);
+    font-size: var(--es-font-size-xs);
   }
 
-  &__actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--es-spacing-2);
-
-    .theme-toggle {
-      align-self: flex-start;
-      margin-bottom: var(--es-spacing-1);
-    }
-  }
+  .lp-nav__icono { height: 28px; }
+  .lp-nav__nombre { font-size: 1.1rem; }
 }
 
 /* ── Badge ── */
@@ -847,105 +853,6 @@
   }
 }
 
-/* ── ¿Por qué EscalApp? ── */
-.lp-why {
-  padding: var(--es-spacing-20) 0;
-  background-color: var(--es-surface-alt);
-
-  .lp-section-header__title { color: var(--es-secondary-dark); }
-  .lp-section-header .lp-badge {
-    color: var(--es-secondary-dark);
-    border-color: var(--es-secondary-dark);
-    background: rgba(49, 46, 129, 0.06);
-    lucide-icon { color: var(--es-secondary-dark); }
-  }
-
-  &__reasons {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--es-spacing-8);
-    margin-bottom: var(--es-spacing-12);
-
-    @media (min-width: 700px) { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  &__reason {
-    display: flex;
-    gap: var(--es-spacing-6);
-    align-items: flex-start;
-
-    h3 {
-      font-size: var(--es-font-size-lg);
-      font-weight: 700;
-      color: var(--es-secondary-dark);
-      margin: 0 0 var(--es-spacing-1);
-    }
-
-    p {
-      font-size: var(--es-font-size-sm);
-      color: var(--es-text-secondary);
-      line-height: 1.65;
-      margin: 0;
-    }
-  }
-
-  &__reason-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: var(--es-radius-lg);
-    flex-shrink: 0;
-
-    &--blue   { background-color: var(--es-accent-blue-bg);    color: var(--es-accent-blue); }
-    &--green  { background-color: var(--es-accent-green-bg);   color: var(--es-accent-green); }
-    &--orange { background-color: var(--es-accent-orange-bg);  color: var(--es-accent-orange); }
-    &--purple { background-color: var(--es-accent-purple-bg);  color: var(--es-accent-purple); }
-  }
-
-  &__metrics {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1px;
-    background-color: var(--es-border);
-    border: 1px solid var(--es-border);
-    border-radius: var(--es-radius-lg);
-    overflow: hidden;
-
-    @media (min-width: 768px) { grid-template-columns: repeat(4, 1fr); }
-  }
-
-  &__metric {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: var(--es-spacing-8) var(--es-spacing-6);
-    background: var(--es-gradient-metrics);
-    gap: var(--es-spacing-1);
-  }
-
-  &__metric-valor {
-    font-size: clamp(1.75rem, 4vw, 2.5rem);
-    font-weight: 800;
-    color: var(--es-on-primary);
-    line-height: 1.1;
-  }
-
-  &__metric-etiqueta {
-    font-size: var(--es-font-size-sm);
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.95);
-  }
-
-  &__metric-desc {
-    font-size: var(--es-font-size-xs);
-    color: var(--es-text-on-dark-secondary);
-    line-height: 1.4;
-  }
-}
-
 /* ── Planes (Pricing) ── */
 .lp-planes {
   padding: var(--es-spacing-20) 0;
@@ -960,38 +867,10 @@
   }
 }
 
-/* ── Selector de tipo de negocio ── */
-/* Línea «También para…» bajo el chip seleccionado. Discreta a propósito: informa de que el
-   mismo motor sirve para oficios vecinos, sin competir con los chips ni con el precio. */
-.lp-tipo-selector__adapta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  margin: var(--es-spacing-4) 0 0;
-  font-size: var(--es-font-size-sm);
-  color: var(--es-text-secondary);
-  text-align: center;
-
-  lucide-icon {
-    flex-shrink: 0;
-    color: var(--es-primary);
-  }
-}
-
-/* «También se adapta a…» — los oficios sin chip propio. Más discreta que `__adapta`: es
-   información de respaldo, no la respuesta principal a la pregunta del selector. */
-.lp-tipo-selector__otros {
-  margin: var(--es-spacing-2) 0 0;
-  font-size: var(--es-font-size-xs);
-  color: var(--es-text-secondary);
-  text-align: center;
-  max-width: 560px;
-  margin-left: auto;
-  margin-right: auto;
-  opacity: 0.85;
-}
-
+/* ── Selector de familia de negocio ── */
+/* Dos tarjetas (una por motor) en lugar de los ocho chips de oficio que hubo hasta 2026-09-19.
+   Se parecen a propósito a las pills del configurador que vienen justo debajo: es la misma
+   pregunta encadenada —qué eres, qué plan quieres— y conviene que se lea como un solo paso. */
 .lp-tipo-selector {
   text-align: center;
   margin-bottom: var(--es-spacing-12);
@@ -1002,256 +881,31 @@
     color: var(--es-secondary-dark);
     margin: 0 0 var(--es-spacing-6);
   }
-
-  &__grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--es-spacing-2);
-  }
 }
 
-.lp-tipo-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--es-spacing-1-5, 6px);
-  padding: var(--es-spacing-2) var(--es-spacing-5);
-  font-size: var(--es-font-size-sm);
-  font-weight: 500;
-  font-family: var(--es-font-sans);
-  color: var(--es-text-secondary);
-  background-color: var(--es-bg-card);
-  border: 1px solid var(--es-border);
-  border-radius: var(--es-radius-full);
-  cursor: pointer;
-  transition: all var(--es-transition-fast);
-  white-space: nowrap;
-
-  &:hover {
-    color: var(--es-secondary-dark);
-    border-color: var(--es-secondary-dark);
-    background-color: var(--es-bg-elevated);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--es-focus-ring);
-  }
-
-  &--active {
-    color: var(--es-on-primary);
-    background-color: var(--es-secondary-dark);
-    border-color: var(--es-secondary-dark);
-
-    &:hover {
-      color: var(--es-on-primary);
-      background-color: var(--es-secondary-darker);
-      border-color: var(--es-secondary-darker);
-    }
-  }
-
-  &--soon {
-    opacity: 0.65;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--es-spacing-1);
-    padding: var(--es-spacing-2) var(--es-spacing-3);
-  }
-
-  &__main {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--es-spacing-1-5, 6px);
-  }
-
-  &__soon-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--es-warning);
-    background-color: var(--es-warning-subtle);
-    border-radius: var(--es-radius-full);
-    padding: 2px var(--es-spacing-1-5, 6px);
-    white-space: nowrap;
-    line-height: 1;
-  }
-}
-
-/* ── Asistente de WhatsApp ── */
-.lp-whatsapp {
-  padding: var(--es-spacing-20) 0;
-  background-color: var(--es-bg);
-}
-
-.lp-whatsapp__capacidades {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--es-spacing-6);
-  margin-bottom: var(--es-spacing-12);
-
-  @media (min-width: 700px) { grid-template-columns: repeat(3, 1fr); }
-}
-
-.lp-whatsapp__conexion {
-  max-width: 780px;
-  margin: 0 auto;
-  text-align: center;
-}
-
-.lp-whatsapp__conexion-title {
-  font-size: var(--es-font-size-lg);
-  font-weight: 700;
-  color: var(--es-text-primary);
-  margin: 0 0 var(--es-spacing-6);
-}
-
-.lp-whatsapp__conexion-grid {
+.lp-cat-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--es-spacing-4);
-  text-align: left;
-
-  @media (min-width: 600px) { grid-template-columns: repeat(2, 1fr); }
-}
-
-.lp-whatsapp__conexion-card {
-  padding: var(--es-spacing-6);
-  background-color: var(--es-bg-card);
-  border: 1px solid var(--es-border);
-  border-radius: var(--es-radius-lg);
-  transition: border-color var(--es-transition-fast);
-
-  &:hover { border-color: var(--es-primary); }
-}
-
-.lp-whatsapp__conexion-nombre {
-  font-size: var(--es-font-size-base);
-  font-weight: 700;
-  color: var(--es-text-primary);
-  margin: 0 0 var(--es-spacing-1);
-}
-
-.lp-whatsapp__conexion-desc {
-  font-size: var(--es-font-size-sm);
-  color: var(--es-text-secondary);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.lp-whatsapp__conexion-nota {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--es-spacing-1-5, 6px);
-  margin: var(--es-spacing-6) 0 0;
-  font-size: var(--es-font-size-xs);
-  color: var(--es-text-secondary);
-  text-align: center;
-
-  lucide-icon { flex-shrink: 0; color: var(--es-accent-green); }
-}
-
-/* ── Configurador de precio ("arma tu Mac") ──
-   Dos columnas en escritorio: opciones a la izquierda, resumen pegajoso a la derecha — el
-   resumen es la respuesta a "¿cuánto cuesta?" y por eso nunca se pierde de vista. En móvil se
-   apilan, resumen primero: es lo primero que hay que poder leer sin buscar.
-
-   Desde el ancho de escritorio ancho (1180px) se abre una tercera columna para la mascota: antes
-   vivía metida al final de las opciones, pequeña y descentrada porque ahí era el único hueco que
-   quedaba. Usar el ancho real de la pantalla le da un sitio propio en vez de un rincón. */
-.lp-config {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--es-spacing-8);
-  align-items: start;
-  max-width: 1240px;
+  max-width: 760px;
   margin: 0 auto;
 
-  @media (min-width: 900px) {
-    grid-template-columns: 1fr 360px;
-  }
-  @media (min-width: 1180px) {
-    grid-template-columns: 1fr 300px 360px;
-    gap: var(--es-spacing-6);
-  }
+  @media (min-width: 640px) { grid-template-columns: repeat(2, 1fr); }
 }
 
-.lp-config__opciones {
+.lp-cat-card {
   display: flex;
-  flex-direction: column;
-  gap: var(--es-spacing-8);
-  grid-column: 1;
-  order: 2;
-
-  @media (min-width: 900px) { order: 1; }
-}
-
-.lp-config__paso {
-  display: flex;
-  gap: var(--es-spacing-4);
-}
-
-.lp-config__paso-num {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background-color: var(--es-secondary-dark);
-  color: var(--es-on-primary);
-  font-size: var(--es-font-size-sm);
-  font-weight: 700;
-}
-
-.lp-config__paso-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.lp-config__paso-title {
-  display: flex;
-  align-items: center;
-  gap: var(--es-spacing-2);
-  margin: 0 0 var(--es-spacing-1);
-  font-size: var(--es-font-size-lg);
-  font-weight: 700;
-  color: var(--es-text-primary);
-}
-
-.lp-config__paso-hint {
-  margin: 0 0 var(--es-spacing-4);
-  font-size: var(--es-font-size-sm);
-  color: var(--es-text-secondary);
-}
-
-.lp-config__pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--es-spacing-3);
-}
-
-/* Cada opción es su propia tarjeta clicable — no un radio invisible detrás de un label, para
-   que el precio de cada opción se vea sin tener que elegirla primero (como Apple lo hace con
-   memoria/almacenamiento). */
-.lp-config__pill {
-  position: relative;
-  display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
-  padding: var(--es-spacing-3) var(--es-spacing-4);
-  min-width: 132px;
+  gap: var(--es-spacing-4);
+  padding: var(--es-spacing-5);
   background-color: var(--es-bg-card);
   border: 2px solid var(--es-border);
   border-radius: var(--es-radius-lg);
   cursor: pointer;
   text-align: left;
   font-family: var(--es-font-sans);
-  transition: border-color var(--es-transition-fast), box-shadow var(--es-transition-fast);
+  transition: border-color var(--es-transition-fast), box-shadow var(--es-transition-fast),
+    background-color var(--es-transition-fast);
 
   &:hover { border-color: var(--es-secondary-dark); }
 
@@ -1260,215 +914,1275 @@
     box-shadow: var(--es-focus-ring);
   }
 
+  /* El acento de la tarjeta elegida es el índigo de la marca (#312e81 = --es-secondary-dark),
+     no el violeta --es-primary: sobre fondo claro el violeta se aclaraba tanto que la tarjeta
+     activa se leía como deshabilitada. */
   &--active {
-    border-color: var(--es-primary);
-    box-shadow: 0 0 0 1px var(--es-primary);
-    background-color: color-mix(in srgb, var(--es-primary) 6%, var(--es-bg-card));
+    border-color: var(--es-secondary-dark);
+    box-shadow: 0 0 0 1px var(--es-secondary-dark);
+    background-color: color-mix(in srgb, var(--es-secondary-dark) 5%, var(--es-bg-card));
+
+    .lp-cat-card__icon {
+      color: var(--es-on-primary);
+      background-color: var(--es-secondary-dark);
+    }
+
+    .lp-cat-card__title { color: var(--es-secondary-dark); }
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--es-radius-md);
+    color: var(--es-secondary-dark);
+    background-color: color-mix(in srgb, var(--es-secondary-dark) 8%, transparent);
+    transition: color var(--es-transition-fast), background-color var(--es-transition-fast);
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    font-size: var(--es-font-size-base);
+    font-weight: 700;
+    color: var(--es-secondary-dark);
+    line-height: 1.25;
+  }
+
+  &__tagline {
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+    line-height: 1.45;
   }
 }
 
-.lp-config__pill-badge {
-  position: absolute;
-  top: -10px;
-  right: var(--es-spacing-3);
-  padding: 2px var(--es-spacing-2);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--es-on-primary);
-  background-color: var(--es-secondary-dark);
-  border-radius: var(--es-radius-full);
-  white-space: nowrap;
-}
+/* La tira de oficios de la familia elegida. Es la que sostiene la promesa de amplitud que antes
+   hacían los chips sueltos: discreta, pero con icono, que es lo que hace que el visitante se
+   reconozca de un vistazo sin tener que leer la lista entera. */
+.lp-oficios {
+  max-width: 760px;
+  margin: var(--es-spacing-6) auto 0;
 
-.lp-config__pill-nombre {
-  font-size: var(--es-font-size-sm);
-  font-weight: 600;
-  color: var(--es-text-primary);
-}
+  &__intro {
+    margin: 0 0 var(--es-spacing-3);
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+  }
 
-.lp-config__pill-precio {
-  font-size: var(--es-font-size-sm);
-  font-weight: 700;
-  color: var(--es-primary);
-}
+  &__lista {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--es-spacing-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 
-.lp-config__pill-detalle {
-  font-size: 11px;
-  color: var(--es-text-secondary);
-}
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px var(--es-spacing-3);
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-secondary);
+    background-color: var(--es-bg-card);
+    border: 1px solid var(--es-border);
+    border-radius: var(--es-radius-full);
+    white-space: nowrap;
 
-.lp-config__mascot-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  grid-column: 1;
-  order: 3;
-
-  /* Entre 900 y 1180px sigue bajo las opciones, ya de buen tamaño. Recién a los 1180px se muda
-     a su propia columna, entre las opciones y el resumen — ahí es donde sobra ancho de verdad.
-     La columna sigue fija en 300px (ver `.lp-config`): ni opciones ni resumen se enteran de qué
-     tan grande se dibuje la imagen adentro. */
-  @media (min-width: 1180px) {
-    grid-column: 2;
-    grid-row: 1;
-    order: 2;
-    align-self: stretch;
-    position: relative; /* ancla para que la imagen se salga del cajón sin moverlo */
+    lucide-icon {
+      flex-shrink: 0;
+      color: var(--es-secondary-dark);
+    }
   }
 }
 
-.lp-config__mascot {
-  width: 100%;
-  max-width: 260px;
-  object-fit: contain;
-  filter: drop-shadow(var(--es-shadow-md));
+/* ── Asistente de WhatsApp ──
+   Una portada, no otra rejilla de tarjetas: sello de proveedor, titular, y debajo la escena —la
+   conversación y lo que queda en el sistema—. El verde es el de WhatsApp (#25d366) y se usa solo
+   donde habla el canal: el lavado del fondo, los sellos y las burbujas del asistente. Todo lo
+   demás sigue en el índigo de la marca, porque el producto es EscalApp, no WhatsApp. */
+.lp-wa {
+  --lp-wa-verde: #25d366;
+  --lp-wa-verde-hondo: #128c7e;
 
-  /* Desde 1180px la imagen se saca del flujo (`position: absolute`) y se dibuja más grande que
-     su columna de 300px, centrada sobre ella — el desbordamiento cae en el espacio vacío entre
-     opciones y resumen, así que crece sin empujar ni una ni la otra ni un píxel. El grid nunca
-     mide el tamaño real de un elemento con posición absoluta: es la única forma de garantizar
-     que agrandarla no mueve nada, no una casualidad del navegador. */
-  @media (min-width: 1180px) {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 400px;
-    max-width: none;
-  }
-}
-
-/* La tarjeta de resumen: el precio total, siempre a la vista.
-   `min-height` fija el alto al escenario más largo (Avanzado + tramo XL, seis líneas de
-   características) para que la tarjeta NO cambie de tamaño al cambiar de plan o de tramo — antes
-   crecía y encogía con cada clic y corría el resto de la página con ella. Escenarios más cortos
-   simplemente dejan aire abajo: es preferible a que la página salte. */
-.lp-config__resumen {
   position: relative;
-  grid-column: 1;
-  order: 1;
+  overflow: hidden;
+  padding: var(--es-spacing-20) 0;
+  /* El mismo fondo que Planes: las dos secciones se leen como un solo tramo —enséñame el
+     asistente, enséñame cuánto cuesta— y el verde queda reservado para el chat y los sellos,
+     que es donde de verdad habla WhatsApp. */
+  background-color: var(--es-surface-alt);
+}
+
+.lp-wa__inner {
+  position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 42rem;
-  padding: var(--es-spacing-6);
-  background-color: var(--es-bg-card);
-  border: 2px solid var(--es-secondary-dark);
-  border-radius: var(--es-radius-lg);
-  box-shadow: var(--es-shadow-featured);
-
-  @media (min-width: 900px) {
-    grid-column: 2;
-    order: 2;
-    position: sticky;
-    top: calc(var(--es-spacing-8) + 64px);
-  }
-  @media (min-width: 1180px) {
-    grid-column: 3;
-  }
-}
-
-.lp-config__resumen-badge {
-  align-self: flex-start;
-  margin-bottom: var(--es-spacing-2);
-  padding: var(--es-spacing-1) var(--es-spacing-3);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--es-on-primary);
-  background-color: var(--es-secondary-dark);
-  border-radius: var(--es-radius-full);
-}
-
-.lp-config__resumen-nombre {
-  font-size: var(--es-font-size-xl);
-  font-weight: 700;
-  color: var(--es-text-primary);
-  margin: 0 0 var(--es-spacing-1);
-}
-
-.lp-config__resumen-desc {
-  font-size: var(--es-font-size-sm);
-  color: var(--es-text-secondary);
-  margin: 0 0 var(--es-spacing-4);
-  line-height: 1.5;
-}
-
-.lp-config__resumen-precio {
-  display: flex;
-  align-items: baseline;
-  gap: var(--es-spacing-1);
-}
-
-.lp-config__resumen-monto {
-  font-size: clamp(2rem, 4vw, 2.5rem);
-  font-weight: 800;
-  color: var(--es-text-primary);
-  /* La cifra cambia de plan/tramo en cada clic — una transición corta evita que el salto de
-     número se lea como un parpadeo de error. */
-  transition: color var(--es-transition-fast);
-}
-
-.lp-config__resumen-periodo {
-  font-size: var(--es-font-size-sm);
-  color: var(--es-text-secondary);
-}
-
-.lp-config__resumen-desglose {
-  margin: var(--es-spacing-1) 0 0;
-  font-size: var(--es-font-size-xs);
-  color: var(--es-text-secondary);
-}
-
-.lp-config__resumen-trial {
-  display: flex;
   align-items: center;
-  gap: var(--es-spacing-1);
-  margin: var(--es-spacing-2) 0 var(--es-spacing-4);
+  text-align: center;
+}
+
+/* El emparejamiento de marcas. Es texto y no logos: los de Meta y WhatsApp tienen sus propias
+   normas de uso y no hay aquí ningún archivo que podamos poner sin saltárnoslas. */
+.lp-wa__lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--es-spacing-2);
+  margin: 0 0 var(--es-spacing-4);
+  font-size: var(--es-font-size-sm);
+  font-weight: 700;
+  color: var(--es-secondary-dark);
+
+  &-icono {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+
+  &-x {
+    color: var(--es-text-secondary);
+    font-weight: 500;
+  }
+
+  &-socio { color: var(--lp-wa-verde-hondo); }
+}
+
+.lp-wa__sellos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--es-spacing-2);
+  margin-bottom: var(--es-spacing-6);
+}
+
+.lp-wa__sello {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--es-spacing-2);
+  padding: var(--es-spacing-2) var(--es-spacing-4);
   font-size: var(--es-font-size-xs);
   font-weight: 600;
-  color: var(--es-accent-green);
+  color: var(--es-text-primary);
+  background-color: var(--es-bg-card);
+  border: 1px solid color-mix(in srgb, var(--lp-wa-verde) 35%, transparent);
+  border-radius: var(--es-radius-full);
+  box-shadow: var(--es-shadow-sm);
 
-  lucide-icon { color: var(--es-accent-green); }
+  lucide-icon { color: var(--lp-wa-verde-hondo); flex-shrink: 0; }
 }
 
-.lp-config__resumen-features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 var(--es-spacing-6);
+.lp-wa__title {
+  margin: 0 0 var(--es-spacing-4);
+  max-width: 18ch;
+  font-size: clamp(1.875rem, 5vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--es-secondary-dark);
+
+  &-acento {
+    /* El subrayado va detrás del texto, no debajo: así no se separa de la línea cuando el
+       titular se parte en dos renglones. */
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--lp-wa-verde) 45%, transparent) 0 28%,
+      transparent 28%
+    );
+  }
+}
+
+.lp-wa__subtitle {
+  margin: 0 0 var(--es-spacing-16);
+  max-width: 62ch;
+  font-size: var(--es-font-size-lg);
+  color: var(--es-text-secondary);
+  line-height: 1.6;
+}
+
+/* La escena. En escritorio, chat y resultado uno al lado del otro dentro del mismo marco; en
+   móvil el chat arriba y el resultado debajo, que es el orden en que ocurren. */
+.lp-wa__escena {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--es-spacing-6);
+  width: 100%;
+  max-width: 960px;
+  padding: var(--es-spacing-6);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--lp-wa-verde) 14%, var(--es-bg-card)),
+    color-mix(in srgb, var(--es-primary) 10%, var(--es-bg-card))
+  );
+  border: 1px solid color-mix(in srgb, var(--lp-wa-verde) 30%, transparent);
+  border-radius: var(--es-radius-xl);
+  box-shadow: var(--es-shadow-lg);
+
+  @media (min-width: 860px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--es-spacing-8);
+    padding: var(--es-spacing-8);
+  }
+}
+
+/* ── El chat ── */
+.lp-wa__chat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+  background-color: var(--es-bg-card);
+  border-radius: var(--es-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--es-shadow-md);
+}
+
+.lp-wa__chat-head {
+  display: flex;
+  align-items: center;
+  gap: var(--es-spacing-2);
+  padding: var(--es-spacing-3) var(--es-spacing-4);
+  color: #ffffff;
+  background-color: var(--lp-wa-verde-hondo);
+
+  lucide-icon { margin-left: auto; opacity: 0.9; }
+}
+
+.lp-wa__chat-avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: contain;
+  background-color: #ffffff;
+  padding: 3px;
+}
+
+.lp-wa__chat-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+
+  strong { font-size: var(--es-font-size-sm); }
+  small { font-size: 11px; opacity: 0.85; }
+}
+
+/* El papel de fondo del chat: el punteado imita el de WhatsApp sin copiar su imagen. */
+.lp-wa__chat-body {
   display: flex;
   flex-direction: column;
   gap: var(--es-spacing-2);
+  padding: var(--es-spacing-4);
+  background-color: color-mix(in srgb, var(--lp-wa-verde) 6%, var(--es-bg));
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--es-secondary-dark) 8%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 16px 16px;
+}
 
-  li {
+.lp-wa__burbuja {
+  position: relative;
+  align-self: flex-start;
+  max-width: 86%;
+  margin: 0;
+  padding: var(--es-spacing-2) var(--es-spacing-3) 18px;
+  font-size: var(--es-font-size-sm);
+  line-height: 1.45;
+  color: var(--es-text-primary);
+  background-color: var(--es-bg-card);
+  border-radius: 12px 12px 12px 2px;
+  box-shadow: var(--es-shadow-sm);
+
+  &--bot {
+    align-self: flex-end;
+    color: #0b3d2c;
+    background-color: color-mix(in srgb, var(--lp-wa-verde) 30%, #ffffff);
+    border-radius: 12px 12px 2px 12px;
+  }
+}
+
+.lp-wa__hora {
+  position: absolute;
+  right: var(--es-spacing-3);
+  bottom: 5px;
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* Los tres puntos de «escribiendo…». Sin animación si el visitante la ha desactivado. */
+.lp-wa__escribiendo {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--es-spacing-2) var(--es-spacing-3);
+  background-color: var(--es-bg-card);
+  border-radius: 12px 12px 12px 2px;
+  box-shadow: var(--es-shadow-sm);
+
+  i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--es-secondary-dark) 40%, transparent);
+    animation: lp-wa-punto 1.2s infinite ease-in-out;
+
+    &:nth-child(2) { animation-delay: 0.15s; }
+    &:nth-child(3) { animation-delay: 0.3s; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    i { animation: none; }
+  }
+}
+
+@keyframes lp-wa-punto {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30%           { opacity: 1;    transform: translateY(-3px); }
+}
+
+/* ── Lo que queda en el sistema ── */
+.lp-wa__resultado {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  text-align: left;
+  padding: var(--es-spacing-5);
+  background-color: var(--es-bg-card);
+  border-radius: var(--es-radius-lg);
+  box-shadow: var(--es-shadow-md);
+}
+
+.lp-wa__resultado-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--es-spacing-1);
+  margin: 0 0 var(--es-spacing-4);
+  font-size: var(--es-font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--es-secondary-dark);
+
+  lucide-icon { color: var(--es-primary); }
+}
+
+.lp-wa__resultado-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--es-spacing-4);
+}
+
+.lp-wa__resultado-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--es-spacing-3);
+}
+
+.lp-wa__resultado-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--es-radius-sm);
+  color: var(--es-on-primary);
+  background-color: var(--es-secondary-dark);
+}
+
+.lp-wa__resultado-texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong {
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-primary);
+    line-height: 1.3;
+  }
+
+  small {
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-secondary);
+    line-height: 1.4;
+  }
+}
+
+.lp-wa__resultado-nota {
+  margin: auto 0 0;
+  padding-top: var(--es-spacing-4);
+  font-size: var(--es-font-size-xs);
+  color: var(--es-text-secondary);
+  line-height: 1.5;
+}
+
+/* Las tres capacidades, sin caja: iconos y texto a secas. Eran tarjetas y sumaban el quinto
+   bloque de tarjetas de la página. */
+.lp-wa__capacidades {
+  list-style: none;
+  padding: 0;
+  margin: var(--es-spacing-16) 0 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--es-spacing-6);
+  width: 100%;
+  max-width: 960px;
+
+  @media (min-width: 720px) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.lp-wa__capacidad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--es-spacing-1);
+  min-width: 0;
+
+  lucide-icon {
+    margin-bottom: var(--es-spacing-1);
+    color: var(--lp-wa-verde-hondo);
+  }
+
+  strong {
+    font-size: var(--es-font-size-base);
+    color: var(--es-secondary-dark);
+  }
+
+  span {
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+    line-height: 1.5;
+    max-width: 34ch;
+  }
+}
+
+/* ── Las cuatro tarjetas de plan ──
+   Una columna en móvil, dos en tablet y las cuatro de frente a partir de 1100px.
+
+   `minmax(0, 1fr)` y no `1fr`: con `1fr` el mínimo de cada columna es el ancho de su contenido,
+   así que la tarjeta con la línea más larga se lleva más espacio que las demás y las cuatro
+   salen de anchos distintos. Con mínimo 0 las columnas miden lo mismo y el texto se parte. */
+.lp-planes__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--es-spacing-6);
+  align-items: stretch;
+  max-width: 1280px;
+  margin: 0 auto;
+
+  @media (min-width: 720px)  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (min-width: 1100px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--es-spacing-4);
+  }
+
+  /* Con el detalle abierto la rejilla entera pasa a segundo plano: se queda donde está, borrosa
+     y sin poder pulsarse. El foco es la tarjeta de detalle que se dibuja encima. */
+  transition: filter 220ms ease, opacity 220ms ease;
+
+  &--difuminada {
+    filter: blur(3px);
+    opacity: 0.45;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) { transition: none; }
+}
+
+.lp-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--es-spacing-6);
+  background-color: var(--es-bg-card);
+  border: 1px solid var(--es-border);
+  border-radius: var(--es-radius-lg);
+  box-shadow: var(--es-shadow-sm);
+
+  /* La destacada no es más grande ni se sale de la fila: solo el borde índigo y una sombra algo
+     más marcada. Escalarla rompía la alineación de los precios, que es lo que se compara. */
+  &--destacado {
+    border: 2px solid var(--es-secondary-dark);
+    box-shadow: var(--es-shadow-lg);
+  }
+
+  &__badge {
+    position: absolute;
+    top: -12px;
+    left: var(--es-spacing-6);
+    padding: var(--es-spacing-1) var(--es-spacing-3);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--es-on-primary);
+    background-color: var(--es-secondary-dark);
+    border-radius: var(--es-radius-full);
+  }
+
+  /* Nombre y descripción llevan alto mínimo (dos y tres renglones) desde que las tarjetas van
+     lado a lado. Es lo que alinea TODO lo de abajo entre tarjetas: «Emprendedor Total» ocupa un
+     renglón y «Emprendedor + Asistente IA» dos, así que sin esto una tarjeta arrancaba el precio
+     26px más arriba que su vecina y a partir de ahí nada volvía a cuadrar. */
+  &__nombre {
+    margin: 0 0 var(--es-spacing-1);
+    font-size: var(--es-font-size-lg);
+    font-weight: 700;
+    color: var(--es-secondary-dark);
+    line-height: 1.3;
+
+    @media (min-width: 720px) { min-height: calc(2 * 1.3em); }
+  }
+
+  &__desc {
+    margin: 0 0 var(--es-spacing-4);
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+    line-height: 1.5;
+
+    @media (min-width: 720px) { min-height: calc(3 * 1.5em); }
+  }
+
+  &__precio {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--es-spacing-1);
+  }
+
+  &__monto {
+    font-size: clamp(1.625rem, 2.4vw, 2rem);
+    font-weight: 800;
+    color: var(--es-text-primary);
+  }
+
+  &__periodo {
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+  }
+
+  /* La única letra pequeña bajo el precio. Antes aquí iba el desglose «$27.999 del plan +
+     $39.000 de facturación», que invitaba a auditar la suma en vez de leer el precio; lo que
+     hace falta a esa altura es quitar el miedo a quedarse amarrado. Dos renglones de alto
+     mínimo: en las tarjetas anchas cabe en uno y en las estrechas en dos, y la lista de abajo
+     no puede moverse por eso. */
+  &__garantia {
+    display: flex;
+    align-items: center;
+    gap: var(--es-spacing-1);
+    margin: var(--es-spacing-2) 0 var(--es-spacing-4);
+    font-size: var(--es-font-size-xs);
+    line-height: 1.4;
+    color: var(--es-text-secondary);
+
+    lucide-icon { color: var(--es-accent-green); flex-shrink: 0; }
+
+    @media (min-width: 720px) { min-height: calc(2 * 1.4em); align-items: flex-start; }
+  }
+
+  /* La lista tiene alto mínimo de seis renglones —cinco funciones y el «y N más»—, que es lo que
+     enseña cualquier tarjeta con desplegable. Así los recuadros de módulo que van justo debajo
+     arrancan a la misma altura en las cuatro. */
+  &__features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--es-spacing-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--es-spacing-2);
+
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--es-spacing-2);
+      font-size: var(--es-font-size-sm);
+      color: var(--es-text-primary);
+      line-height: 1.4;
+
+      lucide-icon { color: var(--es-accent-green); flex-shrink: 0; margin-top: 1px; }
+    }
+  }
+
+  /* «y 3 funciones más»: dice que la lista sigue sin fingir que cabe. */
+  &__features-resto {
+    padding-left: calc(16px + var(--es-spacing-2));
+    font-size: var(--es-font-size-xs);
+    font-style: italic;
+    color: var(--es-text-secondary);
+  }
+
+  &__modulos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--es-spacing-2);
+    margin-bottom: var(--es-spacing-4);
+  }
+
+  /* El chip de módulo: mismo alto, mismo padding y mismo icono para el asistente y para la
+     facturación — es un solo bloque de estilos para los dos, así que no pueden desalinearse
+     entre sí. El alto mínimo cubre el título de dos renglones sin que el de uno se vea flaco. */
+  &__chip {
     display: flex;
     align-items: center;
     gap: var(--es-spacing-2);
-    font-size: var(--es-font-size-sm);
+    min-height: 56px;
+    padding: var(--es-spacing-2) var(--es-spacing-3);
+    border: 1px solid color-mix(in srgb, var(--es-secondary-dark) 22%, transparent);
+    border-radius: var(--es-radius-md);
+    background-color: color-mix(in srgb, var(--es-secondary-dark) 5%, var(--es-bg-card));
+
+    /* Dentro del detalle el chip es solo la cabecera del módulo: sin caja, para que no parezca
+       una tarjeta dentro de otra. */
+    &--plano {
+      min-height: 0;
+      padding: 0;
+      border: none;
+      background: none;
+    }
+  }
+
+  &__chip-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--es-radius-sm);
+    color: var(--es-on-primary);
+    background-color: var(--es-secondary-dark);
+  }
+
+  &__chip-titulo {
+    font-size: var(--es-font-size-xs);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--es-secondary-dark);
+  }
+
+  /* El pie se pega abajo con `margin-top: auto`, así los botones de las cuatro tarjetas quedan
+     a la misma altura por mucho que difiera lo de encima. */
+  &__pie {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--es-spacing-2);
+    margin-top: auto;
+    padding-top: var(--es-spacing-2);
+  }
+
+  &__cta {
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+  }
+
+  &__detalle-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--es-spacing-1);
+    padding: var(--es-spacing-1) var(--es-spacing-2);
+    font-family: var(--es-font-sans);
+    font-size: var(--es-font-size-xs);
+    font-weight: 600;
+    color: var(--es-secondary-dark);
+    background: none;
+    border: none;
+    border-radius: var(--es-radius-sm);
+    cursor: pointer;
+    transition: background-color var(--es-transition-fast);
+
+    &:hover { background-color: color-mix(in srgb, var(--es-secondary-dark) 6%, transparent); }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--es-focus-ring);
+    }
+
+    /* La prueba gratuita del Emprendedor ocupa el sitio del desplegable, así que se pinta en
+       verde: es una oferta, no un «ver más». */
+    &--trial {
+      color: var(--es-accent-green);
+      lucide-icon { color: var(--es-accent-green); }
+
+      &:hover { background-color: color-mix(in srgb, var(--es-accent-green) 10%, transparent); }
+    }
+  }
+
+  /* Los cuatro paquetes de documentos: lo único elegible de la sección, y solo dentro del
+     detalle, donde hay ancho para ponerlos en fila. */
+  &__paquete {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--es-spacing-3) var(--es-spacing-2);
+    background-color: var(--es-bg-card);
+    border: 1px solid var(--es-border);
+    border-radius: var(--es-radius-sm);
+    cursor: pointer;
+    font-family: var(--es-font-sans);
+    transition: border-color var(--es-transition-fast), background-color var(--es-transition-fast),
+      color var(--es-transition-fast);
+
+    &:hover { border-color: var(--es-secondary-dark); }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--es-focus-ring);
+    }
+
+    &--active {
+      border-color: var(--es-secondary-dark);
+      box-shadow: 0 0 0 1px var(--es-secondary-dark);
+      background-color: color-mix(in srgb, var(--es-secondary-dark) 8%, var(--es-bg-card));
+
+      .lp-plan__paquete-id { color: var(--es-secondary-dark); }
+    }
+  }
+
+  &__paquete-id {
+    font-size: var(--es-font-size-base);
+    font-weight: 800;
+    line-height: 1;
     color: var(--es-text-primary);
+  }
+
+  &__paquete-docs {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    color: var(--es-text-secondary);
+    white-space: nowrap;
+
+    lucide-icon { flex-shrink: 0; color: var(--es-secondary-dark); }
+  }
+}
+
+/* ── La tarjeta de detalle ──
+   No es la tarjeta del plan agrandada, es otra tarjeta: ancha, centrada sobre la pantalla y con
+   el contenido repartido en columnas, que es lo que permite enseñarlo todo sin una columna de
+   dos metros. La rejilla de atrás no se mueve ni se vacía — se desenfoca (ver
+   `.lp-planes__grid--difuminada`), así que se sigue viendo de dónde salió esta. */
+.lp-detalle-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background-color: rgba(15, 23, 42, 0.35);
+  animation: lp-detalle-fondo-in 200ms ease;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+
+.lp-detalle {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 60;
+  width: min(1040px, 94vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  padding: var(--es-spacing-8);
+  background-color: var(--es-bg-card);
+  border: 2px solid var(--es-secondary-dark);
+  border-radius: var(--es-radius-lg);
+  box-shadow: var(--es-shadow-xl);
+  animation: lp-detalle-in 220ms ease;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+  @media (max-width: 600px) { padding: var(--es-spacing-5); }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--es-spacing-4);
+    padding-bottom: var(--es-spacing-5);
+    border-bottom: 1px solid var(--es-border);
+  }
+
+  &__titulos { min-width: 0; }
+
+  &__badge {
+    display: inline-block;
+    margin-bottom: var(--es-spacing-2);
+    padding: var(--es-spacing-1) var(--es-spacing-3);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--es-on-primary);
+    background-color: var(--es-secondary-dark);
+    border-radius: var(--es-radius-full);
+  }
+
+  &__nombre {
+    margin: 0 0 var(--es-spacing-1);
+    font-size: var(--es-font-size-xl);
+    font-weight: 700;
+    color: var(--es-secondary-dark);
+    line-height: 1.25;
+  }
+
+  &__desc {
+    margin: 0;
+    max-width: 52ch;
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+    line-height: 1.5;
+  }
+
+  &__precio {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+
+    @media (max-width: 600px) { align-items: flex-start; }
+  }
+
+  &__monto {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--es-text-primary);
+  }
+
+  &__periodo {
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+  }
+
+  &__garantia {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--es-spacing-1);
+    margin-top: var(--es-spacing-2);
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-secondary);
 
     lucide-icon { color: var(--es-accent-green); flex-shrink: 0; }
   }
 
-  .lp-config__resumen-feature--extra {
-    font-weight: 600;
-    lucide-icon { color: var(--es-primary); }
+  /* El año completo, debajo del mensual. Lo tachado es lo que costaría comprando el
+     certificado por fuera; la diferencia es el certificado y nada más. */
+  &__anual {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    margin-top: var(--es-spacing-3);
+    padding-top: var(--es-spacing-3);
+    border-top: 1px dashed var(--es-border);
+
+    @media (max-width: 600px) { align-items: flex-start; }
   }
 
-  .lp-config__resumen-feature--soon {
+  &__anual-linea {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--es-spacing-2);
+  }
+
+  &__anual-tachado {
+    font-size: var(--es-font-size-sm);
     color: var(--es-text-secondary);
-    font-style: italic;
-    lucide-icon { color: var(--es-warning); }
+    text-decoration: line-through;
+  }
+
+  &__anual-monto {
+    font-size: var(--es-font-size-lg);
+    font-weight: 800;
+    color: var(--es-text-primary);
+  }
+
+  &__anual-periodo {
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-secondary);
+  }
+
+  &__anual-ahorro {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--es-spacing-1);
+    font-size: var(--es-font-size-xs);
+    font-weight: 600;
+    color: var(--es-accent-green);
+
+    lucide-icon { color: var(--es-accent-green); flex-shrink: 0; }
+  }
+
+  &__cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--es-spacing-6) var(--es-spacing-8);
+    padding: var(--es-spacing-6) 0;
+
+    @media (min-width: 820px) { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  }
+
+  &__bloque { min-width: 0; }
+
+  &__bloque-title {
+    margin: 0 0 var(--es-spacing-3);
+    font-size: var(--es-font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--es-text-secondary);
+  }
+
+  /* La lista larga se parte en dos columnas en cuanto hay ancho: es el espacio que la tarjeta
+     de detalle vino a aprovechar. */
+  &__features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--es-spacing-2) var(--es-spacing-6);
+
+    @media (min-width: 560px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    li {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--es-spacing-2);
+      font-size: var(--es-font-size-sm);
+      color: var(--es-text-primary);
+      line-height: 1.4;
+
+      lucide-icon { color: var(--es-accent-green); flex-shrink: 0; margin-top: 1px; }
+    }
+  }
+
+  &__modulos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--es-spacing-4);
+  }
+
+  &__modulo {
+    padding: var(--es-spacing-4);
+    border: 1px solid color-mix(in srgb, var(--es-secondary-dark) 22%, transparent);
+    border-radius: var(--es-radius-md);
+    background-color: color-mix(in srgb, var(--es-secondary-dark) 5%, var(--es-bg-card));
+  }
+
+  &__puntos {
+    list-style: none;
+    padding: 0;
+    margin: var(--es-spacing-2) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--es-spacing-1);
+
+    li {
+      position: relative;
+      padding-left: var(--es-spacing-4);
+      font-size: var(--es-font-size-xs);
+      color: var(--es-text-secondary);
+      line-height: 1.45;
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 7px;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background-color: var(--es-secondary-dark);
+      }
+    }
+  }
+
+  &__paquetes-wrap {
+    padding: var(--es-spacing-5) 0;
+    border-top: 1px solid var(--es-border);
+  }
+
+  &__paquetes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--es-spacing-2);
+
+    @media (min-width: 560px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  }
+
+  /* El bloque de facturación electrónica. Estuvo en ámbar, como una advertencia, mientras el
+     certificado se compraba aparte; ahora va incluido en el plan, así que va en verde: lo que
+     cuenta es lo que el cliente se lleva, y el plan anual es la consecuencia, no la letra
+     pequeña. */
+  &__legal {
+    margin-top: var(--es-spacing-2);
+    padding: var(--es-spacing-5);
+    border: 1px solid color-mix(in srgb, var(--es-accent-green) 35%, transparent);
+    border-radius: var(--es-radius-md);
+    background-color: color-mix(in srgb, var(--es-accent-green) 7%, var(--es-bg-card));
+  }
+
+  &__legal-head {
+    display: flex;
+    align-items: center;
+    gap: var(--es-spacing-2);
+    margin-bottom: var(--es-spacing-3);
+  }
+
+  &__legal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--es-radius-sm);
+    color: var(--es-on-primary);
+    background-color: var(--es-accent-green);
+  }
+
+  &__legal-title {
+    margin: 0;
+    font-size: var(--es-font-size-sm);
+    font-weight: 700;
+    color: var(--es-text-primary);
+    line-height: 1.25;
+  }
+
+  &__legal-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--es-spacing-3);
+
+    /* A lo ancho del detalle caben los tres puntos en fila: el aviso se lee entero de un
+       vistazo en vez de convertirse en un párrafo largo que nadie termina. */
+    @media (min-width: 820px) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    li {
+      font-size: var(--es-font-size-xs);
+      color: var(--es-text-secondary);
+      line-height: 1.5;
+
+      strong { display: block; color: var(--es-text-primary); }
+    }
+  }
+
+  &__legal-nota {
+    margin: var(--es-spacing-3) 0 0;
+    padding-top: var(--es-spacing-3);
+    border-top: 1px solid color-mix(in srgb, var(--es-accent-green) 25%, transparent);
+    font-size: 11px;
+    color: var(--es-text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Los dos botones, centrados como pareja: «Ver menos» a la izquierda y «Adquirir plan» a la
+     derecha. Centrados y no pegados a los bordes — a 1040px de ancho, separarlos hasta las
+     esquinas los deja tan lejos que dejan de leerse como las dos salidas de la misma tarjeta. */
+  &__pie {
+    /* Pegado al fondo de la tarjeta mientras se desplaza su contenido. En un teléfono el
+       detalle mide más que la pantalla y los dos botones quedaban al final de todo: quien no
+       llegaba abajo no sabía que existían ni cómo salir. El margen negativo lo estira hasta los
+       bordes para que el contenido no se vea pasar por los lados. */
+    position: sticky;
+    bottom: calc(var(--es-spacing-8) * -1);
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--es-spacing-4);
+    margin: 0 calc(var(--es-spacing-8) * -1) calc(var(--es-spacing-8) * -1);
+    padding: var(--es-spacing-4) var(--es-spacing-8);
+    background-color: var(--es-bg-card);
+    border-top: 1px solid var(--es-border);
+    box-shadow: 0 -8px 20px -12px rgba(0, 0, 0, 0.25);
+
+    @media (max-width: 600px) {
+      bottom: calc(var(--es-spacing-5) * -1);
+      margin: 0 calc(var(--es-spacing-5) * -1) calc(var(--es-spacing-5) * -1);
+      padding: var(--es-spacing-3) var(--es-spacing-5);
+    }
+  }
+
+  &__volver {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--es-spacing-1);
+    padding: var(--es-spacing-2) var(--es-spacing-4);
+    font-family: var(--es-font-sans);
+    font-size: var(--es-font-size-sm);
+    font-weight: 600;
+    color: var(--es-secondary-dark);
+    background: none;
+    border: 1px solid var(--es-border);
+    border-radius: var(--es-radius-full);
+    cursor: pointer;
+    transition: border-color var(--es-transition-fast), background-color var(--es-transition-fast);
+
+    &:hover {
+      border-color: var(--es-secondary-dark);
+      background-color: color-mix(in srgb, var(--es-secondary-dark) 5%, transparent);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--es-focus-ring);
+    }
+  }
+
+  &__cta {
+    text-decoration: none;
+    min-width: 220px;
+    justify-content: center;
   }
 }
 
-.lp-config__resumen-cta {
-  width: 100%;
+@keyframes lp-detalle-in {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes lp-detalle-fondo-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Complementos ──
+   Tres tarjetas pequeñas debajo de los planes: qué se puede sumar y cuánto cuesta. Es el pie de
+   página del precio —quien lo lee ya eligió plan y comprueba que crecer no obliga a cambiarse—,
+   así que van en un bloque angosto y con menos peso visual que los planes. */
+.lp-extras {
+  max-width: 1000px;
+  margin: var(--es-spacing-16) auto 0;
+}
+
+.lp-extras__title {
+  margin: 0 0 var(--es-spacing-1);
+  font-size: var(--es-font-size-lg);
+  font-weight: 700;
+  color: var(--es-secondary-dark);
   text-align: center;
-  text-decoration: none;
-  margin-top: auto;
+}
+
+.lp-extras__subtitle {
+  margin: 0 0 var(--es-spacing-6);
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+  text-align: center;
+}
+
+.lp-extras__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--es-spacing-4);
+  align-items: stretch;
+
+  @media (min-width: 720px) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.lp-extra {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: var(--es-spacing-4);
+  background-color: var(--es-bg-card);
+  border: 1px solid var(--es-border);
+  border-radius: var(--es-radius-md);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: var(--es-spacing-2);
+    margin-bottom: var(--es-spacing-2);
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--es-radius-sm);
+    color: var(--es-on-primary);
+    background-color: var(--es-secondary-dark);
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: var(--es-font-size-sm);
+    font-weight: 700;
+    color: var(--es-text-primary);
+    line-height: 1.25;
+  }
+
+  &__desc {
+    margin: 0 0 var(--es-spacing-3);
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-secondary);
+    line-height: 1.45;
+  }
+
+  &__precio {
+    margin: auto 0 0;
+    font-size: var(--es-font-size-lg);
+    font-weight: 800;
+    color: var(--es-secondary-dark);
+
+    span {
+      font-size: var(--es-font-size-xs);
+      font-weight: 500;
+      color: var(--es-text-secondary);
+    }
+  }
+
+  /* La facturación no tiene un precio, tiene cuatro: cuatro renglones antes que un «desde
+     $38.999» que obligue a buscar el resto en otra parte. */
+  &__paquetes {
+    list-style: none;
+    padding: 0;
+    margin: auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__paquete {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--es-spacing-1);
+    font-size: 11px;
+    color: var(--es-text-secondary);
+
+    strong { font-weight: 800; color: var(--es-secondary-dark); }
+    em { font-style: normal; font-weight: 700; color: var(--es-text-primary); }
+  }
 }
 
 /* ── Barra de anuncio ── */
@@ -1520,8 +2234,11 @@
     &:hover { opacity: 0.85; }
   }
 
+  /* En móvil el texto se escondía y la barra quedaba en «NUEVO · Ver plan», que no anuncia
+     nada. Se queda, en cuerpo pequeño y con el ancho de la pantalla. */
   @media (max-width: 600px) {
-    &__text { display: none; }
+    &__inner { gap: var(--es-spacing-1) var(--es-spacing-2); }
+    &__text { font-size: var(--es-font-size-xs); line-height: 1.35; }
   }
 }
 
@@ -2390,8 +3107,7 @@
   .lp-how,
   .lp-features,
   .lp-eco,
-  .lp-why,
-  .lp-whatsapp,
+  .lp-wa,
   .lp-planes {
     background-color: var(--es-dark-surface-base);
   }
@@ -2419,16 +3135,18 @@
   /* Contenedores elevados → superficie elevada */
   .lp-how__step,
   .lp-feature-card,
-  .lp-config__pill,
-  .lp-config__resumen,
-  .lp-whatsapp__conexion-card,
-  .lp-how__callout,
-  .lp-why__metric {
+  .lp-plan,
+  .lp-plan__paquete,
+  .lp-wa__chat,
+  .lp-wa__resultado,
+  .lp-wa__sello,
+  .lp-how__callout {
     background-color: var(--es-dark-surface-elevated);
   }
 
-  /* Chips interactivos */
-  .lp-tipo-chip {
+  /* Tarjetas de familia y tira de oficios */
+  .lp-cat-card,
+  .lp-oficios__item {
     background-color: var(--es-dark-surface-elevated);
     border-color: var(--es-dark-surface-border);
   }
@@ -2442,8 +3160,7 @@
 
   /* Overrides para texto #312e81 → claro en dark mode */
   .lp-how,
-  .lp-why,
-  .lp-whatsapp,
+  .lp-wa,
   .lp-planes {
     .lp-section-header__title { color: var(--es-text-on-dark); }
     .lp-section-header .lp-badge {
@@ -2454,11 +3171,10 @@
     }
   }
 
-  .lp-whatsapp__conexion-title { color: var(--es-text-on-dark); }
-  .lp-whatsapp__conexion-card {
-    border-color: var(--es-dark-surface-border);
-    &:hover { border-color: var(--es-primary); }
-  }
+  .lp-wa__title,
+  .lp-wa__lockup,
+  .lp-wa__resultado-tag,
+  .lp-wa__capacidad strong { color: var(--es-text-on-dark); }
 
   .lp-how__step {
     border-color: var(--es-dark-surface-border);
@@ -2466,24 +3182,18 @@
     h3 { color: var(--es-text-on-dark); }
   }
   .lp-how__step-num { background: var(--es-primary); }
-  .lp-why__reason h3 { color: var(--es-text-on-dark); }
   .lp-tipo-selector__label { color: var(--es-text-on-dark); }
-  .lp-config__pill { border-color: var(--es-dark-surface-border); }
-  .lp-config__pill--active { border-color: var(--es-primary); }
-  .lp-config__resumen { border-color: var(--es-primary); }
-  .lp-config__resumen-badge,
-  .lp-config__pill-badge { background-color: var(--es-primary); }
-  .lp-tipo-chip {
-    &:hover { color: var(--es-primary); border-color: var(--es-primary); }
-    &--active {
-      color: var(--es-on-primary);
-      background: var(--es-primary);
-      border-color: var(--es-primary);
-      &:hover {
-        color: var(--es-on-primary);
-        background: var(--es-primary-hover);
-        border-color: var(--es-primary-hover);
-      }
-    }
+  .lp-plan { border-color: var(--es-dark-surface-border); }
+  .lp-plan--destacado { border-color: var(--es-primary); }
+  .lp-plan__nombre,
+  .lp-plan__chip-titulo,
+  .lp-detalle__nombre { color: var(--es-text-on-dark); }
+  .lp-plan__badge,
+  .lp-plan__chip-icon,
+  .lp-detalle__badge { background-color: var(--es-primary); }
+  .lp-cat-card {
+    &:hover { border-color: var(--es-primary); }
+    &--active { border-color: var(--es-primary); }
+    &__title { color: var(--es-text-on-dark); }
   }
 }
