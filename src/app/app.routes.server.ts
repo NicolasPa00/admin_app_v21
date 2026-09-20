@@ -11,6 +11,12 @@ export const serverRoutes: ServerRoute[] = [
     path: 'dashboard/negocio/:tipoId',
     renderMode: RenderMode.Server,
   },
+  // La compra depende de los parámetros de la URL y de dos consultas al API: no hay HTML
+  // estático que valga, y el que se prerenderizaba chocaba al hidratar.
+  {
+    path: 'adquirir',
+    renderMode: RenderMode.Client,
+  },
   // Resto de rutas → prerenderizar estáticamente
   {
     path: '**',

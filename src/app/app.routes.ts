@@ -37,6 +37,17 @@ export const routes: Routes = [
     title: 'Cómo eliminar tus datos — EscalApp',
   },
 
+  // Compra de un plan — SIN guardia: quien compra todavía no tiene cuenta. La vista crea el
+  // usuario y el negocio (apagados) y los enciende cuando la pasarela confirma el pago.
+  // Es una ruta y no un modal porque a mitad del flujo el visitante se va al checkout de la
+  // pasarela: la vuelta tiene que ser una URL con la referencia.
+  {
+    path: 'adquirir',
+    loadComponent: () =>
+      import('./adquirir/adquirir-page.component').then((m) => m.AdquirirPageComponent),
+    title: 'Adquiere tu plan — EscalApp',
+  },
+
   // Portal de pagos — SIN guardia a propósito: exigir login para pagar es la forma más eficaz de
   // que no paguen. Con el número de identificación del administrador se consulta y se paga.
   // Se prerenderiza como estática; los datos llegan después, desde el navegador.

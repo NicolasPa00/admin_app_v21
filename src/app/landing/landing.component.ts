@@ -19,6 +19,7 @@ import {
   Store,
   Smartphone,
   ArrowRight,
+  Menu,
   X,
   UtensilsCrossed,
   Coffee,
@@ -129,19 +130,12 @@ const RUBROS_RESPALDO: TipoNegocio[] = [
   // ── Motor reserva ──
   { id: 8,  nombre: 'BARBERIA',            icon: 'scissors',    label: 'Barbería',         disponible: true, modulo: 'RESERVA' },
   { id: 9,  nombre: 'SALON DE BELLEZA',    icon: 'sparkles',    label: 'Salón de belleza', disponible: true, modulo: 'RESERVA' },
-  { id: 10, nombre: 'PELUQUERIA',          icon: 'scissors',    label: 'Peluquería',       disponible: true, modulo: 'RESERVA' },
   { id: 11, nombre: 'SPA Y ESTETICA',      icon: 'flower-2',    label: 'Spa',              disponible: true, modulo: 'RESERVA' },
   { id: 15, nombre: 'CENTRO DE ESTETICA',  icon: 'syringe',     label: 'Centro de estética', disponible: true, modulo: 'RESERVA' },
-  { id: 12, nombre: 'MANICURE Y PEDICURE', icon: 'hand',        label: 'Uñas',             disponible: true, modulo: 'RESERVA' },
-  { id: 13, nombre: 'MASAJES',             icon: 'hand-heart',  label: 'Masajes',          disponible: true, modulo: 'RESERVA' },
   { id: 16, nombre: 'TATUAJES Y PERFORACIONES', icon: 'pen-tool', label: 'Tatuajes y perforaciones', disponible: true, modulo: 'RESERVA' },
-  { id: 17, nombre: 'PELUQUERIA CANINA',   icon: 'paw-print',   label: 'Peluquería y spa de mascotas', disponible: true, modulo: 'RESERVA' },
-  { id: 18, nombre: 'GUARDERIA DE MASCOTAS', icon: 'dog',       label: 'Guardería y hotel de mascotas', disponible: true, modulo: 'RESERVA' },
+  { id: 17, nombre: 'PELUQUERIA CANINA',   icon: 'paw-print',   label: 'Cuidado de mascotas', disponible: true, modulo: 'RESERVA' },
   { id: 14, nombre: 'CONSULTORIO',         icon: 'stethoscope', label: 'Consultorio',      disponible: true, modulo: 'RESERVA' },
-  { id: 19, nombre: 'HOTEL',               icon: 'hotel',       label: 'Hotel',            disponible: true, modulo: 'RESERVA' },
-  { id: 20, nombre: 'HOSTAL',              icon: 'bed-double',  label: 'Hostal',           disponible: true, modulo: 'RESERVA' },
-  { id: 21, nombre: 'CABANAS Y GLAMPING',  icon: 'tent',        label: 'Cabañas / Glamping', disponible: true, modulo: 'RESERVA' },
-  { id: 22, nombre: 'APARTAMENTOS TURISTICOS', icon: 'building-2', label: 'Apartamentos turísticos', disponible: true, modulo: 'RESERVA' },
+  { id: 19, nombre: 'HOTEL',               icon: 'hotel',       label: 'Hospedaje',        disponible: true, modulo: 'RESERVA' },
 ];
 
 /**
@@ -468,8 +462,8 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     destacado: false,
   },
   {
-    id: 'emprendedor-total',
-    nombre: 'Emprendedor Total',
+    id: 'empresarial',
+    nombre: 'Plan Empresarial',
     descripcion: 'Todo junto: el sistema, el asistente de IA y la facturación electrónica.',
     base: 'AVANZADO',
     conAsistente: true,
@@ -683,7 +677,7 @@ type ModalStep = 'form' | 'otp' | 'success';
       useValue: new LucideIconProvider({
         Sun, Moon, Rocket, Shield, Users, BarChart3,
         ChevronRight, Check, Star, Zap, Store, Smartphone,
-        ArrowRight, X, Clock, Loader2, CheckCheck,
+        ArrowRight, Menu, X, Clock, Loader2, CheckCheck,
         Mail, Building2, Facebook, Instagram, Youtube, FileText, MessageCircle,
         UtensilsCrossed, Coffee, Sparkles, Beer, CakeSlice, Bike, HandHeart,
         Car, Scissors, ShoppingCart, ShoppingBag,
@@ -777,6 +771,9 @@ export class LandingComponent {
   protected readonly resultadosDemo       = RESULTADOS_DEMO;
   protected readonly ecosistema          = ECOSISTEMA;
   protected readonly currentYear         = new Date().getFullYear();
+
+  /** El desplegable de navegación; solo existe en móvil (ver `.lp-nav__menu-btn` en el SCSS). */
+  protected readonly menuAbierto = signal(false);
   /** Enlace de WhatsApp con el mensaje predeterminado precargado. */
   protected readonly waUrl               =
     `${environment.whatsappUrl}?text=${encodeURIComponent('Hola!, quiero adquirir Escalapp')}`;
@@ -1154,15 +1151,15 @@ export class LandingComponent {
   });
 
   /**
-   * A dónde va el botón de un plan de pago.
+   * A dónde va el botón «Adquirir plan»: a la vista de compra, con lo que ya eligió.
    *
-   * La pantalla de compra todavía no existe, así que el botón abre WhatsApp con el plan escrito
-   * — un cliente que quiere pagar no puede toparse con un botón que no hace nada. El día que
-   * haya checkout, esto es lo único que cambia.
+   * Solo viajan el **nombre** del plan y la familia de negocio. El precio no: lo pone el backend
+   * desde `cob_precio_plan`, así que nadie compra un Avanzado a precio de Básico retocando la
+   * URL. Los nombres de aquí tienen que existir en `gener_plan`; los que no —hoy los dos con
+   * facturación— los rechaza el catálogo de la compra con un aviso, no con un cobro equivocado.
    */
-  protected urlAdquirir(nombrePlan: string): string {
-    const texto = `Hola!, quiero adquirir el ${nombrePlan} de Escalapp`;
-    return `${environment.whatsappUrl}?text=${encodeURIComponent(texto)}`;
+  protected rutaAdquirir(plan: { base: PlanBaseId }): string {
+    return plan.base === 'AVANZADO' ? 'Plan Avanzado' : 'Plan Básico';
   }
 
 
@@ -1266,6 +1263,14 @@ export class LandingComponent {
 
   protected selectCategoria(cat: CategoriaNegocio): void {
     this.selectedCategoria.set(cat);
+  }
+
+  protected alternarMenu(): void {
+    this.menuAbierto.update((v) => !v);
+  }
+
+  protected cerrarMenu(): void {
+    this.menuAbierto.set(false);
   }
 
   protected scrollTo(id: string): void {

@@ -1,0 +1,444 @@
+<!-- ============================================================
+     EscalApp — Adquirir plan
+     Misma identidad que la landing: tokens --es-*, botones es-btn.
+     ============================================================ -->
+
+<div class="cp-page">
+  <!-- Cabecera mínima: la marca y la salida. Nada de navegación: quien llega aquí viene a
+       comprar, y cada enlace de más es una puerta para irse. -->
+  <header class="cp-header">
+    <a routerLink="/" class="cp-header__brand">
+      <img
+        [src]="assetService.getAssetPath('icono-escalapp.png')"
+        alt=""
+        aria-hidden="true"
+        class="cp-header__icono"
+      />
+      <span class="cp-header__nombre">EscalApp</span>
+    </a>
+
+    <span class="cp-header__seguro">
+      <lucide-icon name="lock" [size]="14" aria-hidden="true" />
+      Pago seguro
+    </span>
+  </header>
+
+  <main class="cp-main">
+    @if (paso() !== 'resultado') {
+      <div class="cp-layout">
+        <!-- ── Formulario ── -->
+        <section class="cp-form">
+          <!-- Los tres pasos, siempre a la vista: se sabe cuántos faltan antes de empezar. -->
+          <ol class="cp-pasos" aria-label="Pasos de la compra">
+            <li class="cp-paso" [class.cp-paso--activo]="paso() === 'negocio'"
+                [class.cp-paso--hecho]="paso() === 'titular' || paso() === 'pago'">
+              <span class="cp-paso__num">
+                @if (paso() === 'titular' || paso() === 'pago') {
+                  <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                } @else { 1 }
+              </span>
+              Tu negocio
+            </li>
+            <li class="cp-paso" [class.cp-paso--activo]="paso() === 'titular'"
+                [class.cp-paso--hecho]="paso() === 'pago'">
+              <span class="cp-paso__num">
+                @if (paso() === 'pago') {
+                  <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                } @else { 2 }
+              </span>
+              Tus datos
+            </li>
+            <li class="cp-paso" [class.cp-paso--activo]="paso() === 'pago'">
+              <span class="cp-paso__num">3</span>
+              Pago
+            </li>
+          </ol>
+
+          @if (error(); as msg) {
+            <p class="cp-error" role="alert">{{ msg }}</p>
+          }
+
+          <!-- ── Paso 1: el negocio ── -->
+          @if (paso() === 'negocio') {
+            <h1 class="cp-title">Cuéntanos de tu negocio</h1>
+            <p class="cp-subtitle">
+              Elegiste <strong>{{ etiquetaCategoria() }}</strong>. Dinos exactamente qué tienes para
+              dejarte el sistema listo con lo tuyo desde el primer día.
+            </p>
+
+            <div class="cp-campo">
+              <label for="cp-rubro">Tipo de negocio</label>
+              <select
+                id="cp-rubro"
+                class="cp-input"
+                [value]="rubro()"
+                (change)="rubro.set($any($event.target).value)"
+              >
+                <option value="" [selected]="rubro() === ''" disabled>Selecciona tu negocio…</option>
+                @for (r of rubrosDeCategoria(); track r.id_tipo_negocio) {
+                  <option [value]="r.nombre" [selected]="rubro() === r.nombre">{{ r.etiqueta }}</option>
+                }
+              </select>
+              @if (tocado() && errorRubro(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <div class="cp-campo">
+              <label for="cp-negocio">¿Cómo se llama tú negocio?</label>
+              <input
+                id="cp-negocio"
+                class="cp-input"
+                type="text"
+                placeholder="Ej: Pizzería La Esquina"
+                [value]="nombreNegocio()"
+                (input)="nombreNegocio.set($any($event.target).value)"
+              />
+              @if (tocado() && errorNombreNegocio(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <button type="button" class="es-btn es-btn--primary cp-avanzar" (click)="siguiente()">
+              Continuar
+              <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
+            </button>
+          }
+
+          <!-- ── Paso 2: el titular ── -->
+          @if (paso() === 'titular') {
+            <h1 class="cp-title">¿Quién administra la cuenta?</h1>
+            <p class="cp-subtitle">
+              Con estos datos creamos tu usuario. Te llegarán las claves de acceso al correo en
+              cuanto se confirme el pago.
+            </p>
+
+            <div class="cp-fila">
+              <div class="cp-campo">
+                <label for="cp-nombres">Nombres</label>
+                <input
+                  id="cp-nombres"
+                  class="cp-input"
+                  type="text"
+                  autocomplete="given-name"
+                  [value]="nombres()"
+                  (input)="nombres.set($any($event.target).value)"
+                />
+                @if (tocado() && errorNombres(); as e) {
+                  <span class="cp-campo__error">{{ e }}</span>
+                }
+              </div>
+
+              <div class="cp-campo">
+                <label for="cp-apellidos">Apellidos</label>
+                <input
+                  id="cp-apellidos"
+                  class="cp-input"
+                  type="text"
+                  autocomplete="family-name"
+                  [value]="apellidos()"
+                  (input)="apellidos.set($any($event.target).value)"
+                />
+                @if (tocado() && errorApellidos(); as e) {
+                  <span class="cp-campo__error">{{ e }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="cp-campo">
+              <label for="cp-cedula">Número de identificación</label>
+              <input
+                id="cp-cedula"
+                class="cp-input"
+                type="text"
+                inputmode="numeric"
+                [value]="cedula()"
+                (input)="cedula.set($any($event.target).value)"
+              />
+              <span class="cp-campo__ayuda">
+                Con este número entras al sistema la primera vez. Te pediremos cambiarlo.
+              </span>
+              @if (tocado() && errorCedula(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <div class="cp-campo">
+              <label for="cp-email">Correo electrónico</label>
+              <input
+                id="cp-email"
+                class="cp-input"
+                type="email"
+                autocomplete="email"
+                [value]="email()"
+                (input)="email.set($any($event.target).value)"
+              />
+              @if (tocado() && errorEmail(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <div class="cp-campo">
+              <label for="cp-email2">Confirma tu correo</label>
+              <input
+                id="cp-email2"
+                class="cp-input"
+                type="email"
+                autocomplete="email"
+                [value]="emailConfirma()"
+                (input)="emailConfirma.set($any($event.target).value)"
+              />
+              @if (tocado() && errorEmailConfirma(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <div class="cp-campo">
+              <label for="cp-tel">Teléfono <span class="cp-campo__opcional">(opcional)</span></label>
+              <input
+                id="cp-tel"
+                class="cp-input"
+                type="tel"
+                autocomplete="tel"
+                [value]="telefono()"
+                (input)="telefono.set($any($event.target).value)"
+              />
+            </div>
+
+            <div class="cp-acciones">
+              <button type="button" class="cp-volver" (click)="atras()">
+                <lucide-icon name="arrow-left" [size]="14" aria-hidden="true" />
+                Atrás
+              </button>
+              <button type="button" class="es-btn es-btn--primary" (click)="siguiente()">
+                Continuar
+                <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
+              </button>
+            </div>
+          }
+
+          <!-- ── Paso 3: el pago ── -->
+          @if (paso() === 'pago') {
+            <h1 class="cp-title">Elige cómo pagar</h1>
+            <p class="cp-subtitle">
+              El cobro lo procesa la pasarela; EscalApp no guarda los datos de tu tarjeta.
+            </p>
+
+            <div class="cp-pasarelas" role="group" aria-label="Medio de pago">
+              @for (p of pasarelas(); track p.codigo) {
+                <button
+                  type="button"
+                  class="cp-pasarela"
+                  [class.cp-pasarela--activa]="pasarela() === p.codigo"
+                  (click)="pasarela.set(p.codigo)"
+                  [attr.aria-pressed]="pasarela() === p.codigo"
+                >
+                  <lucide-icon name="credit-card" [size]="18" aria-hidden="true" />
+                  <span class="cp-pasarela__nombre">{{ p.nombre }}</span>
+                  <span class="cp-pasarela__detalle">
+                    @if (p.codigo === 'wompi') {
+                      Tarjetas, PSE, Nequi y Bancolombia
+                    } @else {
+                      Tarjetas internacionales y medios locales
+                    }
+                  </span>
+                </button>
+              }
+            </div>
+
+            <label class="cp-terminos">
+              <input
+                type="checkbox"
+                [checked]="aceptaTerminos()"
+                (change)="aceptaTerminos.set($any($event.target).checked)"
+              />
+              <span>
+                Acepto los <a routerLink="/terminos" target="_blank">Términos y Condiciones</a> y la
+                <a routerLink="/privacidad" target="_blank">Política de Tratamiento de Datos</a>.
+              </span>
+            </label>
+
+            <div class="cp-acciones">
+              <button type="button" class="cp-volver" (click)="atras()">
+                <lucide-icon name="arrow-left" [size]="14" aria-hidden="true" />
+                Atrás
+              </button>
+              <button
+                type="button"
+                class="es-btn es-btn--primary"
+                (click)="pagar()"
+                [disabled]="!puedePagar() || cargando()"
+              >
+                @if (cargando()) {
+                  <lucide-icon name="loader-2" [size]="16" class="cp-girando" aria-hidden="true" />
+                  Preparando el pago…
+                } @else {
+                  Ir a pagar
+                  <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
+                }
+              </button>
+            </div>
+          }
+        </section>
+
+        <!-- ── Resumen, siempre a la vista: lo que se está comprando y por cuánto ── -->
+        <aside class="cp-resumen">
+          <h2 class="cp-resumen__title">Tu compra</h2>
+
+          @if (plan(); as p) {
+            <p class="cp-resumen__plan">{{ p.nombre }}</p>
+            <p class="cp-resumen__precio">
+              <strong>{{ formatPrice(p.precio) }}</strong>
+              <span>{{ p.moneda }} / {{ p.ciclo }}</span>
+            </p>
+          } @else if (!catalogoCargado()) {
+            <p class="cp-resumen__aviso">Cargando tu plan…</p>
+          } @else if (catalogoFallo()) {
+            <!--
+              Servidor caído o sin conexión. Antes caía en el mensaje de abajo y le decía al
+              visitante que su plan no existe, que es mentira y además no tiene arreglo posible
+              por su parte.
+            -->
+            <p class="cp-resumen__aviso">
+              No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.
+            </p>
+            <button type="button" class="cp-volver cp-reintentar" (click)="recargarCatalogo()">
+              Reintentar
+            </button>
+          } @else {
+            <!--
+              Un plan que la landing anuncia pero que no existe en la base (o no tiene precio) no
+              se puede cobrar. Se dice aquí, antes de pedir un solo dato, en vez de fallar al
+              final del formulario.
+            -->
+            <p class="cp-resumen__aviso">
+              Este plan todavía no se contrata en línea. Escríbenos y lo activamos contigo.
+            </p>
+          }
+
+          <ul class="cp-resumen__lista">
+            <li>
+              <lucide-icon name="store" [size]="16" aria-hidden="true" />
+              <span>
+                <strong>{{ etiquetaCategoria() }}</strong>
+                @if (rubro()) {
+                  <small>{{ etiquetaRubro(rubro()) }}</small>
+                }
+              </span>
+            </li>
+            @if (nombreNegocio().trim()) {
+              <li>
+                <lucide-icon name="building-2" [size]="16" aria-hidden="true" />
+                <span><strong>{{ nombreNegocio() }}</strong><small>Tu negocio</small></span>
+              </li>
+            }
+            @if (nombreTitular()) {
+              <li>
+                <lucide-icon name="user" [size]="16" aria-hidden="true" />
+                <span><strong>{{ nombreTitular() }}</strong><small>Administrador</small></span>
+              </li>
+            }
+            @if (email().trim()) {
+              <li>
+                <lucide-icon name="mail" [size]="16" aria-hidden="true" />
+                <span><strong>{{ email() }}</strong><small>Ahí llegan tus claves</small></span>
+              </li>
+            }
+          </ul>
+
+          <p class="cp-resumen__nota">
+            <lucide-icon name="shield-check" [size]="14" aria-hidden="true" />
+            Tu cuenta se activa sola en cuanto la pasarela confirma el pago.
+          </p>
+        </aside>
+      </div>
+    }
+
+    <!-- ── Vuelta del checkout ── -->
+    @if (paso() === 'resultado') {
+      <section class="cp-resultado">
+        @if (cargando() && !estado()) {
+          <lucide-icon name="loader-2" [size]="32" class="cp-girando" aria-hidden="true" />
+          <h1 class="cp-title">Confirmando tu pago…</h1>
+          <p class="cp-subtitle">Un momento, estamos hablando con la pasarela.</p>
+        } @else if (estado()?.estado === 'pagada') {
+          <span class="cp-resultado__icono cp-resultado__icono--ok">
+            <lucide-icon name="badge-check" [size]="28" aria-hidden="true" />
+          </span>
+          <h1 class="cp-title">¡Listo! Tu cuenta ya está activa</h1>
+          <p class="cp-subtitle">
+            Recibimos tu pago de <strong>{{ formatPrice(estado()!.total) }}</strong>. Te enviamos las
+            claves de acceso a <strong>{{ estado()!.email }}</strong>.
+          </p>
+
+          <div class="cp-credenciales">
+            <p><span>Usuario</span><strong>{{ estado()!.email }}</strong></p>
+            <p><span>Contraseña temporal</span><strong>tu número de identificación</strong></p>
+            <p class="cp-credenciales__nota">
+              Te pediremos cambiarla la primera vez que entres.
+            </p>
+          </div>
+
+          <a routerLink="/auth/login" class="es-btn es-btn--primary">
+            Entrar a mi panel
+            <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
+          </a>
+          <p class="cp-resultado__ref">Referencia: {{ estado()!.referencia }}</p>
+        } @else if (estado()?.estado === 'pendiente') {
+          <span class="cp-resultado__icono cp-resultado__icono--espera">
+            <lucide-icon name="loader-2" [size]="28" class="cp-girando" aria-hidden="true" />
+          </span>
+          <h1 class="cp-title">Tu pago está en proceso</h1>
+          <p class="cp-subtitle">
+            Algunos medios (PSE, transferencias) tardan unos minutos en confirmarse. Cuando llegue,
+            tu cuenta se activa sola y te avisamos por correo — no hace falta que pagues otra vez.
+          </p>
+
+          <div class="cp-acciones cp-acciones--centro">
+            <button type="button" class="cp-volver" (click)="consultarEstado(estado()!.referencia)">
+              Volver a consultar
+            </button>
+            <button
+              type="button"
+              class="es-btn es-btn--primary"
+              (click)="reintentar()"
+              [disabled]="cargando()"
+            >
+              Intentar el pago de nuevo
+            </button>
+          </div>
+          <p class="cp-resultado__ref">Referencia: {{ estado()!.referencia }}</p>
+        } @else {
+          <span class="cp-resultado__icono cp-resultado__icono--error">
+            <lucide-icon name="credit-card" [size]="28" aria-hidden="true" />
+          </span>
+          <h1 class="cp-title">No pudimos confirmar el pago</h1>
+          <p class="cp-subtitle">
+            {{ error() ?? 'El pago no se completó. No te cobramos nada; puedes intentarlo otra vez.' }}
+          </p>
+
+          <div class="cp-acciones cp-acciones--centro">
+            <button type="button" class="cp-volver" (click)="volverALanding()">Ver los planes</button>
+            @if (estado()?.referencia || compra()?.referencia) {
+              <button
+                type="button"
+                class="es-btn es-btn--primary"
+                (click)="reintentar()"
+                [disabled]="cargando()"
+              >
+                Intentar de nuevo
+              </button>
+            }
+          </div>
+        }
+      </section>
+    }
+  </main>
+
+  <footer class="cp-footer">
+    <span>© {{ 2026 }} EscalApp</span>
+    <a routerLink="/terminos">Términos</a>
+    <a routerLink="/privacidad">Privacidad</a>
+    <a routerLink="/pagar">Paga tu plan</a>
+  </footer>
+</div>

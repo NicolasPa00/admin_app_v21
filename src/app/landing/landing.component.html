@@ -48,12 +48,42 @@
 
     <div class="lp-nav__actions">
       <a routerLink="/auth/login" class="es-btn es-btn--outline es-btn--sm">Iniciar sesión</a>
-      <button type="button" class="es-btn es-btn--primary es-btn--sm" (click)="openModal()">
+      <button
+        type="button"
+        class="es-btn es-btn--primary es-btn--sm lp-nav__prueba"
+        (click)="openModal()"
+      >
+        Prueba gratis
+      </button>
+
+      <!--
+        Solo en móvil. Los cuatro enlaces cabían a duras penas en una tira que se desbordaba de
+        lado, así que el primero aparecía cortado: en una pantalla de teléfono lo que tiene que
+        verse sin pensar es la marca y «Iniciar sesión»; el resto cabe detrás de un toque.
+      -->
+      <button
+        type="button"
+        class="lp-nav__menu-btn"
+        (click)="alternarMenu()"
+        [attr.aria-expanded]="menuAbierto()"
+        [attr.aria-label]="menuAbierto() ? 'Cerrar menú' : 'Abrir menú'"
+      >
+        <lucide-icon [name]="menuAbierto() ? 'x' : 'menu'" [size]="20" aria-hidden="true" />
+      </button>
+    </div>
+  </nav>
+
+  @if (menuAbierto()) {
+    <div class="lp-nav__menu" role="menu">
+      <a (click)="scrollTo('how'); cerrarMenu()" role="menuitem">¿Cómo funciona?</a>
+      <a (click)="scrollTo('features'); cerrarMenu()" role="menuitem">Funcionalidades</a>
+      <a (click)="scrollTo('planes'); cerrarMenu()" role="menuitem">Planes</a>
+      <a routerLink="/pagar" (click)="cerrarMenu()" role="menuitem">Paga tu plan</a>
+      <button type="button" class="es-btn es-btn--primary" (click)="openModal(); cerrarMenu()">
         Prueba gratis
       </button>
     </div>
-
-  </nav>
+  }
 </header>
 
 <!-- ═══════════════ HERO ═══════════════ -->
@@ -595,9 +625,8 @@
           <div class="lp-plan__pie">
             <a
               class="es-btn es-btn--primary lp-plan__cta"
-              [href]="urlAdquirir(plan.nombre)"
-              target="_blank"
-              rel="noopener"
+              routerLink="/adquirir"
+              [queryParams]="{ plan: rutaAdquirir(plan), modulo: selectedCategoria().modulo }"
             >
               {{ plan.cta }}
               <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
@@ -641,7 +670,14 @@
         role="dialog"
         [attr.aria-label]="'Detalles de ' + plan.nombre"
       >
-        <header class="lp-detalle__head">
+        <!--
+          Con dos precios (mensual y anual) la cabecera no puede ser «título a la izquierda,
+          precio a la derecha»: la columna del precio crecía el doble que la del título y dejaba
+          un hueco en blanco de media tarjeta. Con facturación, el nombre ocupa el ancho y los
+          dos precios van debajo en columnas; sin ella se queda como estaba, que es justo lo que
+          hace que esos planes se lean limpios.
+        -->
+        <header class="lp-detalle__head" [class.lp-detalle__head--anual]="plan.conFacturacion">
           <div class="lp-detalle__titulos">
             @if (plan.destacado) {
               <span class="lp-detalle__badge">Más popular</span>
@@ -650,34 +686,39 @@
             <p class="lp-detalle__desc">{{ plan.descripcion }}</p>
           </div>
 
-          <div class="lp-detalle__precio">
-            <span class="lp-detalle__monto">{{ formatPrice(plan.precioDetalle) }}</span>
-            <span class="lp-detalle__periodo">COP /mes</span>
-            <span class="lp-detalle__garantia">
-              <lucide-icon [name]="plan.garantia.icon" [size]="14" aria-hidden="true" />
-              {{ plan.garantia.texto }}
-            </span>
+          <div class="lp-detalle__precios">
+            <div class="lp-detalle__precio">
+              @if (plan.conFacturacion) {
+                <span class="lp-detalle__precio-tag">Pago mensual</span>
+              }
+              <span class="lp-detalle__monto">{{ formatPrice(plan.precioDetalle) }}</span>
+              <span class="lp-detalle__periodo">COP /mes</span>
+              <span class="lp-detalle__garantia">
+                <lucide-icon [name]="plan.garantia.icon" [size]="14" aria-hidden="true" />
+                {{ plan.garantia.texto }}
+              </span>
+            </div>
 
             <!--
-              El año completo, solo donde el plan es anual. Lo tachado NO es un precio antiguo:
-              es lo que costaría el mismo año comprando el certificado por fuera, y la diferencia
-              es exactamente ese certificado.
+              El año completo. Lo tachado NO es un precio antiguo: es lo que costaría el mismo
+              año comprando el certificado por fuera, y la diferencia es exactamente eso.
             -->
             @if (plan.conFacturacion) {
-              <span class="lp-detalle__anual">
+              <div class="lp-detalle__precio lp-detalle__precio--anual">
+                <span class="lp-detalle__precio-tag">Pago anual</span>
                 <span class="lp-detalle__anual-linea">
+                  <strong class="lp-detalle__monto">{{ formatPrice(plan.precioAnual) }}</strong>
                   <span class="lp-detalle__anual-tachado">
                     {{ formatPrice(plan.precioAnualComparado) }}
                   </span>
-                  <strong class="lp-detalle__anual-monto">{{ formatPrice(plan.precioAnual) }}</strong>
-                  <span class="lp-detalle__anual-periodo">al año</span>
                 </span>
+                <span class="lp-detalle__periodo">COP /año</span>
                 <span class="lp-detalle__anual-ahorro">
                   <lucide-icon name="badge-check" [size]="14" aria-hidden="true" />
-                  Certificado digital incluido — te ahorras
+                  Certificado incluido — te ahorras
                   {{ formatPrice(plan.ahorroCertificado) }}
                 </span>
-              </span>
+              </div>
             }
           </div>
         </header>
@@ -764,29 +805,17 @@
               </h4>
             </div>
 
-            <ul class="lp-detalle__legal-lista">
-              <li>
-                <strong>Lo ponemos nosotros.</strong>
-                El certificado digital es la firma con la que la DIAN reconoce tus documentos.
-                Por fuera cuesta unos {{ formatPrice(plan.ahorroCertificado) }} al año por NIT;
-                en este plan va incluido y lo gestionamos por ti.
-              </li>
-              <li>
-                <strong>Por eso el plan es anual.</strong>
-                El certificado se emite por doce meses, así que la facturación va atada a ese
-                mismo periodo. El valor de arriba es el mensual dentro del plan anual.
-              </li>
-              <li>
-                <strong>Tú facturas desde el primer día.</strong>
-                Nos encargamos del trámite ante la DIAN y del rango de numeración; la
-                habilitación queda a nombre de tu empresa, como debe ser.
-              </li>
-            </ul>
+            <p class="lp-detalle__legal-texto">
+              El certificado es la firma con la que la DIAN reconoce tus documentos y por fuera
+              cuesta unos {{ formatPrice(plan.ahorroCertificado) }} al año por NIT. Aquí lo
+              compramos y lo renovamos nosotros. Como se emite por doce meses, el plan es anual;
+              del trámite ante la DIAN y del rango de numeración nos encargamos igual, y la
+              habilitación queda a nombre de tu empresa.
+            </p>
 
             <p class="lp-detalle__legal-nota">
-              La facturación electrónica en Colombia está regulada por la DIAN — Resolución
-              000165 de 2023 y las normas que la modifican. Esta información es orientativa y no
-              reemplaza la asesoría de tu contador.
+              Regulado por la DIAN — Resolución 000165 de 2023 y las normas que la modifican.
+              Información orientativa; no reemplaza la asesoría de tu contador.
             </p>
           </section>
         }
@@ -799,9 +828,9 @@
 
           <a
             class="es-btn es-btn--primary lp-detalle__cta"
-            [href]="urlAdquirir(plan.nombre)"
-            target="_blank"
-            rel="noopener"
+            routerLink="/adquirir"
+            [queryParams]="{ plan: rutaAdquirir(plan), modulo: selectedCategoria().modulo }"
+            (click)="cerrarDetalle()"
           >
             {{ plan.cta }}
             <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
