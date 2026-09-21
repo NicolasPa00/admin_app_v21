@@ -119,7 +119,7 @@
                 @if (n.plan; as p) {
                   <span class="es-badge es-badge--primary">{{ p.nombre }}</span>
                 } @else {
-                  <span class="neg__muted">Sin plan</span>
+                  <span class="neg__muted">—</span>
                 }
               </td>
 
@@ -167,7 +167,7 @@
                     class="neg__icon-btn"
                     [class.neg__icon-btn--danger]="n.estado === 'A'"
                     [disabled]="actionId() === n.id_negocio"
-                    (click)="toggleEstado(n)"
+                    (click)="pedirCambioEstado(n)"
                     [title]="n.estado === 'A' ? 'Desactivar' : 'Activar'"
                     [attr.aria-label]="n.estado === 'A' ? 'Desactivar negocio' : 'Activar negocio'"
                   >
@@ -636,6 +636,78 @@
             }
           </button>
         }
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Confirmar activar / desactivar negocio ════════════ -->
+@if (confirmEstado(); as n) {
+  <div class="neg-modal" (click)="cancelarCambioEstado()">
+    <div
+      class="neg-modal__card neg-modal__card--sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="neg-est-title"
+      aria-describedby="neg-est-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="neg-modal__head">
+        <div class="neg__user-cell">
+          <span
+            class="neg-confirm__icon"
+            [class.neg-confirm__icon--danger]="n.estado === 'A'"
+            aria-hidden="true"
+          >
+            <lucide-icon name="power" [size]="18" />
+          </span>
+          <h2 id="neg-est-title" class="neg-modal__title">
+            {{ n.estado === 'A' ? 'Desactivar negocio' : 'Activar negocio' }}
+          </h2>
+        </div>
+        <button
+          type="button"
+          class="neg__icon-btn"
+          (click)="cancelarCambioEstado()"
+          [disabled]="actionId() !== null"
+          aria-label="Cerrar"
+        >
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div class="neg-modal__body" id="neg-est-desc">
+        @if (n.estado === 'A') {
+          <p class="neg-confirm__lead">
+            <strong>{{ n.nombre }}</strong> y sus usuarios perderán acceso a su cuenta hasta que lo reactives.
+          </p>
+          <p class="neg-confirm__note">Sus datos, plan y configuración no cambian.</p>
+        } @else {
+          <p class="neg-confirm__lead">
+            <strong>{{ n.nombre }}</strong> y sus usuarios podrán volver a entrar a su cuenta.
+          </p>
+        }
+      </div>
+
+      <footer class="neg-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cancelarCambioEstado()" [disabled]="actionId() !== null">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [class.neg-btn--danger]="n.estado === 'A'"
+          [class.btn--primary]="n.estado !== 'A'"
+          [disabled]="actionId() !== null"
+          (click)="confirmarCambioEstado()"
+        >
+          @if (actionId() !== null) {
+            <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" />
+          } @else {
+            <lucide-icon name="power" [size]="16" aria-hidden="true" />
+          }
+          {{ n.estado === 'A' ? 'Desactivar' : 'Activar' }}
+        </button>
       </footer>
     </div>
   </div>

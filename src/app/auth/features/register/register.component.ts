@@ -12,9 +12,11 @@ import {
   LucideIconProvider,
   LUCIDE_ICONS,
   Eye, EyeOff, Loader2,
+  Zap, ShieldCheck, TrendingUp,
 } from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
+import { AssetService } from '../../../core/services/asset.service';
 import { RegisterRequest } from '../../models/auth.models';
 import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
 
@@ -33,13 +35,14 @@ import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pa
   standalone: true,
   imports: [RouterLink, LucideAngularModule, TelefonoPaisComponent],
   providers: [
-    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Loader2 }) },
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Loader2, Zap, ShieldCheck, TrendingUp }) },
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
 })
 export class RegisterComponent {
   private readonly authService = inject(AuthService);
+  protected readonly assetService = inject(AssetService);
 
   // ===================== Signal Form Fields =====================
 

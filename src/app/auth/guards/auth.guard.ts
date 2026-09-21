@@ -1,5 +1,6 @@
 import { CanActivateFn, Router } from '@angular/router';
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import { AuthService } from '../data-access/auth.service';
 
@@ -22,6 +23,15 @@ export function authGuard(allowedRoles?: string[]): CanActivateFn {
   return () => {
     const authService = inject(AuthService);
     const router = inject(Router);
+
+    // El token vive solo en localStorage, que no existe durante el render en el servidor.
+    // Si el guard evaluara aquí, SIEMPRE vería "no autenticado" — así tenga sesión real el
+    // navegador — y una recarga (F5) o un link directo devolverían al login sin aviso. La
+    // seguridad real la sigue dando el backend en cada petición (JWT + rol); aquí solo se deja
+    // pasar el render del servidor y se deja el chequeo real al cliente, ya hidratado.
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+      return true;
+    }
 
     // ¿Está autenticado?
     if (!authService.isAuthenticated()) {

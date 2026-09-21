@@ -53,7 +53,7 @@
         @for (t of catalogo().tablas; track t.esquema + '.' + t.tabla) {
           <option [value]="t.esquema + '.' + t.tabla"
                   [selected]="fTabla() === t.esquema + '.' + t.tabla">
-            {{ t.esquema }}.{{ t.tabla }}
+            {{ tablaLabel(t.esquema, t.tabla) }}
           </option>
         }
       </select>
@@ -145,7 +145,7 @@
               <tr class="aud__row" [class.is-open]="expandida() === d.id_audit"
                   (click)="toggleDetalle(d.id_audit)">
                 <td class="aud__col-fecha">{{ fmtFecha(d.fecha) }}</td>
-                <td><span class="aud__mono">{{ d.esquema }}.{{ d.tabla }}</span></td>
+                <td><span class="aud__mono">{{ tablaLabel(d.esquema, d.tabla) }}</span></td>
                 <td class="aud__col-op">
                   <span class="aud__badge aud__badge--{{ d.operacion }}">{{ opLabel(d.operacion) }}</span>
                 </td>
@@ -163,13 +163,27 @@
                       @if (d.datos_antes) {
                         <div class="aud__detail-col">
                           <h4 class="aud__detail-title">Antes</h4>
-                          <pre class="aud__json">{{ json(d.datos_antes) }}</pre>
+                          <div class="aud__campos">
+                            @for (c of campos(d.datos_antes); track c.clave) {
+                              <div class="aud__campo">
+                                <p class="aud__campo-clave">{{ c.clave }}</p>
+                                <p class="aud__campo-valor">{{ c.valor }}</p>
+                              </div>
+                            }
+                          </div>
                         </div>
                       }
                       @if (d.datos_despues) {
                         <div class="aud__detail-col">
                           <h4 class="aud__detail-title">{{ d.datos_antes ? 'Después' : 'Datos' }}</h4>
-                          <pre class="aud__json">{{ json(d.datos_despues) }}</pre>
+                          <div class="aud__campos">
+                            @for (c of campos(d.datos_despues); track c.clave) {
+                              <div class="aud__campo">
+                                <p class="aud__campo-clave">{{ c.clave }}</p>
+                                <p class="aud__campo-valor">{{ c.valor }}</p>
+                              </div>
+                            }
+                          </div>
                         </div>
                       }
                     </div>
@@ -221,7 +235,16 @@
                     <div class="aud__detail">
                       <div class="aud__detail-col">
                         <h4 class="aud__detail-title">Detalle</h4>
-                        <pre class="aud__json">{{ json(e.detalle) }}</pre>
+                        <div class="aud__campos">
+                          @for (c of campos(e.detalle); track c.clave) {
+                            <div class="aud__campo">
+                              <p class="aud__campo-clave">{{ c.clave }}</p>
+                              <p class="aud__campo-valor">{{ c.valor }}</p>
+                            </div>
+                          } @empty {
+                            <p class="aud__campos-vacio">Sin datos adicionales.</p>
+                          }
+                        </div>
                       </div>
                     </div>
                   </td>

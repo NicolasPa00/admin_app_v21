@@ -258,6 +258,8 @@ export class NegociosComponent implements OnInit, OnDestroy {
   // ── Acción de fila ──────────────────────────────────────────
   protected readonly actionId = signal<number | null>(null);
   protected readonly rowError = signal<string | null>(null);
+  /** Negocio pendiente de confirmar para activar/desactivar (abre el modal). */
+  protected readonly confirmEstado = signal<NegocioAdmin | null>(null);
 
   // ── Derivados ───────────────────────────────────────────────
 
@@ -633,9 +635,24 @@ export class NegociosComponent implements OnInit, OnDestroy {
     return String(idRubro) === this.editForm()?.id_rubro;
   }
 
-  // ── Activar / desactivar ────────────────────────────────────
-  protected toggleEstado(n: NegocioAdmin): void {
+  // ── Activar / desactivar (con confirmación) ──────────────────
+  // Desactivar deja al negocio sin acceso: nunca va directo desde un solo clic en la fila
+  // (regla nacida de la auditoría de UI del 2026-09-20 — un clic accidental apagaba el negocio
+  // sin ningún aviso ni forma de deshacer).
+  protected pedirCambioEstado(n: NegocioAdmin): void {
     if (this.actionId() !== null) return;
+    this.confirmEstado.set(n);
+  }
+
+  protected cancelarCambioEstado(): void {
+    if (this.actionId() !== null) return;
+    this.confirmEstado.set(null);
+  }
+
+  protected confirmarCambioEstado(): void {
+    const n = this.confirmEstado();
+    if (!n || this.actionId() !== null) return;
+
     const nuevo: 'A' | 'I' = n.estado === 'A' ? 'I' : 'A';
     this.actionId.set(n.id_negocio);
     this.rowError.set(null);
@@ -646,10 +663,12 @@ export class NegociosComponent implements OnInit, OnDestroy {
           list.map((x) => (x.id_negocio === n.id_negocio ? { ...x, estado: nuevo } : x)),
         );
         this.actionId.set(null);
+        this.confirmEstado.set(null);
       },
       error: (err) => {
         this.rowError.set(err.error?.message ?? 'No se pudo cambiar el estado.');
         this.actionId.set(null);
+        this.confirmEstado.set(null);
       },
     });
   }

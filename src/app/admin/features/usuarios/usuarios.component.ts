@@ -376,6 +376,18 @@ export class UsuariosComponent implements OnInit {
     return [...new Set(nombres)];
   }
 
+  /** Solo los primeros — sin este límite, un usuario con muchos negocios (p. ej. el super
+   *  admin) triplicaba la altura de su fila frente a las demás. El resto va en el "+N". */
+  private static readonly NEGOCIOS_VISIBLES = 2;
+
+  protected negociosVisibles(u: UsuarioAdmin): string[] {
+    return this.negociosAdministrados(u).slice(0, UsuariosComponent.NEGOCIOS_VISIBLES);
+  }
+
+  protected negociosOcultos(u: UsuarioAdmin): number {
+    return Math.max(0, this.negociosAdministrados(u).length - UsuariosComponent.NEGOCIOS_VISIBLES);
+  }
+
   protected initials(u: UsuarioAdmin): string {
     return `${u.primer_nombre?.[0] ?? ''}${u.primer_apellido?.[0] ?? ''}`.toUpperCase();
   }

@@ -396,9 +396,12 @@ export class AuthService {
         'app_user_meta',
         JSON.stringify({
           id_usuario:      user.id_usuario,
-          primer_nombre:  user.primer_nombre,
+          primer_nombre:   user.primer_nombre,
+          segundo_nombre:  user.segundo_nombre,
           primer_apellido: user.primer_apellido,
+          segundo_apellido: user.segundo_apellido,
           email:           user.email,
+          num_identificacion: user.num_identificacion,
           negocios:        user.negocios,
           roles_globales:  user.roles_globales,
         }),

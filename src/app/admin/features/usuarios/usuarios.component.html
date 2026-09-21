@@ -131,10 +131,13 @@
               <!-- Negocios -->
               <td>
                 <div class="usr__negocios">
-                  @for (negocio of negociosAdministrados(u); track negocio) {
+                  @for (negocio of negociosVisibles(u); track negocio) {
                     <span class="es-badge es-badge--primary">{{ negocio }}</span>
                   } @empty {
                     <span class="usr__muted">—</span>
+                  }
+                  @if (negociosOcultos(u) > 0) {
+                    <span class="usr__muted usr__plan-extra">+{{ negociosOcultos(u) }}</span>
                   }
                 </div>
               </td>

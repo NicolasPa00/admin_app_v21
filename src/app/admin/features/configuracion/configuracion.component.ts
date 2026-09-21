@@ -14,7 +14,7 @@ import {
 } from 'lucide-angular';
 
 import { AuthService } from '../../../auth/data-access/auth.service';
-import { NegocioPlanInfo } from '../../../auth/models/auth.models';
+import { NegocioPlanInfo, User as UsuarioSesion } from '../../../auth/models/auth.models';
 
 type Section = 'personal' | 'password' | 'negocios';
 
@@ -71,16 +71,26 @@ export class ConfiguracionComponent implements OnInit {
   // ────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
-    const u = this.user();
-    if (u) {
-      this.personalForm.set({
-        primer_nombre:    u.primer_nombre ?? '',
-        segundo_nombre:   u.segundo_nombre ?? '',
-        primer_apellido:  u.primer_apellido ?? '',
-        segundo_apellido: u.segundo_apellido ?? '',
-        num_identificacion: u.num_identificacion ?? '',
-      });
-    }
+    // La sesión restaurada desde localStorage puede venir de una versión anterior que no
+    // guardaba num_identificacion (bug de la auditoría del 2026-09-20): pedir el perfil real
+    // al backend en vez de confiar en la caché evita mostrar el formulario a medio llenar.
+    this.auth.loadProfile().subscribe({
+      next: (u) => this.setPersonalForm(u),
+      error: () => {
+        const u = this.user();
+        if (u) this.setPersonalForm(u);
+      },
+    });
+  }
+
+  private setPersonalForm(u: UsuarioSesion): void {
+    this.personalForm.set({
+      primer_nombre:    u.primer_nombre ?? '',
+      segundo_nombre:   u.segundo_nombre ?? '',
+      primer_apellido:  u.primer_apellido ?? '',
+      segundo_apellido: u.segundo_apellido ?? '',
+      num_identificacion: u.num_identificacion ?? '',
+    });
   }
 
   setSection(s: Section): void {

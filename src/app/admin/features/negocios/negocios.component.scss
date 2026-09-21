@@ -288,6 +288,71 @@
   .neg-modal__alert { margin-inline: var(--spacing-md); }
 }
 
+// ── Confirmar activar/desactivar ─────────────────────────────
+.neg-modal__card--sm {
+  max-width: 440px;
+
+  .neg-modal__head {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .neg-modal__body {
+    padding-block: var(--spacing-md);
+  }
+
+  .neg-modal__foot {
+    border-top: none;
+    padding-top: 0;
+    padding-bottom: var(--spacing-lg);
+  }
+}
+
+.neg__user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.neg-confirm__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+
+  &--danger {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+  }
+}
+
+.neg-confirm__lead {
+  margin: 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.neg-confirm__note {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.neg-btn--danger {
+  background-color: var(--color-error);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-error) 85%, #000000);
+  }
+}
+
 .neg-modal__title {
   font-size: var(--font-size-lg);
   font-weight: 700;

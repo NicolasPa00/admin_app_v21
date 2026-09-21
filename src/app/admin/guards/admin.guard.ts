@@ -1,7 +1,8 @@
-import { CanActivateFn, Router } from '@angular/router';
-import { inject }                from '@angular/core';
+import { CanActivateFn, Router }  from '@angular/router';
+import { inject, PLATFORM_ID }    from '@angular/core';
+import { isPlatformBrowser }      from '@angular/common';
 
-import { AuthService }           from '../../auth/data-access/auth.service';
+import { AuthService }            from '../../auth/data-access/auth.service';
 
 /** Rol que permite ver todo, sin restricción de tipo de negocio. */
 export const SUPER_ADMIN_ROL = 'SUPER ADMINISTRADOR';
@@ -26,6 +27,14 @@ export function adminGuard(allowedRoles: string[] = []): CanActivateFn {
   return () => {
     const authService = inject(AuthService);
     const router      = inject(Router);
+
+    // El token vive solo en localStorage: en el servidor (SSR) nunca existe, así que este guard
+    // vería "no autenticado" hasta a un usuario con sesión real y lo mandaría al login en cada
+    // recarga o link directo. La seguridad real la da el backend en cada petición; aquí se deja
+    // pasar el render del servidor y el chequeo real queda para el cliente ya hidratado.
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+      return true;
+    }
 
     // 1. Verificar autenticación
     if (!authService.isAuthenticated()) {

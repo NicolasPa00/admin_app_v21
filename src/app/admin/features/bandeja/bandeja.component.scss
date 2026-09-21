@@ -155,7 +155,7 @@
   }
 
   &__vacio--error {
-    color: #dc2626;
+    color: var(--color-error);
   }
 
   &__lista {
@@ -393,7 +393,10 @@
     align-self: flex-end;
     padding: 0.4375rem 0.625rem 0.3125rem;
     border-radius: 0.625rem 0.625rem 0.125rem 0.625rem;
-    background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+    // 16% se leía casi como el mismo blanco/gris de la burbuja del cliente — una auditoría
+    // de UI lo confirmó comparando ambas: hacía falta más color, no solo alineación, para
+    // distinguir "quién habló" de un vistazo (la convención que trae cualquier chat).
+    background: color-mix(in srgb, var(--color-primary) 30%, var(--color-surface));
   }
 
   /* Lo que escribe la persona va a la izquierda y sin color de marca: es la convención de
@@ -402,7 +405,10 @@
     align-self: flex-start;
     border-radius: 0.625rem 0.625rem 0.625rem 0.125rem;
     background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    // Un borde del tono normal casi no se distingue del fondo apenas gris del contenedor
+    // de mensajes: la burbuja del cliente se perdía junto a la del negocio, en índigo sólido.
+    border: 1px solid var(--color-border-strong);
+    box-shadow: var(--shadow-sm);
   }
 
   &__msg-texto {
@@ -427,7 +433,7 @@
   }
 
   &__msg-entrega--mal {
-    color: #dc2626;
+    color: var(--color-error);
     font-weight: 600;
   }
 
@@ -551,7 +557,7 @@
   &__error {
     margin: 0.5rem 0 0;
     font-size: 0.8125rem;
-    color: #dc2626;
+    color: var(--color-error);
   }
 
   &__spin {

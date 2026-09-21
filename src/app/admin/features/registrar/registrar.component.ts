@@ -10,6 +10,10 @@ import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Plus, Check, AlertCircle, Loader2, Tag, Palette,
   UtensilsCrossed, Car, Scissors, ShoppingCart, Dumbbell, Wrench,
   PiggyBank, Landmark, Store, Building2, Calendar, Briefcase,
+  // El resto del catálogo ya trae estos íconos guardados en gener_tipo_negocio.icono —
+  // faltaban aquí, así que `iconoDe()` los descartaba y todos caían al genérico 'store'.
+  Coffee, Croissant, IceCreamCone, Beer, Sandwich, Pizza, Sparkles, Flower2,
+  Hand, HandHeart, Stethoscope, Syringe, PenTool, PawPrint, Dog, Hotel, BedDouble, Tent,
 } from 'lucide-angular';
 
 import { AdminService } from '../../data-access/admin.service';
@@ -20,6 +24,9 @@ const ICONOS_DISPONIBLES = [
   'store', 'utensils-crossed', 'car', 'scissors', 'shopping-cart',
   'dumbbell', 'wrench', 'piggy-bank', 'landmark', 'building-2',
   'calendar', 'briefcase',
+  'coffee', 'croissant', 'ice-cream-cone', 'beer', 'sandwich', 'pizza',
+  'sparkles', 'flower-2', 'hand', 'hand-heart', 'stethoscope', 'syringe',
+  'pen-tool', 'paw-print', 'dog', 'hotel', 'bed-double', 'tent',
 ];
 
 const COLOR_DEFAULT = '#6366F1';
@@ -44,6 +51,8 @@ const COLOR_DEFAULT = '#6366F1';
         Plus, Check, AlertCircle, Loader2, Tag, Palette,
         UtensilsCrossed, Car, Scissors, ShoppingCart, Dumbbell, Wrench,
         PiggyBank, Landmark, Store, Building2, Calendar, Briefcase,
+        Coffee, Croissant, IceCreamCone, Beer, Sandwich, Pizza, Sparkles, Flower2,
+        Hand, HandHeart, Stethoscope, Syringe, PenTool, PawPrint, Dog, Hotel, BedDouble, Tent,
       }),
     },
   ],

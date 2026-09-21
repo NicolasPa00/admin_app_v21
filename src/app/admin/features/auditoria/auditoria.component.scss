@@ -231,19 +231,47 @@
     color: var(--color-text-secondary);
   }
 
-  &__json {
+  /* Pares campo-valor del antes/después — nunca un volcado de JSON crudo aquí. */
+  &__campos {
     margin: 0;
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem;
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;
     background: var(--color-surface);
-    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-    font-size: 0.75rem;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    word-break: break-word;
     max-height: 20rem;
     overflow-y: auto;
+  }
+
+  &__campo {
+    display: grid;
+    grid-template-columns: minmax(0, 40%) minmax(0, 60%);
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    font-size: 0.8rem;
+
+    & + & {
+      border-top: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+    }
+  }
+
+  &__campo-clave {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    font-size: 0.72rem;
+  }
+
+  &__campo-valor {
+    margin: 0;
+    color: var(--color-text-primary);
+    word-break: break-word;
+  }
+
+  &__campos-vacio {
+    margin: 0;
+    padding: 0.5rem 0;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
   }
 
   /* ── Paginación ── */

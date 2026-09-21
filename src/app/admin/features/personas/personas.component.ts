@@ -7,7 +7,7 @@ import {
   computed,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Users, Search, Phone, Store, ChevronLeft, ChevronRight, X,
@@ -38,7 +38,7 @@ const LIMIT = 25;
   selector: 'app-personas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, DecimalPipe, LucideAngularModule],
+  imports: [FormsModule, DatePipe, LucideAngularModule],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -148,5 +148,15 @@ export class PersonasComponent implements OnInit {
   /** Un solo pedido no es un fallo: es el caso mayoritario. */
   esClienteRecurrente(pedidos: number): boolean {
     return pedidos > 1;
+  }
+
+  /** Mismo formato que Cobranza/Mis pagos, para que el dinero se lea igual en todo el panel. */
+  protected dinero(valor: number | string | null | undefined): string {
+    const numero = Number(valor ?? 0);
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(numero);
   }
 }

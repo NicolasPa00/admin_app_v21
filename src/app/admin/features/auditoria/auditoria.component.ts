@@ -30,6 +30,47 @@ const OPERACIONES: Record<string, string> = {
   B: 'Baseline',
 };
 
+/** El código de una columna `estado` es el mismo en todo el backend (ver CLAUDE.md). */
+const ESTADOS: Record<string, string> = {
+  A: 'Activo',
+  I: 'Inactivo',
+  E: 'Eliminado',
+};
+
+/**
+ * Etiqueta de negocio por tabla auditada — para un super admin es lectura normal, pero para
+ * cualquier otra persona `esquema.tabla` es vocabulario de base de datos, no de la plataforma.
+ * Clave `esquema.tabla`; lo que no esté aquí (una tabla nueva) cae al nombre crudo, no se rompe.
+ */
+const TABLAS: Record<string, string> = {
+  'cobranza.cob_factura': 'Factura',
+  'cobranza.cob_suscripcion': 'Suscripción',
+  'general.gener_negocio': 'Negocio',
+  'general.gener_negocio_plan': 'Plan del negocio',
+  'general.gener_negocio_usuario': 'Usuario del negocio',
+  'general.gener_plan': 'Plan',
+  'general.gener_rol': 'Rol',
+  'general.gener_usuario': 'Usuario',
+  'general.gener_usuario_rol': 'Rol de usuario',
+  'reserva.reserva_caja': 'Caja (Reserva)',
+  'reserva.reserva_categoria': 'Categoría de servicio (Reserva)',
+  'reserva.reserva_cita': 'Cita (Reserva)',
+  'reserva.reserva_config': 'Configuración (Reserva)',
+  'reserva.reserva_horario': 'Horario (Reserva)',
+  'reserva.reserva_movimiento_caja': 'Movimiento de caja (Reserva)',
+  'reserva.reserva_pago_cita': 'Pago de cita (Reserva)',
+  'reserva.reserva_profesional': 'Profesional (Reserva)',
+  'reserva.reserva_servicio': 'Servicio (Reserva)',
+  'reserva.reserva_servicio_variante': 'Variante de servicio (Reserva)',
+  'restaurante.carta_diseno': 'Diseño de carta (Restaurante)',
+  'restaurante.carta_producto': 'Producto de carta (Restaurante)',
+  'restaurante.pedid_orden': 'Pedido (Restaurante)',
+  'restaurante.rest_caja': 'Caja (Restaurante)',
+  'restaurante.rest_cuenta': 'Cuenta / tiquetera (Restaurante)',
+  'restaurante.rest_cuenta_movimiento': 'Movimiento de cuenta (Restaurante)',
+  'restaurante.rest_movimiento_caja': 'Movimiento de caja (Restaurante)',
+};
+
 /**
  * AuditoriaComponent — Vista de Super Admin con el historial de auditoría.
  *
@@ -208,7 +249,23 @@ export class AuditoriaComponent implements OnInit {
     });
   }
 
-  protected json(valor: unknown): string {
-    return valor == null ? '—' : JSON.stringify(valor, null, 2);
+  protected tablaLabel(esquema: string, tabla: string): string {
+    return TABLAS[`${esquema}.${tabla}`] ?? `${esquema}.${tabla}`;
+  }
+
+  /** Antes/después como pares campo-valor — nunca un volcado de JSON crudo en pantalla. */
+  protected campos(valor: unknown): { clave: string; valor: string }[] {
+    if (valor == null || typeof valor !== 'object') return [];
+    return Object.entries(valor as Record<string, unknown>).map(([clave, v]) => ({
+      clave,
+      valor: this.formatCampo(clave, v),
+    }));
+  }
+
+  private formatCampo(clave: string, v: unknown): string {
+    if (v === null || v === undefined) return '—';
+    if (clave === 'estado' && typeof v === 'string' && ESTADOS[v]) return ESTADOS[v];
+    if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+    return String(v);
   }
 }

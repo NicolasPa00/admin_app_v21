@@ -235,8 +235,11 @@ export class AdminLayoutComponent {
     if (url.includes('/usuarios')) return 'Usuarios';
     if (url.includes('/registrar')) return 'Tipos de negocio';
     if (url.includes('/bandeja')) return 'Conversaciones';
+    if (url.includes('/facturacion')) return 'Facturación';
+    if (url.includes('/canal-whatsapp')) return 'WhatsApp';
     if (url.includes('/intelligence')) return 'Intelligence';
     if (url.includes('/personas')) return 'Ficha 360';
+    if (url.includes('/mis-pagos')) return 'Mis pagos';
     if (url.includes('/cobranza')) return 'Cobranza';
     if (url.includes('/auditoria')) return 'Auditoría';
     if (url.includes('/tipos-negocio')) return 'Roles del negocio';

@@ -81,7 +81,7 @@
               <td class="per__mono">{{ formatearTelefono(p.telefono_e164) }}</td>
               <td>{{ p.negocio }}</td>
               <td class="per__num">{{ p.pedidos }}</td>
-              <td class="per__num">{{ p.total_gastado | number: '1.0-0' }}</td>
+              <td class="per__num">{{ dinero(p.total_gastado) }}</td>
               <td>
                 {{ p.ultimo_pedido ? (p.ultimo_pedido | date: 'dd/MM/yyyy') : '—' }}
               </td>
@@ -156,12 +156,12 @@
               </div>
               <div class="per__stat">
                 <lucide-icon name="receipt" [size]="16" aria-hidden="true" />
-                <span class="per__stat-val">{{ r.total_gastado | number: '1.0-0' }}</span>
+                <span class="per__stat-val">{{ dinero(r.total_gastado) }}</span>
                 <span class="per__stat-lbl">total gastado</span>
               </div>
               <div class="per__stat">
                 <lucide-icon name="receipt" [size]="16" aria-hidden="true" />
-                <span class="per__stat-val">{{ r.ticket_promedio | number: '1.0-0' }}</span>
+                <span class="per__stat-val">{{ dinero(r.ticket_promedio) }}</span>
                 <span class="per__stat-lbl">ticket promedio</span>
               </div>
               <div class="per__stat">
@@ -201,7 +201,7 @@
                     <tr>
                       <td class="per__mono">{{ p.numero_orden }}</td>
                       <td>{{ p.fecha_creacion | date: 'dd/MM/yyyy HH:mm' }}</td>
-                      <td class="per__num">{{ p.total | number: '1.0-0' }}</td>
+                      <td class="per__num">{{ dinero(p.total) }}</td>
                       <td>
                         <span class="per__badge" [class.is-paid]="p.estado_pago === 'pagado'">
                           {{ p.estado_pago === 'pagado' ? 'Pagado' : 'Pendiente' }}
@@ -220,8 +220,7 @@
           -->
           <p class="per__note per__note--muted">
             <lucide-icon name="info" [size]="14" aria-hidden="true" />
-            Por ahora la ficha solo agrega actividad de restaurante. Las demás verticales se
-            añadirán cuando tengan datos.
+            Esta ficha muestra la actividad de Restaurante. Pronto sumaremos las demás áreas.
           </p>
         }
       </div>

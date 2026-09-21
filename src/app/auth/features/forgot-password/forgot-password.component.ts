@@ -6,8 +6,15 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import {
+  LucideAngularModule,
+  LucideIconProvider,
+  LUCIDE_ICONS,
+  Zap, ShieldCheck, TrendingUp,
+} from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
+import { AssetService } from '../../../core/services/asset.service';
 
 /**
  * ForgotPasswordComponent — Solicita el envío de un código OTP de 6 dígitos.
@@ -22,13 +29,17 @@ import { AuthService } from '../../data-access/auth.service';
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, LucideAngularModule],
+  providers: [
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Zap, ShieldCheck, TrendingUp }) },
+  ],
   templateUrl: './forgot-password.component.html',
   styleUrl: './forgot-password.component.scss',
 })
 export class ForgotPasswordComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  protected readonly assetService = inject(AssetService);
 
   // ===================== Signal Form Fields =====================
 
