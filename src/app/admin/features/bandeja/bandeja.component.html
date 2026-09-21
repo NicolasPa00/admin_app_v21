@@ -154,10 +154,78 @@
             Ya me ocupé
           </button>
         }
+        <!--
+          Distinto de STOP/BAJA: esto lo decide el negocio, no el cliente, y por eso el propio
+          negocio lo puede deshacer. Una baja real (bloqueada_por = 'cliente') no muestra este
+          botón: esa solo la deshace un super admin desde la Consola.
+        -->
+        @if (d.conversacion.estado !== 'bloqueada') {
+          <button
+            type="button"
+            class="bdj__icono bdj__icono--peligro"
+            (click)="alternarConfirmarBloqueo()"
+            title="Que el asistente deje de contestarle a este número"
+          >
+            <lucide-icon name="ban" [size]="16" aria-hidden="true" />
+          </button>
+        } @else if (d.conversacion.bloqueada_por === 'negocio') {
+          <button
+            type="button"
+            class="bdj__icono"
+            (click)="desbloquear()"
+            [disabled]="bloqueando()"
+            title="Dejar que el asistente vuelva a contestarle a este número"
+          >
+            <lucide-icon name="bell-off" [size]="16" aria-hidden="true" />
+          </button>
+        }
         <button type="button" class="bdj__icono" (click)="cerrar()" aria-label="Cerrar">
           <lucide-icon name="x" [size]="16" aria-hidden="true" />
         </button>
       </header>
+
+      @if (d.conversacion.estado === 'bloqueada') {
+        <div class="bdj__baja">
+          <lucide-icon name="bell-off" [size]="15" aria-hidden="true" />
+          @if (d.conversacion.bloqueada_por === 'cliente') {
+            <span>
+              Esta persona pidió la baja (STOP). No recibe nada, ni respuestas ni recordatorios.
+              Solo un administrador de EscalApp puede deshacerlo.
+            </span>
+          } @else {
+            <span>Bloqueaste este número: el asistente no le contesta.</span>
+          }
+        </div>
+      }
+
+      @if (confirmandoBloqueo()) {
+        <div class="bdj__baja bdj__baja--form">
+          <p class="bdj__baja-txt">
+            <lucide-icon name="triangle-alert" [size]="15" aria-hidden="true" />
+            El asistente dejará de contestarle a este número hasta que lo desbloquees.
+          </p>
+          <div class="bdj__baja-campos">
+            <input
+              type="text"
+              class="bdj__input"
+              placeholder="Motivo (opcional, queda auditado)"
+              [ngModel]="motivoBloqueo()"
+              (ngModelChange)="motivoBloqueo.set($event)"
+              [disabled]="bloqueando()"
+              aria-label="Motivo del bloqueo"
+            />
+            <button type="button" class="bdj__btn-secundario" (click)="alternarConfirmarBloqueo()" [disabled]="bloqueando()">
+              Cancelar
+            </button>
+            <button type="button" class="bdj__btn-peligro" (click)="bloquear()" [disabled]="bloqueando()">
+              {{ bloqueando() ? 'Bloqueando…' : 'Sí, bloquear' }}
+            </button>
+          </div>
+          @if (errorBloqueo(); as err) {
+            <p class="bdj__baja-error">{{ err }}</p>
+          }
+        </div>
+      }
 
       <!--
         Solo cuando el asistente está fuera. Devolvérsela es una decisión de una persona, nunca
