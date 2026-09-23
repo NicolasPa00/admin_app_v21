@@ -122,6 +122,15 @@ export interface CobroResultado {
 
 export type CodigoPasarela = 'manual' | 'dlocal' | 'wompi';
 
+/** Una línea del cobro: el plan, o uno de los complementos. La suma es el total. */
+export interface LineaFactura {
+  tipo: 'plan' | 'complemento';
+  descripcion: string;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+}
+
 export interface FacturaPendiente {
   id_factura?: number; // no viaja en el portal público: allí se paga por referencia
   referencia: string;
@@ -129,6 +138,18 @@ export interface FacturaPendiente {
   periodo_fin: string;
   total: number;
   moneda: string;
+  /**
+   * `renovacion` compra el mes siguiente. `ajuste` es la diferencia por subir de plan a mitad de
+   * ciclo: se paga una vez, entra de inmediato y **no mueve la fecha de vencimiento**.
+   */
+  tipo?: 'renovacion' | 'ajuste';
+  /**
+   * El plan que cobra ESTA factura, que puede no ser el que el negocio tiene hoy: quien pidió
+   * subir de plan tiene un cobro por el plan nuevo mientras sigue usando el viejo. Titular el
+   * cobro con el plan de la suscripción mostraba el nombre de un plan con el precio de otro.
+   */
+  plan?: string;
+  lineas?: LineaFactura[];
 }
 
 /** Un plan que el cliente puede elegir y pagar. Los gratuitos no llegan aquí. */
@@ -142,16 +163,56 @@ export interface PlanDisponible {
 }
 
 /**
- * Lo que devuelve elegir plan. `aplica` dice cuándo se nota el cambio:
- *   'ahora'          → había un cobro pendiente y quedó por el valor del plan nuevo
- *   'proximo_cobro'  → el plan vigente sigue; el plan nuevo se cobra en la próxima mensualidad
+ * Lo que devuelve cambiar de plan o de complementos. `aplica` dice qué pasó:
+ *   'ajuste'      → sube: hay un cobro nuevo por la diferencia de los días que faltan, y el
+ *                   cambio entra al pagarlo (sin mover el vencimiento)
+ *   'renovacion'  → baja o cuesta lo mismo: no se cobra nada hoy y entra al renovar
+ *   'sin_cambios' → pidió lo que ya tiene; si había algo pendiente, se canceló
  */
 export interface CambioDePlan {
-  aplica: 'ahora' | 'proximo_cobro';
-  id_plan_solicitado: number;
-  plan_solicitado: string;
-  total?: number;
+  aplica: 'ajuste' | 'renovacion' | 'sin_cambios';
+  cambio?: boolean;
+  mensaje?: string;
+  referencia?: string | null;
+  id_factura?: number;
+  total?: number | null;
   moneda?: string;
+  /** Lo que pasará a costar al mes cuando el cambio esté aplicado. */
+  precio_mensual?: number;
+  /** Qué parte del ciclo queda por delante, de 0 a 1. Es lo que multiplica la diferencia. */
+  proporcion_restante?: number;
+}
+
+/** Un complemento del catálogo con lo que este negocio tiene y lo que dejó pedido. */
+export interface ComplementoCliente {
+  id_complemento: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  amplia: 'usuarios' | 'cajas' | null;
+  cantidad_maxima: number;
+  precio: number;
+  /** Lo que tiene activo hoy (lo que amplía sus límites). */
+  cantidad: number;
+  /** Lo que se le cobra: la diferencia con `cantidad` es cortesía. */
+  cantidad_facturable: number;
+  /** Lo pedido y aún no pagado. `null` = no hay nada pendiente. */
+  cantidad_solicitada: number | null;
+  cortesia: number;
+  subtotal: number;
+}
+
+export interface ComplementosDelNegocio {
+  moneda: string;
+  ciclo: CicloCobro;
+  tiene_suscripcion: boolean;
+  complementos: ComplementoCliente[];
+  total_mensual: number;
+  limites: {
+    plan: string;
+    usuarios: { incluidos: number | null; adicionales: number; total: number | null };
+    cajas: { incluidos: number | null; adicionales: number; total: number | null };
+  } | null;
 }
 
 /** Un negocio que el usuario administra, con lo que debe y cómo puede pagarlo. */
@@ -176,6 +237,8 @@ export interface CobroNegocio {
   vigencia?: PlanConVencimiento | null;
   facturas: FacturaPendiente[];
   pasarelas: PasarelaElegible[];
+  /** Usuarios y cajas extra: lo contratado, lo pedido y lo que suma al cobro. */
+  complementos?: ComplementosDelNegocio;
 }
 
 /**
@@ -219,4 +282,48 @@ export interface PagoManual {
   retencion_declarada?: number;
   numero_factura?: string | null;
   nota?: string | null;
+}
+
+/**
+ * Un complemento en la ficha de un negocio, tal como lo edita el super-admin.
+ *
+ * Dos cantidades y no una: `cantidad` es lo que el negocio **puede usar** y
+ * `cantidad_facturable` lo que se le **cobra**. La diferencia (`cortesia`) es la vía para
+ * regularizar a un cliente que ya venía usando más de lo que su plan incluye sin cobrarle de
+ * golpe algo que nunca pactó.
+ */
+export interface ComplementoNegocio {
+  id_complemento: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  amplia: string | null;
+  cantidad_maxima: number;
+  precio: number;
+  cantidad: number;
+  cantidad_facturable: number;
+  cortesia: number;
+  subtotal: number;
+}
+
+export interface LimiteRecurso {
+  incluidos: number | null;
+  adicionales: number;
+  total: number | null;
+}
+
+export interface LimitesNegocio {
+  id_plan: number;
+  plan: string;
+  usuarios: LimiteRecurso;
+  cajas: LimiteRecurso;
+}
+
+export interface ComplementosDeNegocio {
+  moneda: string;
+  ciclo: string;
+  tiene_suscripcion: boolean;
+  complementos: ComplementoNegocio[];
+  total_mensual: number;
+  limites: LimitesNegocio | null;
 }

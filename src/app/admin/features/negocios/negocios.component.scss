@@ -769,3 +769,104 @@
 
   &:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 }
+
+
+/* ── Complementos del plan (modal de edición) ──
+   Una fila por complemento con dos números: lo asignado y lo que se cobra. Se parecen a los
+   campos del formulario de arriba a propósito — es el mismo modal y la misma gramática—, pero
+   con el resultado a la derecha, que es lo que el super-admin está decidiendo: cuánto le va a
+   llegar a este cliente en la próxima factura. */
+.neg-comp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3, 12px);
+  margin-bottom: var(--spacing-3, 12px);
+
+  &__fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-2, 8px);
+    align-items: end;
+    padding: var(--spacing-3, 12px);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 10px);
+    background: var(--color-bg);
+
+    @media (min-width: 640px) {
+      grid-template-columns: minmax(0, 1fr) 110px 110px minmax(0, 150px);
+    }
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong { font-size: var(--font-size-sm, 14px); color: var(--color-text-primary); }
+    small { font-size: var(--font-size-xs, 12px); color: var(--color-text-secondary); }
+  }
+
+  &__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    span {
+      font-size: var(--font-size-xs, 12px);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  &__num { text-align: center; }
+
+  &__resultado {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+
+    strong { font-size: var(--font-size-sm, 14px); color: var(--color-text-primary); }
+
+    @media (min-width: 640px) { align-items: flex-end; }
+  }
+
+  &__pie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-3, 12px);
+  }
+
+  &__total {
+    font-size: var(--font-size-sm, 14px);
+    color: var(--color-text-secondary);
+
+    strong { color: var(--color-text-primary); }
+  }
+
+  &__acciones {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2, 8px);
+  }
+
+  &__limites,
+  &__nota,
+  &__vacio {
+    margin: 0 0 var(--spacing-3, 12px);
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+  }
+
+  &__nota { margin-top: var(--spacing-2, 8px); margin-bottom: 0; }
+
+  &__error {
+    margin: var(--spacing-2, 8px) 0 0;
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-error, #b91c1c);
+  }
+}

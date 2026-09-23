@@ -17,6 +17,7 @@ import {
   PlanesResponse,
   UsuarioBusqueda,
 } from '../models/admin.models';
+import { ComplementosDeNegocio } from '../models/cobranza.models';
 
 /**
  * NegociosAdminService — gestión de negocios (clientes) para el Super Admin.
@@ -102,5 +103,28 @@ export class NegociosAdminService {
     return this.http
       .get<ApiResponse<UsuarioBusqueda[]>>(`${this.API}/usuarios/buscar`, { params: { q } })
       .pipe(map((res) => res.data ?? []));
+  }
+
+  // ── Complementos del plan (super-admin) ──────────────────────────────────────
+  //
+  // Cuántos usuarios y cajas extra tiene un negocio y cuántos de ellos se le cobran. La
+  // diferencia entre ambas cantidades es cortesía: el negocio la usa y no la paga.
+
+  getComplementos(idNegocio: number): Observable<ComplementosDeNegocio | null> {
+    return this.http
+      .get<ApiResponse<ComplementosDeNegocio>>(`${this.API}/cobranza/negocios/${idNegocio}/complementos`)
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  guardarComplementos(
+    idNegocio: number,
+    complementos: { codigo: string; cantidad: number; cantidad_facturable: number }[],
+  ): Observable<ComplementosDeNegocio | null> {
+    return this.http
+      .put<ApiResponse<ComplementosDeNegocio>>(
+        `${this.API}/cobranza/negocios/${idNegocio}/complementos`,
+        { complementos },
+      )
+      .pipe(map((res) => res.data ?? null));
   }
 }

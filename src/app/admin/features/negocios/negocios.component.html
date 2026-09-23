@@ -607,6 +607,108 @@
             }
           }
         }
+          <!--
+            Complementos del plan. Dos cantidades por fila y no una: «asignados» es lo que el
+            negocio puede usar y «se cobran» lo que se le factura. La diferencia es cortesía, y
+            es la forma de regularizar a quien ya venía usando más de lo que su plan incluye sin
+            cobrarle de golpe algo que nunca pactó. Los límites cuentan lo asignado; la factura,
+            solo lo cobrado.
+          -->
+          @if (mode === 'edit') {
+            <h3 class="neg-modal__section">Complementos del plan</h3>
+
+            @if (complementosCargando()) {
+              <p class="neg-comp__vacio">Cargando complementos…</p>
+            } @else if (complementos().length === 0) {
+              <p class="neg-comp__vacio">
+                {{ complementosError() ?? 'Este negocio todavía no tiene suscripción de cobro.' }}
+              </p>
+            } @else {
+              @if (limites(); as l) {
+                <p class="neg-comp__limites">
+                  Con lo asignado hoy:
+                  <strong>{{ l.usuarios.total ?? '∞' }}</strong> usuarios
+                  ({{ l.usuarios.incluidos ?? '∞' }} del plan + {{ l.usuarios.adicionales }}) ·
+                  <strong>{{ l.cajas.total ?? '∞' }}</strong> cajas
+                  ({{ l.cajas.incluidos ?? '∞' }} del plan + {{ l.cajas.adicionales }})
+                </p>
+              }
+
+              <div class="neg-comp">
+                @for (c of complementos(); track c.codigo) {
+                  <div class="neg-comp__fila">
+                    <div class="neg-comp__info">
+                      <strong>{{ c.nombre }}</strong>
+                      <small>{{ formatPrecioValor(c.precio) }} / mes cada uno</small>
+                    </div>
+
+                    <label class="neg-comp__campo">
+                      <span>Asignados</span>
+                      <input
+                        class="input neg-comp__num"
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        [max]="c.cantidad_maxima"
+                        [value]="c.cantidad || ''"
+                        (input)="cambiarComplemento(c.codigo, 'cantidad', $any($event.target).value)"
+                      />
+                    </label>
+
+                    <label class="neg-comp__campo">
+                      <span>Se cobran</span>
+                      <input
+                        class="input neg-comp__num"
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        [max]="c.cantidad"
+                        [value]="c.cantidad_facturable || ''"
+                        (input)="cambiarComplemento(c.codigo, 'cantidad_facturable', $any($event.target).value)"
+                      />
+                    </label>
+
+                    <div class="neg-comp__resultado">
+                      @if (c.cortesia > 0) {
+                        <span class="es-badge es-badge--info">{{ c.cortesia }} de cortesía</span>
+                      }
+                      <strong>{{ formatPrecioValor(c.cantidad_facturable * c.precio) }}/mes</strong>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <div class="neg-comp__pie">
+                <span class="neg-comp__total">
+                  Suman al cobro:
+                  <strong>{{ formatPrecioValor(complementosTotal()) }} / mes</strong>
+                </span>
+                <span class="neg-comp__acciones">
+                  @if (complementosOk()) {
+                    <span class="es-badge es-badge--success">Guardado</span>
+                  }
+                  <button
+                    type="button"
+                    class="btn btn--secondary"
+                    (click)="guardarComplementos()"
+                    [disabled]="complementosGuardando()"
+                  >
+                    {{ complementosGuardando() ? 'Guardando…' : 'Guardar complementos' }}
+                  </button>
+                </span>
+              </div>
+
+              @if (complementosError(); as e) {
+                <p class="neg-comp__error" role="alert">{{ e }}</p>
+              }
+
+              <p class="neg-comp__nota">
+                Lo cobrado entra en el cobro pendiente (si lo hay) y en los siguientes. Lo
+                asignado amplía los límites del negocio desde ya.
+              </p>
+            }
+          }
+
       </div>
 
       <!-- El error va fuera del cuerpo desplazable, junto a los botones: siempre a la vista. -->

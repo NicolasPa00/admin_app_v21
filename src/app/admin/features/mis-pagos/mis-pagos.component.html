@@ -78,44 +78,186 @@
       </p>
 
       <!--
-        Cambio de plan. El plan nunca cambia sin pagar: lo elegido queda pendiente y se aplica
-        cuando se paga el cobro correspondiente.
+        Dos pestañas, porque son dos momentos distintos y casi nunca coinciden: casi siempre se
+        entra a pagar, y de vez en cuando a cambiar de plan. Apilar las dos cosas obligaba a
+        recorrer toda la parrilla de planes y complementos para llegar al botón de pagar.
       -->
       @if (c.planes?.length) {
-        <div class="mp__plan">
-          @if (c.plan_solicitado) {
-            <p class="mp__plan-pendiente">
-              <lucide-icon name="clock" [size]="14" aria-hidden="true" />
-              Pasarás al <strong>{{ c.plan_solicitado }}</strong> cuando pagues tu próximo cobro.
-            </p>
-          }
-          <button type="button" class="mp__plan-toggle" (click)="alternarPlanes(c)">
-            {{ planesAbiertos() === c.id_negocio ? 'Cancelar' : 'Cambiar de plan' }}
+        <nav class="mp__tabs" role="tablist" [attr.aria-label]="'Opciones de ' + c.negocio">
+          <button
+            type="button"
+            role="tab"
+            class="mp__tab"
+            [class.is-on]="tabDe(c) === 'pagar'"
+            [attr.aria-selected]="tabDe(c) === 'pagar'"
+            (click)="verTab(c, 'pagar')"
+          >
+            <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
+            Pagar mi plan
+            @if (c.facturas.length) {
+              <span class="mp__tab-num">{{ c.facturas.length }}</span>
+            }
           </button>
+          <button
+            type="button"
+            role="tab"
+            class="mp__tab"
+            [class.is-on]="tabDe(c) === 'plan'"
+            [attr.aria-selected]="tabDe(c) === 'plan'"
+            (click)="verTab(c, 'plan')"
+          >
+            <lucide-icon name="wallet" [size]="15" aria-hidden="true" />
+            Cambiar plan
+            @if (c.plan_solicitado || pendienteDe(c).length) {
+              <span class="mp__tab-punto" aria-label="Tienes un cambio pendiente"></span>
+            }
+          </button>
+        </nav>
+      }
 
-          @if (planesAbiertos() === c.id_negocio) {
+      <!--
+        Plan y complementos, en un solo panel y con una sola cuenta: cambiar de plan y añadir un
+        usuario a la vez se cobra por la diferencia NETA. Nada cambia sin pagar: lo elegido queda
+        pedido y se aplica cuando se paga el cobro que lo lleva.
+      -->
+      @if (c.planes?.length && tabDe(c) === 'plan') {
+        <div class="mp__plan">
+          <!-- Lo que ya pidió y está esperando pago. -->
+          @if (c.plan_solicitado || pendienteDe(c).length) {
+            <div class="mp__plan-pendiente">
+              <p>
+                <lucide-icon name="clock" [size]="14" aria-hidden="true" />
+                <span>
+                  @if (c.plan_solicitado) {
+                    Pediste pasar al <strong>{{ c.plan_solicitado }}</strong>.
+                  }
+                  @for (x of pendienteDe(c); track x.codigo) {
+                    Pediste
+                    <strong>{{ x.cantidad_solicitada }}</strong> {{ x.nombre }}
+                    (hoy tienes {{ x.cantidad }}).
+                  }
+                  Se aplica cuando pagues el cobro correspondiente.
+                </span>
+              </p>
+              <button type="button" class="mp__plan-deshacer" [disabled]="cambiandoPlan()"
+                      (click)="cancelarSolicitud(c)">
+                Cancelar el cambio
+              </button>
+            </div>
+          }
+
+          <!-- ── Planes ── -->
+          <h3 class="mp__plan-titulo">Tu plan</h3>
             <ul class="mp__planes">
               @for (p of c.planes; track p.id_plan) {
-                <li class="mp__plan-item" [class.mp__plan-item--actual]="p.id_plan === c.id_plan">
+                <li class="mp__plan-item"
+                    [class.mp__plan-item--actual]="p.id_plan === planMarcado(c)">
                   <div>
                     <strong>{{ p.nombre }}</strong>
                     <span class="mp__meta">{{ dinero(p.precio, p.moneda) }} al mes</span>
                   </div>
-                  @if (p.id_plan === c.id_plan) {
-                    <span class="mp__chip mp__chip--activa">Tu plan actual</span>
-                  } @else {
-                    <button type="button" class="btn btn--sm" [disabled]="cambiandoPlan()"
-                            (click)="cambiarPlan(c, p.id_plan)">
-                      @if (cambiandoPlan()) {
-                        <lucide-icon name="loader-2" [size]="15" class="mp__spin" aria-hidden="true" />
-                      }
-                      Elegir
-                    </button>
-                  }
+                  <div class="mp__plan-marca">
+                    @if (p.id_plan === c.id_plan) {
+                      <span class="mp__chip mp__chip--activa">Tu plan actual</span>
+                    }
+                    @if (p.id_plan === planMarcado(c)) {
+                      <span class="mp__plan-check">
+                        <lucide-icon name="check" [size]="15" aria-hidden="true" />
+                        Elegido
+                      </span>
+                    } @else {
+                      <!-- De contorno: elegir plan en la lista es un paso previo, no la acción
+                           que cierra. La que cierra es «Guardar cambios», abajo. -->
+                      <button type="button" class="btn btn--outline btn--sm"
+                              [disabled]="cambiandoPlan()"
+                              (click)="marcarPlan(p.id_plan)">
+                        Elegir
+                      </button>
+                    }
+                  </div>
                 </li>
               }
             </ul>
-          }
+
+            <!-- ── Complementos ── -->
+            @if (c.complementos?.complementos?.length) {
+              <h3 class="mp__plan-titulo">Complementos</h3>
+              <p class="mp__meta mp__plan-ayuda">
+                Amplían los límites de tu plan. Se suman a tu mensualidad.
+              </p>
+
+              <ul class="mp__comps">
+                @for (x of c.complementos!.complementos; track x.codigo) {
+                  <li class="mp__comp">
+                    <div class="mp__comp-info">
+                      <strong>{{ x.nombre }}</strong>
+                      <span class="mp__meta">{{ dinero(x.precio, c.moneda) }} al mes cada uno</span>
+                      @if (x.cortesia > 0) {
+                        <span class="mp__chip mp__chip--activa">
+                          {{ x.cortesia }} sin costo para ti
+                        </span>
+                      }
+                    </div>
+                    <div class="mp__comp-cant">
+                      <button type="button" class="mp__comp-btn" aria-label="Quitar uno"
+                              [disabled]="cambiandoPlan() || cantidadDe(x) === 0"
+                              (click)="ajustarComplemento(x, -1)">
+                        <lucide-icon name="minus" [size]="15" aria-hidden="true" />
+                      </button>
+                      <span class="mp__comp-numero">{{ cantidadDe(x) }}</span>
+                      <button type="button" class="mp__comp-btn" aria-label="Añadir uno"
+                              [disabled]="cambiandoPlan() || cantidadDe(x) >= x.cantidad_maxima"
+                              (click)="ajustarComplemento(x, 1)">
+                        <lucide-icon name="plus" [size]="15" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </li>
+                }
+              </ul>
+
+              @if (c.complementos?.limites; as l) {
+                <p class="mp__meta mp__plan-ayuda">
+                  Hoy puedes tener
+                  <strong>{{ l.usuarios.total ?? 'los que quieras' }}</strong> usuarios y
+                  <strong>{{ l.cajas.total ?? 'las que quieras' }}</strong> cajas.
+                </p>
+              }
+            }
+
+            <!-- ── El resumen de la decisión ── -->
+            <div class="mp__plan-pie">
+              <div class="mp__plan-total">
+                <span class="mp__meta">Tu mensualidad quedaría en</span>
+                <strong>{{ dinero(mensualPrevisto(c), c.moneda) }}</strong>
+                @if (hayCambios(c)) {
+                  <span class="mp__meta">
+                    (hoy pagas {{ dinero(mensualActual(c), c.moneda) }})
+                  </span>
+                }
+              </div>
+
+              @if (hayCambios(c)) {
+                <p class="mp__plan-explica">
+                  @if (subeDePrecio(c)) {
+                    Al guardar te generamos un cobro por la diferencia de los días que le quedan a
+                    tu mes. Cuando lo pagues, el cambio queda activo y tu fecha de vencimiento no
+                    se mueve.
+                  } @else {
+                    No hay nada que pagar hoy: el cambio entra en tu próxima renovación, así que
+                    aprovechas el mes que ya pagaste.
+                  }
+                </p>
+              }
+
+              <button type="button" class="btn btn--primary"
+                      [disabled]="cambiandoPlan() || !hayCambios(c)"
+                      (click)="guardarCambios(c)">
+                @if (cambiandoPlan()) {
+                  <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
+                }
+                {{ hayCambios(c) ? 'Guardar cambios' : 'Sin cambios' }}
+              </button>
+            </div>
 
           @if (avisoPlan(); as texto) {
             <p class="mp__plan-aviso" role="status">
@@ -125,6 +267,9 @@
           }
         </div>
       }
+
+      <!-- ═══ Pestaña «Pagar mi plan» ═══ -->
+      @if (tabDe(c) === 'pagar') {
 
       @if (c.facturas.length === 0) {
         @if (estaAlDia(c.vencimiento)) {
@@ -148,10 +293,30 @@
 
       @for (f of c.facturas; track f.referencia) {
         <article class="mp__factura">
+          <!--
+            El concepto sale del PLAN DE ESTA FACTURA, no del plan que el negocio tiene hoy: quien
+            pidió subir de plan tiene un cobro por el plan nuevo mientras sigue usando el viejo, y
+            titularlo con el actual mostraba el nombre de un plan con el precio de otro.
+          -->
           <div class="mp__factura-datos">
-            <span class="mp__concepto">Mensualidad · {{ c.plan }}</span>
+            <span class="mp__concepto">{{ conceptoDe(c, f) }}</span>
             <strong class="mp__monto">{{ dinero(f.total, f.moneda) }}</strong>
-            <span class="mp__meta">{{ efectoDelPago(c.vencimiento) }}</span>
+
+            @if (f.lineas?.length && f.lineas!.length > 1) {
+              <ul class="mp__lineas">
+                @for (l of f.lineas; track l.descripcion) {
+                  <li>
+                    <span>
+                      {{ l.descripcion }}
+                      @if (l.cantidad > 1) { <span class="mp__meta">× {{ l.cantidad }}</span> }
+                    </span>
+                    <span>{{ dinero(l.subtotal, f.moneda) }}</span>
+                  </li>
+                }
+              </ul>
+            }
+
+            <span class="mp__meta">{{ efectoDeFactura(c, f) }}</span>
           </div>
 
           <!--
@@ -213,7 +378,8 @@
               </fieldset>
 
               <div class="mp__acciones">
-                <button type="button" class="btn" [disabled]="procesando() !== null"
+                <button type="button" class="btn btn--primary mp__btn-pagar"
+                        [disabled]="procesando() !== null"
                         (click)="pagar(f, c.pasarelas)">
                   @if (procesando() === f.referencia) {
                     <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
@@ -233,6 +399,9 @@
           </div>
         </article>
       }
+
+      }
     </section>
   }
 </div>
+

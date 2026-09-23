@@ -326,7 +326,8 @@
                                     <label class="cob__campo">
                                       <span>Comisión</span>
                                       <input class="input" type="number" min="0" step="1"
-                                             [value]="fComision()"
+                                             placeholder="0"
+                                             [value]="fComision() === '0' ? '' : fComision()"
                                              (input)="fComision.set($any($event.target).value)" />
                                     </label>
 
@@ -337,7 +338,8 @@
                                     <label class="cob__campo">
                                       <span>Retención en la fuente</span>
                                       <input class="input" type="number" min="0" step="1"
-                                             [value]="fRetencion()"
+                                             placeholder="0"
+                                             [value]="fRetencion() === '0' ? '' : fRetencion()"
                                              (input)="fRetencion.set($any($event.target).value)" />
                                     </label>
 

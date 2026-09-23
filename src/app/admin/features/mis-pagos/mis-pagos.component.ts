@@ -10,13 +10,14 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
-  Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock,
+  Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check,
 } from 'lucide-angular';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
 import {
   CobroNegocio,
   CodigoPasarela,
+  ComplementoCliente,
   FacturaPendiente,
   PasarelaElegible,
 } from '../../models/cobranza.models';
@@ -62,7 +63,7 @@ type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock,
+        Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check,
       }),
     },
   ],
@@ -136,51 +137,188 @@ export class MisPagosComponent implements OnInit {
     });
   }
 
-  // ── Cambio de plan ──────────────────────────────────────────
+  // ── Cambio de plan y de complementos ────────────────────────
+  //
+  // Van juntos porque son una sola cuenta: subir de plan y añadir un usuario a la vez se cobra
+  // por la diferencia neta, no como dos cambios encadenados. El panel deja preparar todo y
+  // guardarlo de una vez; hasta que no se guarda, no se cobra ni se pide nada.
 
-  /** Negocio cuyo selector de planes está abierto, o null. */
-  protected readonly planesAbiertos = signal<number | null>(null);
   protected readonly cambiandoPlan = signal(false);
   protected readonly avisoPlan = signal<string | null>(null);
 
-  protected alternarPlanes(c: CobroVista): void {
+  /**
+   * Qué pestaña mira cada negocio.
+   *
+   * Por negocio y no una global porque el usuario puede administrar varios y no tiene por qué
+   * estar en lo mismo en todos. Arranca en «Pagar», que es a lo que se entra el 95% de las
+   * veces; cambiar de plan es una decisión de una vez cada varios meses.
+   */
+  private readonly tabs = signal<Record<number, 'pagar' | 'plan'>>({});
+
+  protected tabDe(c: CobroVista): 'pagar' | 'plan' {
+    return this.tabs()[c.id_negocio ?? -1] ?? 'pagar';
+  }
+
+  protected verTab(c: CobroVista, tab: 'pagar' | 'plan'): void {
+    if (!c.id_negocio) return;
     this.avisoPlan.set(null);
     this.error.set(null);
-    this.planesAbiertos.update((abierto) =>
-      abierto === c.id_negocio ? null : (c.id_negocio ?? null),
+    // Al entrar a «Cambiar plan» el panel se arma con lo que el negocio tiene hoy, no con lo que
+    // quedó de la última visita.
+    if (tab === 'plan') this.prepararPanel(c);
+    this.tabs.update((m) => ({ ...m, [c.id_negocio!]: tab }));
+  }
+
+  /** El plan marcado en el panel mientras se decide. Sin marcar = el que ya tiene pedido o activo. */
+  private readonly planElegido = signal<number | null>(null);
+
+  /** Cantidades de complementos que se están editando, por código. */
+  private readonly complementosEditados = signal<Record<string, number>>({});
+
+  /** Arranca el panel con lo que el negocio tiene hoy (o con lo que dejó pedido). */
+  private prepararPanel(c: CobroVista): void {
+    this.planElegido.set(c.id_plan_solicitado ?? c.id_plan ?? null);
+    const cantidades: Record<string, number> = {};
+    for (const x of c.complementos?.complementos ?? []) {
+      cantidades[x.codigo] = x.cantidad_solicitada ?? x.cantidad;
+    }
+    this.complementosEditados.set(cantidades);
+  }
+
+  protected planMarcado(c: CobroVista): number | null {
+    return this.planElegido() ?? c.id_plan_solicitado ?? c.id_plan ?? null;
+  }
+
+  protected marcarPlan(idPlan: number): void {
+    this.planElegido.set(idPlan);
+    this.avisoPlan.set(null);
+  }
+
+  protected cantidadDe(x: ComplementoCliente): number {
+    const editado = this.complementosEditados()[x.codigo];
+    return editado ?? x.cantidad_solicitada ?? x.cantidad;
+  }
+
+  protected ajustarComplemento(x: ComplementoCliente, delta: number): void {
+    const actual = this.cantidadDe(x);
+    const nueva = Math.max(0, Math.min(x.cantidad_maxima, actual + delta));
+    this.complementosEditados.update((m) => ({ ...m, [x.codigo]: nueva }));
+    this.avisoPlan.set(null);
+  }
+
+  /** Lo que costaría al mes lo que hay marcado ahora mismo en el panel. */
+  protected mensualPrevisto(c: CobroVista): number {
+    const plan = c.planes?.find((p) => p.id_plan === this.planMarcado(c));
+    const base = plan?.precio ?? 0;
+    return (c.complementos?.complementos ?? []).reduce(
+      (suma, x) => suma + this.cantidadDe(x) * x.precio,
+      base,
     );
   }
 
+  /** Lo que paga hoy al mes: su plan activo más los complementos que ya tiene. */
+  protected mensualActual(c: CobroVista): number {
+    const plan = c.planes?.find((p) => p.id_plan === c.id_plan);
+    const base = plan?.precio ?? 0;
+    return (c.complementos?.complementos ?? []).reduce(
+      (suma, x) => suma + x.cantidad * x.precio,
+      base,
+    );
+  }
+
+  /** ¿Hay algo distinto de lo que tiene hoy? Es lo que habilita el botón de guardar. */
+  protected hayCambios(c: CobroVista): boolean {
+    if (this.planMarcado(c) !== (c.id_plan ?? null)) return true;
+    return (c.complementos?.complementos ?? []).some((x) => this.cantidadDe(x) !== x.cantidad);
+  }
+
+  /** Lo que el cliente va a ver: sube (se cobra ahora) o baja (entra al renovar). */
+  protected subeDePrecio(c: CobroVista): boolean {
+    return this.mensualPrevisto(c) > this.mensualActual(c);
+  }
+
   /**
-   * Elige otro plan. Lo que pasa después lo decide el backend y se le cuenta al usuario tal cual:
-   * si tiene un cobro pendiente, ese cobro pasa a valer el plan nuevo y se aplica al pagarlo; si
-   * está al día, el cambio entra en la próxima mensualidad. Nunca se cambia el plan sin pagar.
+   * Guarda plan y complementos de una vez.
+   *
+   * El backend decide si eso se cobra hoy (subida, prorrateada por los días que faltan) o si
+   * entra en la próxima renovación (bajada), y devuelve el mensaje que explica cuál fue.
    */
-  protected cambiarPlan(c: CobroVista, idPlan: number): void {
-    if (!c.id_negocio || idPlan === c.id_plan) return;
+  protected guardarCambios(c: CobroVista): void {
+    if (!c.id_negocio || !this.hayCambios(c)) return;
 
     this.cambiandoPlan.set(true);
     this.avisoPlan.set(null);
     this.error.set(null);
 
-    this.api.elegirPlan(c.id_negocio, idPlan).subscribe({
+    const complementos = (c.complementos?.complementos ?? []).map((x) => ({
+      codigo: x.codigo,
+      cantidad: this.cantidadDe(x),
+    }));
+
+    this.api
+      .cambiarMiPlan(c.id_negocio, { idPlan: this.planMarcado(c), complementos })
+      .subscribe({
+        next: (r) => {
+          this.cambiandoPlan.set(false);
+          if (r?.mensaje) this.avisoPlan.set(r.mensaje);
+          // Si subir generó un cobro, lo siguiente que tiene que hacer es pagarlo: se le lleva
+          // a la pestaña donde está, en vez de dejarle buscarlo.
+          if (r?.aplica === 'ajuste') this.verTab(c, 'pagar');
+          this.cargar();
+        },
+        error: (err) => {
+          this.cambiandoPlan.set(false);
+          this.error.set(this.mensajeDeError(err, 'No se pudo cambiar el plan.'));
+        },
+      });
+  }
+
+  /** Cancela lo pedido y sin pagar: se vuelve a lo que el negocio tiene contratado hoy. */
+  protected cancelarSolicitud(c: CobroVista): void {
+    if (!c.id_negocio) return;
+
+    this.cambiandoPlan.set(true);
+    this.avisoPlan.set(null);
+    this.error.set(null);
+
+    // Mandar lo que ya tiene es, para el backend, «deshaz lo pendiente».
+    const complementos = (c.complementos?.complementos ?? []).map((x) => ({
+      codigo: x.codigo,
+      cantidad: x.cantidad,
+    }));
+
+    this.api.cambiarMiPlan(c.id_negocio, { idPlan: c.id_plan ?? null, complementos }).subscribe({
       next: (r) => {
         this.cambiandoPlan.set(false);
-        this.planesAbiertos.set(null);
-        if (r) {
-          this.avisoPlan.set(
-            r.aplica === 'ahora'
-              ? `Tu cobro pendiente quedó por el ${r.plan_solicitado}. Al pagarlo, ese será tu plan.`
-              : `Cambiarás al ${r.plan_solicitado} en tu próxima mensualidad.`,
-          );
-        }
+        if (r?.mensaje) this.avisoPlan.set(r.mensaje);
         this.cargar();
       },
       error: (err) => {
         this.cambiandoPlan.set(false);
-        this.error.set(this.mensajeDeError(err, 'No se pudo cambiar el plan.'));
+        this.error.set(this.mensajeDeError(err, 'No se pudo cancelar el cambio.'));
       },
     });
+  }
+
+  /** Lo pedido de un complemento, para poder decir «tienes 2, pediste 4». */
+  protected pendienteDe(c: CobroVista): ComplementoCliente[] {
+    return (c.complementos?.complementos ?? []).filter(
+      (x) => x.cantidad_solicitada != null && x.cantidad_solicitada !== x.cantidad,
+    );
+  }
+
+  /** El título de un cobro dice qué cobra: la renovación de un plan, o el cambio a otro. */
+  protected conceptoDe(c: CobroVista, f: FacturaPendiente): string {
+    if (f.tipo === 'ajuste') return `Cambio de plan · ${f.plan ?? c.plan}`;
+    return `Mensualidad · ${f.plan ?? c.plan}`;
+  }
+
+  /** Qué pasa al pagar ESTE cobro. Un ajuste no renueva: estrena. */
+  protected efectoDeFactura(c: CobroVista, f: FacturaPendiente): string {
+    if (f.tipo === 'ajuste') {
+      return 'Al pagar, el cambio queda activo de inmediato y tu fecha de vencimiento no se mueve.';
+    }
+    return this.efectoDelPago(c.vencimiento);
   }
 
   // ── Elegir con qué pagar ────────────────────────────────────

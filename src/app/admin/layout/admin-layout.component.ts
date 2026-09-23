@@ -3,8 +3,10 @@ import {
   ChangeDetectionStrategy,
   PLATFORM_ID,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
@@ -154,6 +156,15 @@ export class AdminLayoutComponent {
   );
 
   // ── Estado de UI ────────────────────────────────────────────
+  /**
+   * Cómo lo quiere el usuario cuando nadie le impone nada. Solo lo cambia el botón del sidebar,
+   * y es lo único que se guarda en `localStorage`.
+   *
+   * Existe separado de `collapsed` porque hay pantallas que lo colapsan por su cuenta (ver
+   * abajo): sin esta copia, entrar y salir de una de ellas dejaría el menú cerrado para siempre
+   * a quien lo tenía abierto.
+   */
+  private readonly preferenciaColapsado = signal(this.readCollapsed());
   protected readonly collapsed = signal(this.readCollapsed());
   protected readonly mobileOpen = signal(false);
 
@@ -213,6 +224,24 @@ export class AdminLayoutComponent {
     ),
     { initialValue: this.router.url },
   );
+
+  /**
+   * Conversaciones necesita el ancho, y el menú se aparta solo.
+   *
+   * Son dos paneles —lista y hilo— dentro de un área que ya comparte con el sidebar: con el menú
+   * abierto, la columna del chat se queda sin sitio y las burbujas se parten en tres renglones.
+   * Es la única pantalla del panel con esa forma, así que el colapso va por **lista blanca**: la
+   * siguiente pantalla normal no tiene por qué acordarse de este archivo.
+   *
+   * No es una imposición permanente: el botón del sidebar sigue funcionando dentro de la
+   * sección, y al salir vuelve lo que el usuario tenía. Solo un clic suyo cambia la preferencia.
+   */
+  private readonly colapsoAutomatico = effect(() => {
+    const url = this.currentUrl().split('?')[0];
+    const enChat = url.includes('/admin/bandeja');
+    untracked(() => this.collapsed.set(enChat ? true : this.preferenciaColapsado()));
+  });
+
   /**
    * El botón flotante de WhatsApp solo en el inicio.
    *
@@ -249,6 +278,11 @@ export class AdminLayoutComponent {
   // ── Acciones ────────────────────────────────────────────────
   protected toggleCollapsed(): void {
     this.collapsed.update((v) => !v);
+    // La preferencia solo cambia por decisión del usuario, y este botón es esa decisión.
+    // Dentro de Conversaciones el clic vale para esa visita —el menú se abre y se queda—, pero
+    // al volver a entrar la pantalla lo colapsa otra vez: quien necesita el menú fijo lo tiene
+    // en todas las demás, que es donde la preferencia manda sin discusión.
+    this.preferenciaColapsado.set(this.collapsed());
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem(COLLAPSE_KEY, String(this.collapsed()));
     }

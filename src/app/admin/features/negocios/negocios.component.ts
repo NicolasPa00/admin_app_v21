@@ -29,6 +29,7 @@ import {
   NegocioAdmin, TipoNegocio, Rubro, Plan, PlanInfo, LoadingState,
   RegistrarClienteRequest, UsuarioBusqueda,
 } from '../../models/admin.models';
+import { ComplementoNegocio, LimitesNegocio } from '../../models/cobranza.models';
 
 type UserMode = 'nuevo' | 'existente';
 
@@ -244,6 +245,98 @@ export class NegociosComponent implements OnInit, OnDestroy {
   protected readonly editNegocio = signal<NegocioAdmin | null>(null);
   /** Campos del plan en edición, precargados con el plan actual. */
   protected readonly planForm = signal<PlanEditForm | null>(null);
+
+  /* ── Complementos del plan (super-admin) ──
+   *
+   * Dos cantidades por complemento: lo que el negocio puede usar y lo que se le cobra. La
+   * diferencia es cortesía, y es la única forma de regularizar a quien ya venía usando más de lo
+   * que su plan incluye —Zona Burger con 12 usuarios en un plan de 4— sin cobrarle de golpe algo
+   * que nunca pactó. Los límites cuentan lo asignado; la factura, solo lo cobrado.
+   */
+  protected readonly complementos = signal<ComplementoNegocio[]>([]);
+  protected readonly limites = signal<LimitesNegocio | null>(null);
+  protected readonly complementosCargando = signal(false);
+  protected readonly complementosGuardando = signal(false);
+  protected readonly complementosError = signal<string | null>(null);
+  protected readonly complementosOk = signal(false);
+
+  /** Lo que sumarán al próximo cobro: solo lo marcado como cobrable. */
+  protected readonly complementosTotal = computed(() =>
+    this.complementos().reduce((suma, c) => suma + c.cantidad_facturable * c.precio, 0),
+  );
+
+  private cargarComplementos(idNegocio: number): void {
+    this.complementosCargando.set(true);
+    this.complementosError.set(null);
+    this.complementosOk.set(false);
+    this.service.getComplementos(idNegocio).subscribe({
+      next: (datos) => {
+        this.complementos.set(datos?.complementos ?? []);
+        this.limites.set(datos?.limites ?? null);
+        this.complementosCargando.set(false);
+      },
+      error: (err) => {
+        this.complementos.set([]);
+        this.complementosCargando.set(false);
+        this.complementosError.set(
+          err.error?.message ?? 'No se pudieron cargar los complementos de este negocio.',
+        );
+      },
+    });
+  }
+
+  /**
+   * Cambia una de las dos cantidades de un complemento.
+   *
+   * Tocar **asignados arrastra lo que se cobra**: lo normal es que lo contratado se facture, y
+   * la cortesía es la excepción que se marca a mano bajando «Se cobran». Al revés sería fácil
+   * asignar dos usuarios, no mirar la otra casilla y regalarlos sin querer.
+   *
+   * Lo cobrado nunca puede superar lo asignado: se recorta solo.
+   */
+  protected cambiarComplemento(codigo: string, campo: 'cantidad' | 'cantidad_facturable', valor: string): void {
+    const n = Math.max(0, Math.trunc(Number(valor) || 0));
+    this.complementosOk.set(false);
+    this.complementos.update((lista) =>
+      lista.map((c) => {
+        if (c.codigo !== codigo) return c;
+        if (campo === 'cantidad') {
+          const cantidad = Math.min(n, c.cantidad_maxima);
+          return { ...c, cantidad, cantidad_facturable: cantidad, cortesia: 0 };
+        }
+        const facturable = Math.min(n, c.cantidad);
+        return { ...c, cantidad_facturable: facturable, cortesia: c.cantidad - facturable };
+      }),
+    );
+  }
+
+  protected guardarComplementos(): void {
+    const negocio = this.editNegocio();
+    if (!negocio || this.complementosGuardando()) return;
+
+    this.complementosGuardando.set(true);
+    this.complementosError.set(null);
+    this.service.guardarComplementos(
+        negocio.id_negocio,
+        this.complementos().map((c) => ({
+          codigo: c.codigo,
+          cantidad: c.cantidad,
+          cantidad_facturable: c.cantidad_facturable,
+        })),
+      )
+      .subscribe({
+        next: (datos) => {
+          this.complementos.set(datos?.complementos ?? []);
+          this.limites.set(datos?.limites ?? null);
+          this.complementosGuardando.set(false);
+          this.complementosOk.set(true);
+        },
+        error: (err) => {
+          this.complementosGuardando.set(false);
+          this.complementosError.set(err.error?.message ?? 'No se pudieron guardar los complementos.');
+        },
+      });
+  }
   /** Cómo estaban los campos del plan al abrir; solo se aplica si cambian. */
   private readonly planInicial = signal<PlanEditForm | null>(null);
 
@@ -511,6 +604,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
     });
     const plan = this.planDesde(n.plan);
     this.editNegocio.set(n);
+    this.cargarComplementos(n.id_negocio);
     this.planForm.set(plan);
     this.planInicial.set({ ...plan });
     this.formError.set(null);
@@ -623,6 +717,10 @@ export class NegociosComponent implements OnInit, OnDestroy {
   }
 
   protected closeModal(): void {
+    this.complementos.set([]);
+    this.limites.set(null);
+    this.complementosError.set(null);
+    this.complementosOk.set(false);
     this.modalMode.set(null);
     this.editForm.set(null);
     this.editNegocio.set(null);
@@ -685,6 +783,11 @@ export class NegociosComponent implements OnInit, OnDestroy {
   /** Estado del vencimiento de un plan suelto (el actual, en el modal). */
   protected vencPlan(p: PlanInfo | null): Vencimiento {
     return evaluarVencimiento(p);
+  }
+
+  /** El mismo formato del precio de un plan, pero para una cifra suelta (un complemento). */
+  protected formatPrecioValor(valor: number): string {
+    return '$' + Number(valor || 0).toLocaleString('es-CO');
   }
 
   protected formatPrecio(plan: Plan): string {

@@ -91,14 +91,26 @@ export class CobranzaService {
   }
 
   /**
-   * El administrador elige el plan de su negocio. Si hay un cobro pendiente, queda por el valor
-   * del plan nuevo; si no, se cobrará en la próxima mensualidad.
+   * El administrador cambia el plan de su negocio, sus complementos, o las dos cosas a la vez.
+   *
+   * Un solo endpoint para los tres casos porque son una sola cuenta: subir de plan y quitar un
+   * usuario extra a la vez tiene que cobrarse por la diferencia NETA, no como dos operaciones que
+   * se pisan. Quién paga qué y cuándo lo decide el backend y viene en la respuesta.
+   *
+   * @param idPlan `null` = deja el plan que tiene.
+   * @param complementos la elección COMPLETA (lo que no venga se entiende como «quítamelo»).
+   *        `null` = no toca los complementos.
    */
-  elegirPlan(idNegocio: number, idPlan: number): Observable<CambioDePlan | null> {
+  cambiarMiPlan(
+    idNegocio: number,
+    { idPlan = null, complementos = null }:
+      { idPlan?: number | null; complementos?: Array<{ codigo: string; cantidad: number }> | null },
+  ): Observable<CambioDePlan | null> {
     return this.http
       .post<ApiResponse<CambioDePlan>>(`${this.API}/cobranza/mi-plan`, {
         id_negocio: idNegocio,
-        id_plan: idPlan,
+        ...(idPlan != null ? { id_plan: idPlan } : {}),
+        ...(complementos != null ? { complementos } : {}),
       })
       .pipe(map((res) => res.data ?? null));
   }
