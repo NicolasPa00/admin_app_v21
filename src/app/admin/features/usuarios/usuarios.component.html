@@ -231,6 +231,21 @@
                       <lucide-icon name="power" [size]="16" aria-hidden="true" />
                     }
                   </button>
+
+                  <!-- Eliminar: deja de existir para todo el sistema. Suspender es reversible;
+                       esto no, y por eso pide confirmación escribiendo. -->
+                  <button
+                    type="button"
+                    class="usr__icon-btn usr__icon-btn--danger"
+                    [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
+                    (click)="pedirEliminar(u)"
+                    [title]="u.es_admin_principal
+                      ? 'No se puede eliminar al administrador principal'
+                      : 'Eliminar usuario'"
+                    aria-label="Eliminar usuario"
+                  >
+                    <lucide-icon name="trash-2" [size]="16" aria-hidden="true" />
+                  </button>
                 </div>
               </td>
             </tr>
@@ -366,6 +381,15 @@
         >
           <lucide-icon name="power" [size]="16" aria-hidden="true" />
           {{ u.estado === 'A' ? 'Suspender' : 'Reactivar' }}
+        </button>
+        <button
+          type="button"
+          class="btn usr-btn--danger"
+          [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
+          (click)="pedirEliminar(u)"
+        >
+          <lucide-icon name="trash-2" [size]="16" aria-hidden="true" />
+          Eliminar
         </button>
       </footer>
     </div>
@@ -540,6 +564,82 @@
             <lucide-icon name="power" [size]="16" aria-hidden="true" />
           }
           {{ u.estado === 'A' ? 'Suspender' : 'Reactivar' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Confirmar eliminar ════════════
+     Suspender es reversible y basta un clic. Esto no lo es: se pide escribir el nombre, que es
+     la forma de que nadie elimine a alguien por pulsar el botón de al lado. -->
+@if (confirmEliminar(); as u) {
+  <div class="usr-modal" (click)="cancelarEliminar()">
+    <div
+      class="usr-modal__card usr-modal__card--sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="usr-del-title"
+      aria-describedby="usr-del-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="usr-modal__head">
+        <div class="usr__user-cell">
+          <span class="usr-confirm__icon usr-confirm__icon--danger" aria-hidden="true">
+            <lucide-icon name="trash-2" [size]="18" />
+          </span>
+          <h2 id="usr-del-title" class="usr-modal__name">Eliminar usuario</h2>
+        </div>
+        <button
+          type="button"
+          class="usr__icon-btn"
+          (click)="cancelarEliminar()"
+          [disabled]="actionId() !== null"
+          aria-label="Cerrar"
+        >
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div class="usr-modal__body" id="usr-del-desc">
+        <p class="usr-confirm__lead">
+          <strong>{{ u.nombre_completo }}</strong> dejará de aparecer en toda la plataforma y no
+          podrá volver a entrar.
+        </p>
+        <p class="usr-confirm__note">
+          Lo que ya hizo —pedidos, turnos de caja, movimientos— se conserva con su nombre: el
+          historial del negocio tiene que seguir cuadrando. Su correo y su cédula quedan libres,
+          así que puedes volver a darlo de alta si hace falta.
+        </p>
+
+        <label class="usr-confirm__campo">
+          <span>Escribe <strong>{{ u.nombre_completo }}</strong> para confirmar</span>
+          <input
+            class="input"
+            type="text"
+            autocomplete="off"
+            [value]="textoEliminar()"
+            (input)="textoEliminar.set($any($event.target).value)"
+          />
+        </label>
+      </div>
+
+      <footer class="usr-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cancelarEliminar()" [disabled]="actionId() !== null">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn usr-btn--danger"
+          [disabled]="actionId() !== null || !puedeEliminar()"
+          (click)="confirmarEliminar()"
+        >
+          @if (actionId() !== null) {
+            <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" />
+          } @else {
+            <lucide-icon name="trash-2" [size]="16" aria-hidden="true" />
+          }
+          Eliminar definitivamente
         </button>
       </footer>
     </div>

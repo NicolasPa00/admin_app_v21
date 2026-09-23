@@ -49,6 +49,17 @@ export class UsuariosAdminService {
       .pipe(map(() => undefined));
   }
 
+  /**
+   * Elimina un usuario. No borra su fila —los pedidos y los turnos de caja tienen que poder
+   * decir quién los hizo—, pero lo saca de toda la plataforma y libera su correo y su cédula
+   * para poder volver a darlo de alta. A diferencia de suspender, no tiene vuelta atrás.
+   */
+  eliminarUsuario(idUsuario: number): Observable<void> {
+    return this.http
+      .delete<ApiResponse>(`${this.API}/usuarios/admin/${idUsuario}`)
+      .pipe(map(() => undefined));
+  }
+
   /** Actualiza los datos de perfil de un usuario (nombre → contraseña). */
   updatePerfil(idUsuario: number, payload: UpdateUsuarioPerfilRequest): Observable<void> {
     return this.http

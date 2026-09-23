@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Search, Users, Eye, Building2, AlertCircle, ArrowRight,
-  X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power,
+  X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power, Trash2,
 } from 'lucide-angular';
 
 import { UsuariosAdminService } from '../../data-access/usuarios-admin.service';
@@ -66,7 +66,7 @@ type PlanTone = TonoVencimiento;
       multi: true,
       useValue: new LucideIconProvider({
         Search, Users, Eye, Building2, AlertCircle, ArrowRight,
-        X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power,
+        X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power, Trash2,
       }),
     },
   ],
@@ -86,6 +86,9 @@ export class UsuariosComponent implements OnInit {
   protected readonly confirmUser = signal<UsuarioAdmin | null>(null);
   /** Usuario pendiente de confirmar para suspender o reactivar (abre el modal). */
   protected readonly confirmEstado = signal<UsuarioAdmin | null>(null);
+  /** Usuario pendiente de confirmar para eliminar, y el nombre que se va escribiendo. */
+  protected readonly confirmEliminar = signal<UsuarioAdmin | null>(null);
+  protected readonly textoEliminar = signal('');
 
   // ── Estado ──────────────────────────────────────────────────
   protected readonly loadingState = signal<LoadingState>('idle');
@@ -236,6 +239,58 @@ export class UsuariosComponent implements OnInit {
         );
         this.actionId.set(null);
         this.confirmEstado.set(null);
+      },
+    });
+  }
+
+  // ── Eliminar (con confirmación escrita) ─────────────────────
+  //
+  // Suspender es reversible de un clic; esto no. El usuario desaparece de toda la plataforma y
+  // su correo queda libre, así que se pide escribir el nombre: es lo que evita que alguien
+  // elimine a otro por pulsar el botón de al lado.
+
+  protected pedirEliminar(u: UsuarioAdmin): void {
+    if (u.es_admin_principal || this.actionId() !== null) return;
+    this.textoEliminar.set('');
+    this.confirmEliminar.set(u);
+  }
+
+  protected cancelarEliminar(): void {
+    if (this.actionId() !== null) return;
+    this.confirmEliminar.set(null);
+    this.textoEliminar.set('');
+  }
+
+  /** El nombre escrito tiene que coincidir. Se compara sin tildes ni mayúsculas: se está
+   *  pidiendo intención, no puntería mecanografiando. */
+  protected puedeEliminar(): boolean {
+    const u = this.confirmEliminar();
+    if (!u) return false;
+    const normal = (t: string) =>
+      t.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+    return normal(this.textoEliminar()) === normal(u.nombre_completo ?? '');
+  }
+
+  protected confirmarEliminar(): void {
+    const u = this.confirmEliminar();
+    if (!u || this.actionId() !== null || !this.puedeEliminar()) return;
+
+    this.actionId.set(u.id_usuario);
+    this.actionError.set(null);
+
+    this.service.eliminarUsuario(u.id_usuario).subscribe({
+      next: () => {
+        // Fuera de la lista sin recargar: eliminar significa que no se ve en ninguna parte.
+        this._usuarios.update((list) => list.filter((x) => x.id_usuario !== u.id_usuario));
+        if (this.selected()?.id_usuario === u.id_usuario) this.selected.set(null);
+        this.actionId.set(null);
+        this.confirmEliminar.set(null);
+        this.textoEliminar.set('');
+      },
+      error: (err) => {
+        this.actionError.set(err.error?.message ?? 'No se pudo eliminar el usuario.');
+        this.actionId.set(null);
+        this.confirmEliminar.set(null);
       },
     });
   }

@@ -477,6 +477,22 @@
   color: var(--color-text-secondary);
 }
 
+// Escribir el nombre para eliminar: la fricción es el punto, no un estorbo.
+.usr-confirm__campo {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: var(--spacing-md);
+
+  span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  strong {
+    color: var(--color-text-primary);
+  }
+}
+
 // ── Detalles ────────────────────────────────────────────────
 .usr-modal__grid {
   display: grid;
