@@ -106,7 +106,10 @@ const REFRESCO_MS = 5000;
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, DatePipe, LucideAngularModule],
-  providers: [
+  // `viewProviders` y no `providers`: los `providers` también los ven los hijos PROYECTADOS
+  // (<ng-content>), y como LUCIDE_ICONS es multi, un ícono declarado por quien proyecta (el botón
+  // «Tu número» de WhatsApp) se buscaba aquí, no lo encontraba y cortaba el render de la bandeja.
+  viewProviders: [
     {
       provide: LUCIDE_ICONS,
       multi: true,
