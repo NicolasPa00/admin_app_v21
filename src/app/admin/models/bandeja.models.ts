@@ -25,6 +25,13 @@ export interface ConversacionBandeja {
   /** El bot dejó de contestar aquí y espera a una persona. La única urgencia de esta pantalla. */
   escalada: boolean;
   ultimo_texto: string | null;
+  /**
+   * Solo tiene sentido cuando `estado === 'bloqueada'`. Distingue una baja legal por
+   * STOP/BAJA ('cliente', irrevocable salvo por un super admin) de un bloqueo que puso el
+   * propio negocio ('negocio', que el negocio puede deshacer él mismo). Puede faltar en
+   * listados que no lo seleccionan explícitamente.
+   */
+  bloqueada_por?: 'cliente' | 'negocio' | null;
 }
 
 export interface MensajeBandeja {

@@ -99,4 +99,28 @@ export class BandejaService {
       )
       .pipe(map((res) => res.data ?? null));
   }
+
+  /**
+   * «Este número abusa del sistema»: le cierra la puerta al asistente sin que el cliente haya
+   * escrito STOP. Distinto de una baja legal — por eso el propio negocio puede deshacerla con
+   * `desbloquear`, cosa que no puede hacer con un STOP real.
+   */
+  bloquear(id: string, motivo?: string): Observable<{ estado: string } | null> {
+    return this.http
+      .post<ApiResponse<{ estado: string }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/bloquear`,
+        motivo ? { motivo } : {},
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /** El reverso de `bloquear` — y solo de `bloquear`. Una baja por STOP no se deshace aquí. */
+  desbloquear(id: string): Observable<{ estado: string } | null> {
+    return this.http
+      .post<ApiResponse<{ estado: string }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/desbloquear`,
+        {},
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
 }

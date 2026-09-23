@@ -15,7 +15,7 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
-  Search, X, Check, Building2, CheckCheck, BotMessageSquare,
+  Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -100,7 +100,7 @@ const REFRESCO_MS = 5000;
       multi: true,
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
-        RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare,
+        RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
       }),
     },
   ],
@@ -140,6 +140,13 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly enviando = signal(false);
   /** Error del envío, separado del de la lista: son dos fallos con dos remedios distintos. */
   readonly errorEnvio = signal<string | null>(null);
+
+  // ── Bloquear un número (moderación del propio negocio, no un STOP legal) ──
+  /** El clic en «Bloquear» abre esta confirmación en vez de bloquear al toque. */
+  readonly confirmandoBloqueo = signal(false);
+  readonly motivoBloqueo = signal('');
+  readonly bloqueando = signal(false);
+  readonly errorBloqueo = signal<string | null>(null);
 
   /**
    * Los negocios que TIENEN conversaciones, tal como los devuelve el backend.
@@ -335,12 +342,77 @@ export class BandejaComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Abre (o cierra) la confirmación de bloqueo. Bloquear no debe salir de un solo clic. */
+  alternarConfirmarBloqueo(): void {
+    this.confirmandoBloqueo.update((v) => !v);
+    this.motivoBloqueo.set('');
+    this.errorBloqueo.set(null);
+  }
+
+  /**
+   * «Este número abusa del sistema»: el asistente deja de contestarle. Distinto de una baja
+   * legal por STOP —eso lo decide el cliente, y solo un super admin lo deshace desde la
+   * Consola—: esto lo decide el negocio, y por eso el propio negocio puede deshacerlo.
+   */
+  bloquear(): void {
+    const actual = this.detalle();
+    if (!actual) return;
+
+    this.bloqueando.set(true);
+    this.errorBloqueo.set(null);
+
+    this.service.bloquear(actual.conversacion.id_conversacion, this.motivoBloqueo().trim() || undefined)
+      .subscribe({
+        next: () => {
+          this.detalle.set({
+            ...actual,
+            conversacion: { ...actual.conversacion, estado: 'bloqueada', bloqueada_por: 'negocio' },
+          });
+          this.confirmandoBloqueo.set(false);
+          this.motivoBloqueo.set('');
+          this.bloqueando.set(false);
+          this.cargar(true);
+        },
+        error: (err) => {
+          this.bloqueando.set(false);
+          this.errorBloqueo.set(err?.error?.message || 'No se pudo bloquear el número.');
+        },
+      });
+  }
+
+  /** Deshace SU PROPIO bloqueo. Una baja por STOP no se deshace desde aquí. */
+  desbloquear(): void {
+    const actual = this.detalle();
+    if (!actual) return;
+
+    this.bloqueando.set(true);
+    this.errorBloqueo.set(null);
+
+    this.service.desbloquear(actual.conversacion.id_conversacion).subscribe({
+      next: () => {
+        this.detalle.set({
+          ...actual,
+          conversacion: { ...actual.conversacion, estado: 'activa', bloqueada_por: null },
+        });
+        this.bloqueando.set(false);
+        this.cargar(true);
+      },
+      error: (err) => {
+        this.bloqueando.set(false);
+        this.errorBloqueo.set(err?.error?.message || 'No se pudo desbloquear el número.');
+      },
+    });
+  }
+
   cerrar(): void {
     this.detalle.set(null);
     this.abierta.set(null);
     this.estadoDetalle.set('idle');
     this.borrador.set('');
     this.errorEnvio.set(null);
+    this.confirmandoBloqueo.set(false);
+    this.motivoBloqueo.set('');
+    this.errorBloqueo.set(null);
   }
 
   enviar(): void {
