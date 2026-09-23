@@ -570,7 +570,18 @@
       El Emprendedor es la excepción: cabe entero plegado, así que no tiene desplegable y en su
       sitio ofrece la prueba gratuita, que es lo único que lo distingue de los otros tres.
     -->
-    <div class="lp-planes__grid" [class.lp-planes__grid--difuminada]="planExpandido() !== null">
+    <!--
+      Por debajo de 1100px la rejilla es un carrusel: una tarjeta entera y el borde de la
+      siguiente, que es lo que avisa de que hay más sin tener que decirlo. El desplazamiento es
+      el nativo del navegador (scroll-snap), así que el dedo, la rueda y el teclado ya funcionan;
+      los puntos de abajo solo dicen dónde se está y permiten saltar.
+    -->
+    <div
+      #carruselPlanes
+      class="lp-planes__grid"
+      [class.lp-planes__grid--difuminada]="planExpandido() !== null"
+      (scroll)="alDesplazarPlanes()"
+    >
       @for (plan of tarjetasPlan(); track plan.id) {
         <article class="lp-plan" [class.lp-plan--destacado]="plan.destacado">
           @if (plan.destacado) {
@@ -654,6 +665,21 @@
             }
           </div>
         </article>
+      }
+    </div>
+
+    <!-- Los puntos del carrusel: solo en pantallas donde la rejilla se desliza. -->
+    <div class="lp-planes__puntos" role="tablist" aria-label="Planes">
+      @for (plan of tarjetasPlan(); track plan.id; let i = $index) {
+        <button
+          type="button"
+          class="lp-planes__punto"
+          role="tab"
+          [class.lp-planes__punto--activo]="planVisible() === i"
+          [attr.aria-selected]="planVisible() === i"
+          [attr.aria-label]="'Ver ' + plan.nombre"
+          (click)="irAPlan(i)"
+        ></button>
       }
     </div>
 

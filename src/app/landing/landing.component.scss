@@ -1434,6 +1434,73 @@ lucide-icon {
   }
 
   @media (prefers-reduced-motion: reduce) { transition: none; }
+
+  /* ── Carrusel en móvil y tablet ──
+     Por debajo de 1100px las tarjetas se apilaban una debajo de otra y la comparación —que es
+     para lo que están juntas— se perdía entre scrolls. Aquí se deslizan de lado: la tarjeta
+     entera más el borde de la siguiente, que es lo que avisa de que hay más.
+
+     Sale del padding del contenedor (margen negativo) para que el deslizamiento llegue hasta el
+     borde de la pantalla, y lo recupera con padding interno + scroll-padding para que la
+     primera tarjeta arranque alineada con el resto de la página. El padding de arriba deja
+     sitio al sello «Más popular», que asoma 12px por encima y el overflow lo cortaría. */
+  @media (max-width: 1099px) {
+    display: flex;
+    gap: var(--es-spacing-4);
+    max-width: none;
+    margin: 0 calc(var(--es-spacing-6) * -1);
+    padding: var(--es-spacing-4) var(--es-spacing-6) var(--es-spacing-5);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--es-spacing-6);
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+
+    > .lp-plan {
+      /* Móvil: una tarjeta y un 15% de la siguiente. */
+      flex: 0 0 84%;
+      max-width: 380px;
+      scroll-snap-align: start;
+    }
+  }
+
+  /* Tablet: caben dos y asoma la tercera. */
+  @media (min-width: 720px) and (max-width: 1099px) {
+    > .lp-plan { flex-basis: 44%; }
+  }
+}
+
+/* Los puntos del carrusel. Fuera de él no pintan nada. */
+.lp-planes__puntos {
+  display: none;
+  justify-content: center;
+  gap: var(--es-spacing-2);
+  margin-top: var(--es-spacing-2);
+
+  @media (max-width: 1099px) { display: flex; }
+}
+
+.lp-planes__punto {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: var(--es-radius-full);
+  background-color: color-mix(in srgb, var(--es-secondary-dark) 25%, transparent);
+  cursor: pointer;
+  transition: width var(--es-transition-fast), background-color var(--es-transition-fast);
+
+  &--activo {
+    width: 24px;
+    background-color: var(--es-secondary-dark);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--es-focus-ring);
+  }
 }
 
 .lp-plan {

@@ -1,4 +1,13 @@
-import { Component, inject, signal, computed, afterNextRender, DestroyRef } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  inject,
+  signal,
+  computed,
+  afterNextRender,
+  DestroyRef,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -952,6 +961,52 @@ export class LandingComponent {
    * eligió cuál mirar.
    */
   protected readonly planExpandido = signal<string | null>(null);
+
+  /* ── Carrusel de planes (móvil y tablet) ── */
+
+  private readonly carruselPlanes = viewChild<ElementRef<HTMLElement>>('carruselPlanes');
+
+  /** La tarjeta que está a la vista en el carrusel; en escritorio no se usa. */
+  protected readonly planVisible = signal(0);
+
+  /**
+   * Qué tarjeta quedó delante tras deslizar: la que tiene el borde izquierdo más cerca del
+   * borde izquierdo del carrusel. Con cuatro tarjetas medirlas en cada evento de scroll no cuesta
+   * nada, y evita llevar la cuenta a mano de gestos, flechas y rueda por separado.
+   */
+  protected alDesplazarPlanes(): void {
+    const el = this.carruselPlanes()?.nativeElement;
+    if (!el) return;
+
+    const tarjetas = Array.from(el.children) as HTMLElement[];
+    let mejor = 0;
+    let distancia = Number.POSITIVE_INFINITY;
+    tarjetas.forEach((t, i) => {
+      const d = Math.abs(t.offsetLeft - el.offsetLeft - el.scrollLeft - this.margenCarrusel(el));
+      if (d < distancia) {
+        distancia = d;
+        mejor = i;
+      }
+    });
+    if (mejor !== this.planVisible()) this.planVisible.set(mejor);
+  }
+
+  /** Salta a una tarjeta desde los puntos. El encaje final lo hace el scroll-snap del CSS. */
+  protected irAPlan(indice: number): void {
+    const el = this.carruselPlanes()?.nativeElement;
+    const tarjeta = el?.children[indice] as HTMLElement | undefined;
+    if (!el || !tarjeta) return;
+
+    el.scrollTo({
+      left: tarjeta.offsetLeft - el.offsetLeft - this.margenCarrusel(el),
+      behavior: 'smooth',
+    });
+  }
+
+  /** El relleno lateral del carrusel: la primera tarjeta arranca ahí, no en el borde. */
+  private margenCarrusel(el: HTMLElement): number {
+    return parseFloat(getComputedStyle(el).scrollPaddingLeft) || 0;
+  }
 
   /**
    * La tarjeta abierta, ya resuelta — la que dibuja la capa de detalle.
