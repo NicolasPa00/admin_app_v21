@@ -1,20 +1,45 @@
 /*
-  BandejaComponent — la forma de WhatsApp, la paleta de EscalApp.
+  BandejaComponent — la cara de un chat dentro del panel de administración.
 
-  Se copia la ESTRUCTURA (dos paneles, avatares, burbujas con la hora dentro) porque quien usa
-  esto ya sabe usar WhatsApp. No se copia el verde: la paleta es dinámica por inquilino, así que
-  todo sale de `--color-*` y de mezclas con `color-mix` sobre `var(--color-primary)`. Un color
-  escrito a mano se rompe en cuanto un negocio elige otro.
+  ## Los dos sistemas de color que conviven aquí, y por qué no se mezclan
+
+  El panel entero usa `--color-*` (índigo corporativo, y paleta dinámica por inquilino). La
+  landing usa `--es-*` (violeta de marca). El proyecto tiene una regla fija: **no se puentean**.
+
+  Esta pantalla añade un tercero, local y acotado: `--bdj-*`, declarado en `:host` y en ningún
+  sitio más — exactamente el mismo patrón que `--carta-*` en `negocio_app`. Son los verdes del
+  chat, copiados **por valor** de `--lp-wa-verde` / `--lp-wa-verde-hondo` en
+  `landing.component.scss`, no referenciados: si se escribiera `var(--es-...)` aquí, sería el
+  puente que la regla prohíbe, y además `--es-*` ni siquiera está definido en el área de admin.
+
+  Por qué verde y no la paleta del inquilino: la banda y las burbujas son **el canal**, no la
+  marca del negocio. Es el mismo verde que el visitante vio en la landing antes de registrarse,
+  y reconocerlo es justo lo que hace que esto se lea como un chat y no como una tabla más.
+  Todo lo demás de la pantalla —chips, lista, botones del panel— sigue siendo `--color-*` y
+  sigue cambiando con la paleta del inquilino.
 
   OJO con el nombre: el token es `--color-text-primary`. `--color-text` NO existe (se comprobó
-  el 2026-09-01: no está definido en ningún archivo del proyecto). Donde se usaba en un `color:`
-  no se notaba —el navegador cae al color heredado, que resultaba ser el mismo— pero dentro de
-  un `color-mix()` la declaración entera es invalida y se descarta en silencio: los fondos
-  tenues del panel de la lista y los estados :hover llevaban desde el principio sin pintarse.
+  el 2026-09-01). Dentro de un `color-mix()` una variable inexistente invalida la declaración
+  entera y se descarta en silencio.
 */
+:host {
+  /* Los verdes del chat. Valores copiados de la landing, no referencias. */
+  --bdj-verde: #25d366;
+  --bdj-verde-hondo: #128c7e;
+  /* El texto dentro de la burbuja del negocio: verde muy oscuro, no negro. */
+  --bdj-verde-tinta: #0b3d2c;
+  --bdj-papel: #f2f7f4;
+
+  display: block;
+}
+
 .bdj {
+  /* Tres zonas: la barra de negocios cruza las dos columnas, porque «de qué local hablamos» es
+     una pregunta anterior a «qué conversación abro». Antes vivía dentro de la columna estrecha
+     y con dos locales de nombre largo empujaba la lista fuera de la pantalla. */
   display: grid;
   grid-template-columns: minmax(16rem, 22rem) 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   height: calc(100dvh - 8rem);
   min-height: 26rem;
   border: 1px solid var(--color-border);
@@ -25,6 +50,74 @@
   /* En móvil no caben dos paneles: manda la lista, y el hilo se superpone al abrirlo. */
   @media (max-width: 48rem) {
     grid-template-columns: 1fr;
+  }
+
+  /* ── Barra superior ─────────────────────────────────────────── */
+  &__top {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-surface));
+  }
+
+  &__marca {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+  }
+
+  &__marca-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.75rem;
+    background: var(--bdj-verde-hondo);
+    color: #fff;
+  }
+
+  &__marca-texto {
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+
+  /* Los negocios. Se envuelven en varias filas en vez de scrollar en horizontal: con
+     `overflow-x` y la barra escondida, los que no cabían quedaban invisibles y sin forma de
+     llegar a ellos. */
+  &__negocios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    /* Separados de la marca por el hueco, no por un borde: son un filtro, no otra sección. */
+    padding-left: 0.25rem;
+  }
+
+  &__top-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-left: auto;
   }
 
   /* ── Panel de la lista ──────────────────────────────────────── */
@@ -40,26 +133,11 @@
     background: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-surface));
   }
 
-  &__lista-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.875rem 0.875rem 0.625rem;
-  }
-
-  &__title {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-  }
-
   &__buscador {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin: 0 0.875rem 0.625rem;
+    margin: 0.75rem 0.875rem 0.625rem;
     padding: 0.4375rem 0.75rem;
     border-radius: 999px;
     background: color-mix(in srgb, var(--color-text-primary) 7%, transparent);
@@ -82,16 +160,6 @@
         color: var(--color-text-secondary);
       }
     }
-  }
-
-  /* Envuelven en varias filas en vez de scrollar en horizontal. Antes tenían `overflow-x`
-     con la barra escondida: los negocios que no cabían quedaban invisibles y, sin barra, sin
-     forma de llegar a ellos. Con dos locales de nombre largo se perdían todos menos dos. */
-  &__chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    padding: 0 0.875rem 0.625rem;
   }
 
   &__chip {
@@ -132,6 +200,12 @@
     font-size: 0.6875rem;
     line-height: 1.125rem;
     text-align: center;
+  }
+
+  /* Sobre la banda verde el contador no puede ir en el color de marca: se pierde. */
+  &__contador--claro {
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
   }
 
   &__scroll {
@@ -206,10 +280,13 @@
     box-shadow: 0 0 0 2px var(--color-primary);
   }
 
+  /* El de la cabecera del hilo vive sobre la banda verde: ahí el índigo no se lee. */
   &__avatar--grande {
     width: 2.25rem;
     height: 2.25rem;
     font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--bdj-verde-hondo);
   }
 
   &__item-cuerpo {
@@ -259,6 +336,13 @@
     background: var(--color-primary);
   }
 
+  &__item-pie {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
   &__item-negocio {
     display: inline-flex;
     align-items: center;
@@ -266,6 +350,23 @@
     font-size: 0.6875rem;
     color: var(--color-text-secondary);
     opacity: 0.85;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* La bandera es del CONTACTO, no de esta fila: cuenta todas sus conversaciones en el negocio. */
+  &__item-reportes {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1875rem;
+    margin-left: auto;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-error) 12%, transparent);
+    color: var(--color-error);
+    font-size: 0.6875rem;
+    font-weight: 700;
   }
 
   /* ── Panel del hilo ─────────────────────────────────────────── */
@@ -294,29 +395,51 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
     padding: 2rem;
     text-align: center;
     color: var(--color-text-secondary);
+    /* El papel del chat también cuando está vacío: así la mitad derecha ya se lee como una
+       conversación antes de abrir ninguna. */
+    background-color: var(--bdj-papel);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='%230f7a63' stroke-opacity='.17' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate(18 14) rotate(-12 15 15) scale(1.25)'%3E%3Cpath d='M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2'/%3E%3Cpath d='M7 2v20'/%3E%3Cpath d='M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7'/%3E%3C/g%3E%3Cg transform='translate(96 22) rotate(8 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3Cpath d='m9 16 2 2 4-4'/%3E%3C/g%3E%3Cg transform='translate(170 10) rotate(-6 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M8.12 8.12 12 12'/%3E%3Cpath d='M20 4 8.12 15.88'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cpath d='M14.8 14.8 20 20'/%3E%3C/g%3E%3Cg transform='translate(240 28) rotate(10 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Ccircle cx='8' cy='21' r='1'/%3E%3Ccircle cx='19' cy='21' r='1'/%3E%3Cpath d='M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12'/%3E%3C/g%3E%3Cg transform='translate(10 84) rotate(6 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M10 2v2'/%3E%3Cpath d='M14 2v2'/%3E%3Cpath d='M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1'/%3E%3Cpath d='M6 2v2'/%3E%3C/g%3E%3Cg transform='translate(78 96) rotate(-8 15 15) scale(1.25)'%3E%3Cpath d='M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2'/%3E%3Ccircle cx='7' cy='17' r='2'/%3E%3Cpath d='M9 17h6'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/g%3E%3Cg transform='translate(152 84) rotate(5 13.200000000000001 13.200000000000001) scale(1.1)'%3E%3Crect width='5' height='5' x='3' y='3' rx='1'/%3E%3Crect width='5' height='5' x='16' y='3' rx='1'/%3E%3Crect width='5' height='5' x='3' y='16' rx='1'/%3E%3Cpath d='M21 16h-3a2 2 0 0 0-2 2v3'/%3E%3Cpath d='M21 21v.01'/%3E%3Cpath d='M12 7v3a2 2 0 0 1-2 2H7'/%3E%3Cpath d='M3 12h.01'/%3E%3Cpath d='M12 3h.01'/%3E%3Cpath d='M12 16v.01'/%3E%3Cpath d='M16 12h1'/%3E%3Cpath d='M21 12v.01'/%3E%3Cpath d='M12 21v-1'/%3E%3C/g%3E%3Cg transform='translate(228 98) rotate(-10 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z'/%3E%3Cpath d='m2.5 21.5 1.4-1.4'/%3E%3Cpath d='m20.1 3.9 1.4-1.4'/%3E%3Cpath d='M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z'/%3E%3Cpath d='m9.6 14.4 4.8-4.8'/%3E%3C/g%3E%3Cg transform='translate(24 160) rotate(7 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z'/%3E%3Cpath d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'/%3E%3Cpath d='M12 17.5v-11'/%3E%3C/g%3E%3Cg transform='translate(92 168) rotate(-5 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719'/%3E%3C/g%3E%3Cg transform='translate(166 158) rotate(9 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M11 2v2'/%3E%3Cpath d='M5 2v2'/%3E%3Cpath d='M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1'/%3E%3Cpath d='M8 15a6 6 0 0 0 12 0v-3'/%3E%3Ccircle cx='20' cy='10' r='2'/%3E%3C/g%3E%3Cg transform='translate(236 170) rotate(-7 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M12 8V4H8'/%3E%3Crect width='16' height='12' x='4' y='8' rx='2'/%3E%3Cpath d='M2 14h2'/%3E%3Cpath d='M20 14h2'/%3E%3Cpath d='M15 13v2'/%3E%3Cpath d='M9 13v2'/%3E%3C/g%3E%3Cg transform='translate(16 236) rotate(10 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='m12 14-1 1'/%3E%3Cpath d='m13.75 18.25-1.25 1.42'/%3E%3Cpath d='M17.775 5.654a15.68 15.68 0 0 0-12.121 12.12'/%3E%3Cpath d='M18.8 9.3a1 1 0 0 0 2.1 7.7'/%3E%3Cpath d='M21.964 20.732a1 1 0 0 1-1.232 1.232l-18-5a1 1 0 0 1-.695-1.232A19.68 19.68 0 0 1 15.732 2.037a1 1 0 0 1 1.232.695z'/%3E%3C/g%3E%3Cg transform='translate(86 240) rotate(-6 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Crect width='20' height='12' x='2' y='6' rx='2'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M6 12h.01M18 12h.01'/%3E%3C/g%3E%3Cg transform='translate(160 238) rotate(6 13.200000000000001 13.200000000000001) scale(1.1)'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/g%3E%3Cg transform='translate(226 242) rotate(-9 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2'/%3E%3Cpath d='M15 18H9'/%3E%3Cpath d='M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14'/%3E%3Ccircle cx='17' cy='18' r='2'/%3E%3Ccircle cx='7' cy='18' r='2'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%230f7a63' fill-opacity='.13'%3E%3Ccircle cx='62' cy='62' r='2.4'/%3E%3Ccircle cx='140' cy='54' r='1.9'/%3E%3Ccircle cx='212' cy='70' r='2.4'/%3E%3Ccircle cx='56' cy='142' r='1.9'/%3E%3Ccircle cx='136' cy='134' r='2.4'/%3E%3Ccircle cx='206' cy='142' r='1.9'/%3E%3Ccircle cx='58' cy='216' r='2.4'/%3E%3Ccircle cx='150' cy='208' r='1.9'/%3E%3Ccircle cx='276' cy='212' r='2.4'/%3E%3Ccircle cx='20' cy='122' r='1.9'/%3E%3Ccircle cx='284' cy='138' r='1.9'/%3E%3Ccircle cx='118' cy='288' r='2.2'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 300px 300px;
 
     p {
       margin: 0;
       font-size: 0.9375rem;
+      color: var(--color-text-primary);
     }
+  }
+
+  &__placeholder-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--bdj-verde-hondo);
+    box-shadow: var(--shadow-sm);
   }
 
   &__placeholder-nota {
     max-width: 22rem;
     font-size: 0.8125rem;
-    opacity: 0.8;
+    opacity: 0.9;
   }
 
+  /* La banda del chat: es lo que hace que esto se lea como una conversación y no como una
+     tabla. Misma forma que la cabecera del chat de la landing. */
   &__hilo-head {
     display: flex;
     align-items: center;
     gap: 0.625rem;
+    flex-wrap: wrap;
     padding: 0.625rem 0.875rem;
-    border-bottom: 1px solid var(--color-border);
+    background: var(--bdj-verde-hondo);
+    color: #fff;
   }
 
   &__hilo-quien {
@@ -327,7 +450,6 @@
 
     strong {
       font-size: 0.9375rem;
-      color: var(--color-text-primary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -335,10 +457,157 @@
 
     span {
       font-size: 0.75rem;
-      color: var(--color-text-secondary);
+      opacity: 0.85;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+  }
+
+  /* Los botones de la banda: contorno claro sobre el verde. En índigo no se verían. */
+  &__accion-hilo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 0 0 auto;
+    padding: 0.3125rem 0.625rem;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+  }
+
+  /* Ya reportada por mí: se nota sin gritar. El rojo se reserva para el botón que la pone. */
+  &__accion-hilo--marcada {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: transparent;
+    color: var(--bdj-verde-tinta);
+
+    &:hover {
+      background: #fff;
+    }
+  }
+
+  /* ── Avisos bajo la cabecera ────────────────────────────────── */
+  &__aviso {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  &__aviso--bot {
+    background: color-mix(in srgb, var(--color-warning, #b45309) 12%, var(--color-surface));
+    color: var(--color-text-primary);
+
+    lucide-icon {
+      flex: 0 0 auto;
+      color: var(--color-warning, #b45309);
+    }
+  }
+
+  /* El formulario de reporte. Bajo la cabecera y sobre el hilo, no en un modal: se reporta
+     mirando lo que la persona escribió, y un modal lo taparía justo ahora. */
+  &__reporte {
+    padding: 0.75rem 0.875rem;
+    border-bottom: 1px solid var(--color-border);
+    background: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
+  }
+
+  &__reporte-titulo {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+
+    em {
+      font-style: normal;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  &__reporte-motivos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  &__reporte-texto {
+    width: 100%;
+    resize: none;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 0.8125rem;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+  }
+
+  &__reporte-nota {
+    margin: 0.5rem 0 0;
+    font-size: 0.6875rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+
+  &__reporte-botones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+  }
+
+  &__boton-plano {
+    padding: 0.3125rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: none;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--color-text-primary);
+    }
+  }
+
+  /* Rojo, y solo aquí: es la acción que deja a alguien marcado. */
+  &__boton-peligro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.3125rem 0.875rem;
+    border: none;
+    border-radius: 999px;
+    background: var(--color-error);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
   }
 
@@ -463,6 +732,19 @@
     &:disabled { opacity: 0.6; cursor: default; }
   }
 
+  /*
+    El papel del chat: verde muy claro y, detrás, garabatos de lo que pasa en los negocios que
+    usan esto —mesas, citas, cortes, compras, parqueo, gimnasio, pagos—. Es el equivalente del
+    punteado del chat de la landing, con un paso más de personalidad.
+
+    Va como data-URI y no como archivo en `assets/`: el `baseHref` de esta app cambia entre
+    desarrollo y el despliegue bajo `/admin/`, y una ruta absoluta se rompería en uno de los dos.
+    Son ~5 KB que viajan con el CSS y no piden otra petición.
+
+    El color de los garabatos va escrito dentro del SVG y no sale de la paleta del inquilino: un
+    data-URI no puede leer variables CSS. Es un verde tenue al 17 %, que convive con cualquier
+    paleta porque nunca compite con nada.
+  */
   &__mensajes {
     flex: 1;
     min-height: 0;
@@ -471,37 +753,39 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
-    background: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-surface));
+    background-color: var(--bdj-papel);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='%230f7a63' stroke-opacity='.17' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate(18 14) rotate(-12 15 15) scale(1.25)'%3E%3Cpath d='M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2'/%3E%3Cpath d='M7 2v20'/%3E%3Cpath d='M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7'/%3E%3C/g%3E%3Cg transform='translate(96 22) rotate(8 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3Cpath d='m9 16 2 2 4-4'/%3E%3C/g%3E%3Cg transform='translate(170 10) rotate(-6 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M8.12 8.12 12 12'/%3E%3Cpath d='M20 4 8.12 15.88'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cpath d='M14.8 14.8 20 20'/%3E%3C/g%3E%3Cg transform='translate(240 28) rotate(10 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Ccircle cx='8' cy='21' r='1'/%3E%3Ccircle cx='19' cy='21' r='1'/%3E%3Cpath d='M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12'/%3E%3C/g%3E%3Cg transform='translate(10 84) rotate(6 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M10 2v2'/%3E%3Cpath d='M14 2v2'/%3E%3Cpath d='M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1'/%3E%3Cpath d='M6 2v2'/%3E%3C/g%3E%3Cg transform='translate(78 96) rotate(-8 15 15) scale(1.25)'%3E%3Cpath d='M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2'/%3E%3Ccircle cx='7' cy='17' r='2'/%3E%3Cpath d='M9 17h6'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/g%3E%3Cg transform='translate(152 84) rotate(5 13.200000000000001 13.200000000000001) scale(1.1)'%3E%3Crect width='5' height='5' x='3' y='3' rx='1'/%3E%3Crect width='5' height='5' x='16' y='3' rx='1'/%3E%3Crect width='5' height='5' x='3' y='16' rx='1'/%3E%3Cpath d='M21 16h-3a2 2 0 0 0-2 2v3'/%3E%3Cpath d='M21 21v.01'/%3E%3Cpath d='M12 7v3a2 2 0 0 1-2 2H7'/%3E%3Cpath d='M3 12h.01'/%3E%3Cpath d='M12 3h.01'/%3E%3Cpath d='M12 16v.01'/%3E%3Cpath d='M16 12h1'/%3E%3Cpath d='M21 12v.01'/%3E%3Cpath d='M12 21v-1'/%3E%3C/g%3E%3Cg transform='translate(228 98) rotate(-10 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z'/%3E%3Cpath d='m2.5 21.5 1.4-1.4'/%3E%3Cpath d='m20.1 3.9 1.4-1.4'/%3E%3Cpath d='M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z'/%3E%3Cpath d='m9.6 14.4 4.8-4.8'/%3E%3C/g%3E%3Cg transform='translate(24 160) rotate(7 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z'/%3E%3Cpath d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'/%3E%3Cpath d='M12 17.5v-11'/%3E%3C/g%3E%3Cg transform='translate(92 168) rotate(-5 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719'/%3E%3C/g%3E%3Cg transform='translate(166 158) rotate(9 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M11 2v2'/%3E%3Cpath d='M5 2v2'/%3E%3Cpath d='M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1'/%3E%3Cpath d='M8 15a6 6 0 0 0 12 0v-3'/%3E%3Ccircle cx='20' cy='10' r='2'/%3E%3C/g%3E%3Cg transform='translate(236 170) rotate(-7 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M12 8V4H8'/%3E%3Crect width='16' height='12' x='4' y='8' rx='2'/%3E%3Cpath d='M2 14h2'/%3E%3Cpath d='M20 14h2'/%3E%3Cpath d='M15 13v2'/%3E%3Cpath d='M9 13v2'/%3E%3C/g%3E%3Cg transform='translate(16 236) rotate(10 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='m12 14-1 1'/%3E%3Cpath d='m13.75 18.25-1.25 1.42'/%3E%3Cpath d='M17.775 5.654a15.68 15.68 0 0 0-12.121 12.12'/%3E%3Cpath d='M18.8 9.3a1 1 0 0 0 2.1 7.7'/%3E%3Cpath d='M21.964 20.732a1 1 0 0 1-1.232 1.232l-18-5a1 1 0 0 1-.695-1.232A19.68 19.68 0 0 1 15.732 2.037a1 1 0 0 1 1.232.695z'/%3E%3C/g%3E%3Cg transform='translate(86 240) rotate(-6 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Crect width='20' height='12' x='2' y='6' rx='2'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M6 12h.01M18 12h.01'/%3E%3C/g%3E%3Cg transform='translate(160 238) rotate(6 13.200000000000001 13.200000000000001) scale(1.1)'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/g%3E%3Cg transform='translate(226 242) rotate(-9 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2'/%3E%3Cpath d='M15 18H9'/%3E%3Cpath d='M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14'/%3E%3Ccircle cx='17' cy='18' r='2'/%3E%3Ccircle cx='7' cy='18' r='2'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%230f7a63' fill-opacity='.13'%3E%3Ccircle cx='62' cy='62' r='2.4'/%3E%3Ccircle cx='140' cy='54' r='1.9'/%3E%3Ccircle cx='212' cy='70' r='2.4'/%3E%3Ccircle cx='56' cy='142' r='1.9'/%3E%3Ccircle cx='136' cy='134' r='2.4'/%3E%3Ccircle cx='206' cy='142' r='1.9'/%3E%3Ccircle cx='58' cy='216' r='2.4'/%3E%3Ccircle cx='150' cy='208' r='1.9'/%3E%3Ccircle cx='276' cy='212' r='2.4'/%3E%3Ccircle cx='20' cy='122' r='1.9'/%3E%3Ccircle cx='284' cy='138' r='1.9'/%3E%3Ccircle cx='118' cy='288' r='2.2'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 300px 300px;
   }
 
+  /* La burbuja del negocio: verde, a la derecha. Igual que en la landing y que en cualquier
+     chat que la gente ya use. */
   &__msg {
+    position: relative;
     max-width: min(75%, 32rem);
     align-self: flex-end;
     padding: 0.4375rem 0.625rem 0.3125rem;
-    border-radius: 0.625rem 0.625rem 0.125rem 0.625rem;
-    // 16% se leía casi como el mismo blanco/gris de la burbuja del cliente — una auditoría
-    // de UI lo confirmó comparando ambas: hacía falta más color, no solo alineación, para
-    // distinguir "quién habló" de un vistazo (la convención que trae cualquier chat).
-    background: color-mix(in srgb, var(--color-primary) 30%, var(--color-surface));
+    border-radius: 0.75rem 0.75rem 0.125rem 0.75rem;
+    background: color-mix(in srgb, var(--bdj-verde) 30%, #ffffff);
+    color: var(--bdj-verde-tinta);
+    box-shadow: 0 1px 1px rgba(11, 61, 44, 0.08);
   }
 
-  /* Lo que escribe la persona va a la izquierda y sin color de marca: es la convención de
-     cualquier chat, y romperla obliga a pensar dónde mirar. */
+  /* Lo que escribe la persona va a la izquierda y en blanco: es la convención de cualquier
+     chat, y romperla obliga a pensar dónde mirar. */
   &__msg--suyo {
     align-self: flex-start;
-    border-radius: 0.625rem 0.625rem 0.625rem 0.125rem;
-    background: var(--color-surface);
-    // Un borde del tono normal casi no se distingue del fondo apenas gris del contenedor
-    // de mensajes: la burbuja del cliente se perdía junto a la del negocio, en índigo sólido.
-    border: 1px solid var(--color-border-strong);
-    box-shadow: var(--shadow-sm);
+    border-radius: 0.75rem 0.75rem 0.75rem 0.125rem;
+    background: #ffffff;
+    color: var(--color-text-primary);
+    box-shadow: 0 1px 1px rgba(11, 61, 44, 0.1);
   }
 
   &__msg-texto {
     margin: 0;
     font-size: 0.875rem;
     line-height: 1.45;
-    color: var(--color-text-primary);
+    color: inherit;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
@@ -511,7 +795,7 @@
     margin-top: 0.125rem;
     text-align: right;
     font-size: 0.625rem;
-    color: var(--color-text-secondary);
+    opacity: 0.65;
   }
 
   &__msg-entrega {
@@ -521,12 +805,14 @@
   &__msg-entrega--mal {
     color: var(--color-error);
     font-weight: 600;
+    opacity: 1;
   }
 
   /* ── Responder ──────────────────────────────────────────────── */
   &__responder {
     border-top: 1px solid var(--color-border);
     padding: 0.625rem 0.875rem 0.875rem;
+    background: var(--color-surface);
   }
 
   &__nota {
@@ -579,10 +865,11 @@
 
     &:focus {
       outline: none;
-      border-color: var(--color-primary);
+      border-color: var(--bdj-verde-hondo);
     }
   }
 
+  /* El botón de enviar es del chat, no del panel: verde, como la burbuja que va a crear. */
   &__enviar {
     flex: 0 0 auto;
     display: inline-flex;
@@ -592,33 +879,13 @@
     height: 2.5rem;
     border: none;
     border-radius: 50%;
-    background: var(--color-primary);
+    background: var(--bdj-verde-hondo);
     color: #fff;
     cursor: pointer;
 
     &:disabled {
       opacity: 0.45;
       cursor: not-allowed;
-    }
-  }
-
-  &__atender {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    flex: 0 0 auto;
-    padding: 0.3125rem 0.625rem;
-    border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
-    font-size: 0.75rem;
-    font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-
-    &:hover {
-      background: color-mix(in srgb, var(--color-primary) 18%, transparent);
     }
   }
 
@@ -644,6 +911,15 @@
     &:hover {
       background: color-mix(in srgb, var(--color-error) 12%, transparent);
       color: var(--color-error);
+    }
+  }
+
+  &__icono--claro {
+    color: rgba(255, 255, 255, 0.85);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
     }
   }
 

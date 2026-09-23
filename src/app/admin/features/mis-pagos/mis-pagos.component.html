@@ -141,6 +141,7 @@
               </p>
               <button type="button" class="mp__plan-deshacer" [disabled]="cambiandoPlan()"
                       (click)="cancelarSolicitud(c)">
+                <lucide-icon name="x" [size]="14" aria-hidden="true" />
                 Cancelar el cambio
               </button>
             </div>
@@ -238,7 +239,12 @@
 
               @if (hayCambios(c)) {
                 <p class="mp__plan-explica">
-                  @if (subeDePrecio(c)) {
+                  @if (!estaAlDia(c.vencimiento)) {
+                    <!-- Sin plan vigente no hay «días que le quedan»: el cambio va a la misma
+                         mensualidad que tiene que pagar, no a un cobro aparte. -->
+                    Tu plan no está activo: el cambio se suma a tu mensualidad pendiente. Al
+                    pagarla, tu plan se activa ya con lo que elegiste.
+                  } @else if (subeDePrecio(c)) {
                     Al guardar te generamos un cobro por la diferencia de los días que le quedan a
                     tu mes. Cuando lo pagues, el cambio queda activo y tu fecha de vencimiento no
                     se mueve.

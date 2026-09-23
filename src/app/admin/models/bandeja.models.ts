@@ -32,6 +32,11 @@ export interface ConversacionBandeja {
    * listados que no lo seleccionan explícitamente.
    */
   bloqueada_por?: 'cliente' | 'negocio' | null;
+  /**
+   * Reportes ABIERTOS del contacto, no de esta conversación. Ver `ReportesConversacion`.
+   * Llega en 0 cuando el entorno todavía no tiene la tabla migrada.
+   */
+  reportes: number;
 }
 
 export interface MensajeBandeja {
@@ -67,6 +72,9 @@ export interface ConversacionBandejaDetalle {
   conversacion: ConversacionBandeja;
   mensajes: MensajeBandeja[];
   ventana: VentanaBandeja;
+  reportes: ReportesConversacion;
+  /** El catálogo tal como lo valida el backend. Se recibe para no divergir en silencio. */
+  motivos: string[];
 }
 
 /** Un negocio que TIENE conversaciones. No son todos los del usuario — ver el servicio. */
@@ -85,4 +93,50 @@ export interface RespuestaEncolada {
   id_mensaje: string | null;
   estado_conversacion: string;
   estado_entrega: string;
+}
+
+/**
+ * Los motivos por los que se puede reportar a alguien.
+ *
+ * La lista viaja también en el detalle (`motivos`), pero se escribe aquí porque el formulario
+ * necesita el texto en español y el orden en que se enseñan — y eso es de esta pantalla, no del
+ * backend. `sin_avance` y `automatizado` NO están: los pone el asistente mirando el patrón de la
+ * conversación, y una persona no tiene forma de saber cuántos turnos costó nada.
+ */
+export const MOTIVOS_REPORTE = [
+  { valor: 'spam', etiqueta: 'Spam o publicidad' },
+  { valor: 'abuso', etiqueta: 'Insultos o acoso' },
+  { valor: 'fuera_de_tema', etiqueta: 'Nada que ver con el negocio' },
+  { valor: 'contenido_indebido', etiqueta: 'Contenido indebido' },
+  { valor: 'otro', etiqueta: 'Otro' },
+] as const;
+
+export type MotivoReporte = (typeof MOTIVOS_REPORTE)[number]['valor'];
+
+/** Cómo se lee un motivo, incluidos los dos que solo pone el asistente. */
+export const ETIQUETA_MOTIVO: Record<string, string> = {
+  spam: 'Spam o publicidad',
+  abuso: 'Insultos o acoso',
+  fuera_de_tema: 'Nada que ver con el negocio',
+  contenido_indebido: 'Contenido indebido',
+  sin_avance: 'Mucha charla, ninguna gestión',
+  automatizado: 'Mensajes repetidos en serie',
+  otro: 'Otro',
+};
+
+/**
+ * El conteo de reportes.
+ *
+ * `persona` es el número que importa: los reportes de ese contacto en el negocio, contados por su
+ * identidad y no por el hilo, porque la pregunta es «¿esta persona vale la pena?».
+ * `conversacion` es cuántos lleva este hilo concreto, y `mio` el motivo del reporte propio
+ * — o `null` si no lo he reportado yo, que es lo que decide si el botón ofrece marcar o deshacer.
+ */
+export interface ReportesConversacion {
+  persona: number;
+  conversacion: number;
+  /** Los que puso el propio asistente al ver el patrón. No bloquean nada; avisan. */
+  del_asistente: number;
+  mio: string | null;
+  ultimo: string | null;
 }

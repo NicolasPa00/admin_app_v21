@@ -1,32 +1,33 @@
 <!--
   Bandeja: donde el negocio contesta cuando el asistente no supo.
 
-  Dos paneles como WhatsApp — lista a la izquierda, hilo a la derecha — porque quien usa esto ya
-  sabe usar WhatsApp. Lo que NO se copia es el verde: la paleta es dinámica por inquilino.
+  Tres piezas y un orden que no es casual:
+
+    · Una barra arriba con los NEGOCIOS. Estaban metidos entre el buscador y la lista, dentro de
+      la columna estrecha: con dos locales de nombre largo ocupaban tres renglones y empujaban
+      las conversaciones fuera de la pantalla. «De qué local hablamos» es una pregunta anterior a
+      «qué conversación abro», así que va arriba del todo y a lo ancho de las dos columnas.
+    · La lista, a la izquierda. Solo buscar y elegir.
+    · El hilo, a la derecha, con la misma cara que el chat de la landing: banda de color arriba,
+      papel con garabatos detrás y burbujas con la hora dentro. Quien ve la landing y luego entra
+      aquí tiene que reconocer lo mismo.
 -->
 <div class="bdj">
-  <!-- ── Panel izquierdo: la lista ─────────────────────────────── -->
-  <aside class="bdj__lista-panel">
-    <header class="bdj__lista-head">
-      <h1 class="bdj__title">Conversaciones</h1>
-      <button type="button" class="bdj__icono" (click)="cargar()" aria-label="Actualizar">
-        <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
-      </button>
-    </header>
-
-    <div class="bdj__buscador">
-      <lucide-icon name="search" [size]="15" aria-hidden="true" />
-      <input
-        type="search"
-        placeholder="Buscar una conversación"
-        [ngModel]="busqueda()"
-        (ngModelChange)="busqueda.set($event)"
-      />
+  <!-- ── Barra superior: identidad y negocios ──────────────────── -->
+  <header class="bdj__top">
+    <div class="bdj__marca">
+      <span class="bdj__marca-icono" aria-hidden="true">
+        <lucide-icon name="message-circle" [size]="18" />
+      </span>
+      <div class="bdj__marca-texto">
+        <h1 class="bdj__title">Conversaciones</h1>
+        <p class="bdj__subtitle">Lo que el asistente habla con tus clientes</p>
+      </div>
     </div>
 
-    <!-- Los chips: primero el negocio (si hay más de uno), luego lo que espera respuesta. -->
-    <div class="bdj__chips">
-      @if (variosNegocios()) {
+    <!-- Los negocios. Solo con más de uno: una sola pastilla no filtra nada. -->
+    @if (variosNegocios()) {
+      <div class="bdj__negocios" role="group" aria-label="Filtrar por negocio">
         <button
           type="button"
           class="bdj__chip"
@@ -42,10 +43,16 @@
             [class.bdj__chip--on]="negocioActivo() === n.id_negocio"
             (click)="filtrarPorNegocio(n.id_negocio)"
           >
+            <lucide-icon name="building-2" [size]="13" aria-hidden="true" />
             {{ n.nombre }}
           </button>
         }
-      }
+      </div>
+    }
+
+    <div class="bdj__top-acciones">
+      <!-- Lo que ponga quien la contiene: la vista WhatsApp mete aquí «Tu número». -->
+      <ng-content />
       <button
         type="button"
         class="bdj__chip bdj__chip--espera"
@@ -57,6 +64,22 @@
           <span class="bdj__contador">{{ escaladas() }}</span>
         }
       </button>
+      <button type="button" class="bdj__icono" (click)="cargar()" aria-label="Actualizar">
+        <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Panel izquierdo: la lista ─────────────────────────────── -->
+  <aside class="bdj__lista-panel">
+    <div class="bdj__buscador">
+      <lucide-icon name="search" [size]="15" aria-hidden="true" />
+      <input
+        type="search"
+        placeholder="Buscar una conversación"
+        [ngModel]="busqueda()"
+        (ngModelChange)="busqueda.set($event)"
+      />
     </div>
 
     <div class="bdj__scroll">
@@ -104,14 +127,27 @@
                       <span class="bdj__punto" title="Espera respuesta"></span>
                     }
                   </span>
-                  <!-- El negocio, solo cuando hay más de uno y no se está filtrando por él:
-                       si no, es una línea repetida en todas las filas. -->
-                  @if (variosNegocios() && negocioActivo() === null && c.negocio) {
-                    <span class="bdj__item-negocio">
-                      <lucide-icon name="building-2" [size]="11" aria-hidden="true" />
-                      {{ c.negocio }}
-                    </span>
-                  }
+                  <span class="bdj__item-pie">
+                    <!-- El negocio, solo cuando hay más de uno y no se está filtrando por él:
+                         si no, es una línea repetida en todas las filas. -->
+                    @if (variosNegocios() && negocioActivo() === null && c.negocio) {
+                      <span class="bdj__item-negocio">
+                        <lucide-icon name="building-2" [size]="11" aria-hidden="true" />
+                        {{ c.negocio }}
+                      </span>
+                    }
+                    <!-- El contador es del CONTACTO: cuántos reportes acumula esta persona en el
+                         negocio, no cuántos lleva este hilo. -->
+                    @if (c.reportes > 0) {
+                      <span
+                        class="bdj__item-reportes"
+                        [title]="c.reportes + ' reporte(s) de esta persona'"
+                      >
+                        <lucide-icon name="flag" [size]="11" aria-hidden="true" />
+                        {{ c.reportes }}
+                      </span>
+                    }
+                  </span>
                 </span>
               </button>
             </li>
@@ -125,13 +161,17 @@
   <section class="bdj__hilo-panel">
     @if (!detalle()) {
       <div class="bdj__placeholder">
-        <lucide-icon name="message-square" [size]="40" aria-hidden="true" />
+        <span class="bdj__placeholder-icono" aria-hidden="true">
+          <lucide-icon name="message-square" [size]="28" />
+        </span>
         <p>Elige una conversación para leerla y responder.</p>
         <span class="bdj__placeholder-nota">
           Cuando el asistente no sabe qué contestar, la conversación aparece aquí marcada.
         </span>
       </div>
     } @else if (detalle(); as d) {
+      <!-- La banda de color, como en el chat de la landing: identifica de un vistazo que esto
+           es una conversación y no una tabla más del panel. -->
       <header class="bdj__hilo-head">
         <span class="bdj__avatar bdj__avatar--grande">{{ iniciales(d.conversacion) }}</span>
         <div class="bdj__hilo-quien">
@@ -141,12 +181,13 @@
             @if (d.conversacion.negocio) { · {{ d.conversacion.negocio }} }
           </span>
         </div>
+
         @if (d.conversacion.escalada) {
           <!-- No devuelve la conversación al asistente (ADR-023): solo deja de contar como
                pendiente. Hace falta porque no todo se resuelve por el chat. -->
           <button
             type="button"
-            class="bdj__atender"
+            class="bdj__accion-hilo"
             (click)="atender()"
             title="Quitarla de las que esperan respuesta. El asistente no vuelve a esta conversación."
           >
@@ -179,7 +220,25 @@
             <lucide-icon name="bell-off" [size]="16" aria-hidden="true" />
           </button>
         }
-        <button type="button" class="bdj__icono" (click)="cerrar()" aria-label="Cerrar">
+
+        <!-- Reportar no bloquea a nadie ni cambia el estado de la conversación: deja constancia
+             de que este contacto está usando el asistente para nada. El conteo es de la persona. -->
+        <button
+          type="button"
+          class="bdj__accion-hilo"
+          [class.bdj__accion-hilo--marcada]="reportes().mio"
+          (click)="alternarPanelReporte()"
+          [attr.aria-expanded]="panelReporte()"
+          [title]="reportes().mio ? 'Ya la reportaste' : 'Reportar mal uso del asistente'"
+        >
+          <lucide-icon name="flag" [size]="15" aria-hidden="true" />
+          {{ reportes().mio ? 'Reportada' : 'Reportar' }}
+          @if (reportes().persona > 0) {
+            <span class="bdj__contador bdj__contador--claro">{{ reportes().persona }}</span>
+          }
+        </button>
+
+        <button type="button" class="bdj__icono bdj__icono--claro" (click)="cerrar()" aria-label="Cerrar">
           <lucide-icon name="x" [size]="16" aria-hidden="true" />
         </button>
       </header>
@@ -223,6 +282,100 @@
           </div>
           @if (errorBloqueo(); as err) {
             <p class="bdj__baja-error">{{ err }}</p>
+          }
+        </div>
+      }
+
+      <!--
+        El aviso del propio asistente. No calla al bot ni bloquea a nadie: solo dice lo que midió
+        —cuántos turnos, cuánto costó, cuántas veces se repitió el mismo texto— para que la
+        decisión la tome una persona con el dato delante.
+      -->
+      @if (reportes().del_asistente > 0) {
+        <div class="bdj__aviso bdj__aviso--bot">
+          <lucide-icon name="shield-alert" [size]="15" aria-hidden="true" />
+          <span>
+            El asistente marcó esta conversación como posible mal uso. Sigue contestando con
+            normalidad: nadie ha sido bloqueado.
+          </span>
+        </div>
+      }
+
+      <!-- El formulario de reporte. Va aquí, bajo la cabecera y sobre el hilo, en vez de en un
+           modal: se reporta mirando lo que la persona escribió, y un modal lo tapa justo ahora. -->
+      @if (panelReporte()) {
+        <div class="bdj__reporte">
+          @if (reportes().mio) {
+            <p class="bdj__reporte-titulo">
+              Ya reportaste esta conversación
+              <em>— {{ etiquetaMotivo(reportes().mio) }}</em>
+            </p>
+            <p class="bdj__reporte-nota">
+              Esta persona acumula {{ reportes().persona }}
+              {{ reportes().persona === 1 ? 'reporte' : 'reportes' }} en este negocio. Reportar no
+              la bloquea: sirve para saber a quién le está costando dinero tu asistente.
+            </p>
+            <div class="bdj__reporte-botones">
+              <button type="button" class="bdj__boton-plano" (click)="cerrarPanelReporte()">
+                Cerrar
+              </button>
+              <button
+                type="button"
+                class="bdj__boton-peligro"
+                [disabled]="reportando()"
+                (click)="retirarReporte()"
+              >
+                Retirar mi reporte
+              </button>
+            </div>
+          } @else {
+            <p class="bdj__reporte-titulo">¿Por qué la reportas?</p>
+            <div class="bdj__reporte-motivos">
+              @for (m of motivos; track m.valor) {
+                <button
+                  type="button"
+                  class="bdj__chip"
+                  [class.bdj__chip--on]="motivoElegido() === m.valor"
+                  (click)="motivoElegido.set(m.valor)"
+                >
+                  {{ m.etiqueta }}
+                </button>
+              }
+            </div>
+            <textarea
+              class="bdj__reporte-texto"
+              rows="2"
+              maxlength="500"
+              placeholder="Añade algo si quieres (opcional)"
+              [ngModel]="notaReporte()"
+              (ngModelChange)="notaReporte.set($event)"
+            ></textarea>
+            <p class="bdj__reporte-nota">
+              No bloquea a nadie ni calla al asistente: queda anotado con tu nombre para poder
+              decidir después.
+              @if (reportes().persona > 0) {
+                Esta persona ya acumula {{ reportes().persona }}.
+              }
+            </p>
+            <div class="bdj__reporte-botones">
+              <button type="button" class="bdj__boton-plano" (click)="cerrarPanelReporte()">
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="bdj__boton-peligro"
+                [disabled]="!motivoElegido() || reportando()"
+                (click)="reportar()"
+              >
+                @if (reportando()) {
+                  <lucide-icon name="loader-2" [size]="14" class="bdj__spin" aria-hidden="true" />
+                }
+                Reportar
+              </button>
+            </div>
+          }
+          @if (errorReporte()) {
+            <p class="bdj__error">{{ errorReporte() }}</p>
           }
         </div>
       }

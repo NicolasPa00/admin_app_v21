@@ -7,6 +7,7 @@ import { ApiResponse } from '../../auth/models/auth.models';
 import {
   BandejaListado,
   ConversacionBandejaDetalle,
+  ReportesConversacion,
   RespuestaEncolada,
 } from '../models/bandeja.models';
 
@@ -76,6 +77,35 @@ export class BandejaService {
         {},
       )
       .pipe(map(() => undefined));
+  }
+
+  /**
+   * Reporta a quien está usando el asistente para nada.
+   *
+   * No bloquea a nadie, no calla al asistente y no cambia el estado de la conversación: es una
+   * opinión con autor, fecha y motivo. El conteo que devuelve es el del **contacto** —todas sus
+   * conversaciones en este negocio—, no el de este hilo.
+   *
+   * Reportar dos veces la misma conversación no suma dos: la base tiene una única parcial y el
+   * backend contesta 200 con el conteo real. Un clic repetido no es un segundo reporte.
+   */
+  reportar(id: string, motivo: string, nota?: string): Observable<ReportesConversacion | null> {
+    return this.http
+      .post<ApiResponse<{ reportes: ReportesConversacion }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/reportar`,
+        { motivo, nota: nota?.trim() || undefined },
+      )
+      .pipe(map((res) => res.data?.reportes ?? null));
+  }
+
+  /** Deshace el reporte propio. Solo el propio: el del asistente se revisa, no se borra. */
+  retirarReporte(id: string): Observable<ReportesConversacion | null> {
+    return this.http
+      .post<ApiResponse<{ reportes: ReportesConversacion }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/reportar/retirar`,
+        {},
+      )
+      .pipe(map((res) => res.data?.reportes ?? null));
   }
 
   getConversacion(id: string): Observable<ConversacionBandejaDetalle | null> {

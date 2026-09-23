@@ -29,6 +29,7 @@ import {
 } from 'lucide-angular';
 
 import { AssetService } from '../core/services/asset.service';
+import { TelefonoPaisComponent } from '../shared/telefono-pais/telefono-pais.component';
 import { PagosPublicosService } from '../pagos/pagos-publicos.service';
 import { recordarPago, tomarPagoEnCurso } from '../core/utils/pasarelas';
 
@@ -92,7 +93,7 @@ const PASOS: { id: Exclude<Paso, 'resultado'>; etiqueta: string }[] = [
 @Component({
   selector: 'app-adquirir-page',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, LucideAngularModule, TelefonoPaisComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -192,6 +193,16 @@ export class AdquirirPageComponent {
   protected readonly estado = signal<EstadoCompra | null>(null);
   private intentosEstado = 0;
   private temporizador: ReturnType<typeof setTimeout> | undefined;
+
+  /**
+   * La transacción con la que volvió del checkout. La factura NO dice si el pago falló: un
+   * rechazo la deja en `pendiente` a propósito (así se puede reintentar), y la pantalla se
+   * quedaba en «Tu pago está en proceso» para siempre. Lo que sabe del rechazo es la
+   * transacción, así que se le pregunta a la pasarela mientras la factura siga abierta.
+   */
+  private vuelta: { pasarela: 'wompi' | 'dlocal'; idTransaccion: string } | null = null;
+  /** La pasarela confirmó que ese intento no se cobró. */
+  protected readonly pagoRechazado = signal(false);
 
   constructor() {
     const qp = this.route.snapshot.queryParamMap;
@@ -632,14 +643,24 @@ export class AdquirirPageComponent {
     }
 
     const pasarela = enCurso?.pasarela === 'dlocal' && !qp.get('id') ? 'dlocal' : 'wompi';
-    this.pagos
-      .confirmar(pasarela, idTransaccion)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        // Pase lo que pase con la confirmación, el estado lo dice la base.
-        next: () => referencia && this.consultarEstado(referencia),
-        error: () => referencia && this.consultarEstado(referencia),
-      });
+    this.vuelta = { pasarela, idTransaccion };
+    if (referencia) this.consultarEstado(referencia);
+  }
+
+  /**
+   * Le pregunta a la pasarela por la transacción de la vuelta. Si la consulta falla no se
+   * afirma nada: el estado lo sigue diciendo la base.
+   */
+  private async confirmarTransaccion(): Promise<void> {
+    if (!this.vuelta) return;
+    try {
+      const r = await firstValueFrom(
+        this.pagos.confirmar(this.vuelta.pasarela, this.vuelta.idTransaccion),
+      );
+      if (r?.estado === 'rechazada') this.pagoRechazado.set(true);
+    } catch {
+      // Sin respuesta de la pasarela, sin veredicto.
+    }
   }
 
   /** Guarda lo necesario para reconocer la compra al volver del checkout. */
@@ -678,6 +699,10 @@ export class AdquirirPageComponent {
     this.error.set(null);
     try {
       const pago = await firstValueFrom(this.api.reintentar(ref, this.pasarela()));
+      // Un intento nuevo es otra transacción: el rechazo anterior ya no aplica.
+      this.vuelta = null;
+      this.pagoRechazado.set(false);
+      this.intentosEstado = 0;
       if (pago?.url_pago) {
         this.recordarCompra({ referencia: ref, id_externo: pago.id_externo ?? null });
         window.location.href = pago.url_pago;
@@ -698,9 +723,13 @@ export class AdquirirPageComponent {
    * que puede llegar unos segundos después que el visitante: enseñar «pendiente» a alguien que
    * acaba de pagar es la forma más rápida de que pague dos veces.
    */
-  protected consultarEstado(referencia: string): void {
+  protected async consultarEstado(referencia: string): Promise<void> {
     clearTimeout(this.temporizador);
     this.cargando.set(true);
+
+    // Confirmar ANTES de leer el estado: si se aprobó, deja la factura pagada; si se rechazó,
+    // la transacción es la única que lo sabe. Una vez rechazada no se vuelve a preguntar.
+    if (!this.pagoRechazado()) await this.confirmarTransaccion();
 
     this.api
       .estado(referencia)
@@ -711,7 +740,7 @@ export class AdquirirPageComponent {
           this.estado.set(estado);
           this.paso.set('resultado');
 
-          if (estado?.estado === 'pendiente' && this.intentosEstado < 5) {
+          if (estado?.estado === 'pendiente' && !this.pagoRechazado() && this.intentosEstado < 5) {
             this.intentosEstado += 1;
             this.temporizador = setTimeout(
               () => this.consultarEstado(referencia),

@@ -71,6 +71,11 @@
         }
       </p>
 
+      <a routerLink="/admin/whatsapp" class="cw__boton cw__boton--outline">
+        <lucide-icon name="message-circle" [size]="16"></lucide-icon>
+        Ver conversaciones
+      </a>
+
       @if (esPropio()) {
         @if (!confirmandoDesconectar()) {
           <button type="button" class="cw__boton cw__boton--peligro" (click)="pedirConfirmacionDesconectar()">

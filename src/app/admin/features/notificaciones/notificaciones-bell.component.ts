@@ -22,7 +22,7 @@ import { Notificacion } from '../../models/notificacion.models';
  * `switch` dentro del manejador para que añadir un tipo sea una línea.
  */
 const DESTINO: Record<string, string> = {
-  CONVERSACION_ESCALADA: '/admin/bandeja',
+  CONVERSACION_ESCALADA: '/admin/whatsapp',
 };
 
 @Component({

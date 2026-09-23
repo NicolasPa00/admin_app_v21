@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   LucideAngularModule,
   LUCIDE_ICONS,
@@ -67,7 +68,7 @@ declare global {
 @Component({
   selector: 'app-canal-whatsapp',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule, RouterLink, LucideAngularModule],
   templateUrl: './canal-whatsapp.component.html',
   styleUrl: './canal-whatsapp.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

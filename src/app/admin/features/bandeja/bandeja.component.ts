@@ -16,14 +16,18 @@ import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
+  Flag, ShieldAlert, MessageCircle,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
 import {
   ConversacionBandeja,
   ConversacionBandejaDetalle,
+  ETIQUETA_MOTIVO,
   MensajeBandeja,
+  MOTIVOS_REPORTE,
   NegocioConConversaciones,
+  ReportesConversacion,
 } from '../../models/bandeja.models';
 import { LoadingState } from '../../models/admin.models';
 
@@ -59,6 +63,12 @@ import { LoadingState } from '../../models/admin.models';
  * 3. **La ventana de 24 h se enseña ANTES de escribir**, y también en la lista. Es la regla más
  *    restrictiva de WhatsApp: pasado ese plazo Meta rechaza el texto libre. Enterarse después de
  *    redactar un párrafo es la peor forma de descubrirlo.
+ * 4. **Se puede reportar a quien usa el asistente para nada.** Desde que el Nivel 4 contesta,
+ *    cada turno cuesta dinero y el número del negocio es público: quien descubre que al otro
+ *    lado hay un modelo tiene barra libre. El conteo va por **contacto**, no por conversación —
+ *    esa gente vuelve a escribir en otro hilo—, y el asistente también reporta cuando ve el
+ *    patrón (`intelligence/engine/reporteAutomatico.js`). Reportar **no bloquea a nadie**: es
+ *    una opinión con autor y fecha, y bloquear sigue siendo una decisión de una persona.
  *
  * ## Por qué se refresca sondeando y no con un canal de eventos
  *
@@ -101,6 +111,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
+        Flag, ShieldAlert, MessageCircle,
       }),
     },
   ],
@@ -135,6 +146,35 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly detalle = signal<ConversacionBandejaDetalle | null>(null);
   readonly estadoDetalle = signal<LoadingState>('idle');
   readonly abierta = signal<string | null>(null);
+
+  // ── Reportar ──────────────────────────────────────────────────────────────
+  /**
+   * El formulario de reporte, abierto o no.
+   *
+   * Es estado de esta pantalla y no del servidor, así que vive aparte de `detalle()`: el latido
+   * de cinco segundos reemplaza el detalle entero, y si el panel dependiera de él se cerraría
+   * solo a mitad de escribir el motivo.
+   */
+  readonly panelReporte = signal(false);
+  readonly motivoElegido = signal<string | null>(null);
+  readonly notaReporte = signal('');
+  readonly reportando = signal(false);
+  readonly errorReporte = signal<string | null>(null);
+
+  /** Los motivos que puede elegir una persona. Los del asistente no están: ver el modelo. */
+  readonly motivos = MOTIVOS_REPORTE;
+
+  /** El conteo, con ceros mientras no hay conversación abierta o el entorno no lo tiene. */
+  readonly reportes = computed<ReportesConversacion>(
+    () =>
+      this.detalle()?.reportes ?? {
+        persona: 0,
+        conversacion: 0,
+        del_asistente: 0,
+        mio: null,
+        ultimo: null,
+      },
+  );
 
   readonly borrador = signal('');
   readonly enviando = signal(false);
@@ -255,6 +295,9 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.abierta.set(conversacion.id_conversacion);
     this.errorEnvio.set(null);
     this.borrador.set('');
+    // Cambiar de conversación con el formulario de reporte abierto dejaría el motivo elegido
+    // apuntando a otra persona. Se cierra siempre.
+    this.cerrarPanelReporte();
     this.cargarHilo(conversacion.id_conversacion);
   }
 
@@ -413,6 +456,86 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.confirmandoBloqueo.set(false);
     this.motivoBloqueo.set('');
     this.errorBloqueo.set(null);
+    this.cerrarPanelReporte();
+  }
+
+  // ── Reportar ──────────────────────────────────────────────────────────────
+  //
+  // Reportar NO bloquea a nadie, no calla al asistente y no cambia el estado de la conversación:
+  // es una opinión con autor, fecha y motivo. Lo que se cuenta es el CONTACTO —todas sus
+  // conversaciones en este negocio—, porque de la persona es de quien habla la pregunta.
+
+  alternarPanelReporte(): void {
+    if (this.panelReporte()) {
+      this.cerrarPanelReporte();
+      return;
+    }
+    this.errorReporte.set(null);
+    this.motivoElegido.set(null);
+    this.notaReporte.set('');
+    this.panelReporte.set(true);
+  }
+
+  cerrarPanelReporte(): void {
+    this.panelReporte.set(false);
+    this.motivoElegido.set(null);
+    this.notaReporte.set('');
+    this.errorReporte.set(null);
+  }
+
+  reportar(): void {
+    const actual = this.detalle();
+    const motivo = this.motivoElegido();
+    if (!actual || !motivo || this.reportando()) return;
+
+    this.reportando.set(true);
+    this.errorReporte.set(null);
+
+    this.service
+      .reportar(actual.conversacion.id_conversacion, motivo, this.notaReporte())
+      .subscribe({
+        next: (reportes) => {
+          this.reportando.set(false);
+          this.cerrarPanelReporte();
+          // El conteo llega en la respuesta, así que la pantalla no espera al siguiente latido
+          // para enseñar la bandera. La lista sí se recarga: el contador de la fila también sube.
+          if (reportes) this.detalle.set({ ...actual, reportes });
+          this.cargar(true);
+        },
+        error: (err) => {
+          this.reportando.set(false);
+          this.errorReporte.set(
+            err?.error?.message ?? 'No se pudo reportar la conversación. Inténtalo de nuevo.',
+          );
+        },
+      });
+  }
+
+  /** Deshace el propio reporte. El del asistente no se toca desde aquí: se revisa, no se borra. */
+  retirarReporte(): void {
+    const actual = this.detalle();
+    if (!actual || this.reportando()) return;
+
+    this.reportando.set(true);
+    this.errorReporte.set(null);
+
+    this.service.retirarReporte(actual.conversacion.id_conversacion).subscribe({
+      next: (reportes) => {
+        this.reportando.set(false);
+        this.cerrarPanelReporte();
+        if (reportes) this.detalle.set({ ...actual, reportes });
+        this.cargar(true);
+      },
+      error: () => {
+        this.reportando.set(false);
+        this.errorReporte.set('No se pudo retirar el reporte.');
+      },
+    });
+  }
+
+  /** Cómo se lee un motivo, incluidos los dos que solo pone el asistente. */
+  etiquetaMotivo(motivo: string | null): string {
+    return motivo ? ETIQUETA_MOTIVO[motivo] ?? motivo : '';
   }
 
   enviar(): void {

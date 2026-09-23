@@ -115,12 +115,11 @@ export class AdminLayoutComponent {
     { label: 'Usuarios', icon: 'users', route: '/admin/usuarios', superAdmin: true },
     { label: 'Tipos', icon: 'store', route: '/admin/registrar', superAdmin: true },
     { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
-    // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador.
-    { label: 'Conversaciones', icon: 'message-square', route: '/admin/bandeja' },
+    // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador. Una sola
+    // entrada: sin número conectado enseña cómo activarlo; con número, las conversaciones.
+    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp' },
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion' },
-    // Tampoco: quien conecta su número es el dueño del negocio, no el desarrollador.
-    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/canal-whatsapp' },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
     // Sin `superAdmin`: es la mensualidad vista por el dueño del negocio.
     { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos' },
@@ -238,7 +237,8 @@ export class AdminLayoutComponent {
    */
   private readonly colapsoAutomatico = effect(() => {
     const url = this.currentUrl().split('?')[0];
-    const enChat = url.includes('/admin/bandeja');
+    // Solo `/admin/whatsapp` (las conversaciones), no `/admin/whatsapp/numero`.
+    const enChat = url.replace(/\/$/, '').endsWith('/admin/whatsapp');
     untracked(() => this.collapsed.set(enChat ? true : this.preferenciaColapsado()));
   });
 
@@ -263,9 +263,8 @@ export class AdminLayoutComponent {
     if (url.includes('/negocios')) return 'Negocios';
     if (url.includes('/usuarios')) return 'Usuarios';
     if (url.includes('/registrar')) return 'Tipos de negocio';
-    if (url.includes('/bandeja')) return 'Conversaciones';
     if (url.includes('/facturacion')) return 'Facturación';
-    if (url.includes('/canal-whatsapp')) return 'WhatsApp';
+    if (url.includes('/whatsapp')) return 'WhatsApp';
     if (url.includes('/intelligence')) return 'Intelligence';
     if (url.includes('/personas')) return 'Ficha 360';
     if (url.includes('/mis-pagos')) return 'Mis pagos';

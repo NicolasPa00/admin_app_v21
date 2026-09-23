@@ -267,13 +267,11 @@
 
             <div class="cp-campo">
               <label for="cp-tel">Teléfono <span class="cp-campo__opcional">(opcional)</span></label>
-              <input
-                id="cp-tel"
-                class="cp-input"
-                type="tel"
-                autocomplete="tel"
-                [value]="telefono()"
-                (input)="telefono.set($any($event.target).value)"
+              <!-- Con indicativo: vende también fuera de Colombia. Sale como `+573001234567`. -->
+              <app-telefono-pais
+                campoId="cp-tel"
+                [valor]="telefono()"
+                (valorChange)="telefono.set($event)"
               />
             </div>
 
@@ -368,7 +366,8 @@
                 type="button"
                 class="es-btn es-btn--primary"
                 (click)="crearCuenta()"
-                [disabled]="cargando()"
+                [disabled]="!aceptaTerminos() || cargando()"
+                [attr.title]="aceptaTerminos() ? null : 'Acepta los términos para continuar'"
               >
                 @if (cargando()) {
                   <lucide-icon name="loader-2" [size]="16" class="cp-girando" aria-hidden="true" />
@@ -578,6 +577,36 @@
             Entrar a mi panel
             <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
           </a>
+          <p class="cp-resultado__ref">Referencia: {{ estado()!.referencia }}</p>
+        } @else if (estado()?.estado === 'pendiente' && pagoRechazado()) {
+          <!-- La pasarela rechazó la transacción. La factura sigue abierta: se puede reintentar
+               con la misma referencia, y la cuenta ya creada no se pierde. -->
+          <span class="cp-resultado__icono cp-resultado__icono--error">
+            <lucide-icon name="credit-card" [size]="28" aria-hidden="true" />
+          </span>
+          <h1 class="cp-title">El pago no fue exitoso</h1>
+          <p class="cp-subtitle">
+            La pasarela rechazó el pago y no se te cobró nada. Tu cuenta sigue creada: puedes
+            intentarlo de nuevo con otro medio o con otra tarjeta.
+          </p>
+
+          @if (error(); as msg) {
+            <p class="cp-error" role="alert">{{ msg }}</p>
+          }
+
+          <div class="cp-acciones cp-acciones--centro">
+            <button
+              type="button"
+              class="es-btn es-btn--primary"
+              (click)="reintentar()"
+              [disabled]="cargando()"
+            >
+              @if (cargando()) {
+                <lucide-icon name="loader-2" [size]="16" class="cp-girando" aria-hidden="true" />
+              }
+              Intentar el pago de nuevo
+            </button>
+          </div>
           <p class="cp-resultado__ref">Referencia: {{ estado()!.referencia }}</p>
         } @else if (estado()?.estado === 'pendiente') {
           <span class="cp-resultado__icono cp-resultado__icono--espera">

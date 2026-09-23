@@ -76,11 +76,30 @@ export const adminRoutes: Routes = [
         // Bandeja: las conversaciones del asistente para el DUEÑO del negocio, con respuesta
         // humana. A diferencia de la Consola, no es de super admin — el alcance lo decide el
         // backend cruzando el usuario del token contra sus negocios.
+        //
+        // Ya no tiene entrada propia en el menú: vive dentro de «WhatsApp» (ver abajo). La ruta
+        // vieja redirige para no romper enlaces guardados.
         path: 'bandeja',
+        redirectTo: 'whatsapp',
+        pathMatch: 'full',
+      },
+      {
+        // WhatsApp: una sola entrada. Sin número conectado enseña cómo activarlo; con número,
+        // las conversaciones. `whatsapp/numero` es siempre la gestión del número.
+        path: 'whatsapp',
         loadComponent: () =>
-          import('./features/bandeja/bandeja.component').then((m) => m.BandejaComponent),
+          import('./features/whatsapp/whatsapp.component').then((m) => m.WhatsappComponent),
         canActivate: [adminGuard(['ADMINISTRADOR'])],
-        title: 'Conversaciones',
+        title: 'WhatsApp',
+      },
+      {
+        path: 'whatsapp/numero',
+        loadComponent: () =>
+          import('./features/canal-whatsapp/canal-whatsapp.component').then(
+            (m) => m.CanalWhatsappComponent,
+          ),
+        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        title: 'Tu número de WhatsApp',
       },
       {
         // Datos fiscales (FE-1). NO es de super admin: es la pantalla del DUEÑO del negocio,
@@ -96,13 +115,10 @@ export const adminRoutes: Routes = [
       {
         // Conectar WhatsApp (F8-D). Tampoco es de super admin: quien decide si conserva su
         // número o lo dejamos gestionado por EscalApp es el dueño del negocio.
+        // Ruta vieja: ahora es `whatsapp/numero`.
         path: 'canal-whatsapp',
-        loadComponent: () =>
-          import('./features/canal-whatsapp/canal-whatsapp.component').then(
-            (m) => m.CanalWhatsappComponent,
-          ),
-        canActivate: [adminGuard(['ADMINISTRADOR'])],
-        title: 'Conectar WhatsApp',
+        redirectTo: 'whatsapp/numero',
+        pathMatch: 'full',
       },
       {
         // Intelligence Console (F5-E): la Observabilidad del asistente, solo lectura.

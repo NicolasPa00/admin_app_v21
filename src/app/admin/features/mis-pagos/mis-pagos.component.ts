@@ -10,7 +10,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
-  Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check,
+  Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check, X,
 } from 'lucide-angular';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
@@ -63,7 +63,7 @@ type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check,
+        Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check, X,
       }),
     },
   ],
@@ -263,7 +263,8 @@ export class MisPagosComponent implements OnInit {
           if (r?.mensaje) this.avisoPlan.set(r.mensaje);
           // Si subir generó un cobro, lo siguiente que tiene que hacer es pagarlo: se le lleva
           // a la pestaña donde está, en vez de dejarle buscarlo.
-          if (r?.aplica === 'ajuste') this.verTab(c, 'pagar');
+          // Sin plan vigente el cambio se sumó a la mensualidad pendiente: también toca pagarla.
+          if (r?.aplica === 'ajuste' || !this.estaAlDia(c.vencimiento)) this.verTab(c, 'pagar');
           this.cargar();
         },
         error: (err) => {
