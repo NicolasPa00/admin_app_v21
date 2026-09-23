@@ -30,28 +30,22 @@
         <section class="cp-form">
           <!-- Los tres pasos, siempre a la vista: se sabe cuántos faltan antes de empezar. -->
           <ol class="cp-pasos" aria-label="Pasos de la compra">
-            <li class="cp-paso" [class.cp-paso--activo]="paso() === 'negocio'"
-                [class.cp-paso--hecho]="paso() === 'titular' || paso() === 'pago'">
-              <span class="cp-paso__num">
-                @if (paso() === 'titular' || paso() === 'pago') {
-                  <lucide-icon name="check" [size]="14" aria-hidden="true" />
-                } @else { 1 }
-              </span>
-              Tu negocio
-            </li>
-            <li class="cp-paso" [class.cp-paso--activo]="paso() === 'titular'"
-                [class.cp-paso--hecho]="paso() === 'pago'">
-              <span class="cp-paso__num">
-                @if (paso() === 'pago') {
-                  <lucide-icon name="check" [size]="14" aria-hidden="true" />
-                } @else { 2 }
-              </span>
-              Tus datos
-            </li>
-            <li class="cp-paso" [class.cp-paso--activo]="paso() === 'pago'">
-              <span class="cp-paso__num">3</span>
-              Pago
-            </li>
+            @for (p of pasos; track p.id; let i = $index) {
+              <li
+                class="cp-paso"
+                [class.cp-paso--activo]="i === indicePaso()"
+                [class.cp-paso--hecho]="i < indicePaso()"
+              >
+                <span class="cp-paso__num">
+                  @if (i < indicePaso()) {
+                    <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </span>
+                {{ p.etiqueta }}
+              </li>
+            }
           </ol>
 
           @if (error(); as msg) {
@@ -98,6 +92,84 @@
                 <span class="cp-campo__error">{{ e }}</span>
               }
             </div>
+
+            <!--
+              El tamaño del equipo, dentro de «Tu negocio» y no como paso aparte. Los contadores
+              arrancan en lo que el plan ya incluye (4 usuarios, 1 caja) y no bajan de ahí: lo
+              que se ve es el total del negocio, y cada unidad por encima es un complemento que
+              suma a la mensualidad. Preguntar «¿cuántos serán?» se entiende; preguntar
+              «¿cuántos adicionales?» obliga a restar.
+            -->
+            @if (plan() && complementos().length) {
+              <div class="cp-campo">
+                <span class="cp-campo__label">¿Cuántos van a usar el sistema?</span>
+
+                <ul class="cp-complementos">
+                  @for (c of complementos(); track c.codigo) {
+                    <li
+                      class="cp-complemento"
+                      [class.cp-complemento--activo]="cantidadDe(c.codigo) > 0"
+                    >
+                      <span class="cp-complemento__icon">
+                        <lucide-icon [name]="iconoComplemento(c)" [size]="18" aria-hidden="true" />
+                      </span>
+
+                      <span class="cp-complemento__texto">
+                        <strong>{{ etiquetaComplemento(c) }}</strong>
+                        <small>
+                          {{ incluidoDe(c) }} incluido{{ incluidoDe(c) === 1 ? '' : 's' }} en tu
+                          plan · {{ formatPrice(c.precio) }}/mes cada adicional
+                        </small>
+                        @if (cantidadDe(c.codigo) > 0) {
+                          <span class="cp-complemento__precio">
+                            +{{ formatPrice(cantidadDe(c.codigo) * c.precio) }}/mes
+                          </span>
+                        }
+                      </span>
+
+                      <span
+                        class="cp-contador"
+                        role="group"
+                        [attr.aria-label]="etiquetaComplemento(c) + ' del negocio'"
+                      >
+                        <button
+                          type="button"
+                          class="cp-contador__btn"
+                          (click)="cambiarCantidad(c, -1)"
+                          [disabled]="cantidadDe(c.codigo) === 0"
+                          [attr.aria-label]="'Quitar uno'"
+                        >
+                          <lucide-icon name="minus" [size]="14" aria-hidden="true" />
+                        </button>
+                        <span class="cp-contador__valor" aria-live="polite">{{ totalDe(c) }}</span>
+                        <button
+                          type="button"
+                          class="cp-contador__btn"
+                          (click)="cambiarCantidad(c, 1)"
+                          [disabled]="cantidadDe(c.codigo) >= c.cantidad_maxima"
+                          [attr.aria-label]="'Añadir uno'"
+                        >
+                          <lucide-icon name="plus" [size]="14" aria-hidden="true" />
+                        </button>
+                      </span>
+                    </li>
+                  }
+                </ul>
+
+                <span class="cp-campo__ayuda">
+                  Puedes ajustarlo después desde tu panel.
+                </span>
+              </div>
+            }
+
+            <!-- Si el catálogo no llegó, se dice aquí mismo: antes el bloque de usuarios y cajas
+                 simplemente no aparecía y no había forma de saber que faltaba algo. -->
+            @if (catalogoFallo()) {
+              <p class="cp-error" role="alert">
+                No pudimos cargar las opciones de tu plan (usuarios y cajas).
+                <button type="button" class="cp-enlace" (click)="recargarCatalogo()">Reintentar</button>
+              </p>
+            }
 
             <button type="button" class="es-btn es-btn--primary cp-avanzar" (click)="siguiente()">
               Continuar
@@ -217,11 +289,126 @@
             </div>
           }
 
-          <!-- ── Paso 3: el pago ── -->
-          @if (paso() === 'pago') {
-            <h1 class="cp-title">Elige cómo pagar</h1>
+          <!-- ── Paso 3: la cuenta ──
+               Aquí se crea de verdad. A partir de este punto el comprador ya tiene cuenta, pague
+               o no pague: por eso es su propio paso y termina con una confirmación. -->
+          @if (paso() === 'cuenta') {
+            <h1 class="cp-title">Crea tu cuenta</h1>
             <p class="cp-subtitle">
-              El cobro lo procesa la pasarela; EscalApp no guarda los datos de tu tarjeta.
+              Con esta contraseña entrarás a EscalApp. Tu usuario será tu número de identificación
+              ({{ cedula() }}).
+            </p>
+
+            <div class="cp-campo">
+              <label for="cp-pass">Contraseña</label>
+              <div class="cp-pass">
+                <input
+                  id="cp-pass"
+                  class="cp-input"
+                  [type]="verPassword() ? 'text' : 'password'"
+                  autocomplete="new-password"
+                  [value]="password()"
+                  (input)="password.set($any($event.target).value)"
+                />
+                <button
+                  type="button"
+                  class="cp-pass__ojo"
+                  (click)="verPassword.set(!verPassword())"
+                  [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                >
+                  <lucide-icon [name]="verPassword() ? 'eye-off' : 'eye'" [size]="16" />
+                </button>
+              </div>
+              <span class="cp-campo__ayuda">
+                Mínimo 8 caracteres, con una mayúscula y un número.
+              </span>
+              @if (tocado() && errorPassword(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <div class="cp-campo">
+              <label for="cp-pass2">Repite la contraseña</label>
+              <input
+                id="cp-pass2"
+                class="cp-input"
+                [type]="verPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                [value]="passwordConfirma()"
+                (input)="passwordConfirma.set($any($event.target).value)"
+              />
+              @if (tocado() && errorPasswordConfirma(); as e) {
+                <span class="cp-campo__error">{{ e }}</span>
+              }
+            </div>
+
+            <label class="cp-terminos">
+              <input
+                type="checkbox"
+                [checked]="aceptaTerminos()"
+                (change)="aceptaTerminos.set($any($event.target).checked)"
+              />
+              <span>
+                Acepto los <a routerLink="/terminos" target="_blank">Términos y Condiciones</a> y la
+                <a routerLink="/privacidad" target="_blank">Política de Tratamiento de Datos</a>.
+              </span>
+            </label>
+
+            <p class="cp-nota">
+              Al continuar creamos tu cuenta y tu negocio. El plan se activa cuando pagues, en el
+              paso siguiente.
+            </p>
+
+            <div class="cp-acciones">
+              <button type="button" class="cp-volver" (click)="atras()">
+                <lucide-icon name="arrow-left" [size]="14" aria-hidden="true" />
+                Atrás
+              </button>
+              <button
+                type="button"
+                class="es-btn es-btn--primary"
+                (click)="crearCuenta()"
+                [disabled]="cargando()"
+              >
+                @if (cargando()) {
+                  <lucide-icon name="loader-2" [size]="16" class="cp-girando" aria-hidden="true" />
+                  Creando tu cuenta…
+                } @else {
+                  Crear y continuar
+                  <lucide-icon name="arrow-right" [size]="16" aria-hidden="true" />
+                }
+              </button>
+            </div>
+          }
+
+          <!-- ── Paso 4: el pago ── -->
+          @if (paso() === 'pago') {
+            <!-- Lo primero que se ve: la cuenta ya está hecha. Es el mensaje que faltaba cuando
+                 un pago fallido dejaba al comprador creyendo que no se había creado nada. -->
+            @if (cuenta(); as c) {
+              <div class="cp-exito" role="status">
+                <span class="cp-exito__icono" aria-hidden="true">
+                  <lucide-icon name="check-circle-2" [size]="20" />
+                </span>
+                <div>
+                  <strong>
+                    @if (c.retomada) {
+                      Tu cuenta ya estaba creada
+                    } @else {
+                      ¡Listo! Tu cuenta quedó creada
+                    }
+                  </strong>
+                  <span class="cp-exito__detalle">
+                    {{ c.email }} · Entrarás con tu número de identificación.
+                  </span>
+                </div>
+              </div>
+            }
+
+            <h1 class="cp-title">Continuemos con la activación de tu plan</h1>
+            <p class="cp-subtitle">
+              Solo falta el pago para activar el {{ plan()?.nombre ?? 'plan' }}. El cobro lo procesa
+              la pasarela; EscalApp no guarda los datos de tu tarjeta.
             </p>
 
             <div class="cp-pasarelas" role="group" aria-label="Medio de pago">
@@ -246,23 +433,9 @@
               }
             </div>
 
-            <label class="cp-terminos">
-              <input
-                type="checkbox"
-                [checked]="aceptaTerminos()"
-                (change)="aceptaTerminos.set($any($event.target).checked)"
-              />
-              <span>
-                Acepto los <a routerLink="/terminos" target="_blank">Términos y Condiciones</a> y la
-                <a routerLink="/privacidad" target="_blank">Política de Tratamiento de Datos</a>.
-              </span>
-            </label>
-
-            <div class="cp-acciones">
-              <button type="button" class="cp-volver" (click)="atras()">
-                <lucide-icon name="arrow-left" [size]="14" aria-hidden="true" />
-                Atrás
-              </button>
+            <!-- Sin «Atrás»: la cuenta ya existe y sus datos no son un borrador. Si el pago no
+                 sale, se reintenta desde aquí o desde el portal de pagos con la referencia. -->
+            <div class="cp-acciones cp-acciones--sola">
               <button
                 type="button"
                 class="es-btn es-btn--primary"
@@ -273,11 +446,18 @@
                   <lucide-icon name="loader-2" [size]="16" class="cp-girando" aria-hidden="true" />
                   Preparando el pago…
                 } @else {
-                  Ir a pagar
+                  Pagar y activar mi plan
                   <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
                 }
               </button>
             </div>
+
+            @if (cuenta(); as c) {
+              <p class="cp-nota">
+                Si algo falla con el pago, tu cuenta no se pierde: vuelve cuando quieras con la
+                referencia <strong>{{ c.referencia }}</strong>.
+              </p>
+            }
           }
         </section>
 
@@ -286,9 +466,24 @@
           <h2 class="cp-resumen__title">Tu compra</h2>
 
           @if (plan(); as p) {
-            <p class="cp-resumen__plan">{{ p.nombre }}</p>
+            <!--
+              Plan y complementos línea a línea, y el total abajo. Es el mismo desglose que
+              llevará la factura, así que lo que se ve aquí es lo que se explica después.
+            -->
+            <ul class="cp-resumen__lineas">
+              <li>
+                <span>{{ p.nombre }}</span>
+                <strong>{{ formatPrice(p.precio) }}</strong>
+              </li>
+              @for (l of lineasComplemento(); track l.codigo) {
+                <li>
+                  <span>{{ l.nombre }} × {{ l.cantidad }}</span>
+                  <strong>{{ formatPrice(l.subtotal) }}</strong>
+                </li>
+              }
+            </ul>
             <p class="cp-resumen__precio">
-              <strong>{{ formatPrice(p.precio) }}</strong>
+              <strong>{{ formatPrice(totalMensual()) }}</strong>
               <span>{{ p.moneda }} / {{ p.ciclo }}</span>
             </p>
           } @else if (!catalogoCargado()) {

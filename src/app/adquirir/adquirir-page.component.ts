@@ -11,29 +11,64 @@ import {
   BadgeCheck,
   Building2,
   Check,
+  CheckCircle2,
   ChevronRight,
   CreditCard,
+  Eye,
+  EyeOff,
   Loader2,
   Lock,
   Mail,
+  Minus,
+  Monitor,
+  Plus,
   ShieldCheck,
   Store,
   User,
+  UserPlus,
 } from 'lucide-angular';
 
 import { AssetService } from '../core/services/asset.service';
+import { PagosPublicosService } from '../pagos/pagos-publicos.service';
+import { recordarPago, tomarPagoEnCurso } from '../core/utils/pasarelas';
+
+/**
+ * La referencia de la compra que salió al checkout. `recordarPago` guarda el id de la pasarela,
+ * pero lo descarta si no hay id (y ese es justo el caso de algunas vueltas): la referencia va
+ * aparte para no depender de él. sessionStorage: sirve para esta vuelta, no para mañana.
+ */
+const CLAVE_REFERENCIA = 'escalapp:compra-en-curso';
 import { AuthService } from '../auth/data-access/auth.service';
 import { RubroPublico } from '../auth/models/auth.models';
 import {
   AdquirirService,
   CompraIniciada,
+  CuentaCreada,
+  ComplementoVendible,
   EstadoCompra,
   PasarelaDisponible,
   PlanVendible,
 } from './adquirir.service';
 
-/** Los tres pasos del formulario, más la pantalla de vuelta del checkout. */
-type Paso = 'negocio' | 'titular' | 'pago' | 'resultado';
+/** Los cuatro pasos del formulario, más la pantalla de vuelta del checkout. */
+type Paso = 'negocio' | 'titular' | 'cuenta' | 'pago' | 'resultado';
+
+/**
+ * Los pasos en orden. La barra de progreso, «Continuar» y «Atrás» salen de aquí: antes cada uno
+ * repetía la lista a mano, y añadir los complementos habría sido tocarla en cuatro sitios.
+ *
+ * **«Cuenta» y «Pago» son dos cosas distintas, y por eso son dos pasos.** Hasta 2026-09-23 el
+ * formulario terminaba en «Ir a pagar» y creaba la cuenta en esa misma llamada: si el pago
+ * fallaba, la cuenta quedaba creada y nadie se lo decía al comprador, que volvía a empezar y
+ * chocaba con «ya existe una cuenta con ese correo». Ahora la cuenta se crea y se confirma en su
+ * paso, y el pago es lo que falta para activar el plan.
+ */
+const PASOS: { id: Exclude<Paso, 'resultado'>; etiqueta: string }[] = [
+  { id: 'negocio', etiqueta: 'Tu negocio' },
+  { id: 'titular', etiqueta: 'Tus datos' },
+  { id: 'cuenta', etiqueta: 'Tu cuenta' },
+  { id: 'pago', etiqueta: 'Pago' },
+];
 
 /**
  * AdquirirPageComponent — la compra de un plan, de principio a fin.
@@ -68,14 +103,21 @@ type Paso = 'negocio' | 'titular' | 'pago' | 'resultado';
         BadgeCheck,
         Building2,
         Check,
+        CheckCircle2,
         ChevronRight,
+        Eye,
+        EyeOff,
         CreditCard,
         Loader2,
         Lock,
         Mail,
+        Minus,
+        Monitor,
+        Plus,
         ShieldCheck,
         Store,
         User,
+        UserPlus,
       }),
     },
   ],
@@ -89,6 +131,7 @@ type Paso = 'negocio' | 'titular' | 'pago' | 'resultado';
 })
 export class AdquirirPageComponent {
   private readonly api = inject(AdquirirService);
+  private readonly pagos = inject(PagosPublicosService);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -107,6 +150,7 @@ export class AdquirirPageComponent {
   private readonly rubros = signal<RubroPublico[]>([]);
   protected readonly planes = signal<PlanVendible[]>([]);
   protected readonly pasarelas = signal<PasarelaDisponible[]>([]);
+  protected readonly complementos = signal<ComplementoVendible[]>([]);
   /** Hasta que el catálogo responde no se sabe si el plan se puede cobrar: ni precio ni aviso. */
   protected readonly catalogoCargado = signal(false);
   /**
@@ -178,6 +222,7 @@ export class AdquirirPageComponent {
         next: (cat) => {
           this.planes.set(cat.planes);
           this.pasarelas.set(cat.pasarelas);
+          this.complementos.set(cat.complementos ?? []);
           this.catalogoCargado.set(true);
           this.catalogoFallo.set(false);
           if (cat.pasarelas.length && !cat.pasarelas.some((p) => p.codigo === this.pasarela())) {
@@ -190,12 +235,7 @@ export class AdquirirPageComponent {
         },
       });
 
-    // Vuelta del checkout: la referencia manda, el formulario ya no importa.
-    const ref = qp.get('ref');
-    if (ref) {
-      this.paso.set('resultado');
-      this.consultarEstado(ref);
-    }
+    this.atenderVueltaDelCheckout();
 
     this.destroyRef.onDestroy(() => clearTimeout(this.temporizador));
   }
@@ -272,32 +312,164 @@ export class AdquirirPageComponent {
       !this.errorEmailConfirma(),
   );
 
-  protected readonly puedePagar = computed(
-    () => this.pasoNegocioValido() && this.pasoTitularValido() && this.aceptaTerminos() && !!this.plan(),
+  /* ── La contraseña de la cuenta ──
+     Mismas reglas que en el resto del sistema (8 caracteres, una mayúscula y un número): el
+     backend las vuelve a comprobar, esto solo evita el viaje. */
+
+  protected readonly password = signal('');
+  protected readonly passwordConfirma = signal('');
+  protected readonly verPassword = signal(false);
+
+  protected readonly errorPassword = computed(() => {
+    const v = this.password();
+    if (!v) return 'Crea una contraseña';
+    if (v.length < 8) return 'Mínimo 8 caracteres';
+    if (!/[A-Z]/.test(v)) return 'Debe llevar al menos una mayúscula';
+    if (!/\d/.test(v)) return 'Debe llevar al menos un número';
+    return null;
+  });
+
+  protected readonly errorPasswordConfirma = computed(() => {
+    if (!this.passwordConfirma()) return 'Repite la contraseña';
+    if (this.passwordConfirma() !== this.password()) return 'Las contraseñas no coinciden';
+    return null;
+  });
+
+  protected readonly pasoCuentaValido = computed(
+    () => !this.errorPassword() && !this.errorPasswordConfirma() && this.aceptaTerminos(),
   );
+
+  /** Se puede crear la cuenta: todo lo anterior válido y un plan elegido. */
+  protected readonly puedeCrearCuenta = computed(
+    () =>
+      this.pasoNegocioValido() &&
+      this.pasoTitularValido() &&
+      this.pasoCuentaValido() &&
+      !!this.plan(),
+  );
+
+  /** La cuenta ya existe: de aquí en adelante solo falta pagar. */
+  protected readonly cuenta = signal<CuentaCreada | null>(null);
+  protected readonly cuentaLista = computed(() => this.cuenta() !== null);
+
+  protected readonly puedePagar = computed(() => this.cuentaLista() && !!this.plan());
 
   /* ── Navegación entre pasos ── */
 
-  protected siguiente(): void {
-    this.tocado.set(true);
-    if (this.paso() === 'negocio' && this.pasoNegocioValido()) {
-      this.tocado.set(false);
-      this.error.set(null);
-      this.paso.set('titular');
-      return;
-    }
-    if (this.paso() === 'titular' && this.pasoTitularValido()) {
-      this.tocado.set(false);
-      this.error.set(null);
-      this.paso.set('pago');
+  protected readonly pasos = PASOS;
+
+  /** En qué paso va, como índice: la barra de progreso marca hechos los anteriores. */
+  protected readonly indicePaso = computed(() => PASOS.findIndex((p) => p.id === this.paso()));
+
+  /** ¿Se puede salir del paso actual? Los complementos son opcionales: nunca bloquean. */
+  private pasoActualValido(): boolean {
+    switch (this.paso()) {
+      case 'negocio':
+        return this.pasoNegocioValido();
+      case 'titular':
+        return this.pasoTitularValido();
+      case 'cuenta':
+        return this.pasoCuentaValido();
+      default:
+        return true;
     }
   }
 
-  protected atras(): void {
+  protected siguiente(): void {
+    this.tocado.set(true);
+    if (!this.pasoActualValido()) return;
+
+    const siguiente = PASOS[this.indicePaso() + 1];
+    if (!siguiente) return;
     this.tocado.set(false);
     this.error.set(null);
-    if (this.paso() === 'titular') this.paso.set('negocio');
-    else if (this.paso() === 'pago') this.paso.set('titular');
+    this.paso.set(siguiente.id);
+  }
+
+  protected atras(): void {
+    // Con la cuenta ya creada no se vuelve atrás: esos datos ya no son un borrador, son una
+    // cuenta de verdad. Dejar editarlos daría a entender que se puede rehacer, y no se puede.
+    if (this.cuentaLista()) return;
+    this.tocado.set(false);
+    this.error.set(null);
+    const anterior = PASOS[this.indicePaso() - 1];
+    if (anterior) this.paso.set(anterior.id);
+  }
+
+  /* ── Complementos ── */
+
+  /** Cantidad elegida de cada complemento, por código. Ausente = 0. */
+  protected readonly cantidades = signal<Record<string, number>>({});
+
+  protected cantidadDe(codigo: string): number {
+    return this.cantidades()[codigo] ?? 0;
+  }
+
+  /** Sube o baja un complemento sin salirse de [0, tope del catálogo]. */
+  protected cambiarCantidad(c: ComplementoVendible, delta: number): void {
+    const nueva = Math.min(c.cantidad_maxima, Math.max(0, this.cantidadDe(c.codigo) + delta));
+    this.cantidades.update((actual) => ({ ...actual, [c.codigo]: nueva }));
+  }
+
+  /** Lo elegido, con su subtotal — para el resumen y para mandar al backend. */
+  protected readonly lineasComplemento = computed(() =>
+    this.complementos()
+      .map((c) => {
+        const cantidad = this.cantidadDe(c.codigo);
+        return { ...c, cantidad, subtotal: cantidad * c.precio };
+      })
+      .filter((c) => c.cantidad > 0),
+  );
+
+  /**
+   * El total mensual que se ve en el resumen. Es una **vista previa**: el importe que se cobra lo
+   * calcula el backend con los precios de la base, y si difiriera, manda el suyo.
+   */
+  protected readonly totalMensual = computed(
+    () =>
+      (this.plan()?.precio ?? 0) + this.lineasComplemento().reduce((suma, l) => suma + l.subtotal, 0),
+  );
+
+  /** «4 usuarios y 1 caja»: lo que el plan trae de serie, para que se entienda qué se amplía. */
+  protected readonly incluidosPlan = computed(() => {
+    const p = this.plan();
+    if (!p) return null;
+    const partes: string[] = [];
+    if (p.usuarios_incluidos != null) {
+      partes.push(`${p.usuarios_incluidos} usuario${p.usuarios_incluidos === 1 ? '' : 's'}`);
+    }
+    if (p.cajas_incluidas != null) {
+      partes.push(`${p.cajas_incluidas} caja${p.cajas_incluidas === 1 ? '' : 's'}`);
+    }
+    return partes.length ? partes.join(' y ') : null;
+  });
+
+  protected iconoComplemento(c: ComplementoVendible): string {
+    return c.amplia === 'cajas' ? 'monitor' : 'user-plus';
+  }
+
+  /**
+   * Cuántos trae el plan de lo que amplía este complemento. El contador enseña el total del
+   * negocio (incluidos + adicionales), así que parte de aquí y no puede bajar de aquí.
+   */
+  protected incluidoDe(c: ComplementoVendible): number {
+    const p = this.plan();
+    if (!p) return 0;
+    if (c.amplia === 'usuarios') return p.usuarios_incluidos ?? 0;
+    if (c.amplia === 'cajas') return p.cajas_incluidas ?? 0;
+    return 0;
+  }
+
+  /** El número del contador: lo incluido más lo añadido. Al backend va solo lo añadido. */
+  protected totalDe(c: ComplementoVendible): number {
+    return this.incluidoDe(c) + this.cantidadDe(c.codigo);
+  }
+
+  /** «Usuarios» / «Cajas»: se pregunta por el total, no por «usuarios adicionales». */
+  protected etiquetaComplemento(c: ComplementoVendible): string {
+    if (c.amplia === 'usuarios') return 'Usuarios';
+    if (c.amplia === 'cajas') return 'Cajas';
+    return c.nombre;
   }
 
   /** Lo que se enseña en el resumen mientras se llena el formulario. */
@@ -327,31 +499,84 @@ export class AdquirirPageComponent {
    * dominio. Si la pasarela no devuelve enlace —caso raro, o una pasarela manual— se queda en la
    * pantalla de resultado con la referencia, que es con lo que se puede reintentar.
    */
-  protected async pagar(): Promise<void> {
+  /**
+   * Crea la cuenta y pasa al pago. No cobra nada todavía.
+   *
+   * Es el botón «Crear y continuar». Cuando vuelve, el comprador ya tiene usuario, negocio y su
+   * primer cobro esperando: el paso siguiente solo abre el checkout con esa referencia.
+   */
+  protected async crearCuenta(): Promise<void> {
     this.tocado.set(true);
-    if (!this.puedePagar() || this.cargando()) return;
+    if (!this.puedeCrearCuenta() || this.cargando()) return;
+    if (this.cuentaLista()) {
+      this.paso.set('pago');
+      return;
+    }
+
+    this.cargando.set(true);
+    this.error.set(null);
+
+    try {
+      const cuenta = await firstValueFrom(
+        this.api.crearCuenta({
+          nombres: this.nombres().trim(),
+          apellidos: this.apellidos().trim(),
+          num_identificacion: this.cedula().trim(),
+          email: this.email().trim(),
+          password: this.password(),
+          telefono: this.telefono().trim() || null,
+          rubro: this.rubro(),
+          nombre_negocio: this.nombreNegocio().trim(),
+          plan: this.planPedido(),
+          pasarela: this.pasarela(),
+          complementos: this.lineasComplemento().map((l) => ({
+            codigo: l.codigo,
+            cantidad: l.cantidad,
+          })),
+        }),
+      );
+
+      if (!cuenta) {
+        this.error.set('No pudimos crear tu cuenta. Inténtalo de nuevo.');
+        return;
+      }
+
+      this.cuenta.set(cuenta);
+      // La contraseña no se queda en memoria más de lo necesario: ya cumplió su función.
+      this.password.set('');
+      this.passwordConfirma.set('');
+      this.tocado.set(false);
+      this.paso.set('pago');
+    } catch (err: unknown) {
+      this.error.set(this.mensajeDeError(err, 'No pudimos crear tu cuenta. Inténtalo de nuevo.'));
+    } finally {
+      this.cargando.set(false);
+    }
+  }
+
+  /**
+   * Abre el checkout del cobro que dejó la creación de la cuenta.
+   *
+   * La redirección la hace el navegador con `window.location`, no el router: el destino es otro
+   * dominio. Si la pasarela no devuelve enlace —caso raro, o una pasarela manual— se queda en la
+   * pantalla de resultado con la referencia, que es con lo que se puede reintentar.
+   */
+  protected async pagar(): Promise<void> {
+    const cuenta = this.cuenta();
+    if (!cuenta || this.cargando()) return;
 
     this.cargando.set(true);
     this.error.set(null);
 
     try {
       const compra = await firstValueFrom(
-        this.api.iniciar({
-          nombres: this.nombres().trim(),
-          apellidos: this.apellidos().trim(),
-          num_identificacion: this.cedula().trim(),
-          email: this.email().trim(),
-          telefono: this.telefono().trim() || null,
-          rubro: this.rubro(),
-          nombre_negocio: this.nombreNegocio().trim(),
-          plan: this.planPedido(),
-          pasarela: this.pasarela(),
-        }),
+        this.api.reintentar(cuenta.referencia, this.pasarela()),
       );
 
       this.compra.set(compra);
 
       if (compra?.url_pago) {
+        this.recordarCompra(compra);
         window.location.href = compra.url_pago;
         return;
       }
@@ -359,7 +584,7 @@ export class AdquirirPageComponent {
       this.paso.set('resultado');
       if (compra?.referencia) this.consultarEstado(compra.referencia);
     } catch (err: unknown) {
-      this.error.set(this.mensajeDeError(err, 'No pudimos iniciar la compra. Inténtalo de nuevo.'));
+      this.error.set(this.mensajeDeError(err, 'No pudimos abrir el pago. Inténtalo de nuevo.'));
     } finally {
       this.cargando.set(false);
     }
@@ -381,6 +606,69 @@ export class AdquirirPageComponent {
     return cuerpo?.message ?? porDefecto;
   }
 
+  /**
+   * Lo que pasa al volver de la pasarela.
+   *
+   * Wompi vuelve con `?id=<transacción>`; dLocal no trae nada y se usa el id que se guardó al
+   * salir. Con ese id se le **pide la confirmación a la pasarela** antes de mirar el estado: en
+   * producción el webhook suele haberla aplicado ya, pero en local no puede llegar nunca (la
+   * pasarela no ve `localhost`), y sin este paso la compra se quedaba «pendiente» para siempre.
+   * Confirmar dos veces es inofensivo: la segunda responde «ya estaba pagada».
+   */
+  private atenderVueltaDelCheckout(): void {
+    const qp = this.route.snapshot.queryParamMap;
+    const enCurso = tomarPagoEnCurso();
+    const referencia = qp.get('ref') ?? enCurso?.referencia ?? this.tomarReferencia();
+    const idTransaccion = qp.get('id') ?? enCurso?.idExterno ?? null;
+
+    if (!referencia && !idTransaccion) return;
+
+    this.paso.set('resultado');
+    this.cargando.set(true);
+
+    if (!idTransaccion) {
+      if (referencia) this.consultarEstado(referencia);
+      return;
+    }
+
+    const pasarela = enCurso?.pasarela === 'dlocal' && !qp.get('id') ? 'dlocal' : 'wompi';
+    this.pagos
+      .confirmar(pasarela, idTransaccion)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        // Pase lo que pase con la confirmación, el estado lo dice la base.
+        next: () => referencia && this.consultarEstado(referencia),
+        error: () => referencia && this.consultarEstado(referencia),
+      });
+  }
+
+  /** Guarda lo necesario para reconocer la compra al volver del checkout. */
+  private recordarCompra(compra: { referencia: string; id_externo: string | null }): void {
+    try {
+      sessionStorage.setItem(CLAVE_REFERENCIA, compra.referencia);
+    } catch {
+      // Sin almacenamiento se pierde la confirmación inmediata; el webhook la cierra igual.
+    }
+    if (compra.id_externo) {
+      recordarPago({
+        pasarela: this.pasarela(),
+        idExterno: compra.id_externo,
+        referencia: compra.referencia,
+      });
+    }
+  }
+
+  /** Lee y borra: una vuelta se atiende una vez, no en cada recarga. */
+  private tomarReferencia(): string | null {
+    try {
+      const ref = sessionStorage.getItem(CLAVE_REFERENCIA);
+      sessionStorage.removeItem(CLAVE_REFERENCIA);
+      return ref;
+    } catch {
+      return null;
+    }
+  }
+
   /** Reabre el checkout de una compra que quedó pendiente. */
   protected async reintentar(): Promise<void> {
     const ref = this.estado()?.referencia ?? this.compra()?.referencia;
@@ -391,6 +679,7 @@ export class AdquirirPageComponent {
     try {
       const pago = await firstValueFrom(this.api.reintentar(ref, this.pasarela()));
       if (pago?.url_pago) {
+        this.recordarCompra({ referencia: ref, id_externo: pago.id_externo ?? null });
         window.location.href = pago.url_pago;
         return;
       }
