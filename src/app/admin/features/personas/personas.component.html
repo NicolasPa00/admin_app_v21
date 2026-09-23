@@ -91,18 +91,13 @@
       </table>
     </div>
 
-    <div class="per__pager">
-      <!-- De contorno: moverse entre páginas no es la acción principal de la pantalla. -->
-      <button type="button" class="btn btn--outline" [disabled]="!hayAnterior()"
-              (click)="paginaAnterior()">
-        <lucide-icon name="chevron-left" [size]="16" aria-hidden="true" /> Anterior
-      </button>
-      <span class="per__pager-info">Página {{ pagina() }} de {{ totalPaginas() }}</span>
-      <button type="button" class="btn btn--outline" [disabled]="!haySiguiente()"
-              (click)="paginaSiguiente()">
-        Siguiente <lucide-icon name="chevron-right" [size]="16" aria-hidden="true" />
-      </button>
-    </div>
+    <app-paginador
+      [pagina]="pagina()"
+      [total]="total()"
+      [tamano]="limit()"
+      (cambiarPagina)="irAPagina($event)"
+      (cambiarTamano)="cambiarTamano($event)"
+    />
   }
 </div>
 

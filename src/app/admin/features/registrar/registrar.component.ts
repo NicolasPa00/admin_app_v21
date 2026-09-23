@@ -17,6 +17,7 @@ import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
 } from 'lucide-angular';
 
 import { AdminService } from '../../data-access/admin.service';
+import { ToastService } from '../../../shared/toast/toast.service';
 import { TipoNegocio, LoadingState } from '../../models/admin.models';
 
 /** Íconos curados que un tipo de negocio puede usar (nombres lucide). */
@@ -61,6 +62,7 @@ const COLOR_DEFAULT = '#6366F1';
 })
 export class RegistrarComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly toast = inject(ToastService);
 
   protected readonly iconos = ICONOS_DISPONIBLES;
 
@@ -71,7 +73,6 @@ export class RegistrarComponent implements OnInit {
   protected readonly color = signal(COLOR_DEFAULT);
 
   protected readonly saving = signal(false);
-  protected readonly msg = signal<{ ok: boolean; text: string } | null>(null);
 
   protected readonly nombreValido = computed(() => this.nombre().trim().length > 0);
 
@@ -101,7 +102,6 @@ export class RegistrarComponent implements OnInit {
   }
 
   protected submit(): void {
-    this.msg.set(null);
     if (!this.nombreValido() || this.saving()) return;
 
     this.saving.set(true);
@@ -113,17 +113,14 @@ export class RegistrarComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.saving.set(false);
-        this.msg.set({ ok: true, text: 'Tipo de negocio creado correctamente.' });
+        this.toast.exito('Tipo de negocio creado correctamente.');
         this.nombre.set('');
         this.descripcion.set('');
         this.loadTipos();
       },
       error: (err) => {
         this.saving.set(false);
-        this.msg.set({
-          ok: false,
-          text: err.error?.message ?? 'No se pudo crear el tipo de negocio.',
-        });
+        this.toast.errorHttp(err, 'No se pudo crear el tipo de negocio.');
       },
     });
   }

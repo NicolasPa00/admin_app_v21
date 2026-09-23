@@ -42,6 +42,56 @@
   white-space: nowrap;
 }
 
+// ── Pestañas Activos / Inactivos ────────────────────────────
+.usr__tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.usr__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+
+  &:hover { color: var(--color-text-primary); }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-md);
+  }
+
+  &--on {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+}
+
+.usr__tab-count {
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-text-secondary) 14%, transparent);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+
+  .usr__tab--on & {
+    background: rgba(var(--color-primary-rgb), 0.12);
+  }
+}
+
 // ── Filtros ─────────────────────────────────────────────────
 .usr__filters {
   display: flex;
@@ -248,6 +298,12 @@
     background: var(--color-error-bg);
   }
 
+  &--warning:hover:not(:disabled) {
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    background: var(--color-warning-bg);
+  }
+
   &--success:hover:not(:disabled) {
     border-color: var(--color-success);
     color: var(--color-success);
@@ -276,6 +332,32 @@
 
   &:focus-visible {
     box-shadow: var(--focus-ring-error);
+  }
+}
+
+.usr-btn--warning {
+  background-color: var(--color-warning);
+  color: var(--color-on-primary);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-warning) 85%, #000000);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(var(--color-warning-rgb), 0.3);
+  }
+}
+
+.usr-btn--success {
+  background-color: var(--color-success);
+  color: var(--color-on-primary);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--color-success) 85%, #000000);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgba(var(--color-success-rgb), 0.3);
   }
 }
 
@@ -402,6 +484,33 @@
   background: var(--color-surface);
 }
 
+// Pie del detalle: Cerrar · Editar · Inactivar · Eliminar siempre en una línea. En pantallas
+// angostas los botones se encogen (texto y relleno) antes que partirse en dos filas.
+.usr-modal__foot--row {
+  flex-wrap: nowrap;
+
+  .btn {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .usr-modal__foot--row {
+    gap: var(--spacing-xs);
+
+    .btn {
+      flex: 1 1 0;
+      padding-inline: var(--spacing-xs);
+      font-size: var(--font-size-xs);
+      justify-content: center;
+
+      lucide-icon { display: none; }
+    }
+  }
+}
+
 .usr-modal__alert {
   flex: none;
   margin: 0 var(--spacing-lg) var(--spacing-md);
@@ -462,6 +571,70 @@
     background: var(--color-error-bg);
     color: var(--color-error);
   }
+
+  &--warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+}
+
+// ── Historial (línea de tiempo) ─────────────────────────────
+.usr-timeline {
+  list-style: none;
+  margin: var(--spacing-sm) 0 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.usr-timeline__item {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+
+  // Hilo que une los puntos; el último no lo lleva.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 14px;
+    bottom: 0;
+    width: 2px;
+    background: var(--color-border);
+  }
+  &:last-child { padding-bottom: 0; }
+  &:last-child::before { display: none; }
+}
+
+.usr-timeline__dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+
+  .usr-timeline__item[data-accion='usuario_inactivado'] & { background: var(--color-warning); }
+  .usr-timeline__item[data-accion='usuario_reactivado'] & { background: var(--color-success); }
+  .usr-timeline__item[data-accion='usuario_eliminado'] & { background: var(--color-error); }
+}
+
+.usr-timeline__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.usr-timeline__accion {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.usr-timeline__meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
 .usr-confirm__lead {

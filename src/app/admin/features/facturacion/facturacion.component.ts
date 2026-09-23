@@ -28,6 +28,10 @@ import { FacturacionService } from '../../data-access/facturacion.service';
 import { Negocio } from '../../models/admin.models';
 import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
 import {
+  NegocioSelector,
+  SelectorNegocioComponent,
+} from '../../../shared/selector-negocio/selector-negocio.component';
+import {
   CatalogosFiscales,
   Declaracion,
   EstadoEmision,
@@ -82,7 +86,7 @@ import {
 @Component({
   selector: 'app-facturacion',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, TelefonoPaisComponent],
+  imports: [FormsModule, LucideAngularModule, TelefonoPaisComponent, SelectorNegocioComponent],
   templateUrl: './facturacion.component.html',
   styleUrl: './facturacion.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -117,6 +121,11 @@ export class FacturacionComponent implements OnInit {
 
   readonly negocios = signal<Negocio[]>([]);
   readonly idNegocio = signal<number | null>(null);
+
+  /** Los chips de negocio. Sin estado por negocio: no hay dato barato de dónde sacarlo. */
+  readonly opcionesNegocio = computed<NegocioSelector[]>(() =>
+    this.negocios().map((n) => ({ id: n.id_negocio, nombre: n.nombre })),
+  );
   readonly ficha = signal<FichaFiscal | null>(null);
   readonly estado = signal<EstadoEmision | null>(null);
   readonly catalogos = signal<CatalogosFiscales>({ departamentos: [], impuestos: [] });

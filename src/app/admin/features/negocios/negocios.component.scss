@@ -870,3 +870,150 @@
     color: var(--color-error, #b91c1c);
   }
 }
+
+// ════════════ Pestañas Activos / Inactivos ════════════
+.neg__tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.neg__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:hover { color: var(--color-text-primary); }
+  &:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm, 6px); }
+
+  &--on {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+}
+
+.neg__tab-count {
+  min-width: 1.5rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover, var(--color-bg));
+  font-size: var(--font-size-xs);
+  text-align: center;
+}
+
+// ════════════ Modal ancho de editar (dos columnas) ════════════
+.neg-modal__card--wide { max-width: 1100px; }
+.neg-modal__card--md { max-width: 560px; }
+
+.neg-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--spacing-xl);
+  align-items: start;
+
+  // Una sola columna en tablet y móvil: lado a lado dejarían los campos demasiado estrechos.
+  @media (max-width: 860px) { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+
+.neg-edit__col { min-width: 0; }
+
+// El primer título de cada columna pega arriba, para que las dos columnas arranquen a la misma altura.
+.neg-modal__section--first { margin-top: var(--spacing-sm); }
+
+// ════════════ Confirmar / eliminar ════════════
+.neg-confirm__motivo { display: block; margin-top: var(--spacing-md); }
+
+.neg-del__warn { margin-bottom: var(--spacing-md); align-items: flex-start; }
+.neg-del__warn lucide-icon { flex-shrink: 0; margin-top: 2px; }
+
+.neg-del__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.neg-del__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
+
+  & + & { border-top: 1px solid var(--color-border); }
+
+  span:first-child { display: flex; flex-direction: column; min-width: 0; }
+  small { color: var(--color-text-secondary); font-size: var(--font-size-xs); }
+}
+
+.neg-del__n { font-variant-numeric: tabular-nums; }
+
+.neg-del__config {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.neg-del__nombre {
+  display: block;
+  margin-top: 2px;
+  padding: 4px var(--spacing-sm);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-bg);
+  user-select: all;
+}
+
+// Tres botones en el pie: en móvil se apilan para que ninguno quede truncado.
+.neg-del__foot { flex-wrap: wrap; }
+
+// ════════════ Línea de tiempo del historial ════════════
+.neg-tl {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--spacing-md);
+  border-left: 2px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.neg-tl__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--spacing-md) - 6px);
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-success, var(--color-primary));
+    border: 2px solid var(--color-surface);
+  }
+
+  &--bad::before { background: var(--color-error); }
+}
+
+.neg-tl__accion { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-primary); }
+.neg-tl__meta { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
+.neg-tl__motivo { font-size: var(--font-size-xs); color: var(--color-text-secondary); font-style: italic; }

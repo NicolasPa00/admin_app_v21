@@ -17,8 +17,9 @@ import {
 import { PersonasService } from '../../data-access/personas.service';
 import { Ficha360, PersonaResumen } from '../../models/persona.models';
 import { LoadingState } from '../../models/admin.models';
+import { PaginadorComponent } from '../../../shared/paginador/paginador.component';
 
-const LIMIT = 25;
+const LIMIT = 10;
 
 /**
  * PersonasComponent — Ficha 360, entregable visible de la Fase 0.
@@ -38,7 +39,7 @@ const LIMIT = 25;
   selector: 'app-personas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, LucideAngularModule],
+  imports: [FormsModule, DatePipe, LucideAngularModule, PaginadorComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -68,11 +69,9 @@ export class PersonasComponent implements OnInit {
   readonly estadoFicha = signal<LoadingState>('idle');
   readonly ficha = signal<Ficha360 | null>(null);
 
-  readonly limit = LIMIT;
-  readonly pagina = computed(() => Math.floor(this.offset() / LIMIT) + 1);
-  readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.total() / LIMIT)));
-  readonly hayAnterior = computed(() => this.offset() > 0);
-  readonly haySiguiente = computed(() => this.offset() + LIMIT < this.total());
+  /** Filas por página; el paginador lo cambia (10/25/50). */
+  readonly limit = signal(LIMIT);
+  readonly pagina = computed(() => Math.floor(this.offset() / this.limit()) + 1);
 
   ngOnInit(): void {
     this.cargar();
@@ -83,7 +82,7 @@ export class PersonasComponent implements OnInit {
     this.error.set(null);
 
     this.personasService
-      .getPersonas({ q: this.filtroActivo(), limit: LIMIT, offset: this.offset() })
+      .getPersonas({ q: this.filtroActivo(), limit: this.limit(), offset: this.offset() })
       .subscribe({
         next: (page) => {
           this.personas.set(page.personas);
@@ -108,15 +107,14 @@ export class PersonasComponent implements OnInit {
     this.buscar();
   }
 
-  paginaAnterior(): void {
-    if (!this.hayAnterior()) return;
-    this.offset.update((o) => Math.max(0, o - LIMIT));
+  irAPagina(pagina: number): void {
+    this.offset.set((pagina - 1) * this.limit());
     this.cargar();
   }
 
-  paginaSiguiente(): void {
-    if (!this.haySiguiente()) return;
-    this.offset.update((o) => o + LIMIT);
+  cambiarTamano(tamano: number): void {
+    this.limit.set(tamano);
+    this.offset.set(0);
     this.cargar();
   }
 

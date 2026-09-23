@@ -40,7 +40,9 @@
   display: grid;
   grid-template-columns: minmax(16rem, 22rem) 1fr;
   grid-template-rows: auto minmax(0, 1fr);
-  height: calc(100dvh - 8rem);
+  /* `--bdj-extra`: alto de lo que una pantalla anfitriona ponga encima (p. ej. el selector de
+     negocio de WhatsApp), para que la bandeja no se salga del área visible. Sin nada encima, 0. */
+  height: calc(100dvh - 8rem - var(--bdj-extra, 0rem));
   min-height: 26rem;
   border: 1px solid var(--color-border);
   border-radius: 0.875rem;

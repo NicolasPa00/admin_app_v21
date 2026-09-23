@@ -15,6 +15,18 @@
     </button>
   </header>
 
+  <!-- Pestañas: un negocio inactivo no desaparece, pasa a «Inactivos» y desde ahí se reactiva -->
+  <div class="neg__tabs" role="tablist" aria-label="Estado del negocio">
+    <button type="button" role="tab" class="neg__tab" [class.neg__tab--on]="tab() === 'A'"
+            [attr.aria-selected]="tab() === 'A'" (click)="setTab('A')">
+      Activos <span class="neg__tab-count">{{ totalActivos() }}</span>
+    </button>
+    <button type="button" role="tab" class="neg__tab" [class.neg__tab--on]="tab() === 'I'"
+            [attr.aria-selected]="tab() === 'I'" (click)="setTab('I')">
+      Inactivos <span class="neg__tab-count">{{ totalInactivos() }}</span>
+    </button>
+  </div>
+
   <!-- Filtros -->
   <div class="neg__filters">
     <div class="neg__search">
@@ -28,11 +40,6 @@
         aria-label="Buscar negocios"
       />
     </div>
-    <select class="input neg__select" (change)="onEstado($event)" aria-label="Estado">
-      <option value="A" [selected]="estadoFilter() === 'A'">Activos</option>
-      <option value="I" [selected]="estadoFilter() === 'I'">Inactivos</option>
-      <option value="ALL" [selected]="estadoFilter() === 'ALL'">Todos</option>
-    </select>
     <select class="input neg__select" (change)="onVencimiento($event)" aria-label="Vencimiento del plan">
       <option value="ALL" [selected]="vencimientoFilter() === 'ALL'">Todos los vencimientos</option>
       @for (o of opcionesVencimiento; track o.clave) {
@@ -46,13 +53,6 @@
       }
     </select>
   </div>
-
-  @if (rowError()) {
-    <div class="neg__alert" role="alert">
-      <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
-      <span>{{ rowError() }}</span>
-    </div>
-  }
 
   <!-- Estados -->
   @if (loadingState() === 'loading' || loadingState() === 'idle') {
@@ -72,8 +72,12 @@
   @if (loadingState() === 'success' && filtered().length === 0) {
     <div class="neg__state" role="status">
       <lucide-icon name="building-2" [size]="40" aria-hidden="true" />
-      <p class="neg__state-title">Sin negocios para mostrar</p>
-      <p class="neg__state-desc">Ajusta los filtros o registra un nuevo negocio.</p>
+      <p class="neg__state-title">
+        {{ tab() === 'A' ? 'Sin negocios activos para mostrar' : 'No hay negocios inactivos' }}
+      </p>
+      <p class="neg__state-desc">
+        {{ tab() === 'A' ? 'Ajusta los filtros o registra un nuevo negocio.' : 'Aquí aparecen los negocios que inactives, listos para reactivar.' }}
+      </p>
     </div>
   }
 
@@ -91,7 +95,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (n of filtered(); track n.id_negocio) {
+          @for (n of visibles(); track n.id_negocio) {
             <tr [class.neg__row--inactive]="n.estado === 'I'">
               <td>
                 <div class="neg__biz">
@@ -173,12 +177,27 @@
                   >
                     <lucide-icon name="power" [size]="16" aria-hidden="true" />
                   </button>
+                  <button type="button" class="neg__icon-btn" (click)="abrirHistorial(n)"
+                          title="Historial" aria-label="Ver historial del negocio">
+                    <lucide-icon name="history" [size]="16" aria-hidden="true" />
+                  </button>
+                  <button type="button" class="neg__icon-btn neg__icon-btn--danger"
+                          (click)="pedirEliminar(n)" title="Eliminar" aria-label="Eliminar negocio">
+                    <lucide-icon name="trash-2" [size]="16" aria-hidden="true" />
+                  </button>
                 </div>
               </td>
             </tr>
           }
         </tbody>
       </table>
+      <app-paginador
+        [pagina]="pagina()"
+        [total]="filtered().length"
+        [tamano]="tamano()"
+        (cambiarPagina)="cambiarPagina($event)"
+        (cambiarTamano)="cambiarTamano($event)"
+      />
     </div>
   }
 </div>
@@ -196,7 +215,8 @@
   Cabecera y pie fijos; solo el cuerpo se desplaza, para que los botones no se escondan. -->
 @if (modalMode(); as mode) {
   <div class="neg-modal">
-    <div class="neg-modal__card" role="dialog" aria-modal="true" aria-labelledby="neg-modal-title">
+    <div class="neg-modal__card" [class.neg-modal__card--wide]="mode === 'edit'"
+         role="dialog" aria-modal="true" aria-labelledby="neg-modal-title">
       <header class="neg-modal__head">
         <h2 id="neg-modal-title" class="neg-modal__title">
           {{ mode === 'create' ? 'Registrar negocio' : 'Editar negocio' }}
@@ -449,6 +469,10 @@
 
         <!-- ─── Formulario EDITAR ─── -->
         @if (mode === 'edit' && editForm(); as f) {
+         <!-- Dos columnas (una sola en móvil): datos generales a la izquierda, todo lo del plan a la derecha -->
+         <div class="neg-edit">
+          <section class="neg-edit__col" aria-label="Datos generales">
+          <h3 class="neg-modal__section neg-modal__section--first">Datos generales</h3>
           <div class="neg-form__grid">
             <div class="neg-form__field neg-form__field--full">
               <label class="neg-form__label" for="neg-e-nombre">Nombre del negocio *</label>
@@ -501,8 +525,13 @@
             </div>
           </div>
 
+          <h3 class="neg-modal__section">Historial</h3>
+          <ng-container *ngTemplateOutlet="lineaTiempo" />
+          </section>
+
+          <section class="neg-edit__col" aria-label="Plan">
           <!-- Plan y vigencia: el plan es del negocio, por eso se gestiona aquí, directo -->
-          <h3 class="neg-modal__section">Plan y vigencia</h3>
+          <h3 class="neg-modal__section neg-modal__section--first">Plan y vigencia</h3>
 
           @if (editNegocio(); as n) {
             @if (vencPlan(n.plan); as va) {
@@ -606,7 +635,6 @@
               </button>
             }
           }
-        }
           <!--
             Complementos del plan. Dos cantidades por fila y no una: «asignados» es lo que el
             negocio puede usar y «se cobran» lo que se le factura. La diferencia es cortesía, y
@@ -708,6 +736,9 @@
               </p>
             }
           }
+          </section>
+         </div>
+        }
 
       </div>
 
@@ -783,7 +814,15 @@
           <p class="neg-confirm__lead">
             <strong>{{ n.nombre }}</strong> y sus usuarios perderán acceso a su cuenta hasta que lo reactives.
           </p>
-          <p class="neg-confirm__note">Sus datos, plan y configuración no cambian.</p>
+          <p class="neg-confirm__note">
+            Sus datos, plan y configuración no cambian. Pasa a la pestaña «Inactivos», desde donde se reactiva.
+          </p>
+          <label class="neg-form__label neg-confirm__motivo" for="neg-est-motivo">
+            Motivo <span class="neg-form__optional">(opcional, queda en el historial)</span>
+          </label>
+          <input id="neg-est-motivo" class="input" maxlength="300" [value]="motivoEstado()"
+                 (input)="motivoEstado.set($any($event.target).value)"
+                 placeholder="Ej. dejó de pagar, pidió pausa…" />
         } @else {
           <p class="neg-confirm__lead">
             <strong>{{ n.nombre }}</strong> y sus usuarios podrán volver a entrar a su cuenta.
@@ -814,3 +853,192 @@
     </div>
   </div>
 }
+
+<!-- ════════════ Eliminar negocio: un solo modal con el resumen de lo que se borra ════════════ -->
+@if (eliminarDe(); as n) {
+  <div class="neg-modal" (click)="cancelarEliminar()">
+    <div
+      class="neg-modal__card neg-modal__card--md"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="neg-del-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="neg-modal__head">
+        <div class="neg__user-cell">
+          <span class="neg-confirm__icon neg-confirm__icon--danger" aria-hidden="true">
+            <lucide-icon name="trash-2" [size]="18" />
+          </span>
+          <h2 id="neg-del-title" class="neg-modal__title">Eliminar «{{ n.nombre }}»</h2>
+        </div>
+        <button type="button" class="neg__icon-btn" (click)="cancelarEliminar()"
+                [disabled]="eliminando()" aria-label="Cerrar">
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div class="neg-modal__body">
+        <div class="neg__alert neg-del__warn" role="alert">
+          <lucide-icon name="triangle-alert" [size]="16" aria-hidden="true" />
+          <span>
+            <strong>Es irreversible.</strong> Se borra el negocio con todos sus datos y no hay forma
+            de recuperarlos. Si solo quieres que deje de operar, inactívalo.
+          </span>
+        </div>
+
+        @switch (eliminacionEstado()) {
+          @case ('loading') { <p class="neg-comp__vacio">Calculando lo que se eliminaría…</p> }
+          @case ('error') {
+            <p class="neg-comp__vacio">
+              No se pudo calcular lo que se eliminaría, así que no se puede continuar.
+              <button type="button" class="neg-link" (click)="pedirEliminar(n)">Reintentar</button>
+            </p>
+          }
+          @default {
+            @if (eliminacion(); as e) {
+              <h3 class="neg-modal__section neg-modal__section--first">
+                Personas ({{ e.totales.usuarios }})
+              </h3>
+              @if (e.usuarios.length === 0) {
+                <p class="neg-comp__vacio">Nadie está vinculado a este negocio.</p>
+              } @else {
+                <ul class="neg-del__lista">
+                  @for (u of e.usuarios; track u.id_usuario) {
+                    <li class="neg-del__fila">
+                      <span>
+                        <strong>{{ u.nombre || 'Sin nombre' }}</strong>
+                        <small>{{ u.identificacion }}</small>
+                      </span>
+                      <span class="es-badge" [class.es-badge--error]="u.accion === 'eliminar'" [class.es-badge--info]="u.accion === 'desvincular'">
+                        @if (u.accion === 'eliminar') {
+                          Se elimina
+                        } @else {
+                          Se desvincula · sigue en {{ u.otros_negocios > 0 ? u.otros_negocios + (u.otros_negocios === 1 ? ' otro negocio' : ' otros negocios') : 'la plataforma' }}
+                        }
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <h3 class="neg-modal__section">
+                Datos del negocio ({{ e.totales.filas_operativas }} filas)
+              </h3>
+              @if (datosOperativos().length === 0) {
+                <p class="neg-comp__vacio">Sin pedidos, citas, caja ni otros datos de operación.</p>
+              } @else {
+                <ul class="neg-del__lista">
+                  @for (d of datosOperativos(); track d.tabla) {
+                    <li class="neg-del__fila">
+                      <span>{{ d.etiqueta }}</span>
+                      <strong class="neg-del__n">{{ d.filas }}</strong>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <h3 class="neg-modal__section">
+                Configuración ({{ e.totales.filas_configuracion }} filas)
+              </h3>
+              @if (datosConfig().length === 0) {
+                <p class="neg-comp__vacio">Sin configuración.</p>
+              } @else {
+                <p class="neg-del__config">
+                  @for (d of datosConfig(); track d.tabla; let ultimo = $last) {
+                    {{ d.etiqueta }} ({{ d.filas }}){{ ultimo ? '.' : ' · ' }}
+                  }
+                </p>
+              }
+
+              <label class="neg-form__label neg-confirm__motivo" for="neg-del-confirm">
+                Para confirmar, escribe el nombre exacto del negocio:
+                <strong class="neg-del__nombre">{{ n.nombre }}</strong>
+              </label>
+              <input
+                id="neg-del-confirm"
+                class="input"
+                autocomplete="off"
+                spellcheck="false"
+                [value]="confirmacionTexto()"
+                (input)="onConfirmacion($event)"
+                [disabled]="eliminando()"
+                [placeholder]="n.nombre"
+              />
+            }
+          }
+        }
+      </div>
+
+      <footer class="neg-modal__foot neg-del__foot">
+        <button type="button" class="btn btn--outline" (click)="cancelarEliminar()" [disabled]="eliminando()">
+          Cancelar
+        </button>
+        @if (n.estado === 'A') {
+          <button type="button" class="btn btn--secondary" (click)="inactivarEnVezDeEliminar()" [disabled]="eliminando()">
+            <lucide-icon name="power" [size]="16" aria-hidden="true" /> Inactivar en su lugar
+          </button>
+        }
+        <button type="button" class="btn neg-btn--danger" [disabled]="!confirmacionOk() || eliminando()" (click)="confirmarEliminar()">
+          @if (eliminando()) {
+            <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Eliminando…
+          } @else {
+            <lucide-icon name="trash-2" [size]="16" aria-hidden="true" /> Eliminar definitivamente
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Historial del negocio (modal desde la fila) ════════════ -->
+@if (historialDe(); as n) {
+  <div class="neg-modal" (click)="cerrarHistorial()">
+    <div
+      class="neg-modal__card neg-modal__card--md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="neg-his-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="neg-modal__head">
+        <h2 id="neg-his-title" class="neg-modal__title">Historial · {{ n.nombre }}</h2>
+        <button type="button" class="neg__icon-btn" (click)="cerrarHistorial()" aria-label="Cerrar">
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+      <div class="neg-modal__body">
+        <ng-container *ngTemplateOutlet="lineaTiempo" />
+      </div>
+      <footer class="neg-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cerrarHistorial()">Cerrar</button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Línea de tiempo: quién inactivó, reactivó o eliminó, y cuándo. La usan el modal de editar y el de historial. -->
+<ng-template #lineaTiempo>
+  @switch (historialEstado()) {
+    @case ('loading') { <p class="neg-comp__vacio">Cargando historial…</p> }
+    @case ('error') { <p class="neg-comp__vacio">No se pudo cargar el historial.</p> }
+    @default {
+      @if (historial().length === 0) {
+        <p class="neg-comp__vacio">Sin cambios registrados todavía.</p>
+      } @else {
+        <ol class="neg-tl">
+          @for (e of historial(); track e.id_evento) {
+            <li class="neg-tl__item" [class.neg-tl__item--bad]="e.accion === 'negocio_inactivado' || e.accion === 'negocio_eliminado'">
+              <span class="neg-tl__accion">{{ etiquetaEvento(e) }}</span>
+              <span class="neg-tl__meta">
+                {{ e.usuario_nombre || 'Sistema' }} · {{ fechaEvento(e.fecha) }}
+              </span>
+              @if (e.detalle?.motivo; as motivo) {
+                <span class="neg-tl__motivo">«{{ motivo }}»</span>
+              }
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</ng-template>

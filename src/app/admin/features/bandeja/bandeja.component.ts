@@ -8,6 +8,7 @@ import {
   inject,
   signal,
   computed,
+  input,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
+import { PantallaAnchaService } from '../../../core/services/pantalla-ancha.service';
 import {
   ConversacionBandeja,
   ConversacionBandejaDetalle,
@@ -121,6 +123,9 @@ const REFRESCO_MS = 5000;
 export class BandejaComponent implements OnInit, OnDestroy {
   private readonly service = inject(BandejaService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly pantallaAncha = inject(PantallaAnchaService);
+  /** ¿Esta instancia tiene pedido el ancho completo al layout? Para soltarlo una sola vez. */
+  private anchoPedido = false;
   private temporizador: ReturnType<typeof setInterval> | null = null;
 
   /** El contenedor del hilo. Se necesita para bajarlo, no para leerlo. */
@@ -142,6 +147,13 @@ export class BandejaComponent implements OnInit, OnDestroy {
    * recortar enseñaría menos conversaciones de las que hay.
    */
   readonly negocioActivo = signal<number | null>(null);
+
+  /**
+   * Negocio fijado por quien contiene la bandeja (la vista WhatsApp, que ya eligió negocio
+   * arriba). Con él se filtra desde la primera carga y se esconden las pastillas: dos
+   * selectores de negocio en la misma pantalla se contradirían.
+   */
+  readonly negocioFijo = input<number | null>(null);
 
   readonly detalle = signal<ConversacionBandejaDetalle | null>(null);
   readonly estadoDetalle = signal<LoadingState>('idle');
@@ -196,7 +208,9 @@ export class BandejaComponent implements OnInit, OnDestroy {
    * Eran filtros que no filtran nada.
    */
   readonly negocios = signal<NegocioConConversaciones[]>([]);
-  readonly variosNegocios = computed(() => this.negocios().length > 1);
+  readonly variosNegocios = computed(
+    () => this.negocioFijo() === null && this.negocios().length > 1,
+  );
 
   readonly escaladas = computed(() => this.conversaciones().filter((c) => c.escalada).length);
 
@@ -217,15 +231,21 @@ export class BandejaComponent implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
+    const fijo = this.negocioFijo();
+    if (fijo !== null) this.negocioActivo.set(fijo);
     this.cargar();
 
     // En SSR no hay `document` ni sentido en sondear: la página se pinta una vez y se manda.
     if (!isPlatformBrowser(this.platformId)) return;
+    // Dos paneles necesitan el ancho: el layout aparta el menú mientras la bandeja esté a la vista.
+    this.pantallaAncha.pedir();
+    this.anchoPedido = true;
     this.temporizador = setInterval(() => this.refrescar(), REFRESCO_MS);
   }
 
   ngOnDestroy(): void {
     if (this.temporizador) clearInterval(this.temporizador);
+    if (this.anchoPedido) this.pantallaAncha.soltar();
   }
 
   /**

@@ -170,7 +170,7 @@ export interface PlanDisponible {
  *   'sin_cambios' → pidió lo que ya tiene; si había algo pendiente, se canceló
  */
 export interface CambioDePlan {
-  aplica: 'ajuste' | 'renovacion' | 'sin_cambios';
+  aplica: 'ajuste' | 'renovacion' | 'sin_cambios' | 'primer_plan';
   cambio?: boolean;
   mensaje?: string;
   referencia?: string | null;
@@ -219,7 +219,13 @@ export interface ComplementosDelNegocio {
 export interface CobroNegocio {
   id_negocio?: number;
   negocio: string;
-  plan: string;
+  /** `null` mientras el negocio no tiene plan (ver `sin_plan`). */
+  plan: string | null;
+  /**
+   * El negocio no tiene ni suscripción de cobro ni ningún plan vigente. Es el único caso en que
+   * «Mis pagos» ofrece elegir un PRIMER plan en vez de cambiar el que ya tiene.
+   */
+  sin_plan?: boolean;
   /** Plan que está pagando hoy. */
   id_plan?: number;
   ciclo?: CicloCobro;

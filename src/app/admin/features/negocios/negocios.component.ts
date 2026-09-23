@@ -7,10 +7,11 @@ import {
   signal,
   computed,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
-  Check, UserRound, UserPlus, CalendarRange, TriangleAlert,
+  Check, UserRound, UserPlus, CalendarRange, TriangleAlert, Trash2, History,
 } from 'lucide-angular';
 
 import { AuthService } from '../../../auth/data-access/auth.service';
@@ -18,6 +19,8 @@ import { SUPER_ADMIN_ROL } from '../../guards/admin.guard';
 import { NegociosAdminService } from '../../data-access/negocios-admin.service';
 import { PaisesService } from '../../../core/services/paises.service';
 import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
+import { PaginadorComponent, paginar } from '../../../shared/paginador/paginador.component';
+import { ToastService } from '../../../shared/toast/toast.service';
 import { PersonalNegocioComponent } from './personal-negocio/personal-negocio.component';
 import {
   DIAS_PRUEBA, diaBogota, formatearDia, hoyBogota, sumarPeriodo, vigenciaPrevista,
@@ -27,7 +30,7 @@ import {
 } from '../../../core/utils/estado-plan';
 import {
   NegocioAdmin, TipoNegocio, Rubro, Plan, PlanInfo, LoadingState,
-  RegistrarClienteRequest, UsuarioBusqueda,
+  RegistrarClienteRequest, UsuarioBusqueda, EliminacionNegocio, NegocioEventoHistorial,
 } from '../../models/admin.models';
 import { ComplementoNegocio, LimitesNegocio } from '../../models/cobranza.models';
 
@@ -111,14 +114,17 @@ const EMPTY_CREATE: CreateForm = {
   selector: 'app-negocios',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, TelefonoPaisComponent, PersonalNegocioComponent],
+  imports: [
+    LucideAngularModule, TelefonoPaisComponent, PersonalNegocioComponent, PaginadorComponent,
+    NgTemplateOutlet,
+  ],
   providers: [
     {
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
         Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
-        Check, UserRound, UserPlus, CalendarRange, TriangleAlert,
+        Check, UserRound, UserPlus, CalendarRange, TriangleAlert, Trash2, History,
       }),
     },
   ],
@@ -129,6 +135,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
   private readonly service = inject(NegociosAdminService);
   private readonly auth = inject(AuthService);
   private readonly paisesSrv = inject(PaisesService);
+  private readonly toast = inject(ToastService);
 
   protected readonly diasPrueba = DIAS_PRUEBA;
   protected readonly planNinguno = PLAN_NINGUNO;
@@ -211,9 +218,14 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
   // ── Filtros ─────────────────────────────────────────────────
   protected readonly search = signal('');
-  protected readonly estadoFilter = signal<'A' | 'I' | 'ALL'>('A');
+  /** Pestaña: los inactivos no desaparecen, viven en su propia lista y se pueden reactivar. */
+  protected readonly tab = signal<'A' | 'I'>('A');
   protected readonly tipoFilter = signal<string>('ALL');
   protected readonly vencimientoFilter = signal<ClaveVencimiento | 'ALL'>('ALL');
+
+  // ── Paginación (en el cliente) ──────────────────────────────
+  protected readonly pagina = signal(1);
+  protected readonly tamano = signal(10);
 
   // ── Rol ─────────────────────────────────────────────────────
   protected readonly isSuperAdmin = computed(() => {
@@ -330,10 +342,12 @@ export class NegociosComponent implements OnInit, OnDestroy {
           this.limites.set(datos?.limites ?? null);
           this.complementosGuardando.set(false);
           this.complementosOk.set(true);
+          this.toast.exito('Complementos guardados.');
         },
         error: (err) => {
           this.complementosGuardando.set(false);
           this.complementosError.set(err.error?.message ?? 'No se pudieron guardar los complementos.');
+          this.toast.errorHttp(err, 'No se pudieron guardar los complementos.');
         },
       });
   }
@@ -350,9 +364,38 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
   // ── Acción de fila ──────────────────────────────────────────
   protected readonly actionId = signal<number | null>(null);
-  protected readonly rowError = signal<string | null>(null);
   /** Negocio pendiente de confirmar para activar/desactivar (abre el modal). */
   protected readonly confirmEstado = signal<NegocioAdmin | null>(null);
+  /** Por qué se inactiva (opcional); queda en el historial del negocio. */
+  protected readonly motivoEstado = signal('');
+
+  // ── Eliminar ────────────────────────────────────────────────
+  /** Negocio que se está por eliminar; abre el modal. */
+  protected readonly eliminarDe = signal<NegocioAdmin | null>(null);
+  /** Lo que se borraría, calculado por el backend antes de decidir. */
+  protected readonly eliminacion = signal<EliminacionNegocio | null>(null);
+  protected readonly eliminacionEstado = signal<LoadingState>('idle');
+  /** Lo que la persona escribe: tiene que ser el nombre exacto del negocio. */
+  protected readonly confirmacionTexto = signal('');
+  protected readonly eliminando = signal(false);
+
+  /** El botón rojo solo se habilita con el nombre exacto y con el resumen ya cargado. */
+  protected readonly confirmacionOk = computed(() => {
+    const n = this.eliminarDe();
+    return !!n && this.eliminacion() !== null && this.confirmacionTexto().trim() === n.nombre.trim();
+  });
+  protected readonly datosOperativos = computed(
+    () => this.eliminacion()?.datos.filter((d) => d.tipo === 'operativo') ?? [],
+  );
+  protected readonly datosConfig = computed(
+    () => this.eliminacion()?.datos.filter((d) => d.tipo === 'configuracion') ?? [],
+  );
+
+  // ── Historial (línea de tiempo) ─────────────────────────────
+  protected readonly historial = signal<NegocioEventoHistorial[]>([]);
+  protected readonly historialEstado = signal<LoadingState>('idle');
+  /** Negocio cuyo historial se ve en su propio modal, o null. */
+  protected readonly historialDe = signal<NegocioAdmin | null>(null);
 
   // ── Derivados ───────────────────────────────────────────────
 
@@ -365,12 +408,12 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
   protected readonly filtered = computed<NegocioAdmin[]>(() => {
     const term = this.search().trim().toLowerCase();
-    const estado = this.estadoFilter();
+    const estado = this.tab();
     const tipo = this.tipoFilter();
     const venc = this.vencimientoFilter();
 
     return this._negocios().filter((n) => {
-      if (estado !== 'ALL' && n.estado !== estado) return false;
+      if (n.estado !== estado) return false;
       if (tipo !== 'ALL' && String(n.id_tipo_negocio) !== tipo) return false;
       if (venc !== 'ALL' && this.vencimientos().get(n.id_negocio)?.clave !== venc) return false;
       if (!term) return true;
@@ -381,6 +424,18 @@ export class NegociosComponent implements OnInit, OnDestroy {
       );
     });
   });
+
+  /** Filas de la página actual. */
+  protected readonly visibles = computed(() =>
+    paginar(this.filtered(), this.pagina(), this.tamano()),
+  );
+
+  protected readonly totalActivos = computed(
+    () => this._negocios().filter((n) => n.estado === 'A').length,
+  );
+  protected readonly totalInactivos = computed(
+    () => this._negocios().filter((n) => n.estado === 'I').length,
+  );
 
   /** Criterios de seguridad de la contraseña del admin nuevo (evaluados en vivo). */
   protected readonly passwordChecks = computed(() => {
@@ -470,11 +525,28 @@ export class NegociosComponent implements OnInit, OnDestroy {
   }
 
   // ── Filtros ─────────────────────────────────────────────────
-  protected onSearch(e: Event): void { this.search.set((e.target as HTMLInputElement).value); }
-  protected onEstado(e: Event): void { this.estadoFilter.set((e.target as HTMLSelectElement).value as 'A' | 'I' | 'ALL'); }
-  protected onTipo(e: Event): void { this.tipoFilter.set((e.target as HTMLSelectElement).value); }
+  // Cualquier cambio de filtro vuelve a la página 1: si no, se puede quedar en una página que ya
+  // no existe con el filtro nuevo y la tabla parece vacía.
+  protected onSearch(e: Event): void {
+    this.search.set((e.target as HTMLInputElement).value);
+    this.pagina.set(1);
+  }
+  protected setTab(t: 'A' | 'I'): void {
+    this.tab.set(t);
+    this.pagina.set(1);
+  }
+  protected onTipo(e: Event): void {
+    this.tipoFilter.set((e.target as HTMLSelectElement).value);
+    this.pagina.set(1);
+  }
   protected onVencimiento(e: Event): void {
     this.vencimientoFilter.set((e.target as HTMLSelectElement).value as ClaveVencimiento | 'ALL');
+    this.pagina.set(1);
+  }
+  protected cambiarPagina(p: number): void { this.pagina.set(p); }
+  protected cambiarTamano(t: number): void {
+    this.tamano.set(t);
+    this.pagina.set(1);
   }
 
   // ── Modal: crear ────────────────────────────────────────────
@@ -582,10 +654,16 @@ export class NegociosComponent implements OnInit, OnDestroy {
         };
 
     this.service.registrarCliente(payload).subscribe({
-      next: () => { this.saving.set(false); this.closeModal(); this.load(); },
+      next: () => {
+        this.saving.set(false);
+        this.closeModal();
+        this.load();
+        this.toast.exito(`Negocio «${negocioPayload.nombre}» registrado.`);
+      },
       error: (err) => {
         this.saving.set(false);
         this.formError.set(err.error?.message ?? 'No se pudo registrar el cliente.');
+        this.toast.errorHttp(err, 'No se pudo registrar el cliente.');
       },
     });
   }
@@ -605,6 +683,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
     const plan = this.planDesde(n.plan);
     this.editNegocio.set(n);
     this.cargarComplementos(n.id_negocio);
+    this.cargarHistorial(n.id_negocio);
     this.planForm.set(plan);
     this.planInicial.set({ ...plan });
     this.formError.set(null);
@@ -700,17 +779,26 @@ export class NegociosComponent implements OnInit, OnDestroy {
           : { prueba: true, fecha_inicio: plan.fecha_inicio });
       }),
     ).subscribe({
-      next: () => { this.saving.set(false); this.closeModal(); this.load(); },
+      next: () => {
+        this.saving.set(false);
+        this.closeModal();
+        this.load();
+        this.toast.exito(
+          plan ? `«${f.nombre.trim()}» actualizado y plan cambiado.` : `«${f.nombre.trim()}» actualizado.`,
+        );
+      },
       error: (err) => {
         this.saving.set(false);
         const msg = err.error?.message;
         if (datosGuardados) {
-          this.formError.set(
-            `Los datos del negocio se guardaron, pero el plan no se cambió${msg ? `: ${msg}` : '.'}`,
-          );
+          const texto =
+            `Los datos del negocio se guardaron, pero el plan no se cambió${msg ? `: ${msg}` : '.'}`;
+          this.formError.set(texto);
+          this.toast.aviso(texto);
           this.load();
         } else {
           this.formError.set(msg ?? 'No se pudo actualizar el negocio.');
+          this.toast.errorHttp(err, 'No se pudo actualizar el negocio.');
         }
       },
     });
@@ -726,6 +814,8 @@ export class NegociosComponent implements OnInit, OnDestroy {
     this.editNegocio.set(null);
     this.planForm.set(null);
     this.planInicial.set(null);
+    this.historial.set([]);
+    this.historialEstado.set('idle');
   }
 
   /** ¿El oficio dado es el del negocio en edición? (para marcar la opción). */
@@ -739,6 +829,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
   // sin ningún aviso ni forma de deshacer).
   protected pedirCambioEstado(n: NegocioAdmin): void {
     if (this.actionId() !== null) return;
+    this.motivoEstado.set('');
     this.confirmEstado.set(n);
   }
 
@@ -753,22 +844,144 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
     const nuevo: 'A' | 'I' = n.estado === 'A' ? 'I' : 'A';
     this.actionId.set(n.id_negocio);
-    this.rowError.set(null);
 
-    this.service.setEstado(n.id_negocio, nuevo).subscribe({
+    const motivo = nuevo === 'I' ? this.motivoEstado().trim() : '';
+    this.service.setEstado(n.id_negocio, nuevo, motivo || undefined).subscribe({
       next: () => {
         this._negocios.update((list) =>
           list.map((x) => (x.id_negocio === n.id_negocio ? { ...x, estado: nuevo } : x)),
         );
         this.actionId.set(null);
         this.confirmEstado.set(null);
+        this.ajustarPagina();
+        this.toast.exito(
+          nuevo === 'I'
+            ? `«${n.nombre}» quedó inactivo. Lo encuentras en la pestaña Inactivos.`
+            : `«${n.nombre}» se reactivó.`,
+        );
       },
       error: (err) => {
-        this.rowError.set(err.error?.message ?? 'No se pudo cambiar el estado.');
         this.actionId.set(null);
         this.confirmEstado.set(null);
+        this.toast.errorHttp(err, 'No se pudo cambiar el estado.');
       },
     });
+  }
+
+  // ── Eliminar ─────────────────────────────────────────────────
+  // Definitivo y con todos sus datos: primero se le enseña a quien lo pide qué se llevaría por
+  // delante (el backend lo calcula sin tocar nada) y solo se habilita el botón cuando escribe el
+  // nombre exacto del negocio.
+  protected pedirEliminar(n: NegocioAdmin): void {
+    if (this.eliminando()) return;
+    this.eliminarDe.set(n);
+    this.eliminacion.set(null);
+    this.confirmacionTexto.set('');
+    this.eliminacionEstado.set('loading');
+
+    this.service.getEliminacion(n.id_negocio).subscribe({
+      next: (resumen) => {
+        this.eliminacion.set(resumen);
+        this.eliminacionEstado.set('success');
+      },
+      error: (err) => {
+        this.eliminacionEstado.set('error');
+        this.toast.errorHttp(err, 'No se pudo calcular lo que se eliminaría.');
+      },
+    });
+  }
+
+  protected cancelarEliminar(): void {
+    if (this.eliminando()) return;
+    this.eliminarDe.set(null);
+    this.eliminacion.set(null);
+    this.eliminacionEstado.set('idle');
+    this.confirmacionTexto.set('');
+  }
+
+  protected confirmarEliminar(): void {
+    const n = this.eliminarDe();
+    if (!n || !this.confirmacionOk() || this.eliminando()) return;
+
+    this.eliminando.set(true);
+    this.service.eliminarNegocio(n.id_negocio, this.confirmacionTexto().trim()).subscribe({
+      next: () => {
+        this.eliminando.set(false);
+        this.eliminarDe.set(null);
+        this.eliminacion.set(null);
+        this.confirmacionTexto.set('');
+        this._negocios.update((list) => list.filter((x) => x.id_negocio !== n.id_negocio));
+        this.ajustarPagina();
+        this.toast.exito(`Negocio «${n.nombre}» eliminado.`);
+      },
+      error: (err) => {
+        this.eliminando.set(false);
+        this.toast.errorHttp(err, 'No se pudo eliminar el negocio. No se cambió nada.');
+      },
+    });
+  }
+
+  /** «Inactivar en su lugar»: la salida reversible para quien duda de borrar todo. */
+  protected inactivarEnVezDeEliminar(): void {
+    const n = this.eliminarDe();
+    if (!n || this.eliminando()) return;
+    this.cancelarEliminar();
+    this.pedirCambioEstado(n);
+  }
+
+  protected onConfirmacion(e: Event): void {
+    this.confirmacionTexto.set((e.target as HTMLInputElement).value);
+  }
+
+  // ── Historial ────────────────────────────────────────────────
+  private cargarHistorial(idNegocio: number): void {
+    this.historialEstado.set('loading');
+    this.historial.set([]);
+    this.service.getHistorial(idNegocio).subscribe({
+      next: (eventos) => {
+        this.historial.set(eventos);
+        this.historialEstado.set('success');
+      },
+      error: () => this.historialEstado.set('error'),
+    });
+  }
+
+  protected abrirHistorial(n: NegocioAdmin): void {
+    this.historialDe.set(n);
+    this.cargarHistorial(n.id_negocio);
+  }
+
+  protected cerrarHistorial(): void {
+    this.historialDe.set(null);
+    this.historial.set([]);
+    this.historialEstado.set('idle');
+  }
+
+  protected etiquetaEvento(e: NegocioEventoHistorial): string {
+    switch (e.accion) {
+      case 'negocio_inactivado': return 'Inactivado';
+      case 'negocio_reactivado': return 'Reactivado';
+      case 'negocio_eliminado': return 'Eliminado';
+      case 'usuario_desvinculado': return `Desvinculó a ${e.detalle?.nombre ?? 'una persona'}`;
+      default: return e.accion;
+    }
+  }
+
+  protected fechaEvento(iso: string): string {
+    return new Date(iso).toLocaleString('es-CO', {
+      timeZone: 'America/Bogota',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  /** Si tras quitar filas la página actual quedó vacía, retrocede a la última que existe. */
+  private ajustarPagina(): void {
+    const ultima = Math.max(1, Math.ceil(this.filtered().length / this.tamano()));
+    if (this.pagina() > ultima) this.pagina.set(ultima);
   }
 
   protected retry(): void { this.load(); }
@@ -812,6 +1025,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
         this.rubros.set(rubros);
         this.planes.set(planes);
         this.loadingState.set('success');
+        this.ajustarPagina();
       },
       error: () => this.loadingState.set('error'),
     });

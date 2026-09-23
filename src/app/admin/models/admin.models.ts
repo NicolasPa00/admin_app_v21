@@ -148,6 +148,12 @@ export interface Negocio {
    * que no lo manda, y entonces no se bloquea nada desde aquí.
    */
   plan?: PlanInfo | null;
+  /**
+   * Features que el plan del negocio habilita (p. ej. `asistente_ia`). Se pregunta por la feature,
+   * nunca por el nombre del plan (ADR-021). Ausente = backend anterior que no lo manda: se trata
+   * como habilitado para no bloquear a nadie.
+   */
+  features?: string[];
 }
 
 export type NegociosResponse = ApiResponse<Negocio[]>;
@@ -212,6 +218,8 @@ export interface UsuarioAdmin {
   num_identificacion: string;
   /** Opcional: el login va por identificación. */
   email: string | null;
+  /** Opcional. Teléfono completo con indicativo (`+573001234567`). */
+  telefono: string | null;
   estado: 'A' | 'I';
   fecha_creacion: string;
   es_admin_principal: boolean;
@@ -267,6 +275,55 @@ export interface NegocioAdmin {
 }
 
 export type NegociosAdminResponse = ApiResponse<NegocioAdmin[]>;
+
+/** Qué le pasaría a una persona al eliminar el negocio. */
+export interface UsuarioEliminacion {
+  id_usuario: number;
+  nombre: string;
+  identificacion: string;
+  /** A cuántos OTROS negocios pertenece. */
+  otros_negocios: number;
+  /** `eliminar`: solo está aquí. `desvincular`: está en otros negocios o tiene rol global. */
+  accion: 'eliminar' | 'desvincular';
+}
+
+/** Filas de una tabla del negocio que se borrarían. */
+export interface DatoEliminacion {
+  tabla: string;
+  etiqueta: string;
+  filas: number;
+  tipo: 'operativo' | 'configuracion';
+}
+
+/** Resumen de `GET /negocios/:id/eliminacion`: todo lo que se llevaría por delante eliminar. */
+export interface EliminacionNegocio {
+  negocio: { id_negocio: number; nombre: string; nit: string | null; estado: 'A' | 'I' };
+  usuarios: UsuarioEliminacion[];
+  datos: DatoEliminacion[];
+  totales: {
+    usuarios: number;
+    usuarios_eliminados: number;
+    usuarios_desvinculados: number;
+    filas_operativas: number;
+    filas_configuracion: number;
+    filas: number;
+  };
+}
+
+/** Un hecho del ciclo de vida de un negocio (`GET /negocios/:id/historial`). */
+export interface NegocioEventoHistorial {
+  id_evento: number;
+  fecha: string;
+  accion:
+    | 'negocio_inactivado'
+    | 'negocio_reactivado'
+    | 'negocio_eliminado'
+    | string;
+  resultado: string;
+  id_usuario: number | null;
+  usuario_nombre: string | null;
+  detalle: { nombre?: string; motivo?: string; id_usuario?: number } | null;
+}
 
 /** Datos del usuario administrador a crear junto con el negocio. */
 export interface AdminUsuarioNuevo {
@@ -343,8 +400,31 @@ export interface UpdateUsuarioPerfilRequest {
   num_identificacion: string;
   /** Opcional: `null` deja al usuario sin correo. */
   email: string | null;
+  /** Opcional: `null` deja al usuario sin teléfono. */
+  telefono?: string | null;
   /** Solo se envía si el admin quiere cambiar la contraseña. */
   password?: string;
+}
+
+/** Acciones auditadas sobre un usuario (`audit_evento.accion`, módulo `usuarios`). */
+export type UsuarioHistorialAccion =
+  | 'usuario_creado'
+  | 'usuario_editado'
+  | 'usuario_inactivado'
+  | 'usuario_reactivado'
+  | 'usuario_eliminado';
+
+/** Una línea del historial de un usuario. GET /admin/usuarios/admin/:id/historial */
+export interface UsuarioHistorialEvento {
+  id_evento: string;
+  fecha: string;
+  accion: UsuarioHistorialAccion | string;
+  resultado: string;
+  id_actor: number | null;
+  /** Quién hizo la acción (el actor, no el usuario afectado). */
+  actor_nombre: string | null;
+  /** Solo en `usuario_editado`: qué campos cambiaron. */
+  cambios: string[] | null;
 }
 
 /** Filtros aceptados por GET /admin/usuarios/admin. */

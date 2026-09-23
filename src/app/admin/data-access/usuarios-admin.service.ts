@@ -9,6 +9,7 @@ import {
   UsuariosAdminResponse,
   UsuariosAdminFiltros,
   UpdateUsuarioPerfilRequest,
+  UsuarioHistorialEvento,
   Plan,
   PlanesResponse,
 } from '../models/admin.models';
@@ -18,7 +19,8 @@ import {
  *
  * Endpoints (admin_ws):
  *   GET   /admin/usuarios/admin            (filtros: search, id_rol, id_negocio, estado)
- *   PATCH /admin/usuarios/admin/:id/estado (suspender / reactivar)
+ *   PATCH /admin/usuarios/admin/:id/estado (inactivar / reactivar)
+ *   GET   /admin/usuarios/admin/:id/historial (auditoría del usuario)
  */
 @Injectable({ providedIn: 'root' })
 export class UsuariosAdminService {
@@ -42,7 +44,7 @@ export class UsuariosAdminService {
       .pipe(map((res) => res.data ?? []));
   }
 
-  /** Cambia el estado de un usuario (A = activo, I = suspendido). */
+  /** Cambia el estado de un usuario (A = activo, I = inactivo). */
   setEstado(idUsuario: number, estado: 'A' | 'I'): Observable<void> {
     return this.http
       .patch<ApiResponse>(`${this.API}/usuarios/admin/${idUsuario}/estado`, { estado })
@@ -52,12 +54,21 @@ export class UsuariosAdminService {
   /**
    * Elimina un usuario. No borra su fila —los pedidos y los turnos de caja tienen que poder
    * decir quién los hizo—, pero lo saca de toda la plataforma y libera su correo y su cédula
-   * para poder volver a darlo de alta. A diferencia de suspender, no tiene vuelta atrás.
+   * para poder volver a darlo de alta. A diferencia de inactivar, no tiene vuelta atrás.
    */
   eliminarUsuario(idUsuario: number): Observable<void> {
     return this.http
       .delete<ApiResponse>(`${this.API}/usuarios/admin/${idUsuario}`)
       .pipe(map(() => undefined));
+  }
+
+  /** Quién creó, editó, inactivó, reactivó o eliminó al usuario, y cuándo (más reciente primero). */
+  getHistorial(idUsuario: number): Observable<UsuarioHistorialEvento[]> {
+    return this.http
+      .get<ApiResponse<UsuarioHistorialEvento[]>>(
+        `${this.API}/usuarios/admin/${idUsuario}/historial`,
+      )
+      .pipe(map((res) => res.data ?? []));
   }
 
   /** Actualiza los datos de perfil de un usuario (nombre → contraseña). */

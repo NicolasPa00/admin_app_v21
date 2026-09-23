@@ -75,7 +75,7 @@
         class="input" type="search" placeholder="Buscar negocio…"
         [value]="busqueda()"
         (input)="busqueda.set($any($event.target).value)"
-        (keydown.enter)="cargar()"
+        (keydown.enter)="aplicarFiltros()"
         aria-label="Buscar negocio"
       />
     </label>
@@ -83,7 +83,7 @@
     <!-- [selected] por opción, no [value] en el select: con @for, el value se aplica antes de
          que existan las opciones y no selecciona nada. -->
     <select class="input cob__select" aria-label="Filtrar por estado"
-            (change)="fEstado.set($any($event.target).value); cargar()">
+            (change)="fEstado.set($any($event.target).value); aplicarFiltros()">
       <option value="" [selected]="fEstado() === ''">Todos los estados</option>
       @for (o of opcionesEstado; track o.valor) {
         <option [value]="o.valor" [selected]="fEstado() === o.valor">{{ o.etiqueta }}</option>
@@ -94,12 +94,6 @@
   </div>
 
   <!-- Avisos -->
-  @if (aviso(); as texto) {
-    <p class="cob__aviso" role="status">
-      <lucide-icon name="check-circle-2" [size]="16" aria-hidden="true" />
-      {{ texto }}
-    </p>
-  }
   @if (linkPago(); as url) {
     <p class="cob__aviso" role="status">
       <lucide-icon name="credit-card" [size]="16" aria-hidden="true" />
@@ -144,7 +138,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (fila of cartera(); track fila.id_suscripcion) {
+          @for (fila of filasPagina(); track fila.id_suscripcion) {
             <tr class="cob__fila" [class.is-open]="expandido() === fila.id_negocio">
               <td>
                 <button type="button" class="cob__toggle"
@@ -377,6 +371,13 @@
           }
         </tbody>
       </table>
+      <app-paginador
+        [pagina]="pagina()"
+        [total]="cartera().length"
+        [tamano]="tamano()"
+        (cambiarPagina)="irAPagina($event)"
+        (cambiarTamano)="cambiarTamano($event)"
+      />
     </div>
   }
 </div>

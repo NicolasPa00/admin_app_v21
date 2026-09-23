@@ -8,6 +8,15 @@
     <p class="mp__subtitle">La mensualidad de EscalApp de tus negocios</p>
   </header>
 
+  <!-- Varios negocios: un chip por cada uno. Con uno solo no se dibuja nada. -->
+  <app-selector-negocio
+    idBase="mp-neg"
+    [conPanel]="true"
+    [negocios]="opcionesNegocio()"
+    [seleccionado]="idActivo()"
+    (cambiar)="elegirNegocio($event)"
+  />
+
   <!--
     Vuelta del checkout, sin salir de la sesión. Cada mensaje dice lo que el backend confirmó con
     la pasarela, no lo que suponemos por haber vuelto.
@@ -61,15 +70,64 @@
     </p>
   }
 
-  @for (c of vistas(); track c.id_negocio ?? c.negocio) {
-    <section class="mp__negocio">
+  @for (c of visibles(); track idDe(c)) {
+    <section
+      class="mp__negocio"
+      [attr.role]="variosNegocios() ? 'tabpanel' : null"
+      [attr.id]="variosNegocios() ? 'mp-neg-panel-' + idDe(c) : null"
+      [attr.aria-labelledby]="variosNegocios() ? 'mp-neg-tab-' + idDe(c) : null"
+    >
       <header class="mp__negocio-head">
         <div class="mp__negocio-titulo">
           <h2>{{ c.negocio }}</h2>
-          <span class="mp__meta">{{ c.plan }}</span>
+          @if (c.plan) { <span class="mp__meta">{{ c.plan }}</span> }
         </div>
-        <span [class]="'mp__chip mp__chip--' + c.vencimiento.tono">{{ c.vencimiento.etiqueta }}</span>
+        @if (c.sin_plan) {
+          <span class="mp__chip mp__chip--warning">Sin plan</span>
+        } @else {
+          <span [class]="'mp__chip mp__chip--' + c.vencimiento.tono">{{ c.vencimiento.etiqueta }}</span>
+        }
       </header>
+
+      <!--
+        Sin plan ni suscripción: no hay vigencia que mostrar ni cobro que pagar. Lo único que se
+        puede hacer es elegir el primero, y al elegirlo el negocio pasa al flujo de siempre.
+      -->
+      @if (c.sin_plan) {
+        <div class="mp__sinplan" role="status">
+          <h3 class="mp__sinplan-titulo">
+            <lucide-icon name="alert-circle" [size]="18" aria-hidden="true" />
+            Este negocio aún no tiene plan
+          </h3>
+          <p class="mp__meta">
+            Elige uno para empezar. Te generamos el cobro del primer mes y, cuando lo pagues, tu
+            negocio queda activo.
+          </p>
+
+          @if (!c.planes?.length) {
+            <p class="mp__meta">No hay planes disponibles para tu negocio por ahora.</p>
+          } @else {
+            <ul class="mp__planes">
+              @for (p of c.planes; track p.id_plan) {
+                <li class="mp__plan-item">
+                  <div>
+                    <strong>{{ p.nombre }}</strong>
+                    <span class="mp__meta">{{ dinero(p.precio, p.moneda) }} al mes</span>
+                  </div>
+                  <button type="button" class="btn btn--primary btn--sm"
+                          [disabled]="eligiendoPlan() !== null"
+                          (click)="elegirPrimerPlan(c, p)">
+                    @if (eligiendoPlan() === p.id_plan) {
+                      <lucide-icon name="loader-2" [size]="14" class="mp__spin" aria-hidden="true" />
+                    }
+                    Elegir este plan
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      } @else {
 
       <!-- Una sola fecha, la que importa: cuándo vence o venció el plan. -->
       <p class="mp__vigencia" [class.mp__vigencia--alerta]="!estaAlDia(c.vencimiento)">
@@ -406,6 +464,7 @@
         </article>
       }
 
+      }
       }
     </section>
   }

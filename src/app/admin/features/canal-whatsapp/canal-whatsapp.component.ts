@@ -6,10 +6,16 @@ import {
   computed,
   inject,
   signal,
+  input,
+  output,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import {
+  NegocioSelector,
+  SelectorNegocioComponent,
+} from '../../../shared/selector-negocio/selector-negocio.component';
 import {
   LucideAngularModule,
   LUCIDE_ICONS,
@@ -68,7 +74,7 @@ declare global {
 @Component({
   selector: 'app-canal-whatsapp',
   standalone: true,
-  imports: [FormsModule, RouterLink, LucideAngularModule],
+  imports: [FormsModule, RouterLink, LucideAngularModule, SelectorNegocioComponent],
   templateUrl: './canal-whatsapp.component.html',
   styleUrl: './canal-whatsapp.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,7 +107,35 @@ export class CanalWhatsappComponent implements OnInit {
 
   readonly negocios = signal<Negocio[]>([]);
   readonly idNegocio = signal<number | null>(null);
+
+  /** Negocio con el que arrancar; lo pasa la vista WhatsApp cuando ya lo eligió arriba. */
+  readonly negocioInicial = input<number | null>(null);
+  /** La vista WhatsApp tiene su propio selector: aquí se esconde para no tener dos. */
+  readonly ocultarSelector = input(false);
+  /** La vista WhatsApp pinta el título y el subtítulo ella misma, para poner los chips debajo. */
+  readonly ocultarEncabezado = input(false);
+  /** Avisa el estado tras cada consulta, conectar o desconectar, para que el contenedor cambie de vista. */
+  readonly estadoCambio = output<{ idNegocio: number; conectado: boolean }>();
   readonly estadoCanal = signal<EstadoCanalWhatsapp | null>(null);
+
+  /**
+   * Chips de la pantalla suelta. Solo del negocio abierto se sabe si está conectado (una consulta
+   * por negocio serían N llamadas); los demás van en neutro.
+   */
+  readonly opcionesNegocio = computed<NegocioSelector[]>(() =>
+    this.negocios().map((n) => {
+      if (n.id_negocio !== this.idNegocio() || this.estadoCanal() === null) {
+        return { id: n.id_negocio, nombre: n.nombre };
+      }
+      const ok = this.conectado();
+      return {
+        id: n.id_negocio,
+        nombre: n.nombre,
+        estado: ok ? 'ok' : 'aviso',
+        titulo: ok ? 'WhatsApp activo' : 'Aún sin WhatsApp',
+      } satisfies NegocioSelector;
+    }),
+  );
 
   readonly negocioActual = computed(() => this.negocios().find((n) => n.id_negocio === this.idNegocio()));
 
@@ -130,7 +164,9 @@ export class CanalWhatsappComponent implements OnInit {
       next: (negocios) => {
         this.negocios.set(negocios);
         if (negocios.length > 0) {
-          this.seleccionar(negocios[0].id_negocio);
+          const inicial = this.negocioInicial();
+          const existe = negocios.some((n) => n.id_negocio === inicial);
+          this.seleccionar(existe && inicial !== null ? inicial : negocios[0].id_negocio);
         } else {
           this.cargando.set(false);
         }
@@ -152,6 +188,7 @@ export class CanalWhatsappComponent implements OnInit {
       next: (estado) => {
         this.estadoCanal.set(estado);
         this.cargando.set(false);
+        this.estadoCambio.emit({ idNegocio, conectado: estado?.conectado === true });
       },
       error: (err) => {
         this.error.set(err?.error?.message ?? 'No se pudo consultar el estado del canal.');

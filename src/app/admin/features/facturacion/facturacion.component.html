@@ -16,23 +16,16 @@
         Los datos que la DIAN exige para emitir documentos a nombre de tu negocio.
       </p>
     </div>
-
-    @if (negocios().length > 1) {
-      <label class="fac__selector">
-        <span class="fac__selector-label">Negocio</span>
-        <select
-          class="fac__input"
-          [ngModel]="idNegocio()"
-          (ngModelChange)="seleccionar(+$event)"
-          name="negocio"
-        >
-          @for (n of negocios(); track trackNegocio($index, n)) {
-            <option [value]="n.id_negocio">{{ n.nombre }}</option>
-          }
-        </select>
-      </label>
-    }
   </header>
+
+  <!-- Varios negocios: un chip por cada uno, el mismo de Mis pagos y WhatsApp. El punto va
+       neutro: el estado fiscal de cada negocio no viene en la lista y pedirlo serían N llamadas. -->
+  <app-selector-negocio
+    idBase="fac-neg"
+    [negocios]="opcionesNegocio()"
+    [seleccionado]="idNegocio()"
+    (cambiar)="seleccionar($event)"
+  />
 
   @if (error()) {
     <div class="fac__alerta fac__alerta--error" role="alert">

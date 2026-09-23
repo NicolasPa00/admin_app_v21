@@ -16,6 +16,8 @@ import {
   Plan,
   PlanesResponse,
   UsuarioBusqueda,
+  NegocioEventoHistorial,
+  EliminacionNegocio,
 } from '../models/admin.models';
 import { ComplementosDeNegocio } from '../models/cobranza.models';
 
@@ -27,6 +29,9 @@ import { ComplementosDeNegocio } from '../models/cobranza.models';
  *   POST  /admin/negocios/registrar-cliente (negocio + plan + admin, transaccional)
  *   PUT   /admin/negocios/:id               (editar)
  *   PATCH /admin/negocios/:id/estado        (activar / desactivar)
+ *   GET   /admin/negocios/:id/eliminacion   (previsualiza qué se borraría)
+ *   DELETE /admin/negocios/:id              (elimina con todos sus datos; body { confirmacion })
+ *   GET   /admin/negocios/:id/historial     (línea de tiempo)
  *   GET   /admin/tipos-negocio · GET /admin/planes (catálogos)
  */
 @Injectable({ providedIn: 'root' })
@@ -54,10 +59,37 @@ export class NegociosAdminService {
       .pipe(map(() => undefined));
   }
 
-  setEstado(idNegocio: number, estado: 'A' | 'I'): Observable<void> {
+  /** Activa o inactiva. `motivo` (opcional) queda en el historial del negocio. */
+  setEstado(idNegocio: number, estado: 'A' | 'I', motivo?: string): Observable<void> {
     return this.http
-      .patch<ApiResponse>(`${this.API}/negocios/${idNegocio}/estado`, { estado })
+      .patch<ApiResponse>(`${this.API}/negocios/${idNegocio}/estado`, {
+        estado,
+        ...(motivo ? { motivo } : {}),
+      })
       .pipe(map(() => undefined));
+  }
+
+  /** Todo lo que se llevaría por delante eliminar el negocio. No modifica nada. */
+  getEliminacion(idNegocio: number): Observable<EliminacionNegocio> {
+    return this.http
+      .get<ApiResponse<EliminacionNegocio>>(`${this.API}/negocios/${idNegocio}/eliminacion`)
+      .pipe(map((res) => res.data as EliminacionNegocio));
+  }
+
+  /**
+   * Elimina el negocio con TODOS sus datos, de forma definitiva. `confirmacion` es el nombre
+   * exacto del negocio, que el backend vuelve a comprobar (400 `CONFIRMACION_INVALIDA`).
+   */
+  eliminarNegocio(idNegocio: number, confirmacion: string): Observable<void> {
+    return this.http
+      .delete<ApiResponse>(`${this.API}/negocios/${idNegocio}`, { body: { confirmacion } })
+      .pipe(map(() => undefined));
+  }
+
+  getHistorial(idNegocio: number): Observable<NegocioEventoHistorial[]> {
+    return this.http
+      .get<ApiResponse<NegocioEventoHistorial[]>>(`${this.API}/negocios/${idNegocio}/historial`)
+      .pipe(map((res) => res.data ?? []));
   }
 
   getTipos(): Observable<TipoNegocio[]> {

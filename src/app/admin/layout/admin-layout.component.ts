@@ -47,8 +47,10 @@ import {
 
 import { AuthService } from '../../auth/data-access/auth.service';
 import { AssetService } from '../../core/services/asset.service';
+import { PantallaAnchaService } from '../../core/services/pantalla-ancha.service';
 import { NotificacionesBellComponent } from '../features/notificaciones/notificaciones-bell.component';
 import { SUPER_ADMIN_ROL } from '../guards/admin.guard';
+import { ToastHostComponent } from '../../shared/toast/toast-host.component';
 import { environment } from '../../../environments/environment';
 
 interface NavItem {
@@ -86,6 +88,7 @@ const PLAN_AVISO_KEY = 'admin_plan_aviso_oculto';
     RouterLinkActive,
     LucideAngularModule,
     NotificacionesBellComponent,
+    ToastHostComponent,
   ],
   providers: [
     {
@@ -107,6 +110,7 @@ export class AdminLayoutComponent {
   protected readonly assets = inject(AssetService);
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly pantallaAncha = inject(PantallaAnchaService);
 
   // ── Navegación ──────────────────────────────────────────────
   private readonly navItems: NavItem[] = [
@@ -229,17 +233,17 @@ export class AdminLayoutComponent {
    *
    * Son dos paneles —lista y hilo— dentro de un área que ya comparte con el sidebar: con el menú
    * abierto, la columna del chat se queda sin sitio y las burbujas se parten en tres renglones.
-   * Es la única pantalla del panel con esa forma, así que el colapso va por **lista blanca**: la
-   * siguiente pantalla normal no tiene por qué acordarse de este archivo.
+   *
+   * No se decide por la URL: `/admin/whatsapp` también enseña la vista de conexión del número,
+   * que es una pantalla normal y no tenía por qué colapsar nada. Lo pide quien lo necesita
+   * (`PantallaAnchaService`, hoy la Bandeja) mientras está en pantalla, y aquí solo se obedece.
    *
    * No es una imposición permanente: el botón del sidebar sigue funcionando dentro de la
    * sección, y al salir vuelve lo que el usuario tenía. Solo un clic suyo cambia la preferencia.
    */
   private readonly colapsoAutomatico = effect(() => {
-    const url = this.currentUrl().split('?')[0];
-    // Solo `/admin/whatsapp` (las conversaciones), no `/admin/whatsapp/numero`.
-    const enChat = url.replace(/\/$/, '').endsWith('/admin/whatsapp');
-    untracked(() => this.collapsed.set(enChat ? true : this.preferenciaColapsado()));
+    const pide = this.pantallaAncha.pide();
+    untracked(() => this.collapsed.set(pide ? true : this.preferenciaColapsado()));
   });
 
   /**

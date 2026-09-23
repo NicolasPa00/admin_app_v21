@@ -6,34 +6,32 @@
   del componente.
 -->
 <section class="cw">
-  <header class="cw__head">
-    <div>
-      <h1 class="cw__title">
-        <lucide-icon name="message-circle" [size]="20"></lucide-icon>
-        Conectar WhatsApp
-      </h1>
-      <p class="cw__sub">
-        Así llega el asistente a tus clientes por WhatsApp — automatizado, respondiendo pedidos y
-        citas por ti.
-      </p>
-    </div>
+  @if (!ocultarEncabezado()) {
+    <header class="cw__head">
+      <div>
+        <h1 class="cw__title">
+          <lucide-icon name="message-circle" [size]="20"></lucide-icon>
+          Conectar WhatsApp
+        </h1>
+        <p class="cw__sub">
+          Así llega el asistente a tus clientes por WhatsApp — automatizado, respondiendo pedidos y
+          citas por ti.
+        </p>
+      </div>
+    </header>
+  }
 
-    @if (negocios().length > 1) {
-      <label class="cw__selector">
-        <span class="cw__selector-label">Negocio</span>
-        <select
-          class="cw__input"
-          [ngModel]="idNegocio()"
-          (ngModelChange)="seleccionar(+$event)"
-          name="negocio"
-        >
-          @for (n of negocios(); track trackNegocio($index, n)) {
-            <option [value]="n.id_negocio">{{ n.nombre }}</option>
-          }
-        </select>
-      </label>
-    }
-  </header>
+  <!-- Título → subtítulo → chips → tarjetas. Suelta (/admin/whatsapp/numero) trae sus propios
+       chips; dentro de la vista WhatsApp los pone el contenedor, que sabe el estado de todos, y
+       este componente solo pinta las tarjetas (ocultarEncabezado + ocultarSelector). -->
+  @if (!ocultarSelector()) {
+    <app-selector-negocio
+      idBase="cw-neg"
+      [negocios]="opcionesNegocio()"
+      [seleccionado]="idNegocio()"
+      (cambiar)="seleccionar($event)"
+    />
+  }
 
   @if (error()) {
     <div class="cw__alerta cw__alerta--error" role="alert">

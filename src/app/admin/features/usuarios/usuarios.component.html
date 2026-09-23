@@ -11,10 +11,34 @@
     </div>
     @if (loadingState() === 'success') {
       <span class="usr__count">
-        {{ filtered().length }} de {{ administradores().length }}
+        {{ filtered().length }} de {{ tab() === 'A' ? totalActivos() : totalInactivos() }}
       </span>
     }
   </header>
+
+  <!-- Pestañas: Activos / Inactivos -->
+  <div class="usr__tabs" role="tablist" aria-label="Estado del usuario">
+    <button
+      type="button"
+      role="tab"
+      class="usr__tab"
+      [class.usr__tab--on]="tab() === 'A'"
+      [attr.aria-selected]="tab() === 'A'"
+      (click)="onTab('A')"
+    >
+      Activos <span class="usr__tab-count">{{ totalActivos() }}</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      class="usr__tab"
+      [class.usr__tab--on]="tab() === 'I'"
+      [attr.aria-selected]="tab() === 'I'"
+      (click)="onTab('I')"
+    >
+      Inactivos <span class="usr__tab-count">{{ totalInactivos() }}</span>
+    </button>
+  </div>
 
   <!-- Filtros -->
   <div class="usr__filters">
@@ -29,16 +53,6 @@
         aria-label="Buscar usuarios"
       />
     </div>
-    <select
-      class="input usr__select"
-      [value]="estadoFilter()"
-      (change)="onEstado($event)"
-      aria-label="Filtrar por estado"
-    >
-      <option value="A">Activos</option>
-      <option value="I">Suspendidos</option>
-      <option value="ALL">Todos</option>
-    </select>
     <select
       class="input usr__select"
       (change)="onPlanFilter($event)"
@@ -83,8 +97,10 @@
   @if (loadingState() === 'success' && filtered().length === 0) {
     <div class="usr__state" role="status">
       <lucide-icon name="users" [size]="40" aria-hidden="true" />
-      <p class="usr__state-title">Sin usuarios para mostrar</p>
-      <p class="usr__state-desc">Ajusta la búsqueda o el filtro de estado.</p>
+      <p class="usr__state-title">
+        {{ tab() === 'A' ? 'Sin usuarios activos para mostrar' : 'No hay usuarios inactivos' }}
+      </p>
+      <p class="usr__state-desc">Ajusta la búsqueda o el filtro de plan.</p>
     </div>
   }
 
@@ -104,7 +120,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (u of filtered(); track u.id_usuario) {
+          @for (u of pageRows(); track u.id_usuario) {
             <tr>
               <!-- Usuario -->
               <td>
@@ -167,7 +183,7 @@
                   [class.es-badge--success]="u.estado === 'A'"
                   [class.es-badge--error]="u.estado === 'I'"
                 >
-                  {{ u.estado === 'A' ? 'Activo' : 'Suspendido' }}
+                  {{ u.estado === 'A' ? 'Activo' : 'Inactivo' }}
                 </span>
               </td>
 
@@ -216,14 +232,14 @@
                   <button
                     type="button"
                     class="usr__icon-btn"
-                    [class.usr__icon-btn--danger]="u.estado === 'A'"
+                    [class.usr__icon-btn--warning]="u.estado === 'A'"
                     [class.usr__icon-btn--success]="u.estado !== 'A'"
                     [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
                     (click)="pedirCambioEstado(u)"
                     [title]="u.es_admin_principal
-                      ? 'No se puede suspender al administrador principal'
-                      : (u.estado === 'A' ? 'Suspender' : 'Reactivar')"
-                    [attr.aria-label]="u.estado === 'A' ? 'Suspender usuario' : 'Reactivar usuario'"
+                      ? 'No se puede inactivar al administrador principal'
+                      : (u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar')"
+                    [attr.aria-label]="u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar usuario'"
                   >
                     @if (actionId() === u.id_usuario) {
                       <lucide-icon name="loader-2" [size]="16" class="usr__spin" aria-hidden="true" />
@@ -232,7 +248,7 @@
                     }
                   </button>
 
-                  <!-- Eliminar: deja de existir para todo el sistema. Suspender es reversible;
+                  <!-- Eliminar: deja de existir para todo el sistema. Inactivar es reversible;
                        esto no, y por eso pide confirmación escribiendo. -->
                   <button
                     type="button"
@@ -252,6 +268,13 @@
           }
         </tbody>
       </table>
+      <app-paginador
+        [pagina]="pagina()"
+        [total]="filtered().length"
+        [tamano]="tamano()"
+        (cambiarPagina)="irAPagina($event)"
+        (cambiarTamano)="cambiarTamano($event)"
+      />
     </div>
   }
 
@@ -291,6 +314,10 @@
             <dd>{{ u.email || 'Sin correo' }}</dd>
           </div>
           <div class="usr-modal__row">
+            <dt>Teléfono</dt>
+            <dd>{{ u.telefono || 'Sin teléfono' }}</dd>
+          </div>
+          <div class="usr-modal__row">
             <dt>Estado</dt>
             <dd>
               <span
@@ -298,7 +325,7 @@
                 [class.es-badge--success]="u.estado === 'A'"
                 [class.es-badge--error]="u.estado === 'I'"
               >
-                {{ u.estado === 'A' ? 'Activo' : 'Suspendido' }}
+                {{ u.estado === 'A' ? 'Activo' : 'Inactivo' }}
               </span>
             </dd>
           </div>
@@ -361,26 +388,56 @@
             }
           </ul>
         </section>
+
+        <!-- Historial: quién hizo qué con este usuario y cuándo -->
+        <section class="usr-modal__section">
+          <div class="usr-modal__section-head">
+            <h3 class="usr-modal__section-title">Historial</h3>
+          </div>
+
+          @if (historialEstado() === 'loading') {
+            <p class="usr-modal__hint" aria-busy="true">Cargando historial…</p>
+          } @else if (historialEstado() === 'error') {
+            <p class="usr-modal__hint">No se pudo cargar el historial.</p>
+          } @else if (historial().length === 0) {
+            <p class="usr-modal__hint">Todavía no hay movimientos registrados para este usuario.</p>
+          } @else {
+            <ol class="usr-timeline">
+              @for (e of historial(); track e.id_evento) {
+                <li class="usr-timeline__item" [attr.data-accion]="e.accion">
+                  <span class="usr-timeline__dot" aria-hidden="true"></span>
+                  <div class="usr-timeline__text">
+                    <span class="usr-timeline__accion">{{ historialTexto(e) }}</span>
+                    <span class="usr-timeline__meta">
+                      {{ e.actor_nombre || 'Sistema' }} · {{ historialFecha(e.fecha) }}
+                    </span>
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </section>
       </div>
 
-      <footer class="usr-modal__foot">
+      <footer class="usr-modal__foot usr-modal__foot--row">
         <button type="button" class="btn btn--outline" (click)="closeDetails()">
           Cerrar
         </button>
-        <button type="button" class="btn btn--outline" (click)="openEdit(u)">
+        <button type="button" class="btn btn--primary" (click)="openEdit(u)">
           <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
           Editar
         </button>
         <button
           type="button"
           class="btn"
-          [class.btn--primary]="u.estado !== 'A'"
-          [class.usr-btn--danger]="u.estado === 'A'"
+          [class.usr-btn--warning]="u.estado === 'A'"
+          [class.usr-btn--success]="u.estado !== 'A'"
           [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
+          [title]="u.es_admin_principal ? 'No se puede inactivar al administrador principal' : ''"
           (click)="pedirCambioEstado(u)"
         >
           <lucide-icon name="power" [size]="16" aria-hidden="true" />
-          {{ u.estado === 'A' ? 'Suspender' : 'Reactivar' }}
+          {{ u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar' }}
         </button>
         <button
           type="button"
@@ -410,20 +467,12 @@
       <div class="usr-modal__body">
         <div class="usr-edit__grid">
           <div class="usr-edit__field">
-            <label class="usr-edit__label" for="usr-e-nombre">Primer nombre *</label>
-            <input id="usr-e-nombre" class="input" [value]="f.primer_nombre" (input)="updateEdit('primer_nombre', $event)" />
+            <label class="usr-edit__label" for="usr-e-nombre">Nombre *</label>
+            <input id="usr-e-nombre" class="input" [value]="f.nombre" (input)="updateEdit('nombre', $event)" placeholder="Ej. Juan David" maxlength="100" />
           </div>
           <div class="usr-edit__field">
-            <label class="usr-edit__label" for="usr-e-nombre2">Segundo nombre</label>
-            <input id="usr-e-nombre2" class="input" [value]="f.segundo_nombre" (input)="updateEdit('segundo_nombre', $event)" />
-          </div>
-          <div class="usr-edit__field">
-            <label class="usr-edit__label" for="usr-e-apellido">Primer apellido *</label>
-            <input id="usr-e-apellido" class="input" [value]="f.primer_apellido" (input)="updateEdit('primer_apellido', $event)" />
-          </div>
-          <div class="usr-edit__field">
-            <label class="usr-edit__label" for="usr-e-apellido2">Segundo apellido</label>
-            <input id="usr-e-apellido2" class="input" [value]="f.segundo_apellido" (input)="updateEdit('segundo_apellido', $event)" />
+            <label class="usr-edit__label" for="usr-e-apellido">Apellido *</label>
+            <input id="usr-e-apellido" class="input" [value]="f.apellido" (input)="updateEdit('apellido', $event)" placeholder="Ej. Vela Narvaez" maxlength="100" />
           </div>
           <div class="usr-edit__field">
             <label class="usr-edit__label" for="usr-e-id">Identificación *</label>
@@ -444,6 +493,16 @@
             @if (editEmailInvalido()) {
               <small class="usr-edit__error">Revisa el formato del correo.</small>
             }
+          </div>
+          <div class="usr-edit__field">
+            <label class="usr-edit__label" for="usr-e-tel">
+              Teléfono <span class="usr-edit__optional">(opcional)</span>
+            </label>
+            <app-telefono-pais
+              campoId="usr-e-tel"
+              [valor]="f.telefono"
+              (valorChange)="updateTelefono($event)"
+            />
           </div>
           <div class="usr-edit__field usr-edit__field--full">
             <label class="usr-edit__label" for="usr-e-pass">Nueva contraseña</label>
@@ -498,7 +557,7 @@
   </div>
 }
 
-<!-- ════════════ Confirmar suspender / reactivar ════════════ -->
+<!-- ════════════ Confirmar inactivar / reactivar ════════════ -->
 @if (confirmEstado(); as u) {
   <div class="usr-modal" (click)="cancelarCambioEstado()">
     <div
@@ -513,13 +572,13 @@
         <div class="usr__user-cell">
           <span
             class="usr-confirm__icon"
-            [class.usr-confirm__icon--danger]="u.estado === 'A'"
+            [class.usr-confirm__icon--warning]="u.estado === 'A'"
             aria-hidden="true"
           >
             <lucide-icon name="power" [size]="18" />
           </span>
           <h2 id="usr-est-title" class="usr-modal__name">
-            {{ u.estado === 'A' ? 'Suspender usuario' : 'Reactivar usuario' }}
+            {{ u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar usuario' }}
           </h2>
         </div>
         <button
@@ -553,8 +612,8 @@
         <button
           type="button"
           class="btn"
-          [class.usr-btn--danger]="u.estado === 'A'"
-          [class.btn--primary]="u.estado !== 'A'"
+          [class.usr-btn--warning]="u.estado === 'A'"
+          [class.usr-btn--success]="u.estado !== 'A'"
           [disabled]="actionId() !== null"
           (click)="confirmarCambioEstado()"
         >
@@ -563,7 +622,7 @@
           } @else {
             <lucide-icon name="power" [size]="16" aria-hidden="true" />
           }
-          {{ u.estado === 'A' ? 'Suspender' : 'Reactivar' }}
+          {{ u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar' }}
         </button>
       </footer>
     </div>
@@ -571,7 +630,7 @@
 }
 
 <!-- ════════════ Confirmar eliminar ════════════
-     Suspender es reversible y basta un clic. Esto no lo es: se pide escribir el nombre, que es
+     Inactivar es reversible y basta un clic. Esto no lo es: se pide escribir el nombre, que es
      la forma de que nadie elimine a alguien por pulsar el botón de al lado. -->
 @if (confirmEliminar(); as u) {
   <div class="usr-modal" (click)="cancelarEliminar()">

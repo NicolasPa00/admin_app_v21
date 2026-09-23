@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   PLATFORM_ID,
   computed,
@@ -8,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check, X,
@@ -20,17 +23,32 @@ import {
   ComplementoCliente,
   FacturaPendiente,
   PasarelaElegible,
+  PlanDisponible,
 } from '../../models/cobranza.models';
 import { LoadingState } from '../../models/admin.models';
 import { Vencimiento, evaluarVencimiento } from '../../../core/utils/estado-plan';
 import { hoyBogota } from '../../../core/utils/vigencia';
 import { environment } from '../../../../environments/environment';
+import { ToastService } from '../../../shared/toast/toast.service';
+import {
+  EstadoNegocioSelector,
+  NegocioSelector,
+  SelectorNegocioComponent,
+} from '../../../shared/selector-negocio/selector-negocio.component';
 import {
   MarcaPasarela,
   marcaDe,
   recordarPago,
   tomarPagoEnCurso,
 } from '../../../core/utils/pasarelas';
+
+/** Tono del plan → punto del chip. `info` (plan por iniciar) no dice ni bien ni mal: neutro. */
+const ESTADO_SELECTOR: Record<Vencimiento['tono'], EstadoNegocioSelector> = {
+  success: 'ok',
+  warning: 'aviso',
+  error: 'error',
+  info: 'neutro',
+};
 
 /** Un negocio con su vigencia ya traducida a estado, etiqueta y tono. */
 type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
@@ -57,7 +75,7 @@ type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
   selector: 'app-mis-pagos',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule],
+  imports: [LucideAngularModule, SelectorNegocioComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -73,6 +91,9 @@ type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
 export class MisPagosComponent implements OnInit {
   private readonly api = inject(CobranzaService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly toast = inject(ToastService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly estado = signal<LoadingState>('loading');
   private readonly cobros = signal<CobroNegocio[]>([]);
@@ -82,6 +103,57 @@ export class MisPagosComponent implements OnInit {
   protected readonly vistas = computed<CobroVista[]>(() =>
     this.cobros().map((c) => ({ ...c, vencimiento: evaluarVencimiento(c.vigencia ?? null) })),
   );
+
+  // ── Un negocio por chip ─────────────────────────────────────
+  //
+  // Con varios negocios apilar todo obligaba a recorrer la pantalla entera para llegar al de
+  // abajo. Con uno solo no hay nada que elegir y `app-selector-negocio` no pinta nada.
+
+  /** Id del negocio elegido. Nulo = el primero. */
+  private readonly negocioElegido = signal<number | null>(null);
+
+  /** Id para el selector: el del negocio, o uno negativo estable si el backend no lo manda. */
+  protected idDe(c: CobroVista): number {
+    return c.id_negocio ?? -(this.vistas().indexOf(c) + 1);
+  }
+
+  protected readonly variosNegocios = computed(() => this.vistas().length > 1);
+
+  protected readonly negocioActivo = computed<CobroVista | null>(() => {
+    const lista = this.vistas();
+    return lista.find((c) => this.idDe(c) === this.negocioElegido()) ?? lista[0] ?? null;
+  });
+
+  protected readonly idActivo = computed(() => {
+    const activo = this.negocioActivo();
+    return activo ? this.idDe(activo) : null;
+  });
+
+  /** Lo que se dibuja: todos si es uno solo (sin chips), o solo el del chip activo. */
+  protected readonly visibles = computed<CobroVista[]>(() => {
+    const lista = this.vistas();
+    if (lista.length <= 1) return lista;
+    const activo = this.negocioActivo();
+    return activo ? [activo] : [];
+  });
+
+  /**
+   * Los chips: el punto es el estado del plan de ese negocio; el número, sus cobros pendientes.
+   * Un negocio sin plan lleva punto de aviso y «Sin plan»: no está vencido, le falta contratar.
+   */
+  protected readonly opcionesNegocio = computed<NegocioSelector[]>(() =>
+    this.vistas().map((c) => ({
+      id: this.idDe(c),
+      nombre: c.negocio,
+      estado: c.sin_plan ? 'aviso' : ESTADO_SELECTOR[c.vencimiento.tono],
+      contador: c.facturas.length,
+      titulo: c.sin_plan ? 'Sin plan' : c.vencimiento.etiqueta,
+    })),
+  );
+
+  protected elegirNegocio(id: number): void {
+    this.negocioElegido.set(id);
+  }
 
   // ── Vuelta del checkout ─────────────────────────────────────
   //
@@ -94,6 +166,13 @@ export class MisPagosComponent implements OnInit {
   >(null);
 
   ngOnInit(): void {
+    // `?negocio=<id>` preselecciona ese chip: es a donde llegan los enlaces «Ver planes» de otras
+    // pantallas (WhatsApp). Si el id no es de un negocio de la lista, manda el primero, como siempre.
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((q) => {
+      const id = Number(q.get('negocio'));
+      if (Number.isInteger(id) && id > 0) this.negocioElegido.set(id);
+    });
+
     this.cargar();
     this.confirmarSiVuelveDePagar();
   }
@@ -261,6 +340,7 @@ export class MisPagosComponent implements OnInit {
         next: (r) => {
           this.cambiandoPlan.set(false);
           if (r?.mensaje) this.avisoPlan.set(r.mensaje);
+          this.toast.exito('Guardamos tu cambio de plan.');
           // Si subir generó un cobro, lo siguiente que tiene que hacer es pagarlo: se le lleva
           // a la pestaña donde está, en vez de dejarle buscarlo.
           // Sin plan vigente el cambio se sumó a la mensualidad pendiente: también toca pagarla.
@@ -269,9 +349,37 @@ export class MisPagosComponent implements OnInit {
         },
         error: (err) => {
           this.cambiandoPlan.set(false);
-          this.error.set(this.mensajeDeError(err, 'No se pudo cambiar el plan.'));
+          this.toast.errorHttp(err, 'No se pudo cambiar el plan.');
         },
       });
+  }
+
+  /** Plan en el que se está pulsando «Elegir» en un negocio sin plan (bloquea solo ese botón). */
+  protected readonly eligiendoPlan = signal<number | null>(null);
+
+  /**
+   * Un negocio SIN plan elige el primero. No hay nada que cambiar ni que comparar: el backend crea
+   * la suscripción y genera el cobro del primer mes, y el plan se activa cuando ese cobro se paga.
+   * Por eso, al terminar, se vuelve a cargar y el negocio aparece con su cobro listo para pagar.
+   */
+  protected elegirPrimerPlan(c: CobroVista, plan: PlanDisponible): void {
+    if (!c.id_negocio || this.eligiendoPlan() !== null) return;
+
+    this.eligiendoPlan.set(plan.id_plan);
+    this.error.set(null);
+
+    this.api.cambiarMiPlan(c.id_negocio, { idPlan: plan.id_plan }).subscribe({
+      next: (r) => {
+        this.eligiendoPlan.set(null);
+        this.toast.exito(r?.mensaje ?? `Elegiste el ${plan.nombre}. Págalo para activarlo.`);
+        this.tabs.update((m) => ({ ...m, [c.id_negocio!]: 'pagar' }));
+        this.cargar();
+      },
+      error: (err) => {
+        this.eligiendoPlan.set(null);
+        this.toast.errorHttp(err, 'No se pudo elegir el plan.');
+      },
+    });
   }
 
   /** Cancela lo pedido y sin pagar: se vuelve a lo que el negocio tiene contratado hoy. */
@@ -292,11 +400,12 @@ export class MisPagosComponent implements OnInit {
       next: (r) => {
         this.cambiandoPlan.set(false);
         if (r?.mensaje) this.avisoPlan.set(r.mensaje);
+        this.toast.exito('Cancelamos el cambio que habías pedido.');
         this.cargar();
       },
       error: (err) => {
         this.cambiandoPlan.set(false);
-        this.error.set(this.mensajeDeError(err, 'No se pudo cancelar el cambio.'));
+        this.toast.errorHttp(err, 'No se pudo cancelar el cambio.');
       },
     });
   }
@@ -380,11 +489,11 @@ export class MisPagosComponent implements OnInit {
           if (isPlatformBrowser(this.platformId)) window.location.href = r.urlPago;
           return;
         }
-        this.error.set('No pudimos abrir la página de pago. Intenta de nuevo en unos minutos.');
+        this.toast.error('No pudimos abrir la página de pago. Intenta de nuevo en unos minutos.');
       },
       error: (err) => {
         this.procesando.set(null);
-        this.error.set(this.mensajeDeError(err, 'No pudimos iniciar el pago.'));
+        this.toast.errorHttp(err, 'No pudimos iniciar el pago.');
       },
     });
   }

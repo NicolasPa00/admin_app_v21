@@ -17,6 +17,8 @@ import {
   EstadoSuscripcion, Factura, FilaCartera, IngresoMes, ResumenCobro,
 } from '../../models/cobranza.models';
 import { LoadingState } from '../../models/admin.models';
+import { PaginadorComponent, paginar } from '../../../shared/paginador/paginador.component';
+import { ToastService } from '../../../shared/toast/toast.service';
 
 /** Etiquetas legibles de los estados de suscripción. */
 const ESTADOS: Record<EstadoSuscripcion, string> = {
@@ -45,7 +47,7 @@ const ESTADOS: Record<EstadoSuscripcion, string> = {
   selector: 'app-cobranza',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule],
+  imports: [LucideAngularModule, PaginadorComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -61,18 +63,22 @@ const ESTADOS: Record<EstadoSuscripcion, string> = {
 })
 export class CobranzaComponent implements OnInit {
   private readonly api = inject(CobranzaService);
+  private readonly toast = inject(ToastService);
 
   // ── Estado ──────────────────────────────────────────────
   protected readonly estado = signal<LoadingState>('loading');
   protected readonly cartera = signal<FilaCartera[]>([]);
   protected readonly ingresos = signal<IngresoMes[]>([]);
   protected readonly error = signal<string | null>(null);
-  protected readonly aviso = signal<string | null>(null);
   /** Link de pago devuelto por un cobro que quedó pendiente, para copiárselo al cliente. */
   protected readonly linkPago = signal<string | null>(null);
 
   protected readonly fEstado = signal<EstadoSuscripcion | ''>('');
   protected readonly busqueda = signal('');
+
+  // ── Paginación (en el cliente, sobre lo que devolvió el filtro del servidor) ──
+  private readonly _pagina = signal(1);
+  protected readonly tamano = signal(10);
 
   /** Negocio con el detalle abierto, o null. */
   protected readonly expandido = signal<number | null>(null);
@@ -108,6 +114,16 @@ export class CobranzaComponent implements OnInit {
 
   protected readonly activos = computed(() =>
     this.cartera().filter((f) => f.estado === 'activa' || f.estado === 'trial').length,
+  );
+
+  /** Página efectiva: si al recargar la cartera hay menos filas, baja a la última que exista. */
+  protected readonly pagina = computed(() => {
+    const ultima = Math.max(1, Math.ceil(this.cartera().length / this.tamano()));
+    return Math.min(this._pagina(), ultima);
+  });
+
+  protected readonly filasPagina = computed<FilaCartera[]>(() =>
+    paginar(this.cartera(), this.pagina(), this.tamano()),
   );
 
   /** El mes corriente es el primero: el backend ordena por mes descendente. */
@@ -150,10 +166,25 @@ export class CobranzaComponent implements OnInit {
     });
   }
 
+  /** Cambiar la búsqueda o el estado es otra lista: se vuelve a la página 1. */
+  protected aplicarFiltros(): void {
+    this._pagina.set(1);
+    this.cargar();
+  }
+
   protected limpiarFiltros(): void {
     this.fEstado.set('');
     this.busqueda.set('');
-    this.cargar();
+    this.aplicarFiltros();
+  }
+
+  protected irAPagina(p: number): void {
+    this._pagina.set(p);
+  }
+
+  protected cambiarTamano(t: number): void {
+    this.tamano.set(t);
+    this._pagina.set(1);
   }
 
   // ── Detalle por negocio ─────────────────────────────────
@@ -175,7 +206,7 @@ export class CobranzaComponent implements OnInit {
         this.cargandoDetalle.set(false);
       },
       error: (err) => {
-        this.error.set(this.mensajeDeError(err, 'No se pudo cargar el detalle del negocio.'));
+        this.toast.errorHttp(err, 'No se pudo cargar el detalle del negocio.');
         this.cargandoDetalle.set(false);
       },
     });
@@ -196,13 +227,12 @@ export class CobranzaComponent implements OnInit {
 
   protected generarFactura(fila: FilaCartera): void {
     this.guardando.set(true);
-    this.aviso.set(null);
     this.error.set(null);
 
     this.api.generarFactura(fila.id_negocio).subscribe({
       next: (factura) => {
         this.guardando.set(false);
-        this.aviso.set(
+        this.toast.exito(
           factura
             ? `Factura ${factura.referencia} lista (${factura.periodo_inicio} → ${factura.periodo_fin}).`
             : 'Factura generada.',
@@ -211,7 +241,7 @@ export class CobranzaComponent implements OnInit {
       },
       error: (err) => {
         this.guardando.set(false);
-        this.error.set(this.mensajeDeError(err, 'No se pudo generar la factura.'));
+        this.toast.errorHttp(err, 'No se pudo generar la factura.');
       },
     });
   }
@@ -249,12 +279,12 @@ export class CobranzaComponent implements OnInit {
         next: () => {
           this.guardando.set(false);
           this.pagando.set(null);
-          this.aviso.set(`Pago de ${factura.referencia} registrado. El plan quedó extendido.`);
+          this.toast.exito(`Pago de ${factura.referencia} registrado. El plan quedó extendido.`);
           this.refrescar(factura.id_negocio);
         },
         error: (err) => {
           this.guardando.set(false);
-          this.error.set(this.mensajeDeError(err, 'No se pudo registrar el pago.'));
+          this.toast.errorHttp(err, 'No se pudo registrar el pago.');
         },
       });
   }
@@ -265,7 +295,6 @@ export class CobranzaComponent implements OnInit {
    */
   protected cobrarPorPasarela(factura: Factura): void {
     this.guardando.set(true);
-    this.aviso.set(null);
     this.error.set(null);
 
     this.api.cobrarPorPasarela(factura.id_factura).subscribe({
@@ -274,22 +303,25 @@ export class CobranzaComponent implements OnInit {
         if (!r) return;
 
         if (r.estado === 'aprobada') {
-          this.aviso.set(`Cobro aprobado. ${factura.referencia} queda pagada y el plan extendido.`);
+          this.toast.exito(
+            `Cobro aprobado. ${factura.referencia} queda pagada y el plan extendido.`,
+          );
         } else if (r.estado === 'pendiente') {
+          // El link se queda a la vista en la página: hay que copiárselo al cliente.
           this.linkPago.set(r.urlPago);
-          this.aviso.set(
+          this.toast.aviso(
             r.urlPago
               ? `Cobro creado: falta que el cliente pague. Envíale el link.`
               : `Cobro creado, pendiente de confirmación de la pasarela.`,
           );
         } else {
-          this.error.set(`La pasarela rechazó el cobro: ${r.mensaje ?? 'sin detalle'}`);
+          this.toast.error(`La pasarela rechazó el cobro: ${r.mensaje ?? 'sin detalle'}`);
         }
         this.refrescar(factura.id_negocio);
       },
       error: (err) => {
         this.guardando.set(false);
-        this.error.set(this.mensajeDeError(err, 'No se pudo cobrar por la pasarela.'));
+        this.toast.errorHttp(err, 'No se pudo cobrar por la pasarela.');
       },
     });
   }
@@ -306,7 +338,6 @@ export class CobranzaComponent implements OnInit {
     if (!id) return;
 
     this.guardando.set(true);
-    this.aviso.set(null);
     this.error.set(null);
 
     this.api.verificarPagoWompi(id).subscribe({
@@ -314,25 +345,25 @@ export class CobranzaComponent implements OnInit {
         this.guardando.set(false);
         switch (r?.estado) {
           case 'aprobada':
-            this.aviso.set('Pago confirmado con Wompi: el plan quedó extendido.');
+            this.toast.exito('Pago confirmado con Wompi: el plan quedó extendido.');
             this.fIdTransaccion.set('');
             this.cargar();
             break;
           case 'pendiente':
-            this.aviso.set('Wompi todavía no aprueba esa transacción. Intenta en unos minutos.');
+            this.toast.aviso('Wompi todavía no aprueba esa transacción. Intenta en unos minutos.');
             break;
           case 'rechazada':
-            this.error.set('Wompi rechazó esa transacción: no hay nada que activar.');
+            this.toast.error('Wompi rechazó esa transacción: no hay nada que activar.');
             break;
           default:
-            this.error.set(
+            this.toast.error(
               'Esa transacción no corresponde a una factura pendiente, o su monto no coincide.',
             );
         }
       },
       error: (err) => {
         this.guardando.set(false);
-        this.error.set(this.mensajeDeError(err, 'No se pudo verificar la transacción.'));
+        this.toast.errorHttp(err, 'No se pudo verificar la transacción.');
       },
     });
   }
@@ -345,12 +376,12 @@ export class CobranzaComponent implements OnInit {
     this.api.anularFactura(factura.id_factura, motivo).subscribe({
       next: () => {
         this.guardando.set(false);
-        this.aviso.set(`Factura ${factura.referencia} anulada.`);
+        this.toast.exito(`Factura ${factura.referencia} anulada.`);
         this.refrescar(factura.id_negocio);
       },
       error: (err) => {
         this.guardando.set(false);
-        this.error.set(this.mensajeDeError(err, 'No se pudo anular la factura.'));
+        this.toast.errorHttp(err, 'No se pudo anular la factura.');
       },
     });
   }

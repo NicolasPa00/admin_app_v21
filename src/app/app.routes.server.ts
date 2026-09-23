@@ -22,6 +22,17 @@ export const serverRoutes: ServerRoute[] = [
     path: 'adquirir',
     renderMode: RenderMode.Client,
   },
+  // El panel es privado y cada pantalla depende de la sesión, que el servidor no tiene: al
+  // prerenderizar, las consultas fallaban y el HTML salía armado con la vista equivocada
+  // (WhatsApp mostraba una bandeja vacía que el primer clic reemplazaba). Solo en el navegador.
+  {
+    path: 'admin',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'admin/**',
+    renderMode: RenderMode.Client,
+  },
   // Resto de rutas → prerenderizar estáticamente
   {
     path: '**',
