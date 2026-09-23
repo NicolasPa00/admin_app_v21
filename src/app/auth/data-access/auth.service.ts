@@ -158,6 +158,35 @@ export class AuthService {
       );
   }
 
+  /**
+   * Canjea un código de acceso de un solo uso por la sesión del admin_app.
+   *
+   * Es la vuelta del viaje que hace `entrarAlNegocio()` del dashboard: la app vertical pide su
+   * código a `/{modulo}/auth/generar-codigo` y trae aquí a `/auth/callback?code=…`. El token que
+   * devuelve el backend es el MISMO JWT con el que se entró al negocio, así que volver no
+   * renueva ni duplica la sesión: la recupera.
+   *
+   * No navega: de eso se encarga el componente del callback, que también tiene que poder
+   * enseñar el error si el código llegó tarde (caduca a los 30 s).
+   */
+  canjearCodigo(code: string): Observable<LoginResponse> {
+    return this.http
+      .post<LoginResponse>(`${this.API}/auth/canjear-codigo`, { code })
+      .pipe(
+        tap((res) => {
+          if (!res.data) return;
+          // Volver del negocio es una sesión propia, no una impersonación heredada.
+          this.limpiarImpersonacion();
+          this._accessToken.set(res.data.token);
+          this.currentUser.set(res.data.usuario);
+          if (isPlatformBrowser(this.platformId)) {
+            localStorage.setItem('app_token', res.data.token);
+          }
+          this.persistUserMeta(res.data.usuario);
+        }),
+      );
+  }
+
   /** Olvida la sesión de super admin guardada por una impersonación y apaga el aviso. */
   private limpiarImpersonacion(): void {
     this._impersonating.set(false);

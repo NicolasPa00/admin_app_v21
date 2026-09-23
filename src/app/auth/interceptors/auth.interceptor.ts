@@ -16,6 +16,9 @@ const PUBLIC_URLS = [
   '/auth/login',
   '/auth/forgot-password',
   '/auth/reset-password',
+  // Vuelta desde una app de negocio: la seguridad la da el código de un solo uso. Si fuera
+  // protegida, un código caducado (401) cerraría la sesión en vez de dejar reintentar.
+  '/auth/canjear-codigo',
   // Portal de pagos sin sesión (/pagar). Declararlo aquí evita que un visitante con una sesión
   // vieja en el navegador reciba un logout forzado por consultar lo que debe.
   '/publico/',

@@ -32,6 +32,15 @@ export const authRoutes: Routes = [
     title: 'Crear cuenta',
   },
   {
+    // Vuelta desde una app de negocio (negocio_app, reserva_app…) con un código de un solo uso.
+    path: 'callback',
+    loadComponent: () =>
+      import('./features/callback/callback.component').then(
+        (m) => m.CallbackComponent,
+      ),
+    title: 'Volviendo al panel',
+  },
+  {
     path: 'forgot-password',
     loadComponent: () =>
       import('./features/forgot-password/forgot-password.component').then(
