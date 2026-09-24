@@ -9,6 +9,8 @@ import {
   signal,
   computed,
   input,
+  effect,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -17,21 +19,28 @@ import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-  Flag, ShieldAlert, MessageCircle,
+  Flag, ShieldAlert, MessageCircle, User,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
 import { PantallaAnchaService } from '../../../core/services/pantalla-ancha.service';
+import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
+import { ToastService } from '../../../shared/toast/toast.service';
 import {
   ConversacionBandeja,
+  ConfiguracionReactivacion,
   ConversacionBandejaDetalle,
-  ETIQUETA_MOTIVO,
   MensajeBandeja,
-  MOTIVOS_REPORTE,
+  RetomadaAsistente,
   NegocioConConversaciones,
   ReportesConversacion,
 } from '../../models/bandeja.models';
 import { LoadingState } from '../../models/admin.models';
+
+/** Una línea del hilo: un mensaje, o el aviso de que el asistente retomó la conversación. */
+type ItemHilo =
+  | { tipo: 'msg'; clave: string; fecha: number; m: MensajeBandeja }
+  | { tipo: 'retomo'; clave: string; fecha: number; r: RetomadaAsistente };
 
 /**
  * BandejaComponent — donde el negocio contesta cuando el asistente no supo.
@@ -105,7 +114,7 @@ const REFRESCO_MS = 5000;
   selector: 'app-bandeja',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, LucideAngularModule],
+  imports: [FormsModule, DatePipe, LucideAngularModule, ModalCabeceraComponent],
   // `viewProviders` y no `providers`: los `providers` también los ven los hijos PROYECTADOS
   // (<ng-content>), y como LUCIDE_ICONS es multi, un ícono declarado por quien proyecta (el botón
   // «Tu número» de WhatsApp) se buscaba aquí, no lo encontraba y cortaba el render de la bandeja.
@@ -116,7 +125,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle,
+        Flag, ShieldAlert, MessageCircle, User,
       }),
     },
   ],
@@ -127,6 +136,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
   private readonly service = inject(BandejaService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly pantallaAncha = inject(PantallaAnchaService);
+  private readonly toast = inject(ToastService);
   /** ¿Esta instancia tiene pedido el ancho completo al layout? Para soltarlo una sola vez. */
   private anchoPedido = false;
   private temporizador: ReturnType<typeof setInterval> | null = null;
@@ -162,22 +172,41 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly estadoDetalle = signal<LoadingState>('idle');
   readonly abierta = signal<string | null>(null);
 
-  // ── Reportar ──────────────────────────────────────────────────────────────
-  /**
-   * El formulario de reporte, abierto o no.
-   *
-   * Es estado de esta pantalla y no del servidor, así que vive aparte de `detalle()`: el latido
-   * de cinco segundos reemplaza el detalle entero, y si el panel dependiera de él se cerraría
-   * solo a mitad de escribir el motivo.
-   */
-  readonly panelReporte = signal(false);
-  readonly motivoElegido = signal<string | null>(null);
-  readonly notaReporte = signal('');
-  readonly reportando = signal(false);
-  readonly errorReporte = signal<string | null>(null);
+  // ── El asistente vuelve solo (ADR-023, Enmienda 2) ────────────────────────────────────────
+  //
+  // Decisión EXPLÍCITA del negocio: pasados N minutos desde la última intervención de una persona,
+  // el siguiente mensaje del cliente lo atiende el asistente. «Nunca» (0) es el valor de fábrica.
+  // La configuración es por NEGOCIO, así que solo se enseña cuando hay un negocio determinado.
 
-  /** Los motivos que puede elegir una persona. Los del asistente no están: ver el modelo. */
-  readonly motivos = MOTIVOS_REPORTE;
+  /** El negocio de la configuración: el fijado, el filtrado, o el único que hay. */
+  readonly negocioConfig = computed<number | null>(
+    () =>
+      this.negocioFijo() ??
+      this.negocioActivo() ??
+      (this.negocios().length === 1 ? this.negocios()[0].id_negocio : null),
+  );
+  readonly config = signal<ConfiguracionReactivacion | null>(null);
+  /** Lo que se está editando; `config` es lo guardado. */
+  readonly autoNunca = signal(true);
+  readonly autoMinutos = signal(30);
+  readonly guardandoConfig = signal(false);
+
+  readonly autoSucio = computed(() => {
+    const c = this.config();
+    if (!c) return false;
+    return (this.autoNunca() ? 0 : this.autoMinutos()) !== c.reactivar_asistente_min;
+  });
+  readonly autoValido = computed(() => {
+    if (this.autoNunca()) return true;
+    const m = this.autoMinutos();
+    return Number.isInteger(m) && m >= 1 && m <= 1440;
+  });
+
+  /** Recarga la configuración cada vez que cambia el negocio en pantalla. */
+  private readonly recargaConfig = effect(() => {
+    const id = this.negocioConfig();
+    untracked(() => this.cargarConfig(id));
+  });
 
   /** El conteo, con ceros mientras no hay conversación abierta o el entorno no lo tiene. */
   readonly reportes = computed<ReportesConversacion>(
@@ -232,6 +261,93 @@ export class BandejaComponent implements OnInit, OnDestroy {
       this.borrador().trim().length > 0 &&
       (this.detalle()?.ventana.abierta ?? false),
   );
+
+  private cargarConfig(idNegocio: number | null): void {
+    if (idNegocio === null) {
+      this.config.set(null);
+      return;
+    }
+    this.service.getConfiguracion(idNegocio).subscribe({
+      next: (c) => {
+        // El negocio pudo cambiar mientras la respuesta venía.
+        if (this.negocioConfig() !== idNegocio) return;
+        this.config.set(c);
+        if (c) {
+          this.autoNunca.set(c.reactivar_asistente_min === 0);
+          this.autoMinutos.set(c.reactivar_asistente_min > 0 ? c.reactivar_asistente_min : 30);
+        }
+      },
+      error: () => this.config.set(null),
+    });
+  }
+
+  guardarConfig(): void {
+    const c = this.config();
+    if (!c || !this.autoSucio() || !this.autoValido() || this.guardandoConfig()) return;
+
+    const minutos = this.autoNunca() ? 0 : this.autoMinutos();
+    this.guardandoConfig.set(true);
+    this.service.guardarConfiguracion(c.id_negocio, minutos).subscribe({
+      next: () => {
+        this.guardandoConfig.set(false);
+        this.config.set({ ...c, reactivar_asistente_min: minutos });
+        this.detalle.update((d) =>
+          d && d.conversacion.id_negocio === c.id_negocio
+            ? { ...d, conversacion: { ...d.conversacion, reactivar_asistente_min: minutos } }
+            : d,
+        );
+        this.toast.exito(
+          minutos === 0
+            ? 'El asistente ya no volverá solo a las conversaciones que atienda una persona.'
+            : `El asistente volverá solo ${minutos} min después de la última respuesta de una persona.`,
+        );
+      },
+      error: (err) => {
+        this.guardandoConfig.set(false);
+        this.toast.errorHttp(err, 'No se pudo guardar la configuración.');
+      },
+    });
+  }
+
+  /**
+   * Lo que se le dice a quien lleva una conversación sobre cuándo vuelve el asistente. El plazo
+   * corre desde la última vez que una persona intervino, y solo se cumple si el CLIENTE escribe:
+   * el asistente nunca le habla solo a quien no escribió.
+   */
+  avisoRetorno(c: ConversacionBandeja): string {
+    const min = c.reactivar_asistente_min ?? 0;
+    if (min === 0) return 'El asistente no volverá solo.';
+    if (!c.humano_ultimo_en) {
+      return `El asistente volverá ${min} min después de que respondas o la marques atendida, si el cliente escribe.`;
+    }
+    const vuelve = new Date(new Date(c.humano_ultimo_en).getTime() + min * 60_000);
+    if (vuelve.getTime() <= Date.now()) {
+      return 'El plazo ya se cumplió: si el cliente escribe, lo atiende el asistente.';
+    }
+    const hora = vuelve.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+    return `El asistente vuelve a las ${hora} si el cliente escribe.`;
+  }
+
+  /** El hilo: los mensajes y, en su sitio, los momentos en que el asistente retomó. */
+  readonly lineaDeTiempo = computed<ItemHilo[]>(() => {
+    const d = this.detalle();
+    if (!d) return [];
+    const items: ItemHilo[] = [
+      ...d.mensajes.map(
+        (m): ItemHilo => ({ tipo: 'msg', clave: `m-${m.id_mensaje}`, fecha: Date.parse(m.creado_en), m }),
+      ),
+      ...(d.retomadas ?? []).map(
+        (r, i): ItemHilo => ({ tipo: 'retomo', clave: `r-${i}-${r.fecha}`, fecha: Date.parse(r.fecha), r }),
+      ),
+    ];
+    return items.sort((a, b) => a.fecha - b.fecha);
+  });
+
+  textoRetomada(r: RetomadaAsistente): string {
+    return r.origen === 'automatico'
+      ? 'automático, por el plazo del negocio'
+      : `manual${r.quien ? ', por ' + r.quien : ''}`;
+  }
 
   ngOnInit(): void {
     const fijo = this.negocioFijo();
@@ -318,9 +434,11 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.abierta.set(conversacion.id_conversacion);
     this.errorEnvio.set(null);
     this.borrador.set('');
-    // Cambiar de conversación con el formulario de reporte abierto dejaría el motivo elegido
-    // apuntando a otra persona. Se cierra siempre.
-    this.cerrarPanelReporte();
+    // Cambiar de conversación con el modal de reporte abierto lo dejaría apuntando a otra
+    // persona. Se cierra siempre.
+    this.confirmandoBloqueo.set(false);
+    this.motivoBloqueo.set('');
+    this.errorBloqueo.set(null);
     this.cargarHilo(conversacion.id_conversacion);
   }
 
@@ -408,7 +526,10 @@ export class BandejaComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Abre (o cierra) la confirmación de bloqueo. Bloquear no debe salir de un solo clic. */
+  /**
+   * Abre (o cierra) el modal «Reportar usuario». Reportar bloquea al usuario —el asistente deja
+   * de contestarle—, así que no debe salir de un solo clic: pasa por este modal.
+   */
   alternarConfirmarBloqueo(): void {
     this.confirmandoBloqueo.update((v) => !v);
     this.motivoBloqueo.set('');
@@ -437,11 +558,13 @@ export class BandejaComponent implements OnInit, OnDestroy {
           this.confirmandoBloqueo.set(false);
           this.motivoBloqueo.set('');
           this.bloqueando.set(false);
+          this.toast.exito('Usuario reportado y bloqueado: el asistente ya no le contestará.');
           this.cargar(true);
         },
         error: (err) => {
           this.bloqueando.set(false);
-          this.errorBloqueo.set(err?.error?.message || 'No se pudo bloquear el número.');
+          this.errorBloqueo.set(err?.error?.message || 'No se pudo reportar y bloquear al usuario.');
+          this.toast.errorHttp(err, 'No se pudo reportar y bloquear al usuario.');
         },
       });
   }
@@ -461,11 +584,12 @@ export class BandejaComponent implements OnInit, OnDestroy {
           conversacion: { ...actual.conversacion, estado: 'activa', bloqueada_por: null },
         });
         this.bloqueando.set(false);
+        this.toast.exito('Usuario desbloqueado: el asistente vuelve a contestarle.');
         this.cargar(true);
       },
       error: (err) => {
         this.bloqueando.set(false);
-        this.errorBloqueo.set(err?.error?.message || 'No se pudo desbloquear el número.');
+        this.toast.errorHttp(err, 'No se pudo desbloquear el número.');
       },
     });
   }
@@ -479,86 +603,6 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.confirmandoBloqueo.set(false);
     this.motivoBloqueo.set('');
     this.errorBloqueo.set(null);
-    this.cerrarPanelReporte();
-  }
-
-  // ── Reportar ──────────────────────────────────────────────────────────────
-  //
-  // Reportar NO bloquea a nadie, no calla al asistente y no cambia el estado de la conversación:
-  // es una opinión con autor, fecha y motivo. Lo que se cuenta es el CONTACTO —todas sus
-  // conversaciones en este negocio—, porque de la persona es de quien habla la pregunta.
-
-  alternarPanelReporte(): void {
-    if (this.panelReporte()) {
-      this.cerrarPanelReporte();
-      return;
-    }
-    this.errorReporte.set(null);
-    this.motivoElegido.set(null);
-    this.notaReporte.set('');
-    this.panelReporte.set(true);
-  }
-
-  cerrarPanelReporte(): void {
-    this.panelReporte.set(false);
-    this.motivoElegido.set(null);
-    this.notaReporte.set('');
-    this.errorReporte.set(null);
-  }
-
-  reportar(): void {
-    const actual = this.detalle();
-    const motivo = this.motivoElegido();
-    if (!actual || !motivo || this.reportando()) return;
-
-    this.reportando.set(true);
-    this.errorReporte.set(null);
-
-    this.service
-      .reportar(actual.conversacion.id_conversacion, motivo, this.notaReporte())
-      .subscribe({
-        next: (reportes) => {
-          this.reportando.set(false);
-          this.cerrarPanelReporte();
-          // El conteo llega en la respuesta, así que la pantalla no espera al siguiente latido
-          // para enseñar la bandera. La lista sí se recarga: el contador de la fila también sube.
-          if (reportes) this.detalle.set({ ...actual, reportes });
-          this.cargar(true);
-        },
-        error: (err) => {
-          this.reportando.set(false);
-          this.errorReporte.set(
-            err?.error?.message ?? 'No se pudo reportar la conversación. Inténtalo de nuevo.',
-          );
-        },
-      });
-  }
-
-  /** Deshace el propio reporte. El del asistente no se toca desde aquí: se revisa, no se borra. */
-  retirarReporte(): void {
-    const actual = this.detalle();
-    if (!actual || this.reportando()) return;
-
-    this.reportando.set(true);
-    this.errorReporte.set(null);
-
-    this.service.retirarReporte(actual.conversacion.id_conversacion).subscribe({
-      next: (reportes) => {
-        this.reportando.set(false);
-        this.cerrarPanelReporte();
-        if (reportes) this.detalle.set({ ...actual, reportes });
-        this.cargar(true);
-      },
-      error: () => {
-        this.reportando.set(false);
-        this.errorReporte.set('No se pudo retirar el reporte.');
-      },
-    });
-  }
-
-  /** Cómo se lee un motivo, incluidos los dos que solo pone el asistente. */
-  etiquetaMotivo(motivo: string | null): string {
-    return motivo ? ETIQUETA_MOTIVO[motivo] ?? motivo : '';
   }
 
   enviar(): void {
@@ -590,20 +634,46 @@ export class BandejaComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Quién escribió. El teléfono es el respaldo cuando la persona no está identificada. */
-  quien(c: ConversacionBandeja): string {
-    return c.persona || c.telefono_e164 || c.id_externo || 'Sin identificar';
+  /** ¿La conversación tiene el nombre de la persona? Un número no cuenta como nombre. */
+  tieneNombre(c: ConversacionBandeja): boolean {
+    const n = (c.persona ?? '').trim();
+    return n.length > 0 && !/^\+?[\d\s()-]+$/.test(n);
   }
 
-  /** Iniciales para el avatar. Dos letras como mucho: más no se leen en un círculo. */
-  iniciales(c: ConversacionBandeja): string {
-    const nombre = this.quien(c).trim();
-    if (/^\+?\d/.test(nombre)) return nombre.slice(-2);
-    return nombre
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() ?? '')
-      .join('');
+  /**
+   * Quién escribió: el nombre del cliente y, si no lo hay, su número formateado
+   * (`+57 300 123 4567`). Solo si tampoco hay número, «Sin identificar».
+   */
+  quien(c: ConversacionBandeja): string {
+    if (this.tieneNombre(c)) return c.persona!.trim();
+    return this.formatearTelefono(c.telefono_e164 || c.id_externo) || 'Sin identificar';
+  }
+
+  /** La inicial del nombre. Sin nombre no hay inicial: el avatar enseña un ícono de persona. */
+  inicial(c: ConversacionBandeja): string {
+    return this.tieneNombre(c) ? c.persona!.trim()[0].toUpperCase() : '';
+  }
+
+  /** `+573001234567` → `+57 300 123 4567`. Otros países: solo el `+` y los dígitos. */
+  formatearTelefono(valor: string | null | undefined): string {
+    const digitos = (valor ?? '').replace(/\D/g, '');
+    if (!digitos) return '';
+    const co = /^57(\d{3})(\d{3})(\d{4})$/.exec(digitos);
+    if (co) return `+57 ${co[1]} ${co[2]} ${co[3]}`;
+    return `+${digitos}`;
+  }
+
+  /**
+   * Enter envía; Shift+Enter hace salto de línea. Respeta `puedeEnviar()`: con la ventana de
+   * 24 h cerrada, un borrador vacío o un envío en curso, Enter no hace nada (y tampoco mete un
+   * salto de línea, para no ensuciar un mensaje que no se puede mandar). No se envía mientras se
+   * compone con un IME (tildes, japonés…): ahí Enter confirma la composición.
+   */
+  alEnter(ev: Event): void {
+    const e = ev as KeyboardEvent;
+    if (e.shiftKey || e.isComposing) return;
+    e.preventDefault();
+    if (this.puedeEnviar()) this.enviar();
   }
 
   esDeLaPersona(m: MensajeBandeja): boolean {

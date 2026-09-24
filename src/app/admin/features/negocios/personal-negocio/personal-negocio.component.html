@@ -5,26 +5,23 @@
 <div class="pers" (click)="cerrar.emit()">
   <div class="pers__card" role="dialog" aria-modal="true" aria-labelledby="pers-title"
        (click)="$event.stopPropagation()">
-    <header class="pers__head">
-      <div>
-        <h2 id="pers-title" class="pers__title">
-          <lucide-icon name="user-round" [size]="18" aria-hidden="true" />
-          Personal del negocio
-        </h2>
-        <p class="pers__sub">
-          {{ nombreNegocio() }}
-          @if (estado() === 'success') {
-            · {{ personal().length }} {{ personal().length === 1 ? 'persona' : 'personas' }},
-            {{ activos() }} {{ activos() === 1 ? 'activa' : 'activas' }}
-          }
-        </p>
-      </div>
-      <button type="button" class="pers__icon-btn" (click)="cerrar.emit()" aria-label="Cerrar">
-        <lucide-icon name="x" [size]="18" aria-hidden="true" />
-      </button>
-    </header>
+    <app-modal-cabecera icono="users" titulo="Personal del negocio" tituloId="pers-title"
+                        [subtitulo]="subtitulo()" (cerrar)="cerrar.emit()" />
 
     <div class="pers__body">
+      <!-- «X de Y usuarios» del plan. Pasarse del tope no le quita el acceso a nadie: solo frena las altas. -->
+      @if (cupo(); as c) {
+        <p class="pers__cupo" [class.pers__cupo--lleno]="c.total !== null && c.usados >= c.total" role="status">
+          <lucide-icon name="user-round" [size]="15" aria-hidden="true" />
+          <strong>{{ c.usados }} de {{ c.total ?? '∞' }}</strong> usuarios del plan
+          @if (c.total !== null && c.usados > c.total) {
+            <span>· por encima del tope: nadie pierde el acceso, pero no se pueden añadir más hasta ampliarlo.</span>
+          } @else if (c.total !== null && c.usados === c.total) {
+            <span>· cupo lleno: para añadir a alguien agrega «Usuario adicional» o cambia de plan.</span>
+          }
+        </p>
+      }
+
       @if (aviso(); as texto) {
         <p class="pers__aviso" role="status">
           <lucide-icon name="check" [size]="15" aria-hidden="true" /> {{ texto }}

@@ -20,6 +20,7 @@ import { TonoVencimiento, evaluarVencimiento } from '../../../core/utils/estado-
 import { PaginadorComponent, paginar } from '../../../shared/paginador/paginador.component';
 import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
 import { ToastService } from '../../../shared/toast/toast.service';
+import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
 import {
   UsuarioAdmin, LoadingState, Plan, PlanInfo, UpdateUsuarioPerfilRequest,
   UsuarioHistorialEvento,
@@ -86,7 +87,9 @@ type TabEstado = 'A' | 'I';
   selector: 'app-usuarios',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, RouterLink, PaginadorComponent, TelefonoPaisComponent],
+  imports: [
+    LucideAngularModule, RouterLink, PaginadorComponent, TelefonoPaisComponent, ModalCabeceraComponent,
+  ],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -135,7 +138,9 @@ export class UsuariosComponent implements OnInit {
   protected readonly actionId = signal<number | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
-  // ── Historial (auditoría) del usuario abierto en el detalle ──
+  // ── Historial (auditoría): tiene su propio modal, abierto desde la fila de la tabla ──
+  /** Usuario cuyo historial se está viendo, o null. */
+  protected readonly historialDe = signal<UsuarioAdmin | null>(null);
   protected readonly historial = signal<UsuarioHistorialEvento[]>([]);
   protected readonly historialEstado = signal<LoadingState>('idle');
 
@@ -297,8 +302,8 @@ export class UsuariosComponent implements OnInit {
         );
         if (this.selected()?.id_usuario === u.id_usuario) {
           this.selected.update((s) => (s ? { ...s, estado: nuevo } : s));
-          this.cargarHistorial(u.id_usuario);
         }
+        if (this.historialDe()?.id_usuario === u.id_usuario) this.cargarHistorial(u.id_usuario);
         this.actionId.set(null);
         this.confirmEstado.set(null);
         this.toast.exito(
@@ -363,7 +368,7 @@ export class UsuariosComponent implements OnInit {
       next: () => {
         // Fuera de la lista sin recargar: eliminar significa que no se ve en ninguna parte.
         this._usuarios.update((list) => list.filter((x) => x.id_usuario !== u.id_usuario));
-        if (this.selected()?.id_usuario === u.id_usuario) this.cerrarDetalle();
+        if (this.selected()?.id_usuario === u.id_usuario) this.closeDetails();
         this.actionId.set(null);
         this.confirmEliminar.set(null);
         this.textoEliminar.set('');
@@ -381,31 +386,36 @@ export class UsuariosComponent implements OnInit {
   // ── Modal: detalles ─────────────────────────────────────────
   protected openDetails(u: UsuarioAdmin): void {
     this.selected.set(u);
-    this.cargarHistorial(u.id_usuario);
   }
 
   protected closeDetails(): void {
-    this.cerrarDetalle();
+    this.selected.set(null);
   }
 
-  private cerrarDetalle(): void {
-    this.selected.set(null);
+  // ── Modal: historial ────────────────────────────────────────
+  protected abrirHistorial(u: UsuarioAdmin): void {
+    this.historialDe.set(u);
+    this.cargarHistorial(u.id_usuario);
+  }
+
+  protected cerrarHistorial(): void {
+    this.historialDe.set(null);
     this.historial.set([]);
     this.historialEstado.set('idle');
   }
 
-  /** Línea de tiempo del usuario. Si falla no estorba al resto del detalle: solo se avisa ahí. */
+  /** Línea de tiempo del usuario. Si falla no estorba al resto: solo se avisa en su modal. */
   private cargarHistorial(idUsuario: number): void {
     this.historialEstado.set('loading');
     this.service.getHistorial(idUsuario).subscribe({
       next: (eventos) => {
-        // El detalle pudo cerrarse o cambiar de usuario mientras la respuesta venía.
-        if (this.selected()?.id_usuario !== idUsuario) return;
+        // El modal pudo cerrarse o cambiar de usuario mientras la respuesta venía.
+        if (this.historialDe()?.id_usuario !== idUsuario) return;
         this.historial.set(eventos);
         this.historialEstado.set('success');
       },
       error: () => {
-        if (this.selected()?.id_usuario !== idUsuario) return;
+        if (this.historialDe()?.id_usuario !== idUsuario) return;
         this.historial.set([]);
         this.historialEstado.set('error');
       },
@@ -554,11 +564,6 @@ export class UsuariosComponent implements OnInit {
     return evaluarVencimiento(plan).tono;
   }
 
-  protected planInicioTexto(u: UsuarioAdmin): string {
-    const p = this.planPrincipal(u);
-    return p?.fecha_inicio ? this.formatDate(p.fecha_inicio) : '—';
-  }
-
   // ── Helpers de presentación ─────────────────────────────────
 
   protected negociosAdministrados(u: UsuarioAdmin): string[] {
@@ -616,7 +621,6 @@ export class UsuariosComponent implements OnInit {
           ? usuarios.find((u) => u.id_usuario === keepSelectedId) ?? null
           : null;
         this.selected.set(sel);
-        if (sel) this.cargarHistorial(sel.id_usuario);
       },
       error: () => {
         this.actionError.set('El usuario se guardó, pero no se pudo refrescar la lista.');

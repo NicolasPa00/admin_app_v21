@@ -8,7 +8,8 @@ import {
   computed,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, catchError, debounceTime, forkJoin, of, switchMap, tap } from 'rxjs';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
   Check, UserRound, UserPlus, CalendarRange, TriangleAlert, Trash2, History,
@@ -21,6 +22,8 @@ import { PaisesService } from '../../../core/services/paises.service';
 import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
 import { PaginadorComponent, paginar } from '../../../shared/paginador/paginador.component';
 import { ToastService } from '../../../shared/toast/toast.service';
+import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
+import { Paso, PasosComponent } from '../../../shared/pasos/pasos.component';
 import { PersonalNegocioComponent } from './personal-negocio/personal-negocio.component';
 import {
   DIAS_PRUEBA, diaBogota, formatearDia, hoyBogota, sumarPeriodo, vigenciaPrevista,
@@ -32,7 +35,7 @@ import {
   NegocioAdmin, TipoNegocio, Rubro, Plan, PlanInfo, LoadingState,
   RegistrarClienteRequest, UsuarioBusqueda, EliminacionNegocio, NegocioEventoHistorial,
 } from '../../models/admin.models';
-import { ComplementoNegocio, LimitesNegocio } from '../../models/cobranza.models';
+import { ComplementoNegocio, LimitesNegocio, TotalMensual } from '../../models/cobranza.models';
 
 type UserMode = 'nuevo' | 'existente';
 
@@ -49,6 +52,8 @@ interface CreateForm {
   fecha_inicio: string;
   a_primer_nombre: string; a_primer_apellido: string;
   a_num_identificacion: string; a_email: string; a_password: string;
+  /** Teléfono completo con indicativo, o vacío. */
+  a_telefono: string;
 }
 
 interface EditForm {
@@ -97,7 +102,16 @@ const EMPTY_CREATE: CreateForm = {
   nombre: '', id_rubro: '', nit: '', email_contacto: '', telefono: '', direccion: '', pais: 'CO',
   id_plan: '', meses: '1', fecha_inicio: '',
   a_primer_nombre: '', a_primer_apellido: '', a_num_identificacion: '', a_email: '', a_password: '',
+  a_telefono: '',
 };
+
+/** Los pasos del asistente de «Registrar negocio». */
+const PASOS_CREAR: readonly Paso[] = [
+  { id: 'negocio', etiqueta: 'Negocio' },
+  { id: 'admin', etiqueta: 'Administrador' },
+  { id: 'plan', etiqueta: 'Plan y vigencia' },
+  { id: 'resumen', etiqueta: 'Resumen' },
+];
 
 /**
  * NegociosComponent — Gestión de negocios (clientes) del Super Admin.
@@ -116,7 +130,7 @@ const EMPTY_CREATE: CreateForm = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     LucideAngularModule, TelefonoPaisComponent, PersonalNegocioComponent, PaginadorComponent,
-    NgTemplateOutlet,
+    NgTemplateOutlet, ModalCabeceraComponent, PasosComponent,
   ],
   providers: [
     {
@@ -249,6 +263,12 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
   // ── Modal ───────────────────────────────────────────────────
   protected readonly modalMode = signal<'create' | 'edit' | null>(null);
+  /** Pestaña del modal de editar. */
+  protected readonly editTab = signal<'datos' | 'plan'>('datos');
+
+  // ── Asistente «Registrar negocio» ───────────────────────────
+  protected readonly pasosCrear = PASOS_CREAR;
+  protected readonly crearPaso = signal(0);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly createForm = signal<CreateForm>({ ...EMPTY_CREATE });
@@ -268,31 +288,89 @@ export class NegociosComponent implements OnInit, OnDestroy {
   protected readonly complementos = signal<ComplementoNegocio[]>([]);
   protected readonly limites = signal<LimitesNegocio | null>(null);
   protected readonly complementosCargando = signal(false);
-  protected readonly complementosGuardando = signal(false);
   protected readonly complementosError = signal<string | null>(null);
-  protected readonly complementosOk = signal(false);
 
-  /** Lo que sumarán al próximo cobro: solo lo marcado como cobrable. */
-  protected readonly complementosTotal = computed(() =>
-    this.complementos().reduce((suma, c) => suma + c.cantidad_facturable * c.precio, 0),
+  /** Cómo estaban los complementos al cargar; solo se guardan si cambian. */
+  private readonly complementosInicial = signal('');
+
+  private firmaComplementos(lista: ComplementoNegocio[]): string {
+    return JSON.stringify(lista.map((c) => [c.codigo, c.cantidad, c.cantidad_facturable]));
+  }
+
+  protected readonly complementosModificados = computed(
+    () =>
+      this.complementos().length > 0 &&
+      this.firmaComplementos(this.complementos()) !== this.complementosInicial(),
   );
+
+  // ── Total mensual que quedará (plan + complementos) ─────────
+  //
+  // Lo calcula el backend (`POST /cobranza/negocios/:id/total-mensual`, que usa la misma cuenta que
+  // decide si un cambio sube o baja): la pantalla solo lo pide y lo enseña, así no lleva su propia
+  // aritmética de precios. Se pide con un pequeño retraso para no lanzar una consulta por tecla.
+  protected readonly totalMensual = signal<TotalMensual | null>(null);
+  protected readonly totalCargando = signal(false);
+  private readonly totalSolicitud = new Subject<void>();
+
+  constructor() {
+    this.totalSolicitud
+      .pipe(
+        debounceTime(250),
+        tap(() => this.totalCargando.set(true)),
+        switchMap(() => {
+          const negocio = this.editNegocio();
+          const plan = this.planForm();
+          if (!negocio || !plan) return of(null);
+          const idPlan = plan.id_plan && plan.id_plan !== PLAN_NINGUNO ? Number(plan.id_plan) : null;
+          return this.service
+            .getTotalMensual(negocio.id_negocio, {
+              id_plan: idPlan,
+              complementos: this.complementos().map((c) => ({
+                codigo: c.codigo,
+                cantidad_facturable: c.cantidad_facturable,
+              })),
+            })
+            .pipe(catchError(() => of(null)));
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((t) => {
+        this.totalMensual.set(t);
+        this.totalCargando.set(false);
+      });
+  }
+
+  /** Lo que se cobra de un complemento al mes, según el backend (`null` mientras se calcula). */
+  protected subtotalDe(codigo: string): number | null {
+    return this.totalMensual()?.complementos.find((c) => c.codigo === codigo)?.subtotal ?? null;
+  }
+
+  /** Lo que suman los complementos dentro del total. */
+  protected readonly totalComplementos = computed(() => {
+    const t = this.totalMensual();
+    return t ? t.total - t.precio_plan : null;
+  });
 
   private cargarComplementos(idNegocio: number): void {
     this.complementosCargando.set(true);
     this.complementosError.set(null);
-    this.complementosOk.set(false);
     this.service.getComplementos(idNegocio).subscribe({
       next: (datos) => {
-        this.complementos.set(datos?.complementos ?? []);
+        const lista = datos?.complementos ?? [];
+        this.complementos.set(lista);
+        this.complementosInicial.set(this.firmaComplementos(lista));
         this.limites.set(datos?.limites ?? null);
         this.complementosCargando.set(false);
+        this.totalSolicitud.next();
       },
       error: (err) => {
         this.complementos.set([]);
+        this.complementosInicial.set('');
         this.complementosCargando.set(false);
         this.complementosError.set(
           err.error?.message ?? 'No se pudieron cargar los complementos de este negocio.',
         );
+        this.totalSolicitud.next();
       },
     });
   }
@@ -308,7 +386,6 @@ export class NegociosComponent implements OnInit, OnDestroy {
    */
   protected cambiarComplemento(codigo: string, campo: 'cantidad' | 'cantidad_facturable', valor: string): void {
     const n = Math.max(0, Math.trunc(Number(valor) || 0));
-    this.complementosOk.set(false);
     this.complementos.update((lista) =>
       lista.map((c) => {
         if (c.codigo !== codigo) return c;
@@ -320,37 +397,9 @@ export class NegociosComponent implements OnInit, OnDestroy {
         return { ...c, cantidad_facturable: facturable, cortesia: c.cantidad - facturable };
       }),
     );
+    this.totalSolicitud.next();
   }
 
-  protected guardarComplementos(): void {
-    const negocio = this.editNegocio();
-    if (!negocio || this.complementosGuardando()) return;
-
-    this.complementosGuardando.set(true);
-    this.complementosError.set(null);
-    this.service.guardarComplementos(
-        negocio.id_negocio,
-        this.complementos().map((c) => ({
-          codigo: c.codigo,
-          cantidad: c.cantidad,
-          cantidad_facturable: c.cantidad_facturable,
-        })),
-      )
-      .subscribe({
-        next: (datos) => {
-          this.complementos.set(datos?.complementos ?? []);
-          this.limites.set(datos?.limites ?? null);
-          this.complementosGuardando.set(false);
-          this.complementosOk.set(true);
-          this.toast.exito('Complementos guardados.');
-        },
-        error: (err) => {
-          this.complementosGuardando.set(false);
-          this.complementosError.set(err.error?.message ?? 'No se pudieron guardar los complementos.');
-          this.toast.errorHttp(err, 'No se pudieron guardar los complementos.');
-        },
-      });
-  }
   /** Cómo estaban los campos del plan al abrir; solo se aplica si cambian. */
   private readonly planInicial = signal<PlanEditForm | null>(null);
 
@@ -496,6 +545,60 @@ export class NegociosComponent implements OnInit, OnDestroy {
     return this.aplicaPlan() && !!v && !!actual?.activo && v.inicio > hoyBogota();
   });
 
+  /** El correo de contacto del negocio es opcional; si se escribe, tiene que parecer un correo. */
+  protected readonly negocioEmailInvalido = computed(() => {
+    const e = this.createForm().email_contacto.trim();
+    return e.length > 0 && !EMAIL_RE.test(e);
+  });
+
+  /** ¿Se puede pasar al paso siguiente? Cada paso valida solo lo suyo. */
+  protected readonly pasoCrearValido = computed(() => {
+    const f = this.createForm();
+    switch (this.crearPaso()) {
+      case 0:
+        return f.nombre.trim().length > 0 && f.id_rubro !== '' && !this.negocioEmailInvalido();
+      case 1:
+        if (this.userMode() === 'existente') return this.usuarioSeleccionado() !== null;
+        return (
+          f.a_primer_nombre.trim().length > 0 &&
+          f.a_primer_apellido.trim().length > 0 &&
+          f.a_num_identificacion.trim().length > 0 &&
+          !this.adminEmailInvalido() &&
+          this.passwordValid()
+        );
+      case 2:
+        return this.createVigencia() !== null;
+      default:
+        return this.createValid();
+    }
+  });
+
+  /** Lo que se le enseña en el resumen, con los nombres y no los ids. */
+  protected readonly resumenCrear = computed(() => {
+    const f = this.createForm();
+    const rubro = this.rubros().find((r) => String(r.id_tipo_negocio) === f.id_rubro);
+    const plan = this.planes().find((p) => String(p.id_plan) === f.id_plan);
+    const usuario = this.usuarioSeleccionado();
+    return {
+      rubro: rubro?.etiqueta ?? '—',
+      modulo: rubro?.modulo ?? '—',
+      pais: PAISES.find((p) => p.codigo === f.pais)?.nombre ?? f.pais,
+      plan,
+      admin: this.userMode() === 'existente' && usuario
+        ? `${usuario.primer_nombre} ${usuario.primer_apellido}`.trim()
+        : `${f.a_primer_nombre} ${f.a_primer_apellido}`.trim(),
+    };
+  });
+
+  protected pasoSiguiente(): void {
+    if (!this.pasoCrearValido()) return;
+    this.crearPaso.update((p) => Math.min(p + 1, PASOS_CREAR.length - 1));
+  }
+
+  protected pasoAnterior(): void {
+    this.crearPaso.update((p) => Math.max(p - 1, 0));
+  }
+
   protected readonly createValid = computed(() => {
     const f = this.createForm();
     const base =
@@ -551,6 +654,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
 
   // ── Modal: crear ────────────────────────────────────────────
   protected openCreate(): void {
+    this.crearPaso.set(0);
     this.createForm.set({ ...EMPTY_CREATE, fecha_inicio: hoyBogota() });
     this.formError.set(null);
     this.userMode.set('nuevo');
@@ -588,10 +692,11 @@ export class NegociosComponent implements OnInit, OnDestroy {
     this.usuarioSeleccionado.set(u);
     this.usuarioResults.set([]);
     // Autofill negocio contact fields from the selected user
+    // Solo se completa lo que el paso 1 dejó vacío: el contacto que ya se escribió no se pisa.
     this.createForm.update((f) => ({
       ...f,
-      email_contacto: u.email ?? '',
-      telefono: u.telefono ?? '',
+      email_contacto: f.email_contacto || (u.email ?? ''),
+      telefono: f.telefono || (u.telefono ?? ''),
     }));
   }
 
@@ -649,6 +754,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
             primer_apellido: f.a_primer_apellido.trim(),
             num_identificacion: f.a_num_identificacion.trim(),
             email: f.a_email.trim() || null,
+            telefono: f.a_telefono.trim() || null,
             password: f.a_password,
           },
         };
@@ -682,10 +788,11 @@ export class NegociosComponent implements OnInit, OnDestroy {
     });
     const plan = this.planDesde(n.plan);
     this.editNegocio.set(n);
-    this.cargarComplementos(n.id_negocio);
-    this.cargarHistorial(n.id_negocio);
     this.planForm.set(plan);
     this.planInicial.set({ ...plan });
+    this.totalMensual.set(null);
+    this.cargarComplementos(n.id_negocio);
+    this.editTab.set('datos');
     this.formError.set(null);
     this.modalMode.set('edit');
   }
@@ -702,7 +809,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
     const fin = diaBogota(plan.fecha_fin);
     const esPagado = plan.id_plan !== null && this.planes().some((p) => p.id_plan === plan.id_plan);
     const esPrueba = !!fin && sumarPeriodo(inicio, { dias: DIAS_PRUEBA }) === fin &&
-      /b[aá]sico/i.test(plan.nombre);
+      plan.codigo === 'BASICO';
 
     let meses = 1;
     if (fin) {
@@ -736,12 +843,14 @@ export class NegociosComponent implements OnInit, OnDestroy {
   protected updatePlan(field: keyof PlanEditForm, e: Event): void {
     const value = (e.target as HTMLInputElement | HTMLSelectElement).value;
     this.planForm.update((c) => (c ? { ...c, [field]: value } : c));
+    this.totalSolicitud.next();
   }
 
   /** Vuelve los campos del plan a como estaban al abrir. */
   protected deshacerPlan(): void {
     const inicial = this.planInicial();
     if (inicial) this.planForm.set({ ...inicial });
+    this.totalSolicitud.next();
   }
 
   protected esPlanEdit(idPlan: number): boolean {
@@ -749,9 +858,12 @@ export class NegociosComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Guarda los datos y, si cambió algo del plan, aplica el plan después.
-   * Van en ese orden y por separado: si el plan falla, los datos ya quedaron guardados y el
-   * mensaje lo dice, en vez de dejar al usuario sin saber qué se aplicó.
+   * UN solo guardado para todo el modal: datos, plan y complementos, en ese orden.
+   *
+   * Son hasta tres llamadas al backend y una puede fallar con las anteriores ya aplicadas. Si pasa,
+   * el mensaje dice exactamente qué se guardó y qué no, la pantalla se pone al día con lo que SÍ
+   * quedó guardado (para no seguir enseñando el plan viejo como «actual»), y lo que falló se
+   * conserva en el formulario para reintentarlo sin volver a escribirlo.
    */
   protected submitEdit(): void {
     const f = this.editForm();
@@ -760,7 +872,8 @@ export class NegociosComponent implements OnInit, OnDestroy {
     this.formError.set(null);
 
     const plan = this.aplicaPlan() ? this.planForm() : null;
-    let datosGuardados = false;
+    const conComplementos = this.complementosModificados();
+    const hecho = { datos: false, plan: false };
 
     this.service.updateNegocio(f.id_negocio, {
       nombre: f.nombre.trim(),
@@ -771,51 +884,89 @@ export class NegociosComponent implements OnInit, OnDestroy {
       id_rubro: f.id_rubro ? Number(f.id_rubro) : undefined,
       pais: f.pais || 'CO',
     }).pipe(
+      tap(() => { hecho.datos = true; }),
       switchMap(() => {
-        datosGuardados = true;
         if (!plan) return of(undefined);
         return this.service.cambiarPlan(f.id_negocio, plan.id_plan
           ? { id_plan: Number(plan.id_plan), meses: Number(plan.meses), fecha_inicio: plan.fecha_inicio }
           : { prueba: true, fecha_inicio: plan.fecha_inicio });
+      }),
+      tap(() => { hecho.plan = !!plan; }),
+      switchMap(() => {
+        if (!conComplementos) return of(null);
+        return this.service.guardarComplementos(
+          f.id_negocio,
+          this.complementos().map((c) => ({
+            codigo: c.codigo,
+            cantidad: c.cantidad,
+            cantidad_facturable: c.cantidad_facturable,
+          })),
+        );
       }),
     ).subscribe({
       next: () => {
         this.saving.set(false);
         this.closeModal();
         this.load();
+        const extras = [plan && 'plan', conComplementos && 'complementos'].filter(Boolean).join(' y ');
         this.toast.exito(
-          plan ? `«${f.nombre.trim()}» actualizado y plan cambiado.` : `«${f.nombre.trim()}» actualizado.`,
+          extras ? `«${f.nombre.trim()}» actualizado (${extras}).` : `«${f.nombre.trim()}» actualizado.`,
         );
       },
       error: (err) => {
         this.saving.set(false);
         const msg = err.error?.message;
-        if (datosGuardados) {
-          const texto =
-            `Los datos del negocio se guardaron, pero el plan no se cambió${msg ? `: ${msg}` : '.'}`;
-          this.formError.set(texto);
-          this.toast.aviso(texto);
-          this.load();
-        } else {
+        const guardado = [hecho.datos && 'los datos', hecho.plan && 'el plan'].filter(Boolean);
+        const fallo = !hecho.datos
+          ? 'los datos del negocio'
+          : plan && !hecho.plan ? 'el plan' : 'los complementos';
+
+        if (guardado.length === 0) {
           this.formError.set(msg ?? 'No se pudo actualizar el negocio.');
           this.toast.errorHttp(err, 'No se pudo actualizar el negocio.');
+          return;
         }
+
+        const texto = `Se guardaron ${guardado.join(' y ')}, pero NO se guardó ${fallo}${msg ? `: ${msg}` : '.'}`;
+        this.formError.set(texto);
+        this.toast.aviso(texto);
+        this.ponerAlDiaTrasGuardadoParcial(f.id_negocio, hecho.plan);
+      },
+    });
+  }
+
+  /**
+   * Tras un guardado a medias, la lista y el «plan actual» del modal se refrescan con lo que sí
+   * quedó guardado. Lo que falló no se toca: sigue en el formulario para reintentar.
+   */
+  private ponerAlDiaTrasGuardadoParcial(idNegocio: number, planGuardado: boolean): void {
+    this.service.getNegocios().subscribe({
+      next: (lista) => {
+        this._negocios.set(lista);
+        const fresco = lista.find((n) => n.id_negocio === idNegocio);
+        if (!fresco || this.modalMode() !== 'edit') return;
+        this.editNegocio.set(fresco);
+        if (planGuardado) {
+          const p = this.planDesde(fresco.plan);
+          this.planForm.set(p);
+          this.planInicial.set({ ...p });
+        }
+        this.totalSolicitud.next();
       },
     });
   }
 
   protected closeModal(): void {
     this.complementos.set([]);
+    this.complementosInicial.set('');
     this.limites.set(null);
     this.complementosError.set(null);
-    this.complementosOk.set(false);
+    this.totalMensual.set(null);
     this.modalMode.set(null);
     this.editForm.set(null);
     this.editNegocio.set(null);
     this.planForm.set(null);
     this.planInicial.set(null);
-    this.historial.set([]);
-    this.historialEstado.set('idle');
   }
 
   /** ¿El oficio dado es el del negocio en edición? (para marcar la opción). */

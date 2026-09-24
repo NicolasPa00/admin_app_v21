@@ -286,8 +286,7 @@
 }
 
 .dash-modal__card {
-  width: 100%;
-  max-width: 460px;
+  width: min(460px, calc(100vw - 2rem));
   max-height: calc(100dvh - 2 * var(--spacing-md));
   overflow: hidden;
   display: flex;

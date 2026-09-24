@@ -192,26 +192,14 @@
         aria-describedby="dash-aviso-desc"
         (click)="$event.stopPropagation()"
       >
-        <header class="dash-modal__head">
-          <span class="dash-modal__icon" [class]="'dash-modal__icon dash-modal__icon--' + v.tono" aria-hidden="true">
-            @switch (v.clave) {
-              @case ('GRACIA') { <lucide-icon name="triangle-alert" [size]="20" /> }
-              @case ('PENDIENTE') { <lucide-icon name="calendar-clock" [size]="20" /> }
-              @default { <lucide-icon name="lock" [size]="20" /> }
-            }
-          </span>
-          <h2 id="dash-aviso-title" class="dash-modal__title">
-            @switch (v.clave) {
-              @case ('GRACIA') { Tu plan está vencido }
-              @case ('VENCIDO') { Acceso bloqueado }
-              @case ('PENDIENTE') { El plan aún no inicia }
-              @default { Sin plan activo }
-            }
-          </h2>
-          <button type="button" class="dash-modal__close" (click)="cerrarAviso()" aria-label="Cerrar">
-            <lucide-icon name="x" [size]="18" aria-hidden="true" />
-          </button>
-        </header>
+        <app-modal-cabecera
+          [icono]="v.clave === 'GRACIA' ? 'triangle-alert' : v.clave === 'PENDIENTE' ? 'calendar-clock' : 'lock'"
+          [titulo]="v.clave === 'GRACIA' ? 'Tu plan está vencido'
+            : v.clave === 'VENCIDO' ? 'Acceso bloqueado'
+            : v.clave === 'PENDIENTE' ? 'El plan aún no inicia' : 'Sin plan activo'"
+          tituloId="dash-aviso-title"
+          (cerrar)="cerrarAviso()"
+        />
 
         <div class="dash-modal__body" id="dash-aviso-desc">
           @switch (v.clave) {

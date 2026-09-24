@@ -1,0 +1,104 @@
+<div class="sp" role="group" aria-label="Planes disponibles">
+  <div class="sp__tarjetas">
+    @for (t of agrupado().tarjetas; track t.id) {
+      @let op = opcionDe(t.id);
+      <article class="sp__tarjeta" [class.sp__tarjeta--elegida]="estaElegida(t.id)">
+        <header class="sp__cab">
+          <h4 class="sp__titulo">{{ t.titulo }}</h4>
+          @if (esActual(t.id)) {
+            <span class="sp__chip">Tu plan actual</span>
+          }
+        </header>
+
+        <p class="sp__incluye">{{ t.incluye }}</p>
+
+        @if (t.facturacion !== 'no') {
+          <div class="sp__fe">
+            <span class="sp__fe-titulo" [id]="'sp-fe-' + t.id">
+              Facturación electrónica incluida: elige tu paquete
+            </span>
+            <div class="sp__tramos" role="radiogroup" [attr.aria-labelledby]="'sp-fe-' + t.id">
+              @for (o of t.opciones; track o.plan.id_plan) {
+                <button
+                  type="button"
+                  role="radio"
+                  class="sp__tramo"
+                  [attr.aria-checked]="op.plan.id_plan === o.plan.id_plan"
+                  [class.sp__tramo--on]="op.plan.id_plan === o.plan.id_plan"
+                  [disabled]="deshabilitado()"
+                  (click)="elegirTramo(t.id, o)"
+                >
+                  {{ o.tramo }}
+                </button>
+              }
+            </div>
+            @if (op.tramo; as tr) {
+              <span class="sp__docs">{{ documentos(tr) }}</span>
+            }
+          </div>
+        }
+
+        <div class="sp__pie">
+          <div class="sp__precio">
+            <strong>{{ dinero(op.plan.precio, op.plan.moneda) }}</strong>
+            <span>al mes</span>
+          </div>
+
+          @if (modo() === 'contratar') {
+            <button
+              type="button"
+              class="btn btn--primary btn--sm"
+              [disabled]="deshabilitado() || ocupadoId() !== null"
+              (click)="elegirTarjeta(t.id)"
+            >
+              Elegir este plan
+            </button>
+          } @else if (op.plan.id_plan === idPlanMarcado()) {
+            <span class="sp__elegido">Elegido</span>
+          } @else {
+            <button
+              type="button"
+              class="btn btn--outline btn--sm"
+              [attr.aria-pressed]="false"
+              [disabled]="deshabilitado()"
+              (click)="elegirTarjeta(t.id)"
+            >
+              Elegir
+            </button>
+          }
+        </div>
+      </article>
+    }
+  </div>
+
+  @if (agrupado().otros.length) {
+    <div class="sp__otros">
+      <h4 class="sp__otros-titulo">Otros planes</h4>
+      <ul class="sp__otros-lista">
+        @for (p of agrupado().otros; track p.id_plan) {
+          <li class="sp__otro" [class.sp__otro--elegido]="p.id_plan === idPlanMarcado()">
+            <div>
+              <strong>{{ p.nombre }}</strong>
+              <span class="sp__docs">{{ dinero(p.precio, p.moneda) }} al mes</span>
+              @if (p.id_plan === idPlanActual()) {
+                <span class="sp__chip">Tu plan actual</span>
+              }
+            </div>
+            @if (p.id_plan === idPlanMarcado() && modo() === 'cambiar') {
+              <span class="sp__elegido">Elegido</span>
+            } @else {
+              <button
+                type="button"
+                class="btn btn--outline btn--sm"
+                [disabled]="deshabilitado() || ocupadoId() !== null"
+                (click)="elegir.emit(p.id_plan)"
+              >
+                {{ modo() === 'contratar' ? 'Elegir este plan' : 'Elegir' }}
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</div>

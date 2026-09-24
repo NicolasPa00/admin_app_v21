@@ -67,7 +67,7 @@
   }
 
   &__nombre {
-    font-family: var(--font-family);
+    font-family: var(--font-marca);
     font-size: clamp(2.4rem, 3.6vw, 3.2rem);
     // 700 en TODAS las apariciones de la marca, igual que en login y en la landing.
     font-weight: 700;
@@ -203,7 +203,7 @@
   }
 
   &__mobile-nombre {
-    font-family: var(--font-family);
+    font-family: var(--font-marca);
     font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: -0.02em;

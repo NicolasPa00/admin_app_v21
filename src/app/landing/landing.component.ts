@@ -311,10 +311,10 @@ interface PaqueteDocumentos {
 }
 
 const PAQUETES_FACTURACION: PaqueteDocumentos[] = [
-  { id: 'S',  documentos: '100 documentos',   detalle: 'hasta 100 documentos al mes',   precio: 38999 },
-  { id: 'M',  documentos: '500 documentos',   detalle: 'hasta 500 documentos al mes',   precio: 58999 },
-  { id: 'L',  documentos: '1.200 documentos', detalle: 'hasta 1.200 documentos al mes', precio: 78999 },
-  { id: 'XL', documentos: '2.500 documentos', detalle: 'hasta 2.500 documentos al mes', precio: 98999 },
+  { id: 'S',  documentos: '100 documentos',   detalle: 'hasta 100 documentos al mes',   precio: 39000 },
+  { id: 'M',  documentos: '500 documentos',   detalle: 'hasta 500 documentos al mes',   precio: 59000 },
+  { id: 'L',  documentos: '1.200 documentos', detalle: 'hasta 1.200 documentos al mes', precio: 79000 },
+  { id: 'XL', documentos: '2.500 documentos', detalle: 'hasta 2.500 documentos al mes', precio: 99000 },
 ];
 
 /**
@@ -465,7 +465,7 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     base: 'BASICO',
     conAsistente: false,
     conFacturacion: true,
-    usuarios: 10,
+    usuarios: 8,
     cajas: 2,
     conTrial: false,
     destacado: false,
@@ -1208,13 +1208,21 @@ export class LandingComponent {
   /**
    * A dónde va el botón «Adquirir plan»: a la vista de compra, con lo que ya eligió.
    *
-   * Solo viajan el **nombre** del plan y la familia de negocio. El precio no: lo pone el backend
-   * desde `cob_precio_plan`, así que nadie compra un Avanzado a precio de Básico retocando la
-   * URL. Los nombres de aquí tienen que existir en `gener_plan`; los que no —hoy los dos con
-   * facturación— los rechaza el catálogo de la compra con un aviso, no con un cobro equivocado.
+   * Solo viajan el **código** del plan y la familia de negocio. El precio no: lo pone el backend
+   * desde `cob_precio_plan` (y según el aplicativo del negocio), así que nadie compra un Avanzado a
+   * precio de Básico retocando la URL. Los códigos son los de `gener_plan.codigo`; uno que no se
+   * venda lo rechaza el catálogo de la compra con un aviso, no con un cobro equivocado.
+   *
+   * Las tarjetas con facturación son una fila por paquete de documentos (`EMPRENDEDOR_FE_M`,
+   * `EMPRESARIAL_XL`…): el paquete elegido en el detalle de la tarjeta forma parte del código.
    */
-  protected rutaAdquirir(plan: { base: PlanBaseId }): string {
-    return plan.base === 'AVANZADO' ? 'Plan Avanzado' : 'Plan Básico';
+  protected rutaAdquirir(plan: {
+    base: PlanBaseId;
+    conFacturacion: boolean;
+    paquete: { id: string };
+  }): string {
+    if (!plan.conFacturacion) return plan.base === 'AVANZADO' ? 'AVANZADO' : 'BASICO';
+    return `${plan.base === 'AVANZADO' ? 'EMPRESARIAL' : 'EMPRENDEDOR_FE'}_${plan.paquete.id}`;
   }
 
 

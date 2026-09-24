@@ -7,6 +7,8 @@ import {
   Notificacion,
   NotificacionesResponse,
   ContadorNoLeidasResponse,
+  ConversacionEsperando,
+  EsperandoRespuestaResponse,
 } from '../models/notificacion.models';
 
 @Injectable({ providedIn: 'root' })
@@ -17,6 +19,14 @@ export class NotificacionService {
   readonly notificaciones = signal<Notificacion[]>([]);
   readonly totalNoLeidas = signal(0);
 
+  /**
+   * Conversaciones que esperan a una persona, derivadas al leer (no son filas de notificación,
+   * así que no pueden quedarse «sin leer» después de contestar). `totalEsperando` cuenta todas;
+   * `esperando` trae las más recientes.
+   */
+  readonly esperando = signal<ConversacionEsperando[]>([]);
+  readonly totalEsperando = signal(0);
+
   getMisNotificaciones(soloNoLeidas = false): Observable<Notificacion[]> {
     const params = soloNoLeidas ? '?no_leidas=true' : '';
     return this.http
@@ -24,6 +34,18 @@ export class NotificacionService {
       .pipe(
         map((res) => res.data ?? []),
         tap((data) => this.notificaciones.set(data)),
+      );
+  }
+
+  getEsperandoRespuesta(): Observable<ConversacionEsperando[]> {
+    return this.http
+      .get<EsperandoRespuestaResponse>(`${this.API}/mis-notificaciones/esperando-respuesta`)
+      .pipe(
+        tap((res) => {
+          this.esperando.set(res.data?.conversaciones ?? []);
+          this.totalEsperando.set(res.data?.total ?? 0);
+        }),
+        map((res) => res.data?.conversaciones ?? []),
       );
   }
 

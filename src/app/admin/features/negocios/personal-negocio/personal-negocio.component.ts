@@ -14,7 +14,9 @@ import {
 } from 'lucide-angular';
 
 import { UsuariosAdminService } from '../../../data-access/usuarios-admin.service';
-import { LoadingState, UsuarioAdmin, UpdateUsuarioPerfilRequest } from '../../../models/admin.models';
+import { ModalCabeceraComponent } from '../../../../shared/modal-cabecera/modal-cabecera.component';
+import { LoadingState, UsuarioAdmin, UpdateUsuarioPerfilRequest, CupoUsuarios } from '../../../models/admin.models';
+import { NegociosAdminService } from '../../../data-access/negocios-admin.service';
 
 /** Lo editable de una persona desde aquí. Roles y contraseña siguen viviendo en Usuarios. */
 interface FormPerfil {
@@ -45,7 +47,7 @@ interface FormPerfil {
   selector: 'app-personal-negocio',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule],
+  imports: [LucideAngularModule, ModalCabeceraComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -60,6 +62,7 @@ interface FormPerfil {
 })
 export class PersonalNegocioComponent implements OnInit {
   private readonly service = inject(UsuariosAdminService);
+  private readonly negocios = inject(NegociosAdminService);
 
   readonly idNegocio = input.required<number>();
   readonly nombreNegocio = input<string>('');
@@ -67,6 +70,8 @@ export class PersonalNegocioComponent implements OnInit {
 
   protected readonly estado = signal<LoadingState>('loading');
   protected readonly personal = signal<UsuarioAdmin[]>([]);
+  /** «X de Y usuarios» del plan; `null` mientras carga o si no se pudo consultar. */
+  protected readonly cupo = signal<CupoUsuarios | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly aviso = signal<string | null>(null);
 
@@ -82,6 +87,16 @@ export class PersonalNegocioComponent implements OnInit {
 
   protected readonly activos = computed(() => this.personal().filter((u) => u.estado === 'A').length);
 
+  /** Bajo el título: a qué negocio pertenece la lista y cuántas personas hay. */
+  protected readonly subtitulo = computed(() => {
+    const n = this.personal().length;
+    const a = this.activos();
+    const cuenta = this.estado() === 'success'
+      ? ` · ${n} ${n === 1 ? 'persona' : 'personas'}, ${a} ${a === 1 ? 'activa' : 'activas'}`
+      : '';
+    return `${this.nombreNegocio()}${cuenta}`;
+  });
+
   ngOnInit(): void {
     this.cargar();
   }
@@ -89,6 +104,12 @@ export class PersonalNegocioComponent implements OnInit {
   protected cargar(): void {
     this.estado.set('loading');
     this.error.set(null);
+
+    // El cupo no bloquea la lista: si falla, simplemente no se enseña.
+    this.negocios.getCupoUsuarios(this.idNegocio()).subscribe({
+      next: (c) => this.cupo.set(c),
+      error: () => this.cupo.set(null),
+    });
 
     this.service.getUsuarios({ id_negocio: this.idNegocio(), estado: 'ALL' }).subscribe({
       next: (personal) => {

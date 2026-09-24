@@ -18,8 +18,9 @@ import {
   UsuarioBusqueda,
   NegocioEventoHistorial,
   EliminacionNegocio,
+  CupoUsuarios,
 } from '../models/admin.models';
-import { ComplementosDeNegocio } from '../models/cobranza.models';
+import { ComplementosDeNegocio, TotalMensual } from '../models/cobranza.models';
 
 /**
  * NegociosAdminService — gestión de negocios (clientes) para el Super Admin.
@@ -86,6 +87,13 @@ export class NegociosAdminService {
       .pipe(map(() => undefined));
   }
 
+  /** «X de Y usuarios»: los que usa el negocio y los que le caben. */
+  getCupoUsuarios(idNegocio: number): Observable<CupoUsuarios> {
+    return this.http
+      .get<ApiResponse<CupoUsuarios>>(`${this.API}/negocios/${idNegocio}/cupo-usuarios`)
+      .pipe(map((res) => res.data as CupoUsuarios));
+  }
+
   getHistorial(idNegocio: number): Observable<NegocioEventoHistorial[]> {
     return this.http
       .get<ApiResponse<NegocioEventoHistorial[]>>(`${this.API}/negocios/${idNegocio}/historial`)
@@ -145,6 +153,19 @@ export class NegociosAdminService {
   getComplementos(idNegocio: number): Observable<ComplementosDeNegocio | null> {
     return this.http
       .get<ApiResponse<ComplementosDeNegocio>>(`${this.API}/cobranza/negocios/${idNegocio}/complementos`)
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Cuánto valdría al mes un plan con estos complementos, sin guardar nada. `complementos` lleva
+   * lo que SE COBRA de cada uno. Lo calcula el backend.
+   */
+  getTotalMensual(
+    idNegocio: number,
+    body: { id_plan: number | null; complementos: { codigo: string; cantidad_facturable: number }[] },
+  ): Observable<TotalMensual | null> {
+    return this.http
+      .post<ApiResponse<TotalMensual>>(`${this.API}/cobranza/negocios/${idNegocio}/total-mensual`, body)
       .pipe(map((res) => res.data ?? null));
   }
 

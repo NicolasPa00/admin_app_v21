@@ -159,6 +159,11 @@ export class CanalWhatsappComponent implements OnInit {
     'Hola, quiero activar el WhatsApp gestionado por EscalApp',
   )}`;
 
+  /** Ayuda con la activación o algún trámite: el mismo canal de soporte, con el texto ya escrito. */
+  protected readonly whatsappAyuda = `${environment.whatsappUrl}?text=${encodeURIComponent(
+    'Hola, tengo una duda con la activación de WhatsApp en mi negocio',
+  )}`;
+
   ngOnInit(): void {
     this.adminService.getMisNegociosUsuario().subscribe({
       next: (negocios) => {

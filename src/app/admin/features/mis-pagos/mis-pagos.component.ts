@@ -17,6 +17,7 @@ import {
 } from 'lucide-angular';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
+import { SelectorPlanesComponent } from './selector-planes.component';
 import {
   CobroNegocio,
   CodigoPasarela,
@@ -24,6 +25,7 @@ import {
   FacturaPendiente,
   PasarelaElegible,
   PlanDisponible,
+  SimulacionCambio,
 } from '../../models/cobranza.models';
 import { LoadingState } from '../../models/admin.models';
 import { Vencimiento, evaluarVencimiento } from '../../../core/utils/estado-plan';
@@ -75,7 +77,7 @@ type CobroVista = CobroNegocio & { vencimiento: Vencimiento };
   selector: 'app-mis-pagos',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, SelectorNegocioComponent],
+  imports: [LucideAngularModule, SelectorNegocioComponent, SelectorPlanesComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -245,6 +247,7 @@ export class MisPagosComponent implements OnInit {
     // Al entrar a «Cambiar plan» el panel se arma con lo que el negocio tiene hoy, no con lo que
     // quedó de la última visita.
     if (tab === 'plan') this.prepararPanel(c);
+    else this.simulacion.set(null);
     this.tabs.update((m) => ({ ...m, [c.id_negocio!]: tab }));
   }
 
@@ -262,15 +265,17 @@ export class MisPagosComponent implements OnInit {
       cantidades[x.codigo] = x.cantidad_solicitada ?? x.cantidad;
     }
     this.complementosEditados.set(cantidades);
+    this.simulacion.set(null);
   }
 
   protected planMarcado(c: CobroVista): number | null {
     return this.planElegido() ?? c.id_plan_solicitado ?? c.id_plan ?? null;
   }
 
-  protected marcarPlan(idPlan: number): void {
+  protected marcarPlan(c: CobroVista, idPlan: number): void {
     this.planElegido.set(idPlan);
     this.avisoPlan.set(null);
+    this.simular(c);
   }
 
   protected cantidadDe(x: ComplementoCliente): number {
@@ -278,11 +283,12 @@ export class MisPagosComponent implements OnInit {
     return editado ?? x.cantidad_solicitada ?? x.cantidad;
   }
 
-  protected ajustarComplemento(x: ComplementoCliente, delta: number): void {
+  protected ajustarComplemento(c: CobroVista, x: ComplementoCliente, delta: number): void {
     const actual = this.cantidadDe(x);
     const nueva = Math.max(0, Math.min(x.cantidad_maxima, actual + delta));
     this.complementosEditados.update((m) => ({ ...m, [x.codigo]: nueva }));
     this.avisoPlan.set(null);
+    this.simular(c);
   }
 
   /** Lo que costaría al mes lo que hay marcado ahora mismo en el panel. */
@@ -311,6 +317,68 @@ export class MisPagosComponent implements OnInit {
     return (c.complementos?.complementos ?? []).some((x) => this.cantidadDe(x) !== x.cantidad);
   }
 
+  /**
+   * Lo que el backend cobraría por lo marcado en el panel, o `null` si no se sabe (cargando, sin
+   * subida, o la simulación falló). El aviso solo AÑADE el monto cuando llega: nunca bloquea el
+   * cambio ni cambia su texto mientras tanto.
+   */
+  protected readonly simulacion = signal<SimulacionCambio | null>(null);
+
+  /** Descarta respuestas de simulaciones viejas: gana siempre la última que se pidió. */
+  private simulacionSeq = 0;
+
+  private simular(c: CobroVista): void {
+    const seq = ++this.simulacionSeq;
+    this.simulacion.set(null);
+    if (!c.id_negocio || !this.hayCambios(c) || !this.estaAlDia(c.vencimiento) || !this.subeDePrecio(c)) {
+      return;
+    }
+
+    this.api
+      .simularCambio(c.id_negocio, this.cambioPedido(c))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          if (seq === this.simulacionSeq) this.simulacion.set(r?.aplica === 'ajuste' ? r : null);
+        },
+        error: () => {
+          if (seq === this.simulacionSeq) this.simulacion.set(null);
+        },
+      });
+  }
+
+  /** «Plan Básico» tal cual, o «plan Básico» si el catálogo trae solo el apellido. */
+  protected nombreConPlan(nombre: string): string {
+    return /^plan/i.test(nombre) ? nombre : `plan ${nombre}`;
+  }
+
+  /**
+   * El cambio marcado en el panel, tal como viaja. UNA sola construcción para simular y para
+   * guardar: si difirieran, se simularía una cosa y se cobraría otra.
+   */
+  private cambioPedido(c: CobroVista): {
+    idPlan: number | null;
+    complementos: Array<{ codigo: string; cantidad: number }>;
+  } {
+    return {
+      idPlan: this.planMarcado(c),
+      complementos: (c.complementos?.complementos ?? []).map((x) => ({
+        codigo: x.codigo,
+        cantidad: this.cantidadDe(x),
+      })),
+    };
+  }
+
+  /** El plan que tiene activo hoy, para nombrarlo en el aviso de subida. */
+  protected planActualDe(c: CobroVista): PlanDisponible | undefined {
+    return c.planes?.find((p) => p.id_plan === c.id_plan);
+  }
+
+  /** Días que le quedan al plan vigente (ya calculados por `evaluarVencimiento`). 0 si no hay. */
+  protected diasRestantes(v: Vencimiento): number {
+    return this.estaAlDia(v) ? Math.max(0, v.dias ?? 0) : 0;
+  }
+
   /** Lo que el cliente va a ver: sube (se cobra ahora) o baja (entra al renovar). */
   protected subeDePrecio(c: CobroVista): boolean {
     return this.mensualPrevisto(c) > this.mensualActual(c);
@@ -329,13 +397,8 @@ export class MisPagosComponent implements OnInit {
     this.avisoPlan.set(null);
     this.error.set(null);
 
-    const complementos = (c.complementos?.complementos ?? []).map((x) => ({
-      codigo: x.codigo,
-      cantidad: this.cantidadDe(x),
-    }));
-
     this.api
-      .cambiarMiPlan(c.id_negocio, { idPlan: this.planMarcado(c), complementos })
+      .cambiarMiPlan(c.id_negocio, this.cambioPedido(c))
       .subscribe({
         next: (r) => {
           this.cambiandoPlan.set(false);
@@ -362,6 +425,12 @@ export class MisPagosComponent implements OnInit {
    * la suscripción y genera el cobro del primer mes, y el plan se activa cuando ese cobro se paga.
    * Por eso, al terminar, se vuelve a cargar y el negocio aparece con su cobro listo para pagar.
    */
+  /** El selector agrupado emite el id de la fila real; aquí se vuelve al plan completo. */
+  protected elegirPrimerPlanPorId(c: CobroVista, idPlan: number): void {
+    const plan = c.planes?.find((p) => p.id_plan === idPlan);
+    if (plan) this.elegirPrimerPlan(c, plan);
+  }
+
   protected elegirPrimerPlan(c: CobroVista, plan: PlanDisponible): void {
     if (!c.id_negocio || this.eligiendoPlan() !== null) return;
 

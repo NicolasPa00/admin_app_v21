@@ -23,6 +23,8 @@
         Nuevo tipo de negocio
       </h2>
 
+      <!-- El cuerpo es lo que se desplaza si no cabe; el botón de crear queda siempre a la vista. -->
+      <div class="reg__panel-body">
       <div class="reg__form-grid">
       <div class="reg__form-col">
       <div class="reg__field">
@@ -35,6 +37,19 @@
           [value]="nombre()"
           (input)="setNombre($event)"
         />
+      </div>
+
+      <div class="reg__field">
+        <label class="reg__label" for="tn-modulo">Aplicativo *</label>
+        <select id="tn-modulo" class="input" (change)="setModulo($event)">
+          <option value="" [selected]="idModulo() === ''" disabled>Elige el aplicativo…</option>
+          @for (m of modulos(); track m.id) {
+            <option [value]="m.id" [selected]="idModulo() === '' + m.id">{{ m.nombre }}</option>
+          }
+        </select>
+        <small class="reg__hint">
+          El software que se le monta a este tipo de negocio. Sin aplicativo no se puede ofrecer.
+        </small>
       </div>
 
       <div class="reg__field">
@@ -104,6 +119,7 @@
 
       </div>
       </div>
+      </div>
 
       <button
         type="button"
@@ -158,6 +174,10 @@
                     <span class="reg__list-desc">{{ t.descripcion }}</span>
                   }
                 </div>
+                <!-- Qué aplicativo lo atiende. Sin él, el tipo no se ofrece. -->
+                <span class="reg__tag" [class.reg__tag--none]="!t.aplicativo">
+                  {{ t.aplicativo ?? 'Sin aplicativo' }}
+                </span>
               </li>
             }
           </ul>

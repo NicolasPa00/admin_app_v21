@@ -15,6 +15,7 @@ import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   TriangleAlert, Lock, CalendarClock, CalendarRange, X, Wallet,
 } from 'lucide-angular';
 
+import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
 import { AuthService }          from '../../../auth/data-access/auth.service';
 import { AdminService }         from '../../data-access/admin.service';
 import { Negocio, TipoNegocio, LoadingState, MetricasResumen } from '../../models/admin.models';
@@ -65,7 +66,7 @@ interface KpiMetrica {
   selector: 'app-admin-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LucideAngularModule, TitleCasePipe],
+  imports: [LucideAngularModule, TitleCasePipe, ModalCabeceraComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,

@@ -107,24 +107,12 @@
           @if (!c.planes?.length) {
             <p class="mp__meta">No hay planes disponibles para tu negocio por ahora.</p>
           } @else {
-            <ul class="mp__planes">
-              @for (p of c.planes; track p.id_plan) {
-                <li class="mp__plan-item">
-                  <div>
-                    <strong>{{ p.nombre }}</strong>
-                    <span class="mp__meta">{{ dinero(p.precio, p.moneda) }} al mes</span>
-                  </div>
-                  <button type="button" class="btn btn--primary btn--sm"
-                          [disabled]="eligiendoPlan() !== null"
-                          (click)="elegirPrimerPlan(c, p)">
-                    @if (eligiendoPlan() === p.id_plan) {
-                      <lucide-icon name="loader-2" [size]="14" class="mp__spin" aria-hidden="true" />
-                    }
-                    Elegir este plan
-                  </button>
-                </li>
-              }
-            </ul>
+            <app-selector-planes
+              modo="contratar"
+              [planes]="c.planes!"
+              [ocupadoId]="eligiendoPlan()"
+              [deshabilitado]="eligiendoPlan() !== null"
+              (elegir)="elegirPrimerPlanPorId(c, $event)" />
           }
         </div>
       } @else {
@@ -207,36 +195,15 @@
 
           <!-- ── Planes ── -->
           <h3 class="mp__plan-titulo">Tu plan</h3>
-            <ul class="mp__planes">
-              @for (p of c.planes; track p.id_plan) {
-                <li class="mp__plan-item"
-                    [class.mp__plan-item--actual]="p.id_plan === planMarcado(c)">
-                  <div>
-                    <strong>{{ p.nombre }}</strong>
-                    <span class="mp__meta">{{ dinero(p.precio, p.moneda) }} al mes</span>
-                  </div>
-                  <div class="mp__plan-marca">
-                    @if (p.id_plan === c.id_plan) {
-                      <span class="mp__chip mp__chip--activa">Tu plan actual</span>
-                    }
-                    @if (p.id_plan === planMarcado(c)) {
-                      <span class="mp__plan-check">
-                        <lucide-icon name="check" [size]="15" aria-hidden="true" />
-                        Elegido
-                      </span>
-                    } @else {
-                      <!-- De contorno: elegir plan en la lista es un paso previo, no la acción
-                           que cierra. La que cierra es «Guardar cambios», abajo. -->
-                      <button type="button" class="btn btn--outline btn--sm"
-                              [disabled]="cambiandoPlan()"
-                              (click)="marcarPlan(p.id_plan)">
-                        Elegir
-                      </button>
-                    }
-                  </div>
-                </li>
-              }
-            </ul>
+            <!-- Tres planes para el cliente (agrupados por `codigo`); por dentro, elegir es marcar
+                 el id_plan de la fila real. «Elegir» es un paso previo: la acción que cierra es
+                 «Guardar cambios», abajo. -->
+            <app-selector-planes
+              [planes]="c.planes!"
+              [idPlanActual]="c.id_plan ?? null"
+              [idPlanMarcado]="planMarcado(c)"
+              [deshabilitado]="cambiandoPlan()"
+              (elegir)="marcarPlan(c, $event)" />
 
             <!-- ── Complementos ── -->
             @if (c.complementos?.complementos?.length) {
@@ -260,13 +227,13 @@
                     <div class="mp__comp-cant">
                       <button type="button" class="mp__comp-btn" aria-label="Quitar uno"
                               [disabled]="cambiandoPlan() || cantidadDe(x) === 0"
-                              (click)="ajustarComplemento(x, -1)">
+                              (click)="ajustarComplemento(c, x, -1)">
                         <lucide-icon name="minus" [size]="15" aria-hidden="true" />
                       </button>
                       <span class="mp__comp-numero">{{ cantidadDe(x) }}</span>
                       <button type="button" class="mp__comp-btn" aria-label="Añadir uno"
                               [disabled]="cambiandoPlan() || cantidadDe(x) >= x.cantidad_maxima"
-                              (click)="ajustarComplemento(x, 1)">
+                              (click)="ajustarComplemento(c, x, 1)">
                         <lucide-icon name="plus" [size]="15" aria-hidden="true" />
                       </button>
                     </div>
@@ -303,9 +270,21 @@
                     Tu plan no está activo: el cambio se suma a tu mensualidad pendiente. Al
                     pagarla, tu plan se activa ya con lo que elegiste.
                   } @else if (subeDePrecio(c)) {
-                    Al guardar te generamos un cobro por la diferencia de los días que le quedan a
-                    tu mes. Cuando lo pagues, el cambio queda activo y tu fecha de vencimiento no
-                    se mueve.
+                    <!-- El monto exacto lo calcula el backend al guardar (prorrateo en
+                         cobranzaService.cobrarDiferenciaAhora); aquí no se duplica la fórmula. -->
+                    @if (planActualDe(c); as actual) {
+                      Tienes activo el <strong>{{ nombreConPlan(actual.nombre) }}</strong>.
+                    }
+                    @if (simulacion(); as sim) {
+                      Hoy pagarás <strong>{{ dinero(sim.total!, sim.moneda ?? c.moneda) }}</strong>
+                      ({{ sim.dias_restantes }}
+                      {{ sim.dias_restantes === 1 ? 'día restante' : 'días restantes' }}), no el
+                      valor completo.
+                    } @else {
+                      Solo pagarás la diferencia proporcional a los días que le quedan a tu plan
+                      actual@if (diasRestantes(c.vencimiento); as dias) { ({{ dias }} {{ dias === 1 ? 'día' : 'días' }})}, no el valor completo.
+                    }
+                    Cuando lo pagues, el cambio queda activo y tu fecha de vencimiento no se mueve.
                   } @else {
                     No hay nada que pagar hoy: el cambio entra en tu próxima renovación, así que
                     aprovechas el mes que ya pagaste.
@@ -334,6 +313,7 @@
 
       <!-- ═══ Pestaña «Pagar mi plan» ═══ -->
       @if (tabDe(c) === 'pagar') {
+      <div class="mp__panel">
 
       @if (c.facturas.length === 0) {
         @if (estaAlDia(c.vencimiento)) {
@@ -464,6 +444,7 @@
         </article>
       }
 
+      </div>
       }
       }
     </section>

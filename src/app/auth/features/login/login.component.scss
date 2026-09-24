@@ -70,7 +70,7 @@
   }
 
   &__nombre {
-    font-family: var(--font-family);
+    font-family: var(--font-marca);
     font-size: clamp(2.4rem, 3.6vw, 3.2rem);
     // 700 en TODAS las apariciones de la marca. El 800 que llevaba aquí hacía que el
     // nombre pareciera de otra fuente al compararlo con el de la landing o el del panel.
@@ -217,7 +217,7 @@
   }
 
   &__mobile-nombre {
-    font-family: var(--font-family);
+    font-family: var(--font-marca);
     font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: -0.02em;

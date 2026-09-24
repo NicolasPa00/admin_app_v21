@@ -7,6 +7,7 @@ import { ApiResponse } from '../../auth/models/auth.models';
 import {
   CobroNegocio,
   CambioDePlan,
+  SimulacionCambio,
   CobroResultado,
   CodigoPasarela,
   EstadoSuscripcion,
@@ -112,6 +113,26 @@ export class CobranzaService {
         ...(idPlan != null ? { id_plan: idPlan } : {}),
         ...(complementos != null ? { complementos } : {}),
       })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Cuánto se cobraría por un cambio, sin hacerlo. Mismos parámetros que `cambiarMiPlan`; el monto
+   * lo calcula el backend con la misma cuenta que el cobro real, aquí nunca se recalcula.
+   */
+  simularCambio(
+    idNegocio: number,
+    { idPlan = null, complementos = null }:
+      { idPlan?: number | null; complementos?: Array<{ codigo: string; cantidad: number }> | null },
+  ): Observable<SimulacionCambio | null> {
+    const params: Record<string, string> = { id_negocio: String(idNegocio) };
+    if (idPlan != null) params['id_plan'] = String(idPlan);
+    // `[]` viaja como `complementos=` (todos a cero), igual que el POST; solo `null` los omite.
+    if (complementos != null) {
+      params['complementos'] = complementos.map((c) => `${c.codigo}:${c.cantidad}`).join(',');
+    }
+    return this.http
+      .get<ApiResponse<SimulacionCambio>>(`${this.API}/cobranza/mi-plan/simular`, { params })
       .pipe(map((res) => res.data ?? null));
   }
 

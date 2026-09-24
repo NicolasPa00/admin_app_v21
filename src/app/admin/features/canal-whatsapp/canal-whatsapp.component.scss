@@ -96,9 +96,14 @@
     justify-content: center;
     gap: 0.5rem;
     margin-top: auto;
+    box-sizing: border-box;
+    min-height: 2.5rem;
     padding: 0.625rem 1rem;
-    border: none;
+    /* Borde de 1px en TODAS las variantes: con `none` el botón sólido medía 2px menos que el
+       de contorno y, lado a lado, las dos tarjetas no quedaban a la misma altura. */
+    border: 1px solid transparent;
     border-radius: 0.5rem;
+    line-height: 1.25;
     background: var(--color-primary);
     color: var(--color-on-primary, #fff);
     font-size: 0.875rem;
@@ -126,6 +131,30 @@
         background: color-mix(in srgb, #dc2626 8%, transparent);
       }
     }
+  }
+
+  /* Ayuda al final de la vista. */
+  &__soporte {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    padding: 1rem 1.25rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 0.875rem;
+    background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+  }
+
+  &__soporte-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+
+    strong { color: var(--color-text-primary); }
   }
 
   /* Confirmación de dos pasos antes de desconectar — nunca en el primer clic. */

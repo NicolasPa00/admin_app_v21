@@ -167,7 +167,8 @@ export class AdquirirPageComponent {
 
   /** El plan elegido, ya con su precio de la base. Si no existe, la compra no puede seguir. */
   protected readonly plan = computed<PlanVendible | null>(
-    () => this.planes().find((p) => p.nombre === this.planPedido()) ?? null,
+    // El enlace lleva el CÓDIGO del plan (o el nombre, los enlaces antiguos de la landing).
+    () => this.planes().find((p) => p.codigo === this.planPedido() || p.nombre === this.planPedido()) ?? null,
   );
 
   protected readonly etiquetaCategoria = computed(() =>
@@ -213,6 +214,23 @@ export class AdquirirPageComponent {
     // build no hay API a la que preguntar, y pedirlo ahí dejaría el HTML servido con el mensaje
     // de error dentro. En el navegador se piden al abrir la página, que es cuando importan.
     afterNextRender(() => this.cargarCatalogo());
+  }
+
+  /**
+   * Elegir el tipo de negocio decide el aplicativo y con él el precio de los planes: se vuelve a
+   * pedir el catálogo con ese oficio para que el precio que se enseña sea el que se va a cobrar.
+   */
+  protected elegirRubro(valor: string): void {
+    this.rubro.set(valor);
+    if (!valor) return;
+    this.api
+      .catalogo(valor)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (cat) => this.planes.set(cat.planes),
+        // Si falla, se conservan los precios que ya había: el backend cobra el correcto de todos modos.
+        error: () => undefined,
+      });
   }
 
   private cargarCatalogo(): void {

@@ -2,9 +2,19 @@
 // RegistrarComponent — Tipos de negocio (Super Admin)
 // ============================================================
 
+// En escritorio la pantalla cabe entera: el shell no scrollea y cada tarjeta desplaza su propio
+// contenido si no le alcanza. El descuento es el de la cabecera + el padding del contenido (mismo
+// criterio que la bandeja). En pantallas angostas las tarjetas se apilan y la página scrollea.
 .reg {
   max-width: 1440px;
   margin: 0 auto;
+
+  @media (min-width: 1101px) {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 8rem);
+    min-height: 0;
+  }
 }
 
 .reg__head {
@@ -30,7 +40,14 @@
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: var(--spacing-xl);
-  align-items: start;
+  // Las dos tarjetas MISMA altura: se estiran a la de la fila en vez de medir lo que cada una lleve.
+  align-items: stretch;
+
+  @media (min-width: 1101px) {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
@@ -49,24 +66,26 @@
   }
 }
 
-// La lista tiene su propio scroll: la página no crece con cada tipo nuevo.
-.reg__panel--list {
+// Las dos tarjetas son una columna: título fijo, cuerpo con su propio scroll, y (en el formulario)
+// el botón de crear siempre abajo. La página no crece con cada tipo nuevo ni con cada campo.
+.reg__panel {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 220px);
-  min-height: 320px;
-
-  .reg__list {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding-right: 4px;
-    margin-right: -4px;
-  }
+  min-height: 0;
 
   @media (max-width: 1100px) {
-    max-height: 70dvh;
+    min-height: 320px;
+    max-height: 80dvh;
   }
+}
+
+.reg__panel-body,
+.reg__panel--list .reg__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-right: -4px;
 }
 
 .reg__count {
@@ -220,6 +239,29 @@
 .reg__preview-name {
   font-weight: 700;
   color: var(--color-text-primary);
+}
+
+// ── Aplicativo ──────────────────────────────────────────────
+.reg__hint {
+  display: block;
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.reg__tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+
+  &--none { color: var(--color-text-muted); font-weight: 500; }
 }
 
 // ── Mensaje ─────────────────────────────────────────────────

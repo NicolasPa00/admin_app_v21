@@ -22,6 +22,7 @@
         <lucide-icon name="lock" [size]="17" aria-hidden="true" />
         Cambiar contraseña
       </button>
+      <!-- «Mis negocios» comentada (2026-09-24): la información ya aparece en otras secciones.
       <button
         type="button"
         class="cfg__nav-item"
@@ -31,6 +32,7 @@
         <lucide-icon name="building-2" [size]="17" aria-hidden="true" />
         Mis negocios
       </button>
+      -->
     </nav>
 
     <!-- ── Panel de contenido ────────────────────────────────── -->
@@ -235,7 +237,9 @@
         </div>
       }
 
-      <!-- ══ Mis negocios ══ -->
+      <!-- ══ Mis negocios ══ — comentada (2026-09-24): la información de negocios y planes ya
+           aparece en otras secciones (Mis pagos, selector de negocios). Se conserva para poder
+           restaurarla; junto con ella están comentados sus métodos y la petición HTTP en el .ts.
       @if (activeSection() === 'negocios') {
         <div class="cfg__section">
           <h2 class="cfg__section-title">Mis negocios</h2>
@@ -321,6 +325,7 @@
           }
         </div>
       }
+      -->
 
     </section>
   </div>

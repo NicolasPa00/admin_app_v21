@@ -4,11 +4,14 @@ import {
   OnInit,
   PLATFORM_ID,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import {
@@ -22,6 +25,7 @@ import {
   Sparkles,
   Check,
   ArrowRight,
+  Settings,
 } from 'lucide-angular';
 
 import { AdminService } from '../../data-access/admin.service';
@@ -73,7 +77,7 @@ interface NegocioWhatsapp {
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        Loader2, Smartphone, MessageCircle, AlertCircle, Sparkles, Check, ArrowRight,
+        Loader2, Smartphone, MessageCircle, AlertCircle, Sparkles, Check, ArrowRight, Settings,
       }),
     },
   ],
@@ -117,19 +121,28 @@ interface NegocioWhatsapp {
         </header>
       }
 
-      @if (negocios().length > 1) {
+      @if (negocios().length > 1 || enConversaciones()) {
         <div class="wa__barra" [class.wa__ancho-canal]="!enConversaciones()">
           <app-selector-negocio
+            class="wa__chips"
             idBase="wa-neg"
             [negocios]="opciones()"
             [seleccionado]="seleccion()"
             (cambiar)="elegir($event)"
           />
+          <!-- Acceso discreto a la gestión del número (conectar, desconectar). Solo con el número
+               ya conectado y las conversaciones a la vista: si no, ya se está en esa vista. -->
+          @if (enConversaciones()) {
+            <button type="button" class="wa__gestionar" (click)="vista.set('numero')">
+              <lucide-icon name="settings" [size]="15" aria-hidden="true" />
+              Gestionar número
+            </button>
+          }
         </div>
       }
 
       <!-- El @for con una sola clave recrea la vista al cambiar de negocio. -->
-      <div [class.wa__vista--con-barra]="negocios().length > 1 && enConversaciones()">
+      <div [class.wa__vista--con-barra]="enConversaciones()">
       @for (id of claveVista(); track id) {
         @if (!habilitado()) {
           <!-- Sin la feature en su plan: no hay nada que conectar. Se ofrece mejorar el plan. -->
@@ -160,13 +173,7 @@ interface NegocioWhatsapp {
             </a>
           </section>
         } @else if (enConversaciones()) {
-          <app-bandeja [negocioFijo]="seleccion()">
-            <button type="button" class="wa__pill" (click)="vista.set('numero')"
-                    title="Gestionar tu número">
-              <lucide-icon name="smartphone" [size]="15" aria-hidden="true" />
-              Tu número
-            </button>
-          </app-bandeja>
+          <app-bandeja [negocioFijo]="seleccion()" />
         } @else {
           <app-canal-whatsapp
             [negocioInicial]="seleccion()"
@@ -200,9 +207,35 @@ interface NegocioWhatsapp {
     }
 
     /* Los chips sobre la bandeja: 2.5rem de chip + 0.25rem de su relleno inferior + este margen. */
-    .wa__barra { margin-bottom: 0.75rem; }
+    .wa__barra {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-height: 2.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .wa__chips { flex: 1 1 auto; min-width: 0; }
+
+    /* «Gestionar número»: enlace discreto, no un botón protagonista. */
+    .wa__gestionar {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      flex: none;
+      margin-left: auto;
+      padding: 0.25rem 0.375rem;
+      border: 0;
+      border-radius: 0.375rem;
+      background: none;
+      color: var(--color-text-secondary);
+      font: inherit;
+      font-size: 0.8125rem;
+      cursor: pointer;
+    }
+    .wa__gestionar:hover { color: var(--color-primary); }
+    .wa__gestionar:focus-visible { outline: none; box-shadow: var(--focus-ring); }
     /* Alto que la barra le quita a la bandeja (ver --bdj-extra en bandeja.component.scss):
-       2.5 + 0.25 + 0.75. */
+       2.75 (fila de chips o de enlace) + 0.75. */
     .wa__vista--con-barra { --bdj-extra: 3.5rem; }
 
     /* Cabecera de la vista de conexión y de la de mejora: mismo aspecto que .cw__head. */
@@ -235,7 +268,8 @@ interface NegocioWhatsapp {
     .wa__mejora {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
+      align-items: center;
+      text-align: center;
       gap: 0.75rem;
       padding: 1.5rem;
       border: 1px solid var(--color-border);
@@ -262,10 +296,14 @@ interface NegocioWhatsapp {
       font-size: 0.9375rem;
       color: var(--color-text-secondary);
     }
+    /* Un bloque centrado cuyo contenido se lee alineado a la izquierda. */
     .wa__beneficios {
       display: grid;
       gap: 0.5rem;
-      margin: 0.25rem 0 0.5rem;
+      width: fit-content;
+      max-width: 100%;
+      text-align: left;
+      margin: 0.25rem auto 0.5rem;
       padding: 0;
       list-style: none;
     }
@@ -318,6 +356,30 @@ export class WhatsappComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly canalService = inject(CanalWhatsappService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly route = inject(ActivatedRoute);
+
+  /**
+   * `?negocio=<id>`: a dónde llega quien viene de la campana o de «Ver planes». Se lee como señal
+   * y no una sola vez, porque estando ya en esta pantalla un clic de la campana solo cambia el
+   * parámetro, no vuelve a crear el componente.
+   */
+  private readonly negocioDeLaUrl = toSignal(
+    this.route.queryParamMap.pipe(map((p) => Number(p.get('negocio')) || null)),
+    { initialValue: null },
+  );
+  /** El último id de la URL que ya se aplicó: así un cambio manual de chip no se pisa. */
+  private negocioAplicado: number | null = null;
+
+  private readonly aplicarNegocioDeLaUrl = effect(() => {
+    const id = this.negocioDeLaUrl();
+    const lista = this.negocios();
+    if (!id || id === this.negocioAplicado || !lista.some((n) => n.id_negocio === id)) return;
+    untracked(() => {
+      this.negocioAplicado = id;
+      this.seleccion.set(id);
+      this.vista.set('conversaciones');
+    });
+  });
 
   protected readonly estado = signal<'cargando' | 'listo' | 'error'>('cargando');
   protected readonly negocios = signal<NegocioWhatsapp[]>([]);

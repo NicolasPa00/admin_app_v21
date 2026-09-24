@@ -66,7 +66,7 @@
                 id="cp-rubro"
                 class="cp-input"
                 [value]="rubro()"
-                (change)="rubro.set($any($event.target).value)"
+                (change)="elegirRubro($any($event.target).value)"
               >
                 <option value="" [selected]="rubro() === ''" disabled>Selecciona tu negocio…</option>
                 @for (r of rubrosDeCategoria(); track r.id_tipo_negocio) {

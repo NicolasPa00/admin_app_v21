@@ -113,9 +113,8 @@
             <th>Usuario</th>
             <th class="usr__col-email">Email</th>
             <th>Negocios que administra</th>
-            <th>Plan</th>
+            <th class="usr__col-center">Plan</th>
             <th>Estado</th>
-            <th class="usr__col-date">Inicio plan</th>
             <th class="usr__col-actions">Acciones</th>
           </tr>
         </thead>
@@ -159,7 +158,7 @@
               </td>
 
               <!-- Plan -->
-              <td>
+              <td class="usr__col-center">
                 @if (planPrincipal(u); as p) {
                   <span
                     class="es-badge"
@@ -187,9 +186,6 @@
                 </span>
               </td>
 
-              <!-- Inicio del plan -->
-              <td class="usr__col-date usr__date">{{ planInicioTexto(u) }}</td>
-
               <!-- Acciones -->
               <td>
                 <div class="usr__actions">
@@ -211,6 +207,16 @@
                     title="Editar usuario"
                   >
                     <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
+                  </button>
+
+                  <button
+                    type="button"
+                    class="usr__icon-btn"
+                    (click)="abrirHistorial(u)"
+                    aria-label="Ver historial del usuario"
+                    title="Historial"
+                  >
+                    <lucide-icon name="history" [size]="16" aria-hidden="true" />
                   </button>
 
                   <button
@@ -389,34 +395,6 @@
           </ul>
         </section>
 
-        <!-- Historial: quién hizo qué con este usuario y cuándo -->
-        <section class="usr-modal__section">
-          <div class="usr-modal__section-head">
-            <h3 class="usr-modal__section-title">Historial</h3>
-          </div>
-
-          @if (historialEstado() === 'loading') {
-            <p class="usr-modal__hint" aria-busy="true">Cargando historial…</p>
-          } @else if (historialEstado() === 'error') {
-            <p class="usr-modal__hint">No se pudo cargar el historial.</p>
-          } @else if (historial().length === 0) {
-            <p class="usr-modal__hint">Todavía no hay movimientos registrados para este usuario.</p>
-          } @else {
-            <ol class="usr-timeline">
-              @for (e of historial(); track e.id_evento) {
-                <li class="usr-timeline__item" [attr.data-accion]="e.accion">
-                  <span class="usr-timeline__dot" aria-hidden="true"></span>
-                  <div class="usr-timeline__text">
-                    <span class="usr-timeline__accion">{{ historialTexto(e) }}</span>
-                    <span class="usr-timeline__meta">
-                      {{ e.actor_nombre || 'Sistema' }} · {{ historialFecha(e.fecha) }}
-                    </span>
-                  </div>
-                </li>
-              }
-            </ol>
-          }
-        </section>
       </div>
 
       <footer class="usr-modal__foot usr-modal__foot--row">
@@ -427,27 +405,6 @@
           <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
           Editar
         </button>
-        <button
-          type="button"
-          class="btn"
-          [class.usr-btn--warning]="u.estado === 'A'"
-          [class.usr-btn--success]="u.estado !== 'A'"
-          [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
-          [title]="u.es_admin_principal ? 'No se puede inactivar al administrador principal' : ''"
-          (click)="pedirCambioEstado(u)"
-        >
-          <lucide-icon name="power" [size]="16" aria-hidden="true" />
-          {{ u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar' }}
-        </button>
-        <button
-          type="button"
-          class="btn usr-btn--danger"
-          [disabled]="u.es_admin_principal || actionId() === u.id_usuario"
-          (click)="pedirEliminar(u)"
-        >
-          <lucide-icon name="trash-2" [size]="16" aria-hidden="true" />
-          Eliminar
-        </button>
       </footer>
     </div>
   </div>
@@ -457,12 +414,8 @@
 @if (editForm(); as f) {
   <div class="usr-modal">
     <div class="usr-modal__card" role="dialog" aria-modal="true" aria-labelledby="usr-edit-title">
-      <header class="usr-modal__head">
-        <h2 id="usr-edit-title" class="usr-modal__name">Editar usuario</h2>
-        <button type="button" class="usr__icon-btn" (click)="closeEdit()" aria-label="Cerrar">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="pencil" titulo="Editar usuario" tituloId="usr-edit-title"
+                          (cerrar)="closeEdit()" />
 
       <div class="usr-modal__body">
         <div class="usr-edit__grid">
@@ -504,7 +457,7 @@
               (valorChange)="updateTelefono($event)"
             />
           </div>
-          <div class="usr-edit__field usr-edit__field--full">
+          <div class="usr-edit__field">
             <label class="usr-edit__label" for="usr-e-pass">Nueva contraseña</label>
             <input
               id="usr-e-pass"
@@ -512,7 +465,7 @@
               type="text"
               [value]="f.password"
               (input)="updateEdit('password', $event)"
-              placeholder="Dejar en blanco para conservar la actual"
+              placeholder="En blanco = conservar la actual"
               autocomplete="new-password"
             />
 
@@ -568,29 +521,10 @@
       aria-describedby="usr-est-desc"
       (click)="$event.stopPropagation()"
     >
-      <header class="usr-modal__head">
-        <div class="usr__user-cell">
-          <span
-            class="usr-confirm__icon"
-            [class.usr-confirm__icon--warning]="u.estado === 'A'"
-            aria-hidden="true"
-          >
-            <lucide-icon name="power" [size]="18" />
-          </span>
-          <h2 id="usr-est-title" class="usr-modal__name">
-            {{ u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar usuario' }}
-          </h2>
-        </div>
-        <button
-          type="button"
-          class="usr__icon-btn"
-          (click)="cancelarCambioEstado()"
-          [disabled]="actionId() !== null"
-          aria-label="Cerrar"
-        >
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="power"
+                          [titulo]="u.estado === 'A' ? 'Inactivar usuario' : 'Reactivar usuario'"
+                          tituloId="usr-est-title" [bloqueado]="actionId() !== null"
+                          (cerrar)="cancelarCambioEstado()" />
 
       <div class="usr-modal__body" id="usr-est-desc">
         @if (u.estado === 'A') {
@@ -642,23 +576,8 @@
       aria-describedby="usr-del-desc"
       (click)="$event.stopPropagation()"
     >
-      <header class="usr-modal__head">
-        <div class="usr__user-cell">
-          <span class="usr-confirm__icon usr-confirm__icon--danger" aria-hidden="true">
-            <lucide-icon name="trash-2" [size]="18" />
-          </span>
-          <h2 id="usr-del-title" class="usr-modal__name">Eliminar usuario</h2>
-        </div>
-        <button
-          type="button"
-          class="usr__icon-btn"
-          (click)="cancelarEliminar()"
-          [disabled]="actionId() !== null"
-          aria-label="Cerrar"
-        >
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="trash-2" titulo="Eliminar usuario" tituloId="usr-del-title"
+                          [bloqueado]="actionId() !== null" (cerrar)="cancelarEliminar()" />
 
       <div class="usr-modal__body" id="usr-del-desc">
         <p class="usr-confirm__lead">
@@ -698,7 +617,7 @@
           } @else {
             <lucide-icon name="trash-2" [size]="16" aria-hidden="true" />
           }
-          Eliminar definitivamente
+          Eliminar
         </button>
       </footer>
     </div>
@@ -715,23 +634,8 @@
       aria-labelledby="usr-imp-title"
       (click)="$event.stopPropagation()"
     >
-      <header class="usr-modal__head">
-        <div class="usr__user-cell">
-          <span class="usr-confirm__icon" aria-hidden="true">
-            <lucide-icon name="log-in" [size]="18" />
-          </span>
-          <h2 id="usr-imp-title" class="usr-modal__name">Entrar como usuario</h2>
-        </div>
-        <button
-          type="button"
-          class="usr__icon-btn"
-          (click)="cancelImpersonar()"
-          [disabled]="impersonateId() !== null"
-          aria-label="Cerrar"
-        >
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="user" titulo="Entrar como usuario" tituloId="usr-imp-title"
+                          [bloqueado]="impersonateId() !== null" (cerrar)="cancelImpersonar()" />
 
       <div class="usr-modal__body">
         <p class="usr-confirm__lead">
@@ -759,6 +663,51 @@
             <lucide-icon name="log-in" [size]="16" aria-hidden="true" /> Entrar
           }
         </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Historial del usuario (modal aparte, desde la fila) ════════════ -->
+@if (historialDe(); as u) {
+  <div class="usr-modal" (click)="cerrarHistorial()">
+    <div
+      class="usr-modal__card"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="usr-his-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-modal-cabecera icono="history" titulo="Historial" tituloId="usr-his-title"
+                          [subtitulo]="u.nombre_completo" (cerrar)="cerrarHistorial()" />
+
+      <div class="usr-modal__body">
+        <!-- Quién hizo qué con este usuario y cuándo -->
+        @if (historialEstado() === 'loading') {
+          <p class="usr-modal__hint" aria-busy="true">Cargando historial…</p>
+        } @else if (historialEstado() === 'error') {
+          <p class="usr-modal__hint">No se pudo cargar el historial.</p>
+        } @else if (historial().length === 0) {
+          <p class="usr-modal__hint">Todavía no hay movimientos registrados para este usuario.</p>
+        } @else {
+          <ol class="usr-timeline">
+            @for (e of historial(); track e.id_evento) {
+              <li class="usr-timeline__item" [attr.data-accion]="e.accion">
+                <span class="usr-timeline__dot" aria-hidden="true"></span>
+                <div class="usr-timeline__text">
+                  <span class="usr-timeline__accion">{{ historialTexto(e) }}</span>
+                  <span class="usr-timeline__meta">
+                    {{ e.actor_nombre || 'Sistema' }} · {{ historialFecha(e.fecha) }}
+                  </span>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+
+      <footer class="usr-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cerrarHistorial()">Cerrar</button>
       </footer>
     </div>
   </div>

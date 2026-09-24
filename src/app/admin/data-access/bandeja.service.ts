@@ -6,6 +6,7 @@ import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../auth/models/auth.models';
 import {
   BandejaListado,
+  ConfiguracionReactivacion,
   ConversacionBandejaDetalle,
   ReportesConversacion,
   RespuestaEncolada,
@@ -151,6 +152,25 @@ export class BandejaService {
         `${this.API}/intelligence/bandeja/conversaciones/${id}/desbloquear`,
         {},
       )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /** Cuándo vuelve solo el asistente en este negocio (0 = nunca) y si este usuario puede cambiarlo. */
+  getConfiguracion(idNegocio: number): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .get<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        params: { id_negocio: String(idNegocio) },
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /** Decisión explícita del negocio: exige ser administrador de ESE negocio. 0 = nunca. */
+  guardarConfiguracion(idNegocio: number, minutos: number): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        id_negocio: idNegocio,
+        reactivar_asistente_min: minutos,
+      })
       .pipe(map((res) => res.data ?? null));
   }
 }

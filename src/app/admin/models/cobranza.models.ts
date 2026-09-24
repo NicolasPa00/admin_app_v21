@@ -155,6 +155,8 @@ export interface FacturaPendiente {
 /** Un plan que el cliente puede elegir y pagar. Los gratuitos no llegan aquí. */
 export interface PlanDisponible {
   id_plan: number;
+  /** Código estable de `gener_plan`: por él se agrupan los planes en la pantalla (nunca por nombre). */
+  codigo?: string | null;
   nombre: string;
   descripcion: string | null;
   precio: number;
@@ -213,6 +215,21 @@ export interface ComplementosDelNegocio {
     usuarios: { incluidos: number | null; adicionales: number; total: number | null };
     cajas: { incluidos: number | null; adicionales: number; total: number | null };
   } | null;
+}
+
+/**
+ * Vista previa de lo que valdría al mes un plan con unos complementos
+ * (`POST /cobranza/negocios/:id/total-mensual`). La cuenta la hace el backend, la misma que decide
+ * si un cambio sube o baja: la pantalla no lleva su propia aritmética de precios.
+ */
+export interface TotalMensual {
+  moneda: string;
+  ciclo: CicloCobro;
+  /** Lo que vale el plan solo. Cero en la prueba y sin plan. */
+  precio_plan: number;
+  /** Cada complemento con lo que SE COBRA de él y lo que suma. */
+  complementos: { codigo: string; precio: number; cantidad_facturable: number; subtotal: number }[];
+  total: number;
 }
 
 /** Un negocio que el usuario administra, con lo que debe y cómo puede pagarlo. */
@@ -332,4 +349,16 @@ export interface ComplementosDeNegocio {
   complementos: ComplementoNegocio[];
   total_mensual: number;
   limites: LimitesNegocio | null;
+}
+
+/**
+ * Lo que el backend cobraría por un cambio, sin hacerlo (`GET /cobranza/mi-plan/simular`).
+ * `total` solo viene cuando hay un cobro de ajuste; en los demás casos es `null`.
+ */
+export interface SimulacionCambio {
+  aplica: 'ajuste' | 'renovacion' | 'sin_cambios' | 'primer_plan';
+  total: number | null;
+  moneda: string | null;
+  dias_restantes: number;
+  proporcion_restante: number | null;
 }

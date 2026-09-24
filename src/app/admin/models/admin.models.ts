@@ -30,6 +30,12 @@ export interface TipoNegocio {
    * los `operativo` se ofrecen al crear. Opcional para no romper contra un backend anterior.
    */
   operativo?: boolean;
+  /** Aplicativo que atiende al tipo (`gener_tipo_negocio.id_tipo_modulo`); `null` = ninguno. */
+  id_tipo_modulo?: number | null;
+  /** Nombre legible del aplicativo («Restaurante», «Reserva»); `null` = sin aplicativo. */
+  aplicativo?: string | null;
+  /** ¿Es uno de los aplicativos que se pueden elegir al crear un tipo? */
+  es_modulo?: boolean;
   fecha_creacion: string;
   fecha_actualizacion: string;
 }
@@ -40,6 +46,8 @@ export interface CreateTipoNegocioRequest {
   descripcion?: string | null;
   icono?: string | null;
   color_hex?: string | null;
+  /** El aplicativo que lo atiende: obligatorio, un tipo con `es_modulo`. */
+  id_tipo_modulo: number;
 }
 
 export type TipoNegocioResponse = ApiResponse<TipoNegocio>;
@@ -176,6 +184,8 @@ export interface RolAsignado {
 /** Plan vigente de un negocio (calculado en el backend). */
 export interface PlanInfo {
   id_plan: number | null;
+  /** Código estable del plan ('BASICO', 'AVANZADO'…): igual en todos los entornos. */
+  codigo?: string | null;
   nombre: string;
   precio: number;
   moneda: string;
@@ -308,6 +318,16 @@ export interface EliminacionNegocio {
     filas_configuracion: number;
     filas: number;
   };
+}
+
+/** Cuántos usuarios usa un negocio y cuántos le caben (`GET /negocios/:id/cupo-usuarios`). */
+export interface CupoUsuarios {
+  usados: number;
+  /** `null` = sin tope (sin plan vigente o plan sin límite). */
+  total: number | null;
+  incluidos: number | null;
+  adicionales: number;
+  plan: string | null;
 }
 
 /** Un hecho del ciclo de vida de un negocio (`GET /negocios/:id/historial`). */

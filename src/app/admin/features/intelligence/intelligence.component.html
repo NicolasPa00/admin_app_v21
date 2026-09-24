@@ -204,12 +204,7 @@
 @if (estadoDetalle() !== 'idle') {
   <div class="int__modal" role="dialog" aria-modal="true" aria-label="Detalle de la conversación">
     <div class="int__modal-caja">
-      <header class="int__modal-head">
-        <h2>Conversación</h2>
-        <button type="button" class="int__modal-x" (click)="cerrarDetalle()" aria-label="Cerrar">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="eye" titulo="Conversación" (cerrar)="cerrarDetalle()" />
 
       @if (estadoDetalle() === 'loading') {
         <div class="int__state">

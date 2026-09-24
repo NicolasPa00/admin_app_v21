@@ -10,7 +10,7 @@
 
   &__card {
     position: relative;
-    width: min(56rem, 100%);
+    width: min(56rem, calc(100vw - 2rem));
     max-height: min(85vh, 48rem);
     display: flex;
     flex-direction: column;
@@ -225,4 +225,29 @@
 
 @keyframes pers-spin {
   to { transform: rotate(360deg); }
+}
+
+// «X de Y usuarios»: informativo; en el tope o por encima se tiñe de aviso.
+.pers__cupo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+
+  strong { color: var(--color-text-primary); }
+
+  &--lleno {
+    border-color: var(--color-warning);
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+
+    strong { color: inherit; }
+  }
 }

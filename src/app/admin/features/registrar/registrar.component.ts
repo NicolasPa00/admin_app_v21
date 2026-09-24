@@ -74,7 +74,19 @@ export class RegistrarComponent implements OnInit {
 
   protected readonly saving = signal(false);
 
-  protected readonly nombreValido = computed(() => this.nombre().trim().length > 0);
+  /** El aplicativo que atiende al tipo (id de Restaurante o Reserva). Obligatorio. */
+  protected readonly idModulo = signal('');
+
+  /** Lo que se puede elegir como aplicativo: los tipos que son módulo, con nombre legible. */
+  protected readonly modulos = computed(() =>
+    this.tipos()
+      .filter((t) => t.es_modulo)
+      .map((t) => ({ id: t.id_tipo_negocio, nombre: t.aplicativo ?? t.nombre })),
+  );
+
+  protected readonly nombreValido = computed(
+    () => this.nombre().trim().length > 0 && this.idModulo() !== '',
+  );
 
   // ── Listado ─────────────────────────────────────────────────
   protected readonly loadingState = signal<LoadingState>('idle');
@@ -91,6 +103,10 @@ export class RegistrarComponent implements OnInit {
 
   protected setDescripcion(e: Event): void {
     this.descripcion.set((e.target as HTMLTextAreaElement).value);
+  }
+
+  protected setModulo(e: Event): void {
+    this.idModulo.set((e.target as HTMLSelectElement).value);
   }
 
   protected setColor(e: Event): void {
@@ -110,6 +126,7 @@ export class RegistrarComponent implements OnInit {
       descripcion: this.descripcion().trim() || null,
       icono: this.icono(),
       color_hex: this.color(),
+      id_tipo_modulo: Number(this.idModulo()),
     }).subscribe({
       next: () => {
         this.saving.set(false);

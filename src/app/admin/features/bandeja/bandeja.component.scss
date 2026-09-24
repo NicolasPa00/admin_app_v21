@@ -193,6 +193,24 @@
     color: var(--color-primary);
   }
 
+  /* Alguien espera: que se vea desde el otro lado de la sala. Aviso (ámbar), pulso suave y el
+     número grande; con 0 el chip es un chip más. */
+  &__chip--alerta {
+    background: color-mix(in srgb, var(--color-warning) 16%, var(--color-surface));
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    animation: bdj-pulso 1.8s ease-in-out infinite;
+  }
+
+  &__contador--alerta {
+    min-width: 1.5rem;
+    background: var(--color-warning);
+    color: var(--color-on-primary, #fff);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    line-height: 1.5rem;
+  }
+
   &__contador {
     min-width: 1.125rem;
     padding: 0 0.25rem;
@@ -278,6 +296,8 @@
 
   /* La que espera respuesta lleva un anillo, no un fondo distinto: el fondo compite con el
      texto justo cuando hay que leerlo con prisa. */
+  &__avatar lucide-icon { display: inline-flex; }
+
   &__avatar--espera {
     box-shadow: 0 0 0 2px var(--color-primary);
   }
@@ -401,11 +421,10 @@
     padding: 2rem;
     text-align: center;
     color: var(--color-text-secondary);
-    /* El papel del chat también cuando está vacío: así la mitad derecha ya se lee como una
-       conversación antes de abrir ninguna. */
-    background-color: var(--bdj-papel);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='%230f7a63' stroke-opacity='.17' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg transform='translate(18 14) rotate(-12 15 15) scale(1.25)'%3E%3Cpath d='M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2'/%3E%3Cpath d='M7 2v20'/%3E%3Cpath d='M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7'/%3E%3C/g%3E%3Cg transform='translate(96 22) rotate(8 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3Cpath d='m9 16 2 2 4-4'/%3E%3C/g%3E%3Cg transform='translate(170 10) rotate(-6 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Cpath d='M8.12 8.12 12 12'/%3E%3Cpath d='M20 4 8.12 15.88'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cpath d='M14.8 14.8 20 20'/%3E%3C/g%3E%3Cg transform='translate(240 28) rotate(10 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Ccircle cx='8' cy='21' r='1'/%3E%3Ccircle cx='19' cy='21' r='1'/%3E%3Cpath d='M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12'/%3E%3C/g%3E%3Cg transform='translate(10 84) rotate(6 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M10 2v2'/%3E%3Cpath d='M14 2v2'/%3E%3Cpath d='M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1'/%3E%3Cpath d='M6 2v2'/%3E%3C/g%3E%3Cg transform='translate(78 96) rotate(-8 15 15) scale(1.25)'%3E%3Cpath d='M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2'/%3E%3Ccircle cx='7' cy='17' r='2'/%3E%3Cpath d='M9 17h6'/%3E%3Ccircle cx='17' cy='17' r='2'/%3E%3C/g%3E%3Cg transform='translate(152 84) rotate(5 13.200000000000001 13.200000000000001) scale(1.1)'%3E%3Crect width='5' height='5' x='3' y='3' rx='1'/%3E%3Crect width='5' height='5' x='16' y='3' rx='1'/%3E%3Crect width='5' height='5' x='3' y='16' rx='1'/%3E%3Cpath d='M21 16h-3a2 2 0 0 0-2 2v3'/%3E%3Cpath d='M21 21v.01'/%3E%3Cpath d='M12 7v3a2 2 0 0 1-2 2H7'/%3E%3Cpath d='M3 12h.01'/%3E%3Cpath d='M12 3h.01'/%3E%3Cpath d='M12 16v.01'/%3E%3Cpath d='M16 12h1'/%3E%3Cpath d='M21 12v.01'/%3E%3Cpath d='M12 21v-1'/%3E%3C/g%3E%3Cg transform='translate(228 98) rotate(-10 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M17.596 12.768a2 2 0 1 0 2.829-2.829l-1.768-1.767a2 2 0 0 0 2.828-2.829l-2.828-2.828a2 2 0 0 0-2.829 2.828l-1.767-1.768a2 2 0 1 0-2.829 2.829z'/%3E%3Cpath d='m2.5 21.5 1.4-1.4'/%3E%3Cpath d='m20.1 3.9 1.4-1.4'/%3E%3Cpath d='M5.343 21.485a2 2 0 1 0 2.829-2.828l1.767 1.768a2 2 0 1 0 2.829-2.829l-6.364-6.364a2 2 0 1 0-2.829 2.829l1.768 1.767a2 2 0 0 0-2.828 2.829z'/%3E%3Cpath d='m9.6 14.4 4.8-4.8'/%3E%3C/g%3E%3Cg transform='translate(24 160) rotate(7 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z'/%3E%3Cpath d='M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8'/%3E%3Cpath d='M12 17.5v-11'/%3E%3C/g%3E%3Cg transform='translate(92 168) rotate(-5 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719'/%3E%3C/g%3E%3Cg transform='translate(166 158) rotate(9 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Cpath d='M11 2v2'/%3E%3Cpath d='M5 2v2'/%3E%3Cpath d='M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1'/%3E%3Cpath d='M8 15a6 6 0 0 0 12 0v-3'/%3E%3Ccircle cx='20' cy='10' r='2'/%3E%3C/g%3E%3Cg transform='translate(236 170) rotate(-7 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M12 8V4H8'/%3E%3Crect width='16' height='12' x='4' y='8' rx='2'/%3E%3Cpath d='M2 14h2'/%3E%3Cpath d='M20 14h2'/%3E%3Cpath d='M15 13v2'/%3E%3Cpath d='M9 13v2'/%3E%3C/g%3E%3Cg transform='translate(16 236) rotate(10 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='m12 14-1 1'/%3E%3Cpath d='m13.75 18.25-1.25 1.42'/%3E%3Cpath d='M17.775 5.654a15.68 15.68 0 0 0-12.121 12.12'/%3E%3Cpath d='M18.8 9.3a1 1 0 0 0 2.1 7.7'/%3E%3Cpath d='M21.964 20.732a1 1 0 0 1-1.232 1.232l-18-5a1 1 0 0 1-.695-1.232A19.68 19.68 0 0 1 15.732 2.037a1 1 0 0 1 1.232.695z'/%3E%3C/g%3E%3Cg transform='translate(86 240) rotate(-6 13.799999999999999 13.799999999999999) scale(1.15)'%3E%3Crect width='20' height='12' x='2' y='6' rx='2'/%3E%3Ccircle cx='12' cy='12' r='2'/%3E%3Cpath d='M6 12h.01M18 12h.01'/%3E%3C/g%3E%3Cg transform='translate(160 238) rotate(6 13.200000000000001 13.200000000000001) scale(1.1)'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 6v6l4 2'/%3E%3C/g%3E%3Cg transform='translate(226 242) rotate(-9 14.399999999999999 14.399999999999999) scale(1.2)'%3E%3Cpath d='M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2'/%3E%3Cpath d='M15 18H9'/%3E%3Cpath d='M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14'/%3E%3Ccircle cx='17' cy='18' r='2'/%3E%3Ccircle cx='7' cy='18' r='2'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%230f7a63' fill-opacity='.13'%3E%3Ccircle cx='62' cy='62' r='2.4'/%3E%3Ccircle cx='140' cy='54' r='1.9'/%3E%3Ccircle cx='212' cy='70' r='2.4'/%3E%3Ccircle cx='56' cy='142' r='1.9'/%3E%3Ccircle cx='136' cy='134' r='2.4'/%3E%3Ccircle cx='206' cy='142' r='1.9'/%3E%3Ccircle cx='58' cy='216' r='2.4'/%3E%3Ccircle cx='150' cy='208' r='1.9'/%3E%3Ccircle cx='276' cy='212' r='2.4'/%3E%3Ccircle cx='20' cy='122' r='1.9'/%3E%3Ccircle cx='284' cy='138' r='1.9'/%3E%3Ccircle cx='118' cy='288' r='2.2'/%3E%3C/g%3E%3C/svg%3E");
-    background-size: 300px 300px;
+    /* Sobre la superficie, sin garabatos: la malla de íconos es del chat abierto. */
+    background-color: var(--color-surface);
+    position: relative;
+    overflow: hidden;
 
     p {
       margin: 0;
@@ -421,10 +440,29 @@
     width: 3.5rem;
     height: 3.5rem;
     border-radius: 50%;
-    background: #fff;
+    background: var(--color-surface);
     color: var(--bdj-verde-hondo);
     box-shadow: var(--shadow-sm);
+    position: relative;
   }
+
+  /* La marca, enorme y tenue, detrás del estado vacío. No se selecciona ni recibe clics. */
+  &__marca-agua {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-marca, var(--font-family));
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    font-size: clamp(3.5rem, 12vw, 9rem);
+    line-height: 1;
+    white-space: nowrap;
+    color: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+    user-select: none;
+    pointer-events: none;
+  }
+  &__placeholder > :not(.bdj__marca-agua) { position: relative; }
 
   &__placeholder-nota {
     max-width: 22rem;
@@ -499,6 +537,11 @@
   }
 
   /* ── Avisos bajo la cabecera ────────────────────────────────── */
+  /* «Reportar usuario»: el único botón de moderación del hilo. */
+  &__accion-hilo--peligro:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--color-error) 28%, transparent);
+  }
+
   &__aviso {
     display: flex;
     align-items: center;
@@ -521,36 +564,20 @@
 
   /* El formulario de reporte. Bajo la cabecera y sobre el hilo, no en un modal: se reporta
      mirando lo que la persona escribió, y un modal lo taparía justo ahora. */
-  &__reporte {
-    padding: 0.75rem 0.875rem;
-    border-bottom: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
-  }
-
-  &__reporte-titulo {
-    margin: 0 0 0.5rem;
-    font-size: 0.8125rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-
-    em {
-      font-style: normal;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-    }
-  }
-
-  &__reporte-motivos {
-    display: flex;
+  /* El asistente vuelve solo: configuración del negocio, a la izquierda de «Esperan respuesta». */
+  &__auto {
+    display: inline-flex;
+    align-items: center;
     flex-wrap: wrap;
     gap: 0.375rem;
-    margin-bottom: 0.5rem;
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
   }
 
-  &__reporte-texto {
-    width: 100%;
-    resize: none;
-    padding: 0.5rem 0.625rem;
+  &__auto-min {
+    width: 3.75rem;
+    padding: 0.1875rem 0.375rem;
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;
     background: var(--color-surface);
@@ -561,60 +588,56 @@
     &:focus {
       outline: none;
       border-color: var(--color-primary);
+      box-shadow: var(--focus-ring);
     }
+    &:disabled { opacity: 0.55; }
   }
 
-  &__reporte-nota {
-    margin: 0.5rem 0 0;
-    font-size: 0.6875rem;
-    line-height: 1.5;
-    color: var(--color-text-secondary);
+  &__auto-nunca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 600;
+    cursor: pointer;
   }
 
-  &__reporte-botones {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 0.625rem;
-  }
-
-  &__boton-plano {
-    padding: 0.3125rem 0.75rem;
-    border: 1px solid var(--color-border);
+  &__auto-guardar {
+    padding: 0.1875rem 0.625rem;
+    border: 0;
     border-radius: 999px;
-    background: none;
-    color: var(--color-text-secondary);
+    background: var(--color-primary);
+    color: var(--color-on-primary, #fff);
+    font: inherit;
     font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
 
-    &:hover {
-      color: var(--color-text-primary);
-    }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  /* Rojo, y solo aquí: es la acción que deja a alguien marcado. */
-  &__boton-peligro {
+  /* Línea del hilo: el asistente retomó (automático o manual). */
+  &__evento {
+    align-self: center;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.3125rem 0.875rem;
-    border: none;
+    max-width: 90%;
+    padding: 0.25rem 0.75rem;
     border-radius: 999px;
-    background: var(--color-error);
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-
-    &:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
+    background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 0.6875rem;
+    text-align: center;
   }
 
-  /* Una barra bajo la cabecera, no un botón suelto: el estado «lo llevas tú» hay que leerlo
-     antes que el hilo, porque cambia quién responde. */
+  &__retomar-aviso {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+  }
+
   &__retomar {
     display: flex;
     align-items: center;
@@ -940,4 +963,87 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes bdj-pulso {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-warning) 55%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--color-warning) 0%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bdj__chip--alerta { animation: none; }
+}
+
+/* ── Modal «Reportar usuario» ─────────────────────────────────── */
+.bdj-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+}
+
+.bdj-modal__card {
+  display: flex;
+  flex-direction: column;
+  width: min(30rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg, 0 20px 50px rgba(0, 0, 0, 0.25));
+  overflow: hidden;
+}
+
+.bdj-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1.25rem;
+  overflow-y: auto;
+}
+
+.bdj-modal__lead {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-primary);
+}
+
+.bdj-modal__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.bdj-modal__opcional {
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.bdj-modal__texto {
+  resize: vertical;
+  min-height: 4.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.bdj-modal__pie {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border-top: 1px solid var(--color-border);
 }

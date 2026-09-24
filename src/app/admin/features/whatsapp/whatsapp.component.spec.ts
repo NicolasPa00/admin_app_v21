@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { describe, it, expect } from 'vitest';
@@ -14,11 +14,20 @@ import { CanalWhatsappComponent } from '../canal-whatsapp/canal-whatsapp.compone
 const negocio = (id: number, nombre: string, features?: string[]): Negocio =>
   ({ id_negocio: id, nombre, estado: 'A', features }) as Negocio;
 
-async function montar<T>(comp: new () => T, negocios: Negocio[], conectado = false) {
+async function montar<T>(
+  comp: new () => T,
+  negocios: Negocio[],
+  conectado = false,
+  query: Record<string, string> = {},
+) {
   TestBed.configureTestingModule({
     imports: [comp],
     providers: [
       provideRouter([]),
+      {
+        provide: ActivatedRoute,
+        useValue: { queryParamMap: of(convertToParamMap(query)), snapshot: { queryParamMap: convertToParamMap(query) } },
+      },
       { provide: AdminService, useValue: { getMisNegociosUsuario: () => of(negocios).pipe(delay(5)) } },
       {
         // La bandeja pide su lista al montarse; con un negocio conectado se renderiza de verdad.
@@ -47,6 +56,7 @@ async function montar<T>(comp: new () => T, negocios: Negocio[], conectado = fal
               ],
             }).pipe(delay(5)),
           getConversacion: () => of(null),
+          getConfiguracion: () => of({ id_negocio: 1, reactivar_asistente_min: 0, puede_editar: true }),
         },
       },
       {
@@ -126,12 +136,11 @@ describe('WhatsappComponent — un solo título por pantalla', () => {
 });
 
 describe('WhatsappComponent con negocio conectado (bandeja)', () => {
-  // Regresión de producción: «Tu número» lleva un <lucide-icon name="smartphone"> declarado en
-  // WhatsappComponent y PROYECTADO dentro de <app-bandeja>. Cuando la bandeja registraba sus
-  // íconos en `providers` (y no en `viewProviders`), el ícono proyectado se resolvía contra los de
-  // la bandeja, no lo encontraba («The "smartphone" icon has not been provided…») y el error
-  // cortaba el render: bandeja vacía y sin íconos.
-  it('renderiza «Tu número» con su ícono y la lista de la bandeja, sin errores', async () => {
+  // Regresión de producción (hotfix de íconos): un <lucide-icon> declarado por quien contiene la
+  // bandeja y proyectado dentro de ella se resolvía contra los íconos de la bandeja y cortaba el
+  // render («The "smartphone" icon has not been provided…»). La bandeja usa `viewProviders`. Aquí
+  // se comprueba que se renderiza completa y sin errores.
+  it('renderiza la lista de la bandeja y sus íconos, sin errores', async () => {
     const errores: unknown[] = [];
     const original = console.error;
     console.error = (...args: unknown[]) => {
@@ -143,25 +152,89 @@ describe('WhatsappComponent con negocio conectado (bandeja)', () => {
         [negocio(1, 'Prueba Barbería', ['asistente_ia'])],
         true,
       );
-
-      // La lista de la bandeja llegó a pintarse.
       expect(v.el.querySelector('app-bandeja')).toBeTruthy();
       expect(v.el.textContent).toContain('Hola, quiero una cita');
-
-      // El botón proyectado existe y su ícono se dibujó (svg dentro de lucide-icon).
-      const boton = Array.from(v.el.querySelectorAll('button')).find((b) =>
-        b.textContent?.includes('Tu número'),
-      );
-      expect(boton).toBeTruthy();
-      expect(boton!.querySelector('lucide-icon svg')).toBeTruthy();
-
-      // Y los íconos propios de la bandeja siguen resolviéndose (la marca y la búsqueda).
       expect(v.el.querySelectorAll('app-bandeja lucide-icon svg').length).toBeGreaterThan(1);
-
       expect(errores).toEqual([]);
     } finally {
       console.error = original;
     }
+  });
+
+  it('con el servicio activo la bandeja ya no trae el botón «Tu número»', async () => {
+    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
+    const boton = Array.from(v.el.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Tu número'),
+    );
+    expect(boton).toBeFalsy();
+  });
+});
+
+describe('WhatsappComponent — «Gestionar número»', () => {
+  const enlace = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Gestionar número'));
+
+  it('con el número conectado aparece con su engranaje y lleva a la vista de número', async () => {
+    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
+    const boton = enlace(v.el);
+    expect(boton).toBeTruthy();
+    expect(boton!.querySelector('lucide-icon svg')).toBeTruthy();
+
+    boton!.click();
+    await v.esperar();
+    // Ya está en la vista de número: sin bandeja, sin el enlace, y con la vuelta a las conversaciones.
+    expect(v.el.querySelector('app-bandeja')).toBeFalsy();
+    expect(enlace(v.el)).toBeFalsy();
+    expect(v.el.textContent).toContain('Ver conversaciones');
+  });
+
+  it('con varios negocios va en la misma barra que los chips', async () => {
+    const v = await montar(
+      WhatsappComponent,
+      [negocio(1, 'Prueba Barbería', ['asistente_ia']), negocio(2, 'Prueba Tienda', ['asistente_ia'])],
+      true,
+    );
+    const barra = v.el.querySelector('.wa__barra') as HTMLElement;
+    expect(barra.querySelector('[role="tab"]')).toBeTruthy();
+    expect(barra.querySelector('.wa__gestionar')).toBeTruthy();
+  });
+
+  it('sin conectar no aparece (ya está en esa vista)', async () => {
+    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], false);
+    expect(enlace(v.el)).toBeFalsy();
+  });
+
+  it('sin la feature tampoco aparece', async () => {
+    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['otra'])], true);
+    expect(enlace(v.el)).toBeFalsy();
+  });
+});
+
+describe('WhatsappComponent — ?negocio=<id> (campana y «Ver planes»)', () => {
+  it('abre con ese negocio seleccionado', async () => {
+    const v = await montar(
+      WhatsappComponent,
+      [
+        negocio(1, 'Prueba Barbería', ['asistente_ia']),
+        negocio(2, 'Prueba Restaurante', ['asistente_ia']),
+        negocio(3, 'Prueba Tienda', ['asistente_ia']),
+      ],
+      false,
+      { negocio: '3' },
+    );
+    const seleccionado = v.el.querySelector('[role="tab"][aria-selected="true"]');
+    expect(seleccionado?.textContent).toContain('Prueba Tienda');
+  });
+
+  it('un id que no es de sus negocios se ignora (multi-tenant): queda el primero', async () => {
+    const v = await montar(
+      WhatsappComponent,
+      [negocio(1, 'Prueba Barbería', ['asistente_ia']), negocio(2, 'Prueba Tienda', ['asistente_ia'])],
+      false,
+      { negocio: '999' },
+    );
+    const seleccionado = v.el.querySelector('[role="tab"][aria-selected="true"]');
+    expect(seleccionado?.textContent).toContain('Prueba Barbería');
   });
 });
 

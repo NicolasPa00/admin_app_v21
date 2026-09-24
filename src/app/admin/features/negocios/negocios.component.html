@@ -211,438 +211,511 @@
   />
 }
 
-<!-- ════════════ Modal crear / editar ════════════
+<!-- ════════════ Modal crear (asistente por pasos) / editar (dos pestañas) ════════════
   Cabecera y pie fijos; solo el cuerpo se desplaza, para que los botones no se escondan. -->
 @if (modalMode(); as mode) {
   <div class="neg-modal">
     <div class="neg-modal__card" [class.neg-modal__card--wide]="mode === 'edit'"
+         [class.neg-modal__card--asistente]="mode === 'create'"
          role="dialog" aria-modal="true" aria-labelledby="neg-modal-title">
-      <header class="neg-modal__head">
-        <h2 id="neg-modal-title" class="neg-modal__title">
-          {{ mode === 'create' ? 'Registrar negocio' : 'Editar negocio' }}
-        </h2>
-        <button type="button" class="neg__icon-btn" (click)="closeModal()" aria-label="Cerrar">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera
+        [icono]="mode === 'create' ? 'plus' : 'pencil'"
+        [titulo]="mode === 'create' ? 'Registrar negocio' : 'Editar negocio'"
+        tituloId="neg-modal-title"
+        [bloqueado]="saving()"
+        (cerrar)="closeModal()"
+      />
 
       <div class="neg-modal__body">
-        <!-- ─── Formulario CREAR ─── -->
+        <!-- ─── ASISTENTE: registrar negocio ─── -->
         @if (mode === 'create') {
-          <!-- 1. Usuario administrador (primero para poder autollenar el negocio) -->
-          <div class="neg-user-mode">
-            <h3 class="neg-modal__section">Usuario administrador</h3>
-            <div class="neg-user-mode__tabs" role="group" aria-label="Modo de usuario">
-              <button type="button"
-                      class="neg-user-mode__tab"
-                      [class.neg-user-mode__tab--active]="userMode() === 'nuevo'"
-                      (click)="setUserMode('nuevo')">
-                <lucide-icon name="user-plus" [size]="14" aria-hidden="true" />
-                Nuevo
-              </button>
-              <button type="button"
-                      class="neg-user-mode__tab"
-                      [class.neg-user-mode__tab--active]="userMode() === 'existente'"
-                      (click)="setUserMode('existente')">
-                <lucide-icon name="user-round" [size]="14" aria-hidden="true" />
-                Existente
-              </button>
-            </div>
-          </div>
+          <app-pasos [pasos]="pasosCrear" [indice]="crearPaso()" etiqueta="Pasos del registro" />
 
-          <!-- Modo A: crear usuario nuevo -->
-          @if (userMode() === 'nuevo') {
-            <div class="neg-form__grid">
-              <div class="neg-form__field">
-                <label class="neg-form__label" for="neg-a-nombre">Primer nombre *</label>
-                <input id="neg-a-nombre" class="input" [value]="createForm().a_primer_nombre" (input)="updateCreate('a_primer_nombre', $event)" />
-              </div>
-              <div class="neg-form__field">
-                <label class="neg-form__label" for="neg-a-apellido">Primer apellido *</label>
-                <input id="neg-a-apellido" class="input" [value]="createForm().a_primer_apellido" (input)="updateCreate('a_primer_apellido', $event)" />
-              </div>
-              <div class="neg-form__field">
-                <label class="neg-form__label" for="neg-a-id">Identificación *</label>
-                <input id="neg-a-id" class="input" [value]="createForm().a_num_identificacion" (input)="updateCreate('a_num_identificacion', $event)" />
-              </div>
-              <div class="neg-form__field">
-                <label class="neg-form__label" for="neg-a-email">
-                  Email <span class="neg-form__optional">(opcional)</span>
-                </label>
-                <input
-                  id="neg-a-email"
-                  class="input"
-                  type="email"
-                  [value]="createForm().a_email"
-                  (input)="updateCreate('a_email', $event)"
-                  [attr.aria-invalid]="adminEmailInvalido() ? 'true' : null"
-                />
-                @if (adminEmailInvalido()) {
-                  <small class="neg-form__error">Revisa el formato del correo.</small>
-                }
-              </div>
-              <div class="neg-form__field neg-form__field--full">
-                <label class="neg-form__label" for="neg-a-pass">Contraseña temporal *</label>
-                <input id="neg-a-pass" class="input" type="text" [value]="createForm().a_password" (input)="updateCreate('a_password', $event)" placeholder="Mín. 8, una mayúscula y un número" />
+          @switch (crearPaso()) {
 
-                <ul class="pwd-checks" aria-label="Requisitos de la contraseña">
-                  <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().length">
-                    <lucide-icon [name]="passwordChecks().length ? 'check' : 'x'" [size]="14" aria-hidden="true" />
-                    Mínimo 8 caracteres
-                  </li>
-                  <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().upper">
-                    <lucide-icon [name]="passwordChecks().upper ? 'check' : 'x'" [size]="14" aria-hidden="true" />
-                    Al menos una mayúscula
-                  </li>
-                  <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().number">
-                    <lucide-icon [name]="passwordChecks().number ? 'check' : 'x'" [size]="14" aria-hidden="true" />
-                    Al menos un número
-                  </li>
-                </ul>
-              </div>
-            </div>
-          }
-
-          <!-- Modo B: vincular usuario existente + buscador -->
-          @if (userMode() === 'existente') {
-            <div class="neg-form__grid">
-              <div class="neg-form__field neg-form__field--full">
-                <label class="neg-form__label" for="neg-buscar">Buscar usuario *</label>
-                <div class="neg-user-search">
-                  <input
-                    id="neg-buscar"
-                    class="input"
-                    type="search"
-                    [value]="usuarioQuery()"
-                    (input)="onUsuarioQuery($event)"
-                    placeholder="Nombre, email o identificación (mín. 2 chars)…"
-                    autocomplete="off"
+            <!-- ── Paso 1: datos del negocio ── -->
+            @case (0) {
+              <h3 class="neg-modal__section neg-modal__section--first">Datos del negocio</h3>
+              <div class="neg-form__grid">
+                <div class="neg-form__field neg-form__field--full">
+                  <label class="neg-form__label" for="neg-nombre">Nombre del negocio *</label>
+                  <input id="neg-nombre" class="input" [value]="createForm().nombre" (input)="updateCreate('nombre', $event)" placeholder="Ej. La Parrilla de Juan" />
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label" for="neg-rubro">Tipo de negocio *</label>
+                  <select id="neg-rubro" class="input" (change)="updateCreate('id_rubro', $event)">
+                    <option value="" disabled [selected]="!createForm().id_rubro">Selecciona…</option>
+                    @for (g of rubrosPorModulo(); track g.modulo) {
+                      <optgroup [label]="'Aplicativo ' + g.modulo">
+                        @for (r of g.rubros; track r.id_tipo_negocio) {
+                          <option [value]="r.id_tipo_negocio" [selected]="createForm().id_rubro === '' + r.id_tipo_negocio">{{ r.etiqueta }}</option>
+                        }
+                      </optgroup>
+                    }
+                  </select>
+                  <small class="neg-form__hint neg-form__hint--block">
+                    El oficio queda en la ficha del cliente; el aplicativo es el software que se le monta.
+                  </small>
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label" for="neg-pais">País *</label>
+                  <select id="neg-pais" class="input" (change)="updateCreate('pais', $event)">
+                    @for (p of paises; track p.codigo) {
+                      <option [value]="p.codigo" [selected]="p.codigo === createForm().pais">{{ p.nombre }}</option>
+                    }
+                  </select>
+                  <small class="neg-form__hint neg-form__hint--block">Decide el indicativo con el que se guardan los teléfonos de sus clientes.</small>
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label" for="neg-nit">NIT</label>
+                  <input id="neg-nit" class="input" [value]="createForm().nit" (input)="updateCreate('nit', $event)" />
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label" for="neg-email">Email de contacto</label>
+                  <input id="neg-email" class="input" type="email" [value]="createForm().email_contacto" (input)="updateCreate('email_contacto', $event)"
+                         [attr.aria-invalid]="negocioEmailInvalido() ? 'true' : null" />
+                  @if (negocioEmailInvalido()) {
+                    <small class="neg-form__error">Revisa el formato del correo.</small>
+                  }
+                </div>
+                <div class="neg-form__field">
+                  <label class="neg-form__label" for="neg-telefono">Teléfono</label>
+                  <app-telefono-pais
+                    campoId="neg-telefono"
+                    [valor]="createForm().telefono"
+                    [paisPorDefecto]="createForm().pais"
+                    (valorChange)="setCreate('telefono', $event)"
                   />
-                  @if (searchLoading()) {
-                    <p class="neg-user-search__loading">
-                      <lucide-icon name="loader-2" [size]="14" class="neg__spin" aria-hidden="true" /> Buscando…
-                    </p>
-                  }
-                  @if (!searchLoading() && usuarioResults().length > 0 && !usuarioSeleccionado()) {
-                    <ul class="neg-user-results" role="listbox">
-                      @for (u of usuarioResults(); track u.id_usuario) {
-                        <li class="neg-user-results__item" role="option" (click)="selectUsuario(u)" (keydown.enter)="selectUsuario(u)" tabindex="0">
-                          <span class="neg-user-results__name">{{ u.primer_nombre }} {{ u.primer_apellido }}</span>
-                          <span class="neg-user-results__meta">{{ u.email || 'Sin correo' }} · {{ u.num_identificacion }}</span>
-                        </li>
-                      }
-                    </ul>
-                  }
-                  @if (!searchLoading() && usuarioQuery().trim().length >= 2 && usuarioResults().length === 0 && !usuarioSeleccionado()) {
-                    <p class="neg-user-search__loading">Sin resultados para "{{ usuarioQuery() }}"</p>
-                  }
                 </div>
-                @if (usuarioSeleccionado(); as u) {
-                  <div class="neg-user-selected">
-                    <div class="neg-user-selected__info">
-                      <span class="neg-user-selected__name">{{ u.primer_nombre }} {{ u.primer_apellido }}</span>
-                      <span class="neg-user-selected__meta">{{ u.email || 'Sin correo' }} · {{ u.num_identificacion }}</span>
-                    </div>
-                    <button type="button" class="neg-user-selected__clear" (click)="clearUsuario()" aria-label="Quitar usuario seleccionado">
-                      <lucide-icon name="x" [size]="14" aria-hidden="true" />
-                    </button>
-                  </div>
-                }
-              </div>
-            </div>
-          }
-
-          <!-- 2. Datos del negocio (email/teléfono autollenados al seleccionar usuario) -->
-          <h3 class="neg-modal__section">Datos del negocio</h3>
-          <div class="neg-form__grid">
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label" for="neg-nombre">Nombre del negocio *</label>
-              <input id="neg-nombre" class="input" [value]="createForm().nombre" (input)="updateCreate('nombre', $event)" placeholder="Ej. La Parrilla de Juan" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-rubro">Tipo de negocio *</label>
-              <select id="neg-rubro" class="input" (change)="updateCreate('id_rubro', $event)">
-                <option value="" disabled [selected]="!createForm().id_rubro">Selecciona…</option>
-                @for (g of rubrosPorModulo(); track g.modulo) {
-                  <optgroup [label]="'Módulo ' + g.modulo">
-                    @for (r of g.rubros; track r.id_tipo_negocio) {
-                      <option [value]="r.id_tipo_negocio" [selected]="createForm().id_rubro === '' + r.id_tipo_negocio">{{ r.etiqueta }}</option>
-                    }
-                  </optgroup>
-                }
-              </select>
-              <small class="neg-form__hint neg-form__hint--block">
-                El oficio queda en la ficha del cliente; el módulo es el software que se le monta.
-              </small>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-pais">País *</label>
-              <select id="neg-pais" class="input" (change)="updateCreate('pais', $event)">
-                @for (p of paises; track p.codigo) {
-                  <option [value]="p.codigo" [selected]="p.codigo === createForm().pais">{{ p.nombre }}</option>
-                }
-              </select>
-              <small class="neg-form__hint neg-form__hint--block">Decide el indicativo con el que se guardan los teléfonos de sus clientes.</small>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-nit">NIT</label>
-              <input id="neg-nit" class="input" [value]="createForm().nit" (input)="updateCreate('nit', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-email">
-                Email de contacto
-                @if (userMode() === 'existente' && usuarioSeleccionado()) {
-                  <span class="neg-form__hint">· copiado del usuario</span>
-                }
-              </label>
-              <input id="neg-email" class="input" type="email" [value]="createForm().email_contacto" (input)="updateCreate('email_contacto', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-telefono">
-                Teléfono
-                @if (userMode() === 'existente' && usuarioSeleccionado() && createForm().telefono) {
-                  <span class="neg-form__hint">· copiado del usuario</span>
-                }
-              </label>
-              <app-telefono-pais
-                campoId="neg-telefono"
-                [valor]="createForm().telefono"
-                [paisPorDefecto]="createForm().pais"
-                (valorChange)="setCreate('telefono', $event)"
-              />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-direccion">Dirección</label>
-              <input id="neg-direccion" class="input" [value]="createForm().direccion" (input)="updateCreate('direccion', $event)" />
-            </div>
-          </div>
-
-          <!-- 3. Plan y vigencia: siempre hay fechas, también sin plan (prueba) -->
-          <h3 class="neg-modal__section">Plan y vigencia</h3>
-          <div class="neg-form__grid">
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label" for="neg-plan">Plan asignado</label>
-              <select id="neg-plan" class="input" (change)="updateCreate('id_plan', $event)">
-                <option value="" [selected]="!createForm().id_plan">Sin plan · prueba de {{ diasPrueba }} días</option>
-                @for (p of planes(); track p.id_plan) {
-                  <option [value]="p.id_plan" [selected]="esPlanCreate(p.id_plan)">
-                    {{ p.nombre }} — {{ formatPrecio(p) }} / mes
-                  </option>
-                }
-              </select>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-inicio">Fecha de inicio *</label>
-              <input id="neg-inicio" class="input" type="date" [value]="createForm().fecha_inicio" (input)="updateCreate('fecha_inicio', $event)" />
-            </div>
-            <div class="neg-form__field">
-              @if (createForm().id_plan) {
-                <label class="neg-form__label" for="neg-meses">Duración (meses) *</label>
-                <input id="neg-meses" class="input" type="number" min="1" max="60" step="1" [value]="createForm().meses" (input)="updateCreate('meses', $event)" />
-              } @else {
-                <span class="neg-form__label">Duración</span>
-                <span class="neg-form__static">{{ diasPrueba }} días de prueba</span>
-              }
-            </div>
-          </div>
-
-          @if (createVigencia(); as v) {
-            <div class="neg-vig" role="status" aria-live="polite">
-              <lucide-icon name="calendar-range" [size]="20" class="neg-vig__icon" aria-hidden="true" />
-              <div class="neg-vig__rango">
-                <span class="neg-vig__punto"><small>Inicia</small><strong>{{ formatearDia(v.inicio) }}</strong></span>
-                <span class="neg-vig__flecha" aria-hidden="true">→</span>
-                <span class="neg-vig__punto"><small>Termina</small><strong>{{ formatearDia(v.fin) }}</strong></span>
-              </div>
-              <p class="neg-vig__nota">
-                @if (createForm().id_plan) {
-                  Acceso completo hasta las 11:59 p. m. del último día.
-                } @else {
-                  Prueba con las funciones del Plan Básico; al terminar no se renueva sola.
-                }
-              </p>
-            </div>
-          } @else {
-            <p class="neg-form__error">Indica la fecha de inicio y una duración de 1 a 60 meses.</p>
-          }
-        }
-
-        <!-- ─── Formulario EDITAR ─── -->
-        @if (mode === 'edit' && editForm(); as f) {
-         <!-- Dos columnas (una sola en móvil): datos generales a la izquierda, todo lo del plan a la derecha -->
-         <div class="neg-edit">
-          <section class="neg-edit__col" aria-label="Datos generales">
-          <h3 class="neg-modal__section neg-modal__section--first">Datos generales</h3>
-          <div class="neg-form__grid">
-            <div class="neg-form__field neg-form__field--full">
-              <label class="neg-form__label" for="neg-e-nombre">Nombre del negocio *</label>
-              <input id="neg-e-nombre" class="input" [value]="f.nombre" (input)="updateEdit('nombre', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-e-rubro">Tipo de negocio</label>
-              <select id="neg-e-rubro" class="input" (change)="updateEdit('id_rubro', $event)">
-                @for (g of rubrosEditPorModulo(); track g.modulo) {
-                  <optgroup [label]="'Módulo ' + g.modulo">
-                    @for (r of g.rubros; track r.id_tipo_negocio) {
-                      <option [value]="r.id_tipo_negocio" [selected]="esRubroEdit(r.id_tipo_negocio)">{{ r.etiqueta }}</option>
-                    }
-                  </optgroup>
-                }
-              </select>
-              <small class="neg-form__hint neg-form__hint--block">
-                Cambiar de módulo traduce los roles del equipo; cambiar solo de oficio, no.
-              </small>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-e-pais">País *</label>
-              <select id="neg-e-pais" class="input" (change)="updateEdit('pais', $event)">
-                @for (p of paises; track p.codigo) {
-                  <option [value]="p.codigo" [selected]="p.codigo === f.pais">{{ p.nombre }}</option>
-                }
-              </select>
-              <small class="neg-form__hint neg-form__hint--block">Decide el indicativo con el que se guardan los teléfonos de sus clientes.</small>
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-e-nit">NIT</label>
-              <input id="neg-e-nit" class="input" [value]="f.nit" (input)="updateEdit('nit', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-e-email">Email de contacto</label>
-              <input id="neg-e-email" class="input" type="email" [value]="f.email_contacto" (input)="updateEdit('email_contacto', $event)" />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-e-telefono">Teléfono</label>
-              <app-telefono-pais
-                campoId="neg-e-telefono"
-                [valor]="f.telefono"
-                [paisPorDefecto]="f.pais"
-                (valorChange)="setEdit('telefono', $event)"
-              />
-            </div>
-            <div class="neg-form__field">
-              <label class="neg-form__label" for="neg-e-direccion">Dirección</label>
-              <input id="neg-e-direccion" class="input" [value]="f.direccion" (input)="updateEdit('direccion', $event)" />
-            </div>
-          </div>
-
-          <h3 class="neg-modal__section">Historial</h3>
-          <ng-container *ngTemplateOutlet="lineaTiempo" />
-          </section>
-
-          <section class="neg-edit__col" aria-label="Plan">
-          <!-- Plan y vigencia: el plan es del negocio, por eso se gestiona aquí, directo -->
-          <h3 class="neg-modal__section neg-modal__section--first">Plan y vigencia</h3>
-
-          @if (editNegocio(); as n) {
-            @if (vencPlan(n.plan); as va) {
-              <div class="neg-plan-actual" [class]="'neg-plan-actual neg-plan-actual--' + va.tono">
-                <div class="neg-plan-actual__top">
-                  <span class="neg-plan-actual__titulo">Actual</span>
-                  @if (n.plan) {
-                    <span class="es-badge es-badge--primary">{{ n.plan.nombre }}</span>
-                  }
-                  <span
-                    class="es-badge"
-                    [class.es-badge--success]="va.tono === 'success'"
-                    [class.es-badge--warning]="va.tono === 'warning'"
-                    [class.es-badge--error]="va.tono === 'error'"
-                    [class.es-badge--info]="va.tono === 'info'"
-                  >{{ va.etiqueta }}</span>
+                <div class="neg-form__field">
+                  <label class="neg-form__label" for="neg-direccion">Dirección</label>
+                  <input id="neg-direccion" class="input" [value]="createForm().direccion" (input)="updateCreate('direccion', $event)" />
                 </div>
-                @if (n.plan) {
-                  <div class="neg-vig__rango">
-                    <span class="neg-vig__punto"><small>Inicia</small><strong>{{ formatearDia(va.inicio) }}</strong></span>
-                    <span class="neg-vig__flecha" aria-hidden="true">→</span>
-                    <span class="neg-vig__punto"><small>Vence</small><strong>{{ va.fin ? formatearDia(va.fin) : 'Sin fecha de fin' }}</strong></span>
-                    @if (va.fin) {
-                      <span class="neg-vig__punto"><small>Bloqueo tras gracia</small><strong>{{ formatearDia(va.limiteGracia) }}</strong></span>
-                    }
-                  </div>
-                } @else {
-                  <p class="neg-plan-actual__vacio">
-                    Sin plan: sus usuarios pueden iniciar sesión, pero no administrar el negocio.
-                  </p>
-                }
               </div>
             }
-          }
 
-          @if (planForm(); as c) {
-            <div class="neg-form__grid neg-plan-campos">
-              <div class="neg-form__field neg-form__field--full">
-                <label class="neg-form__label" for="neg-c-plan">Plan</label>
-                <select id="neg-c-plan" class="input" (change)="updatePlan('id_plan', $event)">
-                  @if (!editNegocio()?.plan) {
-                    <option [value]="planNinguno" [selected]="c.id_plan === planNinguno">Sin plan asignado</option>
-                  }
-                  <option value="" [selected]="c.id_plan === ''">Prueba de {{ diasPrueba }} días (Plan Básico)</option>
-                  @for (pl of planes(); track pl.id_plan) {
-                    <option [value]="pl.id_plan" [selected]="esPlanEdit(pl.id_plan)">
-                      {{ pl.nombre }} — {{ formatPrecio(pl) }} / mes
-                    </option>
-                  }
-                </select>
+            <!-- ── Paso 2: administrador (uno existente o uno nuevo) ── -->
+            @case (1) {
+              <div class="neg-user-mode">
+                <h3 class="neg-modal__section neg-modal__section--first">Usuario administrador</h3>
+                <div class="neg-user-mode__tabs" role="group" aria-label="Modo de usuario">
+                  <button type="button"
+                          class="neg-user-mode__tab"
+                          [class.neg-user-mode__tab--active]="userMode() === 'nuevo'"
+                          (click)="setUserMode('nuevo')">
+                    <lucide-icon name="user-plus" [size]="14" aria-hidden="true" />
+                    Nuevo
+                  </button>
+                  <button type="button"
+                          class="neg-user-mode__tab"
+                          [class.neg-user-mode__tab--active]="userMode() === 'existente'"
+                          (click)="setUserMode('existente')">
+                    <lucide-icon name="user-round" [size]="14" aria-hidden="true" />
+                    Existente
+                  </button>
+                </div>
               </div>
-              @if (c.id_plan !== planNinguno) {
-                <div class="neg-form__field">
-                  <label class="neg-form__label" for="neg-c-inicio">Fecha de inicio *</label>
-                  <input id="neg-c-inicio" class="input" type="date" [value]="c.fecha_inicio" (input)="updatePlan('fecha_inicio', $event)" />
+
+              @if (userMode() === 'nuevo') {
+                <div class="neg-form__grid">
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-a-nombre">Primer nombre *</label>
+                    <input id="neg-a-nombre" class="input" [value]="createForm().a_primer_nombre" (input)="updateCreate('a_primer_nombre', $event)" />
+                  </div>
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-a-apellido">Primer apellido *</label>
+                    <input id="neg-a-apellido" class="input" [value]="createForm().a_primer_apellido" (input)="updateCreate('a_primer_apellido', $event)" />
+                  </div>
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-a-id">Identificación *</label>
+                    <input id="neg-a-id" class="input" [value]="createForm().a_num_identificacion" (input)="updateCreate('a_num_identificacion', $event)" />
+                  </div>
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-a-email">
+                      Email <span class="neg-form__optional">(opcional)</span>
+                    </label>
+                    <input
+                      id="neg-a-email"
+                      class="input"
+                      type="email"
+                      [value]="createForm().a_email"
+                      (input)="updateCreate('a_email', $event)"
+                      [attr.aria-invalid]="adminEmailInvalido() ? 'true' : null"
+                    />
+                    @if (adminEmailInvalido()) {
+                      <small class="neg-form__error">Revisa el formato del correo.</small>
+                    }
+                  </div>
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-a-tel">
+                      Teléfono <span class="neg-form__optional">(opcional)</span>
+                    </label>
+                    <app-telefono-pais
+                      campoId="neg-a-tel"
+                      [valor]="createForm().a_telefono"
+                      [paisPorDefecto]="createForm().pais"
+                      (valorChange)="setCreate('a_telefono', $event)"
+                    />
+                  </div>
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-a-pass">Contraseña temporal *</label>
+                    <input id="neg-a-pass" class="input" type="text" [value]="createForm().a_password" (input)="updateCreate('a_password', $event)" placeholder="Mín. 8, una mayúscula y un número" />
+                  </div>
+                  <ul class="pwd-checks neg-form__field--full" aria-label="Requisitos de la contraseña">
+                    <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().length">
+                      <lucide-icon [name]="passwordChecks().length ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                      Mínimo 8 caracteres
+                    </li>
+                    <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().upper">
+                      <lucide-icon [name]="passwordChecks().upper ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                      Al menos una mayúscula
+                    </li>
+                    <li class="pwd-checks__item" [class.pwd-checks__item--ok]="passwordChecks().number">
+                      <lucide-icon [name]="passwordChecks().number ? 'check' : 'x'" [size]="14" aria-hidden="true" />
+                      Al menos un número
+                    </li>
+                  </ul>
+                </div>
+              }
+
+              @if (userMode() === 'existente') {
+                <div class="neg-form__grid">
+                  <div class="neg-form__field neg-form__field--full">
+                    <label class="neg-form__label" for="neg-buscar">Buscar usuario *</label>
+                    <div class="neg-user-search">
+                      <input
+                        id="neg-buscar"
+                        class="input"
+                        type="search"
+                        [value]="usuarioQuery()"
+                        (input)="onUsuarioQuery($event)"
+                        placeholder="Nombre, email o identificación (mín. 2 chars)…"
+                        autocomplete="off"
+                      />
+                      @if (searchLoading()) {
+                        <p class="neg-user-search__loading">
+                          <lucide-icon name="loader-2" [size]="14" class="neg__spin" aria-hidden="true" /> Buscando…
+                        </p>
+                      }
+                      @if (!searchLoading() && usuarioResults().length > 0 && !usuarioSeleccionado()) {
+                        <ul class="neg-user-results" role="listbox">
+                          @for (u of usuarioResults(); track u.id_usuario) {
+                            <li class="neg-user-results__item" role="option" (click)="selectUsuario(u)" (keydown.enter)="selectUsuario(u)" tabindex="0">
+                              <span class="neg-user-results__name">{{ u.primer_nombre }} {{ u.primer_apellido }}</span>
+                              <span class="neg-user-results__meta">{{ u.email || 'Sin correo' }} · {{ u.num_identificacion }}</span>
+                            </li>
+                          }
+                        </ul>
+                      }
+                      @if (!searchLoading() && usuarioQuery().trim().length >= 2 && usuarioResults().length === 0 && !usuarioSeleccionado()) {
+                        <p class="neg-user-search__loading">Sin resultados para "{{ usuarioQuery() }}"</p>
+                      }
+                    </div>
+                    @if (usuarioSeleccionado(); as u) {
+                      <div class="neg-user-selected">
+                        <div class="neg-user-selected__info">
+                          <span class="neg-user-selected__name">{{ u.primer_nombre }} {{ u.primer_apellido }}</span>
+                          <span class="neg-user-selected__meta">{{ u.email || 'Sin correo' }} · {{ u.num_identificacion }}</span>
+                        </div>
+                        <button type="button" class="neg-user-selected__clear" (click)="clearUsuario()" aria-label="Quitar usuario seleccionado">
+                          <lucide-icon name="x" [size]="14" aria-hidden="true" />
+                        </button>
+                      </div>
+                      <small class="neg-form__hint neg-form__hint--block">
+                        Se suma como administrador de este negocio; sus otros negocios y roles no cambian.
+                      </small>
+                    }
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- ── Paso 3: plan y vigencia (siempre hay fechas, también sin plan: la prueba) ── -->
+            @case (2) {
+              <h3 class="neg-modal__section neg-modal__section--first">Plan y vigencia</h3>
+              <div class="neg-form__grid">
+                <div class="neg-form__field neg-form__field--full">
+                  <label class="neg-form__label" for="neg-plan">Plan asignado</label>
+                  <select id="neg-plan" class="input" (change)="updateCreate('id_plan', $event)">
+                    <option value="" [selected]="!createForm().id_plan">Sin plan · prueba de {{ diasPrueba }} días</option>
+                    @for (p of planes(); track p.id_plan) {
+                      <option [value]="p.id_plan" [selected]="esPlanCreate(p.id_plan)">
+                        {{ p.nombre }} — {{ formatPrecio(p) }} / mes
+                      </option>
+                    }
+                  </select>
                 </div>
                 <div class="neg-form__field">
-                  @if (c.id_plan) {
-                    <label class="neg-form__label" for="neg-c-meses">Duración (meses) *</label>
-                    <input id="neg-c-meses" class="input" type="number" min="1" max="60" step="1" [value]="c.meses" (input)="updatePlan('meses', $event)" />
+                  <label class="neg-form__label" for="neg-inicio">Fecha de inicio *</label>
+                  <input id="neg-inicio" class="input" type="date" [value]="createForm().fecha_inicio" (input)="updateCreate('fecha_inicio', $event)" />
+                </div>
+                <div class="neg-form__field">
+                  @if (createForm().id_plan) {
+                    <label class="neg-form__label" for="neg-meses">Duración (meses) *</label>
+                    <input id="neg-meses" class="input" type="number" min="1" max="60" step="1" [value]="createForm().meses" (input)="updateCreate('meses', $event)" />
                   } @else {
                     <span class="neg-form__label">Duración</span>
                     <span class="neg-form__static">{{ diasPrueba }} días de prueba</span>
                   }
                 </div>
-              }
-            </div>
+              </div>
 
-            @if (aplicaPlan()) {
-              @if (cambioVigencia(); as v) {
+              @if (createVigencia(); as v) {
                 <div class="neg-vig" role="status" aria-live="polite">
                   <lucide-icon name="calendar-range" [size]="20" class="neg-vig__icon" aria-hidden="true" />
                   <div class="neg-vig__rango">
-                    <span class="neg-vig__punto"><small>Nueva vigencia · inicia</small><strong>{{ formatearDia(v.inicio) }}</strong></span>
+                    <span class="neg-vig__punto"><small>Inicia</small><strong>{{ formatearDia(v.inicio) }}</strong></span>
                     <span class="neg-vig__flecha" aria-hidden="true">→</span>
-                    <span class="neg-vig__punto"><small>Vence</small><strong>{{ formatearDia(v.fin) }}</strong></span>
+                    <span class="neg-vig__punto"><small>Termina</small><strong>{{ formatearDia(v.fin) }}</strong></span>
                   </div>
-                  <p class="neg-vig__nota">Se aplica al guardar y reemplaza la vigencia actual.</p>
+                  <p class="neg-vig__nota">
+                    @if (createForm().id_plan) {
+                      Acceso completo hasta las 11:59 p. m. del último día.
+                    } @else {
+                      Prueba con las funciones del Plan Básico; al terminar no se renueva sola.
+                    }
+                  </p>
                 </div>
               } @else {
                 <p class="neg-form__error">Indica la fecha de inicio y una duración de 1 a 60 meses.</p>
               }
 
-              @if (cambioDejaHueco()) {
-                <p class="neg-plan-cambio__aviso" role="alert">
-                  <lucide-icon name="triangle-alert" [size]="15" aria-hidden="true" />
-                  El plan actual se cierra al guardar: hasta el {{ formatearDia(c.fecha_inicio) }} el
-                  negocio quedará sin plan activo.
+              <div class="neg-total">
+                <div class="neg-total__fila neg-total__fila--total">
+                  <span>Total mensual</span>
+                  <strong>{{ resumenCrear().plan ? formatPrecio(resumenCrear().plan!) : '$0 (prueba)' }}</strong>
+                </div>
+                <p class="neg-total__nota">
+                  Los complementos (usuarios y cajas adicionales) se añaden al editar el negocio, cuando
+                  ya tiene su suscripción de cobro.
                 </p>
-              }
-            } @else if (editNegocio()?.plan) {
-              <p class="neg-form__hint neg-form__hint--block">
-                Cambia el plan, la fecha de inicio o la duración para registrar una nueva vigencia
-                (por ejemplo, cuando el negocio paga).
-              </p>
+              </div>
             }
 
-            @if (planModificado()) {
-              <button type="button" class="neg-link" (click)="deshacerPlan()">
-                Deshacer cambios del plan
-              </button>
+            <!-- ── Paso 4: resumen y confirmación ── -->
+            @case (3) {
+              <h3 class="neg-modal__section neg-modal__section--first">Revisa antes de registrar</h3>
+
+              <dl class="neg-resumen">
+                <div class="neg-resumen__grupo">
+                  <dt>Negocio</dt>
+                  <dd>
+                    <strong>{{ createForm().nombre }}</strong>
+                    <span>{{ resumenCrear().rubro }} · aplicativo {{ resumenCrear().modulo }}</span>
+                    <span>{{ resumenCrear().pais }}@if (createForm().nit) { · NIT {{ createForm().nit }} }</span>
+                    @if (createForm().email_contacto || createForm().telefono) {
+                      <span>{{ createForm().email_contacto }} {{ createForm().telefono }}</span>
+                    }
+                    @if (createForm().direccion) { <span>{{ createForm().direccion }}</span> }
+                  </dd>
+                </div>
+                <div class="neg-resumen__grupo">
+                  <dt>Administrador</dt>
+                  <dd>
+                    <strong>{{ resumenCrear().admin }}</strong>
+                    @if (userMode() === 'existente') {
+                      <span>Usuario existente: se suma a este negocio y conserva los demás.</span>
+                    } @else {
+                      <span>Usuario nuevo · CC {{ createForm().a_num_identificacion }}@if (createForm().a_email) { · {{ createForm().a_email }} }</span>
+                    }
+                  </dd>
+                </div>
+                <div class="neg-resumen__grupo">
+                  <dt>Plan</dt>
+                  <dd>
+                    <strong>{{ resumenCrear().plan ? resumenCrear().plan!.nombre : 'Prueba de ' + diasPrueba + ' días' }}</strong>
+                    @if (createVigencia(); as v) {
+                      <span>Del {{ formatearDia(v.inicio) }} al {{ formatearDia(v.fin) }}</span>
+                    }
+                    @if (resumenCrear().plan; as pl) { <span>{{ formatPrecio(pl) }} al mes</span> }
+                  </dd>
+                </div>
+              </dl>
             }
           }
-          <!--
-            Complementos del plan. Dos cantidades por fila y no una: «asignados» es lo que el
-            negocio puede usar y «se cobran» lo que se le factura. La diferencia es cortesía, y
-            es la forma de regularizar a quien ya venía usando más de lo que su plan incluye sin
-            cobrarle de golpe algo que nunca pactó. Los límites cuentan lo asignado; la factura,
-            solo lo cobrado.
-          -->
-          @if (mode === 'edit') {
+        }
+
+        <!-- ─── EDITAR: dos pestañas ─── -->
+        @if (mode === 'edit' && editForm(); as f) {
+          <div class="neg-tabs" role="tablist" aria-label="Secciones del negocio">
+            <button type="button" role="tab" class="neg-tabs__tab"
+                    [class.neg-tabs__tab--on]="editTab() === 'datos'"
+                    [attr.aria-selected]="editTab() === 'datos'" (click)="editTab.set('datos')">
+              Datos generales
+            </button>
+            <button type="button" role="tab" class="neg-tabs__tab"
+                    [class.neg-tabs__tab--on]="editTab() === 'plan'"
+                    [attr.aria-selected]="editTab() === 'plan'" (click)="editTab.set('plan')">
+              Plan y vigencia
+              @if (planModificado() || complementosModificados()) {
+                <span class="neg-tabs__punto" title="Cambios sin guardar" aria-label="Cambios sin guardar"></span>
+              }
+            </button>
+          </div>
+
+          @if (editTab() === 'datos') {
+            <div class="neg-form__grid">
+              <div class="neg-form__field neg-form__field--full">
+                <label class="neg-form__label" for="neg-e-nombre">Nombre del negocio *</label>
+                <input id="neg-e-nombre" class="input" [value]="f.nombre" (input)="updateEdit('nombre', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label" for="neg-e-rubro">Tipo de negocio</label>
+                <select id="neg-e-rubro" class="input" (change)="updateEdit('id_rubro', $event)">
+                  @for (g of rubrosEditPorModulo(); track g.modulo) {
+                    <optgroup [label]="'Aplicativo ' + g.modulo">
+                      @for (r of g.rubros; track r.id_tipo_negocio) {
+                        <option [value]="r.id_tipo_negocio" [selected]="esRubroEdit(r.id_tipo_negocio)">{{ r.etiqueta }}</option>
+                      }
+                    </optgroup>
+                  }
+                </select>
+                <small class="neg-form__hint neg-form__hint--block">
+                  Cambiar de aplicativo traduce los roles del equipo; cambiar solo de oficio, no.
+                </small>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label" for="neg-e-pais">País *</label>
+                <select id="neg-e-pais" class="input" (change)="updateEdit('pais', $event)">
+                  @for (p of paises; track p.codigo) {
+                    <option [value]="p.codigo" [selected]="p.codigo === f.pais">{{ p.nombre }}</option>
+                  }
+                </select>
+                <small class="neg-form__hint neg-form__hint--block">Decide el indicativo con el que se guardan los teléfonos de sus clientes.</small>
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label" for="neg-e-nit">NIT</label>
+                <input id="neg-e-nit" class="input" [value]="f.nit" (input)="updateEdit('nit', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label" for="neg-e-email">Email de contacto</label>
+                <input id="neg-e-email" class="input" type="email" [value]="f.email_contacto" (input)="updateEdit('email_contacto', $event)" />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label" for="neg-e-telefono">Teléfono</label>
+                <app-telefono-pais
+                  campoId="neg-e-telefono"
+                  [valor]="f.telefono"
+                  [paisPorDefecto]="f.pais"
+                  (valorChange)="setEdit('telefono', $event)"
+                />
+              </div>
+              <div class="neg-form__field">
+                <label class="neg-form__label" for="neg-e-direccion">Dirección</label>
+                <input id="neg-e-direccion" class="input" [value]="f.direccion" (input)="updateEdit('direccion', $event)" />
+              </div>
+            </div>
+          } @else {
+            <!-- Plan y vigencia: el plan es del negocio, por eso se gestiona aquí, directo -->
+            @if (editNegocio(); as n) {
+              @if (vencPlan(n.plan); as va) {
+                <div class="neg-plan-actual" [class]="'neg-plan-actual neg-plan-actual--' + va.tono">
+                  <div class="neg-plan-actual__top">
+                    <span class="neg-plan-actual__titulo">Actual</span>
+                    @if (n.plan) {
+                      <span class="es-badge es-badge--primary">{{ n.plan.nombre }}</span>
+                    }
+                    <span
+                      class="es-badge"
+                      [class.es-badge--success]="va.tono === 'success'"
+                      [class.es-badge--warning]="va.tono === 'warning'"
+                      [class.es-badge--error]="va.tono === 'error'"
+                      [class.es-badge--info]="va.tono === 'info'"
+                    >{{ va.etiqueta }}</span>
+                  </div>
+                  @if (n.plan) {
+                    <div class="neg-vig__rango">
+                      <span class="neg-vig__punto"><small>Inicia</small><strong>{{ formatearDia(va.inicio) }}</strong></span>
+                      <span class="neg-vig__flecha" aria-hidden="true">→</span>
+                      <span class="neg-vig__punto"><small>Vence</small><strong>{{ va.fin ? formatearDia(va.fin) : 'Sin fecha de fin' }}</strong></span>
+                      @if (va.fin) {
+                        <span class="neg-vig__punto"><small>Bloqueo tras gracia</small><strong>{{ formatearDia(va.limiteGracia) }}</strong></span>
+                      }
+                    </div>
+                  } @else {
+                    <p class="neg-plan-actual__vacio">
+                      Sin plan: sus usuarios pueden iniciar sesión, pero no administrar el negocio.
+                    </p>
+                  }
+                </div>
+              }
+            }
+
+            @if (planForm(); as c) {
+              <div class="neg-form__grid neg-plan-campos">
+                <div class="neg-form__field neg-form__field--full">
+                  <label class="neg-form__label" for="neg-c-plan">Plan</label>
+                  <select id="neg-c-plan" class="input" (change)="updatePlan('id_plan', $event)">
+                    @if (!editNegocio()?.plan) {
+                      <option [value]="planNinguno" [selected]="c.id_plan === planNinguno">Sin plan asignado</option>
+                    }
+                    <option value="" [selected]="c.id_plan === ''">Prueba de {{ diasPrueba }} días (Plan Básico)</option>
+                    @for (pl of planes(); track pl.id_plan) {
+                      <option [value]="pl.id_plan" [selected]="esPlanEdit(pl.id_plan)">
+                        {{ pl.nombre }} — {{ formatPrecio(pl) }} / mes
+                      </option>
+                    }
+                  </select>
+                </div>
+                @if (c.id_plan !== planNinguno) {
+                  <div class="neg-form__field">
+                    <label class="neg-form__label" for="neg-c-inicio">Fecha de inicio *</label>
+                    <input id="neg-c-inicio" class="input" type="date" [value]="c.fecha_inicio" (input)="updatePlan('fecha_inicio', $event)" />
+                  </div>
+                  <div class="neg-form__field">
+                    @if (c.id_plan) {
+                      <label class="neg-form__label" for="neg-c-meses">Duración (meses) *</label>
+                      <input id="neg-c-meses" class="input" type="number" min="1" max="60" step="1" [value]="c.meses" (input)="updatePlan('meses', $event)" />
+                    } @else {
+                      <span class="neg-form__label">Duración</span>
+                      <span class="neg-form__static">{{ diasPrueba }} días de prueba</span>
+                    }
+                  </div>
+                }
+              </div>
+
+              @if (aplicaPlan()) {
+                @if (cambioVigencia(); as v) {
+                  <div class="neg-vig" role="status" aria-live="polite">
+                    <lucide-icon name="calendar-range" [size]="20" class="neg-vig__icon" aria-hidden="true" />
+                    <div class="neg-vig__rango">
+                      <span class="neg-vig__punto"><small>Nueva vigencia · inicia</small><strong>{{ formatearDia(v.inicio) }}</strong></span>
+                      <span class="neg-vig__flecha" aria-hidden="true">→</span>
+                      <span class="neg-vig__punto"><small>Vence</small><strong>{{ formatearDia(v.fin) }}</strong></span>
+                    </div>
+                    <p class="neg-vig__nota">Se aplica al guardar y reemplaza la vigencia actual.</p>
+                  </div>
+                } @else {
+                  <p class="neg-form__error">Indica la fecha de inicio y una duración de 1 a 60 meses.</p>
+                }
+
+                @if (cambioDejaHueco()) {
+                  <p class="neg-plan-cambio__aviso" role="alert">
+                    <lucide-icon name="triangle-alert" [size]="15" aria-hidden="true" />
+                    El plan actual se cierra al guardar: hasta el {{ formatearDia(c.fecha_inicio) }} el
+                    negocio quedará sin plan activo.
+                  </p>
+                }
+              } @else if (editNegocio()?.plan) {
+                <p class="neg-form__hint neg-form__hint--block">
+                  Cambia el plan, la fecha de inicio o la duración para registrar una nueva vigencia
+                  (por ejemplo, cuando el negocio paga).
+                </p>
+              }
+
+              @if (planModificado()) {
+                <button type="button" class="neg-link" (click)="deshacerPlan()">
+                  Deshacer cambios del plan
+                </button>
+              }
+            }
+
+            <!--
+              Complementos del plan, compactos: dos cantidades por complemento y no una. «Asignados»
+              es lo que el negocio puede usar y «Se cobran» lo que se le factura; la diferencia es
+              cortesía, y es la forma de regularizar a quien ya venía usando más de lo que su plan
+              incluye sin cobrarle de golpe algo que nunca pactó.
+            -->
             <h3 class="neg-modal__section">Complementos del plan</h3>
 
             @if (complementosCargando()) {
@@ -652,6 +725,47 @@
                 {{ complementosError() ?? 'Este negocio todavía no tiene suscripción de cobro.' }}
               </p>
             } @else {
+              <div class="neg-comp">
+                @for (c of complementos(); track c.codigo) {
+                  <div class="neg-comp__item">
+                    <div class="neg-comp__linea">
+                      <strong>{{ c.nombre }}</strong>
+                      <span>· {{ formatPrecioValor(c.precio) }} c/u al mes ·</span>
+                      <strong>{{ subtotalDe(c.codigo) === null ? '…' : formatPrecioValor(subtotalDe(c.codigo)!) }}/mes</strong>
+                      @if (c.cortesia > 0) {
+                        <span class="es-badge es-badge--info">{{ c.cortesia }} de cortesía</span>
+                      }
+                    </div>
+                    <div class="neg-comp__campos">
+                      <label class="neg-comp__campo">
+                        <span>Asignados</span>
+                        <input
+                          class="input neg-comp__num"
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          [max]="c.cantidad_maxima"
+                          [value]="c.cantidad || ''"
+                          (input)="cambiarComplemento(c.codigo, 'cantidad', $any($event.target).value)"
+                        />
+                      </label>
+                      <label class="neg-comp__campo">
+                        <span>Se cobran</span>
+                        <input
+                          class="input neg-comp__num"
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          [max]="c.cantidad"
+                          [value]="c.cantidad_facturable || ''"
+                          (input)="cambiarComplemento(c.codigo, 'cantidad_facturable', $any($event.target).value)"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                }
+              </div>
+
               @if (limites(); as l) {
                 <p class="neg-comp__limites">
                   Con lo asignado hoy:
@@ -661,85 +775,30 @@
                   ({{ l.cajas.incluidos ?? '∞' }} del plan + {{ l.cajas.adicionales }})
                 </p>
               }
-
-              <div class="neg-comp">
-                @for (c of complementos(); track c.codigo) {
-                  <div class="neg-comp__fila">
-                    <div class="neg-comp__info">
-                      <strong>{{ c.nombre }}</strong>
-                      <small>{{ formatPrecioValor(c.precio) }} / mes cada uno</small>
-                    </div>
-
-                    <label class="neg-comp__campo">
-                      <span>Asignados</span>
-                      <input
-                        class="input neg-comp__num"
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        [max]="c.cantidad_maxima"
-                        [value]="c.cantidad || ''"
-                        (input)="cambiarComplemento(c.codigo, 'cantidad', $any($event.target).value)"
-                      />
-                    </label>
-
-                    <label class="neg-comp__campo">
-                      <span>Se cobran</span>
-                      <input
-                        class="input neg-comp__num"
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        [max]="c.cantidad"
-                        [value]="c.cantidad_facturable || ''"
-                        (input)="cambiarComplemento(c.codigo, 'cantidad_facturable', $any($event.target).value)"
-                      />
-                    </label>
-
-                    <div class="neg-comp__resultado">
-                      @if (c.cortesia > 0) {
-                        <span class="es-badge es-badge--info">{{ c.cortesia }} de cortesía</span>
-                      }
-                      <strong>{{ formatPrecioValor(c.cantidad_facturable * c.precio) }}/mes</strong>
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <div class="neg-comp__pie">
-                <span class="neg-comp__total">
-                  Suman al cobro:
-                  <strong>{{ formatPrecioValor(complementosTotal()) }} / mes</strong>
-                </span>
-                <span class="neg-comp__acciones">
-                  @if (complementosOk()) {
-                    <span class="es-badge es-badge--success">Guardado</span>
-                  }
-                  <button
-                    type="button"
-                    class="btn btn--secondary"
-                    (click)="guardarComplementos()"
-                    [disabled]="complementosGuardando()"
-                  >
-                    {{ complementosGuardando() ? 'Guardando…' : 'Guardar complementos' }}
-                  </button>
-                </span>
-              </div>
-
-              @if (complementosError(); as e) {
-                <p class="neg-comp__error" role="alert">{{ e }}</p>
-              }
-
-              <p class="neg-comp__nota">
-                Lo cobrado entra en el cobro pendiente (si lo hay) y en los siguientes. Lo
-                asignado amplía los límites del negocio desde ya.
-              </p>
             }
-          }
-          </section>
-         </div>
-        }
 
+            <!-- El total que quedará, calculado por el backend con la misma cuenta que usa para cobrar. -->
+            <div class="neg-total" aria-live="polite">
+              @if (totalMensual(); as t) {
+                <div class="neg-total__fila">
+                  <span>Plan</span><span>{{ formatPrecioValor(t.precio_plan) }}</span>
+                </div>
+                <div class="neg-total__fila">
+                  <span>Complementos</span><span>{{ formatPrecioValor(totalComplementos() ?? 0) }}</span>
+                </div>
+                <div class="neg-total__fila neg-total__fila--total">
+                  <span>Total mensual que quedará</span>
+                  <strong>{{ formatPrecioValor(t.total) }}</strong>
+                </div>
+              } @else {
+                <div class="neg-total__fila neg-total__fila--total">
+                  <span>Total mensual que quedará</span>
+                  <strong>{{ totalCargando() ? 'Calculando…' : '—' }}</strong>
+                </div>
+              }
+            </div>
+          }
+        }
       </div>
 
       <!-- El error va fuera del cuerpo desplazable, junto a los botones: siempre a la vista. -->
@@ -751,15 +810,24 @@
       }
 
       <footer class="neg-modal__foot">
-        <button type="button" class="btn btn--outline" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn--outline" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
         @if (mode === 'create') {
-          <button type="button" class="btn btn--primary" [disabled]="!createValid() || saving()" (click)="submitCreate()">
-            @if (saving()) {
-              <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Registrando…
-            } @else {
-              <lucide-icon name="check" [size]="16" aria-hidden="true" /> Registrar cliente
-            }
-          </button>
+          @if (crearPaso() > 0) {
+            <button type="button" class="btn btn--outline" (click)="pasoAnterior()" [disabled]="saving()">Atrás</button>
+          }
+          @if (crearPaso() < pasosCrear.length - 1) {
+            <button type="button" class="btn btn--primary" [disabled]="!pasoCrearValido()" (click)="pasoSiguiente()">
+              Siguiente
+            </button>
+          } @else {
+            <button type="button" class="btn btn--primary" [disabled]="!createValid() || saving()" (click)="submitCreate()">
+              @if (saving()) {
+                <lucide-icon name="loader-2" [size]="16" class="neg__spin" aria-hidden="true" /> Registrando…
+              } @else {
+                <lucide-icon name="check" [size]="16" aria-hidden="true" /> Registrar negocio
+              }
+            </button>
+          }
         } @else {
           <button type="button" class="btn btn--primary" [disabled]="!editValid() || saving()" (click)="submitEdit()">
             @if (saving()) {
@@ -785,29 +853,10 @@
       aria-describedby="neg-est-desc"
       (click)="$event.stopPropagation()"
     >
-      <header class="neg-modal__head">
-        <div class="neg__user-cell">
-          <span
-            class="neg-confirm__icon"
-            [class.neg-confirm__icon--danger]="n.estado === 'A'"
-            aria-hidden="true"
-          >
-            <lucide-icon name="power" [size]="18" />
-          </span>
-          <h2 id="neg-est-title" class="neg-modal__title">
-            {{ n.estado === 'A' ? 'Desactivar negocio' : 'Activar negocio' }}
-          </h2>
-        </div>
-        <button
-          type="button"
-          class="neg__icon-btn"
-          (click)="cancelarCambioEstado()"
-          [disabled]="actionId() !== null"
-          aria-label="Cerrar"
-        >
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="power"
+                          [titulo]="n.estado === 'A' ? 'Desactivar negocio' : 'Activar negocio'"
+                          tituloId="neg-est-title" [bloqueado]="actionId() !== null"
+                          (cerrar)="cancelarCambioEstado()" />
 
       <div class="neg-modal__body" id="neg-est-desc">
         @if (n.estado === 'A') {
@@ -864,18 +913,9 @@
       aria-labelledby="neg-del-title"
       (click)="$event.stopPropagation()"
     >
-      <header class="neg-modal__head">
-        <div class="neg__user-cell">
-          <span class="neg-confirm__icon neg-confirm__icon--danger" aria-hidden="true">
-            <lucide-icon name="trash-2" [size]="18" />
-          </span>
-          <h2 id="neg-del-title" class="neg-modal__title">Eliminar «{{ n.nombre }}»</h2>
-        </div>
-        <button type="button" class="neg__icon-btn" (click)="cancelarEliminar()"
-                [disabled]="eliminando()" aria-label="Cerrar">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="trash-2" [titulo]="'Eliminar «' + n.nombre + '»'"
+                          tituloId="neg-del-title" [bloqueado]="eliminando()"
+                          (cerrar)="cancelarEliminar()" />
 
       <div class="neg-modal__body">
         <div class="neg__alert neg-del__warn" role="alert">
@@ -1000,12 +1040,8 @@
       aria-labelledby="neg-his-title"
       (click)="$event.stopPropagation()"
     >
-      <header class="neg-modal__head">
-        <h2 id="neg-his-title" class="neg-modal__title">Historial · {{ n.nombre }}</h2>
-        <button type="button" class="neg__icon-btn" (click)="cerrarHistorial()" aria-label="Cerrar">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="history" titulo="Historial" tituloId="neg-his-title"
+                          [subtitulo]="n.nombre" (cerrar)="cerrarHistorial()" />
       <div class="neg-modal__body">
         <ng-container *ngTemplateOutlet="lineaTiempo" />
       </div>

@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   inject,
   signal,
   OnInit,
@@ -8,10 +9,10 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
-  Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle,
+  Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle, User,
 } from 'lucide-angular';
 import { NotificacionService } from '../../data-access/notificacion.service';
-import { Notificacion } from '../../models/notificacion.models';
+import { ConversacionEsperando, Notificacion } from '../../models/notificacion.models';
 
 /**
  * Qué notificaciones llevan a algún sitio, y a cuál.
@@ -34,7 +35,9 @@ const DESTINO: Record<string, string> = {
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({ Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle }),
+      useValue: new LucideIconProvider({
+        Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle, User,
+      }),
     },
   ],
   template: `
@@ -47,8 +50,8 @@ const DESTINO: Record<string, string> = {
         aria-label="Notificaciones"
       >
         <lucide-icon name="bell" [size]="18" aria-hidden="true" />
-        @if (notificacionService.totalNoLeidas() > 0) {
-          <span class="notif-badge">{{ notificacionService.totalNoLeidas() }}</span>
+        @if (totalPendiente() > 0) {
+          <span class="notif-badge" [class.notif-badge--espera]="notificacionService.totalEsperando() > 0">{{ totalPendiente() }}</span>
         }
       </button>
 
@@ -77,12 +80,45 @@ const DESTINO: Record<string, string> = {
                 <lucide-icon name="clock" [size]="24" aria-hidden="true" />
                 <p>Cargando...</p>
               </div>
-            } @else if (notificacionService.notificaciones().length === 0) {
+            } @else if (
+              notificacionService.notificaciones().length === 0 &&
+              notificacionService.esperando().length === 0
+            ) {
               <div class="notif-empty">
                 <lucide-icon name="bell-off" [size]="24" aria-hidden="true" />
                 <p>Sin notificaciones</p>
               </div>
             } @else {
+              <!--
+                Las conversaciones que esperan a una persona, en vivo. Van primero: es lo único de
+                la campana con un cliente al otro lado esperando. Se derivan al leer, no son filas.
+              -->
+              @if (notificacionService.esperando().length > 0) {
+                <p class="notif-seccion">
+                  Esperan respuesta
+                  <span class="notif-seccion__n">{{ notificacionService.totalEsperando() }}</span>
+                </p>
+                @for (c of notificacionService.esperando(); track c.id_conversacion) {
+                  <button type="button" class="notif-item notif-item--espera" (click)="abrirConversacion(c)">
+                    <div class="notif-item__icon notif-item__icon--espera">
+                      <lucide-icon name="message-circle" [size]="16" aria-hidden="true" />
+                    </div>
+                    <div class="notif-item__content">
+                      <p class="notif-item__title">{{ quien(c) }}</p>
+                      <p class="notif-item__msg">{{ c.ultimo_texto || 'Espera una respuesta' }}</p>
+                      <span class="notif-item__time">
+                        {{ c.negocio }} · {{ formatTime(c.ultimo_mensaje_en) }}
+                      </span>
+                    </div>
+                    <span class="notif-item__dot notif-item__dot--espera" aria-label="Espera respuesta"></span>
+                  </button>
+                }
+                @if (notificacionService.totalEsperando() > notificacionService.esperando().length) {
+                  <button type="button" class="notif-mas" (click)="abrirBandeja()">
+                    Ver las {{ notificacionService.totalEsperando() }} en Conversaciones
+                  </button>
+                }
+              }
               @for (notif of notificacionService.notificaciones(); track notif.id_notificacion) {
                 <button
                   type="button"
@@ -283,6 +319,59 @@ const DESTINO: Record<string, string> = {
       color: var(--color-text-muted);
     }
 
+    /* Las que esperan respuesta: aviso (ámbar), no el color de marca. Sin colores fijos. */
+    .notif-badge--espera {
+      background: var(--color-warning);
+      color: var(--color-on-primary, #fff);
+    }
+
+    .notif-seccion {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      padding: 8px 14px 4px;
+      font-size: var(--font-size-xs);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--color-warning);
+    }
+
+    .notif-seccion__n {
+      padding: 0 6px;
+      border-radius: 9999px;
+      background: var(--color-warning);
+      color: var(--color-on-primary, #fff);
+      font-size: 10px;
+      line-height: 16px;
+    }
+
+    .notif-item--espera {
+      background: color-mix(in srgb, var(--color-warning) 7%, transparent);
+    }
+
+    .notif-item__icon--espera {
+      background: color-mix(in srgb, var(--color-warning) 18%, transparent);
+      color: var(--color-warning);
+    }
+
+    .notif-item__dot--espera { background: var(--color-warning); }
+
+    .notif-mas {
+      width: 100%;
+      padding: 8px 14px;
+      border: 0;
+      border-bottom: 1px solid var(--color-border);
+      background: transparent;
+      color: var(--color-primary);
+      font: inherit;
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+    }
+
     .notif-item__dot {
       width: 8px;
       height: 8px;
@@ -297,6 +386,11 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
   readonly notificacionService = inject(NotificacionService);
   private readonly router = inject(Router);
 
+  /** Lo que reclama atención: notificaciones sin leer + conversaciones que esperan respuesta. */
+  protected readonly totalPendiente = computed(
+    () => this.notificacionService.totalNoLeidas() + this.notificacionService.totalEsperando(),
+  );
+
   protected readonly isOpen = signal(false);
   protected readonly loading = signal(false);
 
@@ -306,6 +400,7 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
     this.cargarNotificaciones();
     this.pollInterval = setInterval(() => {
       this.notificacionService.contarMisNoLeidas().subscribe({ error: () => {} });
+      this.notificacionService.getEsperandoRespuesta().subscribe({ error: () => {} });
     }, 60000);
   }
 
@@ -327,6 +422,25 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
       error: () => this.loading.set(false),
     });
     this.notificacionService.contarMisNoLeidas().subscribe({ error: () => {} });
+    this.notificacionService.getEsperandoRespuesta().subscribe({ error: () => {} });
+  }
+
+  /** Cada item lleva a WhatsApp con SU negocio ya seleccionado (`?negocio=`). */
+  protected abrirConversacion(c: ConversacionEsperando): void {
+    this.isOpen.set(false);
+    this.router.navigate(['/admin/whatsapp'], { queryParams: { negocio: c.id_negocio } });
+  }
+
+  protected abrirBandeja(): void {
+    this.isOpen.set(false);
+    this.router.navigate(['/admin/whatsapp']);
+  }
+
+  /** El nombre del cliente y, sin él, su número. */
+  protected quien(c: ConversacionEsperando): string {
+    const nombre = (c.persona ?? '').trim();
+    if (nombre && !/^\+?[\d\s()-]+$/.test(nombre)) return nombre;
+    return c.telefono_e164 || c.id_externo || 'Sin identificar';
   }
 
   protected onItemClick(notif: Notificacion): void {

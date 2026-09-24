@@ -37,6 +37,10 @@ export interface ConversacionBandeja {
    * Llega en 0 cuando el entorno todavía no tiene la tabla migrada.
    */
   reportes: number;
+  /** Última vez que una persona del negocio intervino (ADR-023, Enmienda 2). Solo en el detalle. */
+  humano_ultimo_en?: string | null;
+  /** Minutos tras los cuales el asistente vuelve solo; 0 = nunca. Solo en el detalle. */
+  reactivar_asistente_min?: number;
 }
 
 export interface MensajeBandeja {
@@ -67,10 +71,30 @@ export interface VentanaBandeja {
   expira_en: string | null;
 }
 
+/** Un momento en que el asistente retomó la conversación, y quién lo decidió. */
+export interface RetomadaAsistente {
+  fecha: string;
+  /** `automatico`: lo hizo el plazo del negocio. `manual`: una persona pulsó el botón. */
+  origen: 'automatico' | 'manual';
+  /** Quién, solo cuando fue manual. */
+  quien: string | null;
+}
+
+/** Cuándo vuelve solo el asistente, por negocio. GET/PUT /admin/intelligence/bandeja/configuracion */
+export interface ConfiguracionReactivacion {
+  id_negocio: number;
+  /** 0 = nunca (el valor de fábrica). */
+  reactivar_asistente_min: number;
+  /** Solo un administrador de ESE negocio puede cambiarlo. */
+  puede_editar?: boolean;
+}
+
 export interface ConversacionBandejaDetalle {
   disponible: boolean;
   conversacion: ConversacionBandeja;
   mensajes: MensajeBandeja[];
+  /** Cuándo retomó el asistente. Ausente en un backend anterior. */
+  retomadas?: RetomadaAsistente[];
   ventana: VentanaBandeja;
   reportes: ReportesConversacion;
   /** El catálogo tal como lo valida el backend. Se recibe para no divergir en silencio. */

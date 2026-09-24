@@ -14,7 +14,8 @@ import {
 } from 'lucide-angular';
 
 import { AuthService } from '../../../auth/data-access/auth.service';
-import { NegocioPlanInfo, User as UsuarioSesion } from '../../../auth/models/auth.models';
+// NegocioPlanInfo: solo lo usaba la sección «Mis negocios» (comentada).
+import { User as UsuarioSesion } from '../../../auth/models/auth.models';
 
 type Section = 'personal' | 'password' | 'negocios';
 
@@ -64,9 +65,10 @@ export class ConfiguracionComponent implements OnInit {
   readonly pwMsg       = signal<{ ok: boolean; text: string } | null>(null);
 
   // ── Negocios / planes ───────────────────────────────────────
-  readonly negocios         = signal<NegocioPlanInfo[]>([]);
-  readonly loadingNegocios  = signal(false);
-  readonly negociosError    = signal<string | null>(null);
+  // Sección «Mis negocios» comentada (2026-09-24): la información ya aparece en otras secciones.
+  // readonly negocios         = signal<NegocioPlanInfo[]>([]);
+  // readonly loadingNegocios  = signal(false);
+  // readonly negociosError    = signal<string | null>(null);
 
   // ────────────────────────────────────────────────────────────
 
@@ -95,7 +97,7 @@ export class ConfiguracionComponent implements OnInit {
 
   setSection(s: Section): void {
     this.activeSection.set(s);
-    if (s === 'negocios' && this.negocios().length === 0) this.loadNegocios();
+    // if (s === 'negocios' && this.negocios().length === 0) this.loadNegocios();
   }
 
   // ── Guardar perfil ──────────────────────────────────────────
@@ -164,28 +166,30 @@ export class ConfiguracionComponent implements OnInit {
     this.pwForm.update((f) => ({ ...f, [field]: value }));
   }
 
-  planStatus(plan: NegocioPlanInfo['plan']): 'vigente' | 'proximo' | 'vencido' | 'sin-plan' {
-    if (!plan) return 'sin-plan';
-    if (!plan.vigente) return 'vencido';
-    if (plan.dias_restantes !== null && plan.dias_restantes <= 15) return 'proximo';
-    return 'vigente';
-  }
-
-  formatDate(d: string | null): string {
-    if (!d) return '—';
-    return new Date(d).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
-  }
-
-  formatPrecio(precio: number, moneda: string): string {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: moneda, maximumFractionDigits: 0 }).format(precio);
-  }
-
-  private loadNegocios(): void {
-    this.loadingNegocios.set(true);
-    this.negociosError.set(null);
-    this.auth.getMisNegociosPlanInfo().subscribe({
-      next: (data) => { this.negocios.set(data); this.loadingNegocios.set(false); },
-      error: () => { this.negociosError.set('Error al cargar los negocios.'); this.loadingNegocios.set(false); },
-    });
-  }
+  // Solo alimentaban la sección «Mis negocios» (comentada); no hay que hacer la petición
+  // getMisNegociosPlanInfo() si nadie la muestra.
+  // planStatus(plan: NegocioPlanInfo['plan']): 'vigente' | 'proximo' | 'vencido' | 'sin-plan' {
+  //   if (!plan) return 'sin-plan';
+  //   if (!plan.vigente) return 'vencido';
+  //   if (plan.dias_restantes !== null && plan.dias_restantes <= 15) return 'proximo';
+  //   return 'vigente';
+  // }
+  //
+  // formatDate(d: string | null): string {
+  //   if (!d) return '—';
+  //   return new Date(d).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
+  // }
+  //
+  // formatPrecio(precio: number, moneda: string): string {
+  //   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: moneda, maximumFractionDigits: 0 }).format(precio);
+  // }
+  //
+  // private loadNegocios(): void {
+  //   this.loadingNegocios.set(true);
+  //   this.negociosError.set(null);
+  //   this.auth.getMisNegociosPlanInfo().subscribe({
+  //     next: (data) => { this.negocios.set(data); this.loadingNegocios.set(false); },
+  //     error: () => { this.negociosError.set('Error al cargar los negocios.'); this.loadingNegocios.set(false); },
+  //   });
+  // }
 }

@@ -205,7 +205,7 @@
 
   &__panel {
     position: relative;
-    width: min(560px, 100%);
+    width: min(560px, calc(100vw - 2rem));
     max-height: 90vh;
     /* El scroll va en __panel-scroll, no aquí: sobre la tarjeta redondeada la barra queda
        recortada por el radio. Es el mismo motivo que documenta negocios.component.scss. */

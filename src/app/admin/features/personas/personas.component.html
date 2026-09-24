@@ -112,25 +112,8 @@
       (click)="$event.stopPropagation()"
     >
       <!-- Cabecera fija: nombre y cierre no se van con el scroll del contenido. -->
-      <header class="per__panel-head">
-        <div class="per__panel-head-txt">
-          @if (estadoFicha() !== 'loading' && estadoFicha() !== 'error' && ficha(); as f) {
-            <h2 class="per__panel-title">{{ f.persona.nombre_mostrado || 'Sin nombre' }}</h2>
-            <p class="per__panel-sub">
-              <lucide-icon name="phone" [size]="14" aria-hidden="true" />
-              <span class="per__mono">{{ formatearTelefono(f.persona.telefono_e164) }}</span>
-              <span class="per__dot">·</span>
-              <lucide-icon name="store" [size]="14" aria-hidden="true" />
-              {{ f.persona.negocio }}
-            </p>
-          } @else {
-            <h2 class="per__panel-title">Ficha de la persona</h2>
-          }
-        </div>
-        <button type="button" class="per__close" (click)="cerrarFicha()" aria-label="Cerrar ficha">
-          <lucide-icon name="x" [size]="18" aria-hidden="true" />
-        </button>
-      </header>
+      <app-modal-cabecera icono="user" [titulo]="fichaTitulo()" [subtitulo]="fichaSubtitulo()"
+                          (cerrar)="cerrarFicha()" />
 
       <div class="per__panel-scroll">
         @if (estadoFicha() === 'loading') {

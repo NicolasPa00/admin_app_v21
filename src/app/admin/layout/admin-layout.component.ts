@@ -118,7 +118,9 @@ export class AdminLayoutComponent {
     { label: 'Negocios', icon: 'building-2', route: '/admin/negocios', superAdmin: true },
     { label: 'Usuarios', icon: 'users', route: '/admin/usuarios', superAdmin: true },
     { label: 'Tipos', icon: 'store', route: '/admin/registrar', superAdmin: true },
-    { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
+    // «Ficha 360» oculta del menú a pedido del usuario el 2026-09-23. La ruta y el componente
+    // siguen como estaban: para reactivarla basta con descomentar esta línea.
+    // { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
     // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador. Una sola
     // entrada: sin número conectado enseña cómo activarlo; con número, las conversaciones.
     { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp' },

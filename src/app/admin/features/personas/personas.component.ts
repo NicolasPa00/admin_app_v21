@@ -18,6 +18,7 @@ import { PersonasService } from '../../data-access/personas.service';
 import { Ficha360, PersonaResumen } from '../../models/persona.models';
 import { LoadingState } from '../../models/admin.models';
 import { PaginadorComponent } from '../../../shared/paginador/paginador.component';
+import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
 
 const LIMIT = 10;
 
@@ -39,7 +40,7 @@ const LIMIT = 10;
   selector: 'app-personas',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, LucideAngularModule, PaginadorComponent],
+  imports: [FormsModule, DatePipe, LucideAngularModule, PaginadorComponent, ModalCabeceraComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -68,6 +69,20 @@ export class PersonasComponent implements OnInit {
 
   readonly estadoFicha = signal<LoadingState>('idle');
   readonly ficha = signal<Ficha360 | null>(null);
+
+  /** Título de la cabecera de la ficha: el nombre cuando ya cargó, un rótulo genérico mientras tanto. */
+  readonly fichaTitulo = computed(() => {
+    const f = this.ficha();
+    if (this.estadoFicha() === 'loading' || this.estadoFicha() === 'error' || !f) return 'Ficha de la persona';
+    return f.persona.nombre_mostrado || 'Sin nombre';
+  });
+
+  /** Teléfono y negocio de la persona, bajo el título. */
+  readonly fichaSubtitulo = computed(() => {
+    const f = this.ficha();
+    if (this.estadoFicha() === 'loading' || this.estadoFicha() === 'error' || !f) return undefined;
+    return `${this.formatearTelefono(f.persona.telefono_e164)} · ${f.persona.negocio}`;
+  });
 
   /** Filas por página; el paginador lo cambia (10/25/50). */
   readonly limit = signal(LIMIT);

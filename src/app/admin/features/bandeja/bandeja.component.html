@@ -51,17 +51,54 @@
     }
 
     <div class="bdj__top-acciones">
-      <!-- Lo que ponga quien la contiene: la vista WhatsApp mete aquí «Tu número». -->
-      <ng-content />
+      <!-- El asistente vuelve solo: decisión del negocio (ADR-023, Enmienda 2). «Nunca» es el
+           valor de fábrica. Solo con un negocio determinado, y solo un administrador lo cambia. -->
+      @if (config(); as cfg) {
+        <div class="bdj__auto" role="group" aria-label="Cuándo vuelve solo el asistente">
+          <span class="bdj__auto-etq">Asistente vuelve tras</span>
+          <input
+            type="number"
+            class="bdj__auto-min"
+            min="1"
+            max="1440"
+            step="5"
+            aria-label="Minutos hasta que el asistente vuelve"
+            [ngModel]="autoMinutos()"
+            (ngModelChange)="autoMinutos.set($event)"
+            [disabled]="autoNunca() || !cfg.puede_editar"
+          />
+          <span class="bdj__auto-etq">min</span>
+          <label class="bdj__auto-nunca">
+            <input
+              type="checkbox"
+              [ngModel]="autoNunca()"
+              (ngModelChange)="autoNunca.set($event)"
+              [disabled]="!cfg.puede_editar"
+            />
+            Nunca
+          </label>
+          @if (autoSucio()) {
+            <button
+              type="button"
+              class="bdj__auto-guardar"
+              [disabled]="!autoValido() || guardandoConfig()"
+              (click)="guardarConfig()"
+            >
+              Guardar
+            </button>
+          }
+        </div>
+      }
       <button
         type="button"
         class="bdj__chip bdj__chip--espera"
         [class.bdj__chip--on]="soloEscaladas()"
+        [class.bdj__chip--alerta]="escaladas() > 0"
         (click)="alternarEscaladas()"
       >
         Esperan respuesta
         @if (escaladas() > 0) {
-          <span class="bdj__contador">{{ escaladas() }}</span>
+          <span class="bdj__contador bdj__contador--alerta">{{ escaladas() }}</span>
         }
       </button>
       <button type="button" class="bdj__icono" (click)="cargar()" aria-label="Actualizar">
@@ -112,7 +149,11 @@
                 (click)="abrir(c)"
               >
                 <span class="bdj__avatar" [class.bdj__avatar--espera]="c.escalada">
-                  {{ iniciales(c) }}
+                  @if (tieneNombre(c)) {
+                    {{ inicial(c) }}
+                  } @else {
+                    <lucide-icon name="user" [size]="18" aria-hidden="true" />
+                  }
                 </span>
                 <span class="bdj__item-cuerpo">
                   <span class="bdj__item-fila">
@@ -161,6 +202,8 @@
   <section class="bdj__hilo-panel">
     @if (!detalle()) {
       <div class="bdj__placeholder">
+        <!-- Marca de agua: solo decoración. El chat abierto sí lleva el papel con garabatos. -->
+        <span class="bdj__marca-agua marca" aria-hidden="true">EscalApp</span>
         <span class="bdj__placeholder-icono" aria-hidden="true">
           <lucide-icon name="message-square" [size]="28" />
         </span>
@@ -173,7 +216,13 @@
       <!-- La banda de color, como en el chat de la landing: identifica de un vistazo que esto
            es una conversación y no una tabla más del panel. -->
       <header class="bdj__hilo-head">
-        <span class="bdj__avatar bdj__avatar--grande">{{ iniciales(d.conversacion) }}</span>
+        <span class="bdj__avatar bdj__avatar--grande">
+          @if (tieneNombre(d.conversacion)) {
+            {{ inicial(d.conversacion) }}
+          } @else {
+            <lucide-icon name="user" [size]="16" aria-hidden="true" />
+          }
+        </span>
         <div class="bdj__hilo-quien">
           <strong>{{ quien(d.conversacion) }}</strong>
           <span>
@@ -196,18 +245,20 @@
           </button>
         }
         <!--
-          Distinto de STOP/BAJA: esto lo decide el negocio, no el cliente, y por eso el propio
-          negocio lo puede deshacer. Una baja real (bloqueada_por = 'cliente') no muestra este
-          botón: esa solo la deshace un super admin desde la Consola.
+          «Reportar usuario» BLOQUEA al usuario: el asistente deja de contestarle. Es la única
+          opción del chat. Distinto de STOP/BAJA: esto lo decide el negocio, no el cliente, y por
+          eso el propio negocio lo puede deshacer. Una baja real (bloqueada_por = 'cliente') no
+          muestra este botón: esa solo la deshace un super admin desde la Consola.
         -->
         @if (d.conversacion.estado !== 'bloqueada') {
           <button
             type="button"
-            class="bdj__icono bdj__icono--peligro"
+            class="bdj__accion-hilo bdj__accion-hilo--peligro"
             (click)="alternarConfirmarBloqueo()"
-            title="Que el asistente deje de contestarle a este número"
+            title="Reportar a este usuario: el asistente dejará de contestarle"
           >
-            <lucide-icon name="ban" [size]="16" aria-hidden="true" />
+            <lucide-icon name="ban" [size]="15" aria-hidden="true" />
+            Reportar usuario
           </button>
         } @else if (d.conversacion.bloqueada_por === 'negocio') {
           <button
@@ -220,23 +271,6 @@
             <lucide-icon name="bell-off" [size]="16" aria-hidden="true" />
           </button>
         }
-
-        <!-- Reportar no bloquea a nadie ni cambia el estado de la conversación: deja constancia
-             de que este contacto está usando el asistente para nada. El conteo es de la persona. -->
-        <button
-          type="button"
-          class="bdj__accion-hilo"
-          [class.bdj__accion-hilo--marcada]="reportes().mio"
-          (click)="alternarPanelReporte()"
-          [attr.aria-expanded]="panelReporte()"
-          [title]="reportes().mio ? 'Ya la reportaste' : 'Reportar mal uso del asistente'"
-        >
-          <lucide-icon name="flag" [size]="15" aria-hidden="true" />
-          {{ reportes().mio ? 'Reportada' : 'Reportar' }}
-          @if (reportes().persona > 0) {
-            <span class="bdj__contador bdj__contador--claro">{{ reportes().persona }}</span>
-          }
-        </button>
 
         <button type="button" class="bdj__icono bdj__icono--claro" (click)="cerrar()" aria-label="Cerrar">
           <lucide-icon name="x" [size]="16" aria-hidden="true" />
@@ -257,35 +291,6 @@
         </div>
       }
 
-      @if (confirmandoBloqueo()) {
-        <div class="bdj__baja bdj__baja--form">
-          <p class="bdj__baja-txt">
-            <lucide-icon name="triangle-alert" [size]="15" aria-hidden="true" />
-            El asistente dejará de contestarle a este número hasta que lo desbloquees.
-          </p>
-          <div class="bdj__baja-campos">
-            <input
-              type="text"
-              class="bdj__input"
-              placeholder="Motivo (opcional, queda auditado)"
-              [ngModel]="motivoBloqueo()"
-              (ngModelChange)="motivoBloqueo.set($event)"
-              [disabled]="bloqueando()"
-              aria-label="Motivo del bloqueo"
-            />
-            <button type="button" class="bdj__btn-secundario" (click)="alternarConfirmarBloqueo()" [disabled]="bloqueando()">
-              Cancelar
-            </button>
-            <button type="button" class="bdj__btn-peligro" (click)="bloquear()" [disabled]="bloqueando()">
-              {{ bloqueando() ? 'Bloqueando…' : 'Sí, bloquear' }}
-            </button>
-          </div>
-          @if (errorBloqueo(); as err) {
-            <p class="bdj__baja-error">{{ err }}</p>
-          }
-        </div>
-      }
-
       <!--
         El aviso del propio asistente. No calla al bot ni bloquea a nadie: solo dice lo que midió
         —cuántos turnos, cuánto costó, cuántas veces se repitió el mismo texto— para que la
@@ -301,85 +306,6 @@
         </div>
       }
 
-      <!-- El formulario de reporte. Va aquí, bajo la cabecera y sobre el hilo, en vez de en un
-           modal: se reporta mirando lo que la persona escribió, y un modal lo tapa justo ahora. -->
-      @if (panelReporte()) {
-        <div class="bdj__reporte">
-          @if (reportes().mio) {
-            <p class="bdj__reporte-titulo">
-              Ya reportaste esta conversación
-              <em>— {{ etiquetaMotivo(reportes().mio) }}</em>
-            </p>
-            <p class="bdj__reporte-nota">
-              Esta persona acumula {{ reportes().persona }}
-              {{ reportes().persona === 1 ? 'reporte' : 'reportes' }} en este negocio. Reportar no
-              la bloquea: sirve para saber a quién le está costando dinero tu asistente.
-            </p>
-            <div class="bdj__reporte-botones">
-              <button type="button" class="bdj__boton-plano" (click)="cerrarPanelReporte()">
-                Cerrar
-              </button>
-              <button
-                type="button"
-                class="bdj__boton-peligro"
-                [disabled]="reportando()"
-                (click)="retirarReporte()"
-              >
-                Retirar mi reporte
-              </button>
-            </div>
-          } @else {
-            <p class="bdj__reporte-titulo">¿Por qué la reportas?</p>
-            <div class="bdj__reporte-motivos">
-              @for (m of motivos; track m.valor) {
-                <button
-                  type="button"
-                  class="bdj__chip"
-                  [class.bdj__chip--on]="motivoElegido() === m.valor"
-                  (click)="motivoElegido.set(m.valor)"
-                >
-                  {{ m.etiqueta }}
-                </button>
-              }
-            </div>
-            <textarea
-              class="bdj__reporte-texto"
-              rows="2"
-              maxlength="500"
-              placeholder="Añade algo si quieres (opcional)"
-              [ngModel]="notaReporte()"
-              (ngModelChange)="notaReporte.set($event)"
-            ></textarea>
-            <p class="bdj__reporte-nota">
-              No bloquea a nadie ni calla al asistente: queda anotado con tu nombre para poder
-              decidir después.
-              @if (reportes().persona > 0) {
-                Esta persona ya acumula {{ reportes().persona }}.
-              }
-            </p>
-            <div class="bdj__reporte-botones">
-              <button type="button" class="bdj__boton-plano" (click)="cerrarPanelReporte()">
-                Cancelar
-              </button>
-              <button
-                type="button"
-                class="bdj__boton-peligro"
-                [disabled]="!motivoElegido() || reportando()"
-                (click)="reportar()"
-              >
-                @if (reportando()) {
-                  <lucide-icon name="loader-2" [size]="14" class="bdj__spin" aria-hidden="true" />
-                }
-                Reportar
-              </button>
-            </div>
-          }
-          @if (errorReporte()) {
-            <p class="bdj__error">{{ errorReporte() }}</p>
-          }
-        </div>
-      }
-
       <!--
         Solo cuando el asistente está fuera. Devolvérsela es una decisión de una persona, nunca
         de un temporizador: eso es lo que separa la Enmienda 1 de ADR-023 de revocarlo.
@@ -391,23 +317,33 @@
           <button type="button" (click)="devolverAlAsistente()">
             Ya terminé, que siga el asistente
           </button>
+          <p class="bdj__retomar-aviso" role="status">{{ avisoRetorno(d.conversacion) }}</p>
         </div>
       }
 
       <div class="bdj__mensajes" #mensajes>
-        @for (m of d.mensajes; track m.id_mensaje) {
-          <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">
-            <p class="bdj__msg-texto">{{ m.contenido }}</p>
-            <span class="bdj__msg-pie">
-              {{ m.creado_en | date: 'HH:mm' }}
-              @if (etiquetaEntrega(m); as et) {
-                <em
-                  class="bdj__msg-entrega"
-                  [class.bdj__msg-entrega--mal]="m.estado_entrega === 'fallido'"
-                >· {{ et }}</em>
-              }
-            </span>
-          </div>
+        @for (it of lineaDeTiempo(); track it.clave) {
+          @if (it.tipo === 'msg') {
+            @let m = it.m;
+            <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">
+              <p class="bdj__msg-texto">{{ m.contenido }}</p>
+              <span class="bdj__msg-pie">
+                {{ m.creado_en | date: 'HH:mm' }}
+                @if (etiquetaEntrega(m); as et) {
+                  <em
+                    class="bdj__msg-entrega"
+                    [class.bdj__msg-entrega--mal]="m.estado_entrega === 'fallido'"
+                  >· {{ et }}</em>
+                }
+              </span>
+            </div>
+          } @else {
+            @let r = it.r;
+            <div class="bdj__evento" role="status">
+              <lucide-icon name="bot-message-square" [size]="13" aria-hidden="true" />
+              El asistente retomó la conversación ({{ textoRetomada(r) }}) · {{ r.fecha | date: 'dd/MM HH:mm' }}
+            </div>
+          }
         }
       </div>
 
@@ -447,6 +383,7 @@
               placeholder="Escribe un mensaje"
               [ngModel]="borrador()"
               (ngModelChange)="borrador.set($event)"
+              (keydown.enter)="alEnter($event)"
               [disabled]="enviando()"
             ></textarea>
             <button
@@ -472,3 +409,58 @@
     }
   </section>
 </div>
+
+<!-- ── Modal «Reportar usuario»: reporta Y bloquea ──────────────── -->
+@if (confirmandoBloqueo() && detalle(); as d) {
+  <div class="bdj-modal" (click)="alternarConfirmarBloqueo()" (keydown.escape)="alternarConfirmarBloqueo()">
+    <div
+      class="bdj-modal__card"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="bdj-rep-title"
+      aria-describedby="bdj-rep-desc"
+      (click)="$event.stopPropagation()"
+    >
+      <app-modal-cabecera
+        icono="user-minus"
+        titulo="Reportar usuario"
+        [subtitulo]="quien(d.conversacion)"
+        tituloId="bdj-rep-title"
+        [bloqueado]="bloqueando()"
+        (cerrar)="alternarConfirmarBloqueo()"
+      />
+
+      <div class="bdj-modal__body" id="bdj-rep-desc">
+        <p class="bdj-modal__lead">
+          Al reportarlo, <strong>el asistente dejará de contestarle</strong> a este número. Podrás
+          deshacerlo cuando quieras desde esta misma conversación.
+        </p>
+        <label class="bdj-modal__label" for="bdj-rep-obs">
+          Observación <span class="bdj-modal__opcional">(opcional, queda auditada)</span>
+        </label>
+        <textarea
+          id="bdj-rep-obs"
+          class="bdj-modal__texto"
+          rows="3"
+          maxlength="300"
+          placeholder="Por ejemplo: insultos, spam, uso del asistente para nada…"
+          [ngModel]="motivoBloqueo()"
+          (ngModelChange)="motivoBloqueo.set($event)"
+          [disabled]="bloqueando()"
+        ></textarea>
+        @if (errorBloqueo(); as err) {
+          <p class="bdj__error" role="alert">{{ err }}</p>
+        }
+      </div>
+
+      <footer class="bdj-modal__pie">
+        <button type="button" class="bdj__btn-secundario" (click)="alternarConfirmarBloqueo()" [disabled]="bloqueando()">
+          Cancelar
+        </button>
+        <button type="button" class="bdj__btn-peligro" (click)="bloquear()" [disabled]="bloqueando()">
+          {{ bloqueando() ? 'Reportando…' : 'Reportar y bloquear' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

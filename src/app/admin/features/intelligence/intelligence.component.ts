@@ -15,6 +15,7 @@ import {
 } from 'lucide-angular';
 
 import { IntelligenceService } from '../../data-access/intelligence.service';
+import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
 import {
   ConversacionDetalle,
   ConversacionResumen,
@@ -48,7 +49,7 @@ const LIMIT = 25;
   selector: 'app-intelligence',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, DecimalPipe, PercentPipe, LucideAngularModule],
+  imports: [FormsModule, DatePipe, DecimalPipe, PercentPipe, LucideAngularModule, ModalCabeceraComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,

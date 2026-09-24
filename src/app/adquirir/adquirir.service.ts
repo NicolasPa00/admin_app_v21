@@ -8,6 +8,8 @@ import { ApiResponse } from '../auth/models/auth.models';
 /** Un plan que de verdad se puede cobrar hoy: existe en `gener_plan` y tiene precio publicado. */
 export interface PlanVendible {
   id_plan: number;
+  /** Código estable del plan (`BASICO`, `EMPRENDEDOR_FE_M`…): no cambia si el plan se renombra. */
+  codigo?: string;
   nombre: string;
   descripcion: string | null;
   precio: number;
@@ -125,9 +127,15 @@ export class AdquirirService {
   private readonly http = inject(HttpClient);
   private readonly API = environment.apiUrl;
 
-  catalogo(): Observable<CatalogoCompra> {
+  /**
+   * Los planes contratables. Con `rubro` (el oficio elegido) los precios son los de su aplicativo:
+   * Reserva no cuesta lo mismo que Restaurante. Sin él, los de por defecto.
+   */
+  catalogo(rubro?: string): Observable<CatalogoCompra> {
     return this.http
-      .get<ApiResponse<CatalogoCompra>>(`${this.API}/publico/adquirir/catalogo`)
+      .get<ApiResponse<CatalogoCompra>>(`${this.API}/publico/adquirir/catalogo`, {
+        params: rubro ? { rubro } : {},
+      })
       .pipe(map((res) => res.data ?? { planes: [], complementos: [], pasarelas: [] }));
   }
 
