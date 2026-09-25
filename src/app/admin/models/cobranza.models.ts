@@ -362,3 +362,13 @@ export interface SimulacionCambio {
   dias_restantes: number;
   proporcion_restante: number | null;
 }
+
+/**
+ * Lo que responde `POST /cobranza/conciliar-pendientes`: los pagos que la pasarela ya tenía
+ * aprobados y que acaban de aplicarse (`aplicados`), y cuántos intentos de pago siguen sin
+ * resolverse (`pendientes`).
+ */
+export interface ConciliacionPagos {
+  aplicados: Array<{ id_negocio: number; referencia: string }>;
+  pendientes: number;
+}

@@ -337,6 +337,15 @@ export class AuthService {
   }
 
   /**
+   * Recarga el perfil y lo guarda en la sesión: el estado del plan de cada negocio (lo que
+   * alimenta el aviso de plan vencido) se actualiza sin cerrar sesión. Lo usa la conciliación de
+   * pagos cuando confirma uno.
+   */
+  refrescarSesion(): Observable<User> {
+    return this.loadProfile().pipe(tap((user) => this.persistUserMeta(user)));
+  }
+
+  /**
    * El backend actual no expone este endpoint.
    * Retorna disponible por defecto para no bloquear el formulario de registro.
    */

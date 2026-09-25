@@ -8,6 +8,7 @@ import {
   CobroNegocio,
   CambioDePlan,
   SimulacionCambio,
+  ConciliacionPagos,
   CobroResultado,
   CodigoPasarela,
   EstadoSuscripcion,
@@ -133,6 +134,16 @@ export class CobranzaService {
     }
     return this.http
       .get<ApiResponse<SimulacionCambio>>(`${this.API}/cobranza/mi-plan/simular`, { params })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Pide al backend que pregunte a la pasarela por los pagos pendientes del usuario y aplique los
+   * ya aprobados. Sin pendientes responde al instante y sin llamar a nadie.
+   */
+  conciliarPendientes(origen: 'al_iniciar_sesion' | 'al_volver'): Observable<ConciliacionPagos | null> {
+    return this.http
+      .post<ApiResponse<ConciliacionPagos>>(`${this.API}/cobranza/conciliar-pendientes`, { origen })
       .pipe(map((res) => res.data ?? null));
   }
 

@@ -5,8 +5,10 @@ import {
   OnInit,
   PLATFORM_ID,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,6 +19,7 @@ import {
 } from 'lucide-angular';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
+import { ConciliacionPagosService } from '../../data-access/conciliacion-pagos.service';
 import { SelectorPlanesComponent } from './selector-planes.component';
 import {
   CobroNegocio,
@@ -96,6 +99,20 @@ export class MisPagosComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly conciliacion = inject(ConciliacionPagosService);
+
+  /**
+   * Si la conciliación confirma un pago mientras esta pantalla está abierta, los cobros que
+   * muestra quedaron viejos (la factura ya está pagada): se recargan. La primera lectura de la
+   * señal es la de siempre y no recarga; solo los cambios posteriores.
+   */
+  private pagosVistos = this.conciliacion.pagosConfirmados();
+  private readonly recargarAlConfirmarPago = effect(() => {
+    const n = this.conciliacion.pagosConfirmados();
+    if (n === this.pagosVistos) return;
+    this.pagosVistos = n;
+    untracked(() => this.cargar());
+  });
 
   protected readonly estado = signal<LoadingState>('loading');
   private readonly cobros = signal<CobroNegocio[]>([]);
