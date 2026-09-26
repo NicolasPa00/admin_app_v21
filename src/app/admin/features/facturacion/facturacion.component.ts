@@ -133,6 +133,22 @@ export class FacturacionComponent implements OnInit {
   /** Copia editable del formulario. La ficha del servidor se deja intacta para comparar. */
   readonly form = signal<Partial<FichaFiscal>>({});
 
+  // ── Asistente ─────────────────────────────────────────────────
+  readonly pasos = [
+    { id: 'dian', corto: 'DIAN', titulo: 'Datos del negocio ante la DIAN' },
+    { id: 'impuestos', corto: 'Impuestos', titulo: 'Régimen e impuestos' },
+    { id: 'contacto', corto: 'Contacto', titulo: 'Dirección y contacto' },
+    { id: 'activar', corto: 'Activar', titulo: 'Activar la facturación' },
+  ];
+  readonly enAsistente = signal(false);
+  readonly paso = signal(0);
+
+  /**
+   * ¿El plan del negocio incluye facturación? Hoy ningún plan lo distingue, así que está libre.
+   * Cuando el plan traiga la marca, se lee aquí y el último paso se bloquea solo.
+   */
+  readonly planPermiteFacturar = computed(() => true);
+
   // ── Derivados ─────────────────────────────────────────────────
   readonly negocioActual = computed(() =>
     this.negocios().find((n) => n.id_negocio === this.idNegocio()),
@@ -180,7 +196,33 @@ export class FacturacionComponent implements OnInit {
     });
   }
 
+  abrirAsistente(): void {
+    this.paso.set(0);
+    this.error.set(null);
+    this.aviso.set(null);
+    this.enAsistente.set(true);
+  }
+
+  cerrarAsistente(): void {
+    this.enAsistente.set(false);
+  }
+
+  siguiente(): void {
+    this.paso.update((p) => Math.min(p + 1, this.pasos.length - 1));
+  }
+
+  atras(): void {
+    if (this.paso() === 0) this.cerrarAsistente();
+    else this.paso.update((p) => p - 1);
+  }
+
+  /** Al terminar «Dirección y contacto» se guarda todo el formulario y se pasa a activar. */
+  guardarYContinuar(): void {
+    this.guardar(() => this.siguiente());
+  }
+
   seleccionar(idNegocio: number): void {
+    this.enAsistente.set(false);
     this.idNegocio.set(idNegocio);
     this.cargando.set(true);
     this.error.set(null);
@@ -276,7 +318,7 @@ export class FacturacionComponent implements OnInit {
 
   // ── Datos ─────────────────────────────────────────────────────
 
-  guardar(): void {
+  guardar(alTerminar?: () => void): void {
     const id = this.idNegocio();
     if (!id) return;
 
@@ -319,6 +361,7 @@ export class FacturacionComponent implements OnInit {
         this.form.set({ ...ficha });
         this.guardando.set(false);
         this.aviso.set('Datos guardados.');
+        alTerminar?.();
       },
       error: (err) => {
         this.error.set(err?.error?.message ?? 'No se pudieron guardar los datos.');

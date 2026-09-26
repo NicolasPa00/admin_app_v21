@@ -141,8 +141,14 @@
   // ── Formulario ──────────────────────────────────────────────
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: 0.875rem;
+    /* Dos columnas iguales; los campos «anchos» ocupan las dos. En móvil, una. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.875rem 1rem;
+
+    @media (max-width: 640px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   &__campo {
@@ -185,8 +191,119 @@
     }
 
     &--corto {
-      max-width: 5rem;
+      flex: 0 0 4.5rem;
+      width: 4.5rem;
+      text-align: center;
     }
+  }
+
+  // ── Número + DV en la misma celda ───────────────────────────
+  &__fila {
+    display: flex;
+    gap: 0.5rem;
+
+    .fac__input:not(.fac__input--corto) {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  // ── Selector de negocios ────────────────────────────────────
+  &__negocios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__negocio {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font-family: var(--font-family);
+    font-size: 0.875rem;
+    cursor: pointer;
+
+    &.is-activo {
+      border-color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+      font-weight: 600;
+    }
+  }
+
+  // ── Asistente: pasos compactos (caben en móvil) ─────────────
+  &__pasos {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__paso {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--color-text-muted);
+
+    // Línea que une los círculos: se pinta hasta donde se ha llegado.
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0.8rem;
+      right: 50%;
+      width: 100%;
+      height: 2px;
+      background: var(--color-border);
+    }
+    &:first-child::before { display: none; }
+    &.is-hecho::before,
+    &.is-activo::before { background: var(--color-primary); }
+
+    &.is-activo { color: var(--color-text-primary); font-weight: 600; }
+    &.is-hecho { color: var(--color-primary); }
+  }
+
+  &__paso-num {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    border: 2px solid var(--color-border);
+    border-radius: 50%;
+    background: var(--color-surface);
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    .is-activo & {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+    .is-hecho & {
+      border-color: var(--color-primary);
+      background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+    }
+  }
+
+  &__nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
   }
 
   // ── Chips de impuesto ───────────────────────────────────────
