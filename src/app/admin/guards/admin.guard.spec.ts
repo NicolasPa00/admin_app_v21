@@ -163,6 +163,52 @@ describe('adminGuard', () => {
     );
 
     expect(result).toBe(false);
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+    // Con sesión pero sin permiso: al Inicio, no al login.
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin/dashboard']);
+  });
+
+  it('should keep a CAJERO out of the owner-only screens (WhatsApp, Facturación, Mis pagos)', () => {
+    const user = buildUser({
+      negocios: [{ id_negocio: 1, nombre: 'Mi Restaurante', roles: [{ id_rol: 3, descripcion: 'CAJERO' }] }],
+    });
+    const mock: Partial<AuthService> = {
+      isAuthenticated: signal(true) as never,
+      currentUser:     signal(user) as never,
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthService, useValue: mock },
+        { provide: Router, useValue: routerSpy },
+      ],
+    });
+
+    const result = TestBed.runInInjectionContext(() =>
+      adminGuard(['ADMINISTRADOR'])({} as never, {} as never),
+    );
+
+    expect(result).toBe(false);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin/dashboard']);
+  });
+
+  it('should let an ADMINISTRADOR into the owner-only screens, ignoring case and spaces', () => {
+    const user = buildUser({
+      negocios: [{ id_negocio: 1, nombre: 'Mi Restaurante', roles: [{ id_rol: 2, descripcion: ' Administrador ' }] }],
+    });
+    const mock: Partial<AuthService> = {
+      isAuthenticated: signal(true) as never,
+      currentUser:     signal(user) as never,
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthService, useValue: mock },
+        { provide: Router, useValue: routerSpy },
+      ],
+    });
+
+    const result = TestBed.runInInjectionContext(() =>
+      adminGuard(['ADMINISTRADOR'])({} as never, {} as never),
+    );
+
+    expect(result).toBe(true);
   });
 });

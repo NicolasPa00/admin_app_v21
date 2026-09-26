@@ -49,7 +49,7 @@ import { AuthService } from '../../auth/data-access/auth.service';
 import { AssetService } from '../../core/services/asset.service';
 import { PantallaAnchaService } from '../../core/services/pantalla-ancha.service';
 import { NotificacionesBellComponent } from '../features/notificaciones/notificaciones-bell.component';
-import { SUPER_ADMIN_ROL } from '../guards/admin.guard';
+import { esAdministrador, esSuperAdmin } from '../guards/admin.guard';
 import { ToastHostComponent } from '../../shared/toast/toast-host.component';
 import { environment } from '../../../environments/environment';
 
@@ -59,6 +59,11 @@ interface NavItem {
   route: string;
   /** Si es true, solo se muestra al Super Administrador. */
   superAdmin?: boolean;
+  /**
+   * Si es true, solo lo ven los administradores (el dueño del negocio y el super admin). Quien
+   * tiene cualquier otro rol —cajero, mesero, domiciliario…— solo ve Inicio y Configuración.
+   */
+  soloAdministrador?: boolean;
 }
 
 /** Clave de localStorage para recordar si el sidebar quedó colapsado. */
@@ -123,39 +128,34 @@ export class AdminLayoutComponent {
     // { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
     // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador. Una sola
     // entrada: sin número conectado enseña cómo activarlo; con número, las conversaciones.
-    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp' },
+    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp', soloAdministrador: true },
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
-    { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion' },
+    { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion', soloAdministrador: true },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
     // Sin `superAdmin`: es la mensualidad vista por el dueño del negocio.
-    { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos' },
+    { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos', soloAdministrador: true },
     { label: 'Cobranza', icon: 'wallet', route: '/admin/cobranza', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },
   ];
 
   /** ¿El usuario es Super Administrador? */
-  private readonly isSuperAdmin = computed(() => {
-    const u = this.user();
-    if (!u) return false;
-    return u.roles_globales.some((r) => r.descripcion === SUPER_ADMIN_ROL) ||
-           u.negocios.some((n) => n.roles.some((r) => r.descripcion === SUPER_ADMIN_ROL));
-  });
+  private readonly isSuperAdmin = computed(() => esSuperAdmin(this.user()));
 
-  /** Ítems de navegación visibles según el rol. */
-  /** ¿Administra algún negocio? Solo entonces «Mis pagos» tiene sentido para él. */
-  private readonly esAdminDeNegocio = computed(() =>
-    !!this.user()?.negocios.some((n) =>
-      n.roles.some((r) => r.descripcion.trim().toUpperCase() === 'ADMINISTRADOR'),
-    ),
-  );
+  /** ¿Es administrador (dueño de un negocio o super admin)? Ver `esAdministrador`. */
+  private readonly esAdmin = computed(() => esAdministrador(this.user()));
 
+  /**
+   * Ítems de navegación visibles según el rol.
+   *
+   * Quien no es administrador solo ve «Inicio» y «Configuración»: WhatsApp, Facturación y Mis pagos
+   * llevan `soloAdministrador` y las rutas están cerradas con el mismo criterio (`adminGuard`), así
+   * que ocultarlas aquí no es lo único que las protege. El backend decide además qué datos entrega.
+   */
   protected readonly visibleNavItems = computed<NavItem[]>(() =>
     this.navItems.filter((item) => {
       if (item.superAdmin && !this.isSuperAdmin()) return false;
-      // «Mis pagos» lo bloquea `adminGuard(['ADMINISTRADOR'])`: enseñarlo a un cajero solo lleva
-      // a un portazo. El super admin lo conserva para acompañar a un cliente.
-      if (item.route === '/admin/mis-pagos') return this.esAdminDeNegocio() || this.isSuperAdmin();
+      if (item.soloAdministrador && !this.esAdmin()) return false;
       return true;
     }),
   );
