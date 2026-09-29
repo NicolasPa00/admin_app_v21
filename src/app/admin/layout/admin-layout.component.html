@@ -147,6 +147,63 @@
     <app-toast-host />
   </div>
 
+  <!-- ── Barra inferior (solo móvil) ──────────────────────────
+       En el teléfono el menú lateral desaparece: la navegación baja al borde donde llega el
+       pulgar y el contenido recupera el ancho completo. Misma lista filtrada por rol. -->
+  <nav class="adm__inferior" aria-label="Navegación principal">
+    @for (item of principalesMovil(); track item.route) {
+      <a
+        class="adm__inferior-item"
+        [routerLink]="item.route"
+        routerLinkActive="is-active"
+        (click)="cerrarMas()"
+      >
+        <lucide-icon [name]="item.icon" [size]="21" aria-hidden="true" />
+        <span>{{ item.label }}</span>
+      </a>
+    }
+    <button
+      type="button"
+      class="adm__inferior-item"
+      [class.is-active]="masAbierto()"
+      (click)="alternarMas()"
+      [attr.aria-expanded]="masAbierto()"
+    >
+      <lucide-icon name="menu" [size]="21" aria-hidden="true" />
+      <span>Más</span>
+    </button>
+  </nav>
+
+  <!-- Panel «Más»: lo que no cupo en la barra, más el cierre de sesión -->
+  @if (masAbierto()) {
+    <div class="adm__mas-fondo" (click)="cerrarMas()" aria-hidden="true"></div>
+    <div class="adm__mas" role="dialog" aria-label="Más opciones">
+      <header class="adm__mas-head">
+        <span>Más opciones</span>
+        <button type="button" class="adm__mas-x" (click)="cerrarMas()" aria-label="Cerrar">
+          <lucide-icon name="x" [size]="18" aria-hidden="true" />
+        </button>
+      </header>
+      <div class="adm__mas-lista">
+        @for (item of secundariosMovil(); track item.route) {
+          <a
+            class="adm__mas-item"
+            [routerLink]="item.route"
+            routerLinkActive="is-active"
+            (click)="cerrarMas()"
+          >
+            <lucide-icon [name]="item.icon" [size]="19" aria-hidden="true" />
+            <span>{{ item.label }}</span>
+          </a>
+        }
+        <button type="button" class="adm__mas-item adm__mas-item--salir" (click)="logout()">
+          <lucide-icon name="log-out" [size]="19" aria-hidden="true" />
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </div>
+  }
+
   <!-- Botón flotante WhatsApp (se expande al pasar el cursor). Solo en el inicio: en las
        pantallas de trabajo se sentaba encima de lo que hay en esa esquina. -->
   @if (mostrarWaFab()) {

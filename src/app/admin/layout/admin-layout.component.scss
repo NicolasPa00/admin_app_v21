@@ -467,6 +467,200 @@
   }
 }
 
+// ── Móvil: barra inferior en lugar del drawer ───────────────
+// Tablet (768–1024) conserva el drawer; solo el teléfono cambia a la barra de abajo.
+.adm__inferior,
+.adm__mas,
+.adm__mas-fondo {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  :host {
+    --inf-h: 62px;
+  }
+
+  .adm__sidebar,
+  .adm__overlay,
+  .adm__hamburger {
+    display: none !important;
+  }
+
+  // El contenido no debe quedar tapado por la barra fija.
+  .adm__main {
+    padding-bottom: calc(var(--inf-h) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .adm__inferior {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    display: flex;
+    align-items: stretch;
+    // El área segura se suma a la altura (con border-box el padding se descontaría).
+    height: calc(var(--inf-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .adm__inferior-item {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 0.35rem 0.2rem;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.66rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+
+    span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    lucide-icon {
+      display: flex;
+      line-height: 0;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset var(--focus-ring);
+    }
+
+    // Sin relleno: el color del icono y del rótulo basta para marcar dónde se está.
+    &.is-active {
+      color: var(--color-primary);
+    }
+  }
+
+  .adm__mas-fondo {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    background: rgba(15, 10, 42, 0.45);
+  }
+
+  .adm__mas {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--inf-h) + env(safe-area-inset-bottom, 0px));
+    z-index: 260;
+    max-height: 60vh;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.18);
+  }
+
+  .adm__mas-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .adm__mas-x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text-primary);
+    }
+  }
+
+  .adm__mas-lista {
+    padding: 0.4rem 0.4rem 0;
+    overflow-y: auto;
+  }
+
+  .adm__mas-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.8rem;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    color: var(--color-text-secondary);
+
+    lucide-icon {
+      flex-shrink: 0;
+      display: flex;
+      line-height: 0;
+    }
+
+    &:hover {
+      background: var(--color-surface-hover);
+      color: var(--color-text-primary);
+    }
+
+    &.is-active {
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+    }
+
+    // Cierra el panel: separador de borde a borde y la fila apoyada en el fondo.
+    &--salir {
+      width: auto;
+      margin: 0.25rem -0.4rem 0;
+      padding: 0.85rem 1.2rem;
+      border-top: 1px solid var(--color-border);
+      border-radius: 0;
+
+      &:hover {
+        background: var(--color-error-bg);
+        color: var(--color-error);
+      }
+    }
+  }
+
+  // El FAB de ayuda sube por encima de la barra.
+  .adm .adm__wa-fab {
+    bottom: calc(var(--inf-h) + env(safe-area-inset-bottom, 0px) + 16px);
+    right: 16px;
+  }
+}
+
 // ── Botón flotante WhatsApp ─────────────────────────────────
 .adm__wa-fab {
   position: fixed;

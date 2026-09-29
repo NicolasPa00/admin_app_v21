@@ -51,6 +51,10 @@
 
   /* En móvil no caben dos paneles: manda la lista, y el hilo se superpone al abrirlo. */
   @media (max-width: 48rem) {
+    /* Descuenta la barra de navegación inferior del móvil (62px + área segura). */
+    height: calc(
+      100dvh - 8rem - var(--bdj-extra, 0rem) - 62px - env(safe-area-inset-bottom, 0px)
+    );
     grid-template-columns: 1fr;
   }
 
@@ -406,7 +410,9 @@
         display: flex;
         position: fixed;
         inset: 0;
-        z-index: 50;
+        /* Por encima de la barra de navegación inferior del móvil (z 200), que si no tapa el
+           cuadro de escribir. */
+        z-index: 210;
       }
     }
   }
@@ -978,7 +984,7 @@
 .bdj-modal {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;

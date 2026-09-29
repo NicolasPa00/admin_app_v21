@@ -72,6 +72,9 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
 /** Dónde se recuerda que el usuario ya cerró el aviso de plan vencido. */
 const PLAN_AVISO_KEY = 'admin_plan_aviso_oculto';
 
+/** Cuántos accesos caben en la barra inferior del móvil; el resto va al panel «Más». */
+const ATAJOS_MOVIL = 4;
+
 /**
  * AdminLayoutComponent — Shell del panel administrativo.
  *
@@ -159,6 +162,27 @@ export class AdminLayoutComponent {
       return true;
     }),
   );
+
+  /**
+   * Reparto para el móvil: los primeros van a la barra inferior, el resto al panel «Más».
+   * Se corta sobre la lista ya filtrada por rol, así a quien ve pocas pantallas no se le
+   * esconde ninguna. «Más» siempre existe porque ahí vive «Cerrar sesión».
+   */
+  protected readonly principalesMovil = computed(() =>
+    this.visibleNavItems().slice(0, ATAJOS_MOVIL),
+  );
+  protected readonly secundariosMovil = computed(() =>
+    this.visibleNavItems().slice(ATAJOS_MOVIL),
+  );
+  protected readonly masAbierto = signal(false);
+
+  protected alternarMas(): void {
+    this.masAbierto.update((v) => !v);
+  }
+
+  protected cerrarMas(): void {
+    this.masAbierto.set(false);
+  }
 
   // ── Estado de UI ────────────────────────────────────────────
   /**
@@ -302,6 +326,7 @@ export class AdminLayoutComponent {
   }
 
   protected logout(): void {
+    this.cerrarMas();
     this.auth.logout();
   }
 
