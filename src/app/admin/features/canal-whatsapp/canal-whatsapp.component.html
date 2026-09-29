@@ -69,6 +69,21 @@
         }
       </p>
 
+      @if (esCoexistencia()) {
+        <!-- Coexistencia: lo que el dueño tiene que saber para que siga funcionando. -->
+        <ul class="cw__lista">
+          <li>Tus chats y contactos siguen en tu app WhatsApp Business, como siempre.</li>
+          <li>
+            Si respondes tú desde el celular, el asistente se queda callado en esa conversación
+            para no hablarte encima.
+          </li>
+          <li>
+            <strong>Abre la app WhatsApp Business al menos una vez cada 14 días.</strong> Si pasa
+            más tiempo sin abrirse, Meta desconecta el número y te avisamos aquí para reconectarlo.
+          </li>
+        </ul>
+      }
+
       <a routerLink="/admin/whatsapp" class="cw__boton cw__boton--outline">
         <lucide-icon name="message-circle" [size]="16"></lucide-icon>
         Ver conversaciones
@@ -127,9 +142,8 @@
           Tu propio número
         </h2>
         <p class="cw__ayuda">
-          Conserva tu número, tu historial y tu app de WhatsApp Business tal como están hoy.
-          Deberás vincular tu propio método de pago en Meta: lo que WhatsApp cobre por los
-          mensajes te llega a ti directamente.
+          Conecta el WhatsApp de tu negocio al asistente. Lo que WhatsApp cobre por los mensajes
+          del asistente te llega a ti, en tu propia cuenta de Meta.
         </p>
 
         @if (!embeddedSignupDisponible()) {
@@ -137,21 +151,93 @@
             <lucide-icon name="history" [size]="16"></lucide-icon>
             Esta opción está en preparación. Escríbenos y te avisamos en cuanto esté lista.
           </p>
-        }
-
-        <button
-          type="button"
-          class="cw__boton"
-          [disabled]="!embeddedSignupDisponible() || conectando()"
-          (click)="iniciarConexionPropia()"
-        >
-          @if (conectando()) {
-            <lucide-icon name="loader-2" [size]="16" class="cw__spin"></lucide-icon>
-            Conectando…
-          } @else {
-            Conectar mi número
+        } @else {
+          @if (navegadorIntegrado()) {
+            <p class="cw__ayuda cw__ayuda--pendiente">
+              <lucide-icon name="alert-circle" [size]="16"></lucide-icon>
+              Estás dentro de Facebook o Instagram. Abre esta página en Safari o Chrome: desde
+              aquí la ventana de Meta no se abre bien.
+            </p>
           }
-        </button>
+
+          <div class="cw__antes">
+            <strong>Antes de empezar</strong>
+            <ul class="cw__lista">
+              <li>Entra con el Facebook del negocio o del dueño, no con el de otra persona.</li>
+              <li>
+                Si ya usas WhatsApp Business, ten el celular a mano con la app actualizada: vas a
+                escanear un código QR.
+              </li>
+              <li>
+                Si tu número está en WhatsApp normal (no Business), pásalo primero a WhatsApp
+                Business.
+              </li>
+            </ul>
+          </div>
+
+          @if (sdkEstado() === 'error') {
+            <div class="cw__aviso">
+              <span>
+                No se pudo cargar el conector de Facebook. Puede ser un bloqueador de anuncios, la
+                protección contra rastreo del navegador o la conexión.
+              </span>
+              <button type="button" class="cw__boton cw__boton--outline" (click)="reintentarSdk()">
+                <lucide-icon name="refresh-cw" [size]="16"></lucide-icon>
+                Reintentar
+              </button>
+            </div>
+          }
+
+          @if (conectando()) {
+            <div class="cw__aviso" role="status">
+              <span>
+                Termina los pasos en la ventana de Facebook.
+                @if (modoEnCurso() === 'coexistencia') {
+                  Cuando te lo pida, abre WhatsApp Business en tu celular y escanea el código QR.
+                }
+                Si la ventana no se abrió, permite las ventanas emergentes para este sitio y vuelve
+                a intentarlo.
+              </span>
+              <button type="button" class="cw__boton cw__boton--outline" (click)="cancelarConexion()">
+                Cancelar
+              </button>
+            </div>
+          }
+
+          <div class="cw__caminos">
+            <button
+              type="button"
+              class="cw__boton cw__camino"
+              [disabled]="sdkEstado() !== 'listo' || conectando()"
+              (click)="conectar('coexistencia')"
+            >
+              @if (conectando() && modoEnCurso() === 'coexistencia') {
+                <lucide-icon name="loader-2" [size]="16" class="cw__spin"></lucide-icon>
+                Conectando…
+              } @else if (sdkEstado() === 'cargando') {
+                <lucide-icon name="loader-2" [size]="16" class="cw__spin"></lucide-icon>
+                Preparando…
+              } @else {
+                <span class="cw__camino-titulo">Ya uso WhatsApp Business</span>
+                <span class="cw__camino-sub">Conservas tus chats y contactos</span>
+              }
+            </button>
+            <button
+              type="button"
+              class="cw__boton cw__boton--outline cw__camino"
+              [disabled]="sdkEstado() !== 'listo' || conectando()"
+              (click)="conectar('nuevo')"
+            >
+              @if (conectando() && modoEnCurso() === 'nuevo') {
+                <lucide-icon name="loader-2" [size]="16" class="cw__spin"></lucide-icon>
+                Conectando…
+              } @else {
+                <span class="cw__camino-titulo">Usar un número nuevo</span>
+                <span class="cw__camino-sub">Sin WhatsApp instalado</span>
+              }
+            </button>
+          </div>
+        }
       </article>
     </div>
   }

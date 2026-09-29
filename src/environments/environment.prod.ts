@@ -29,4 +29,6 @@ export const environment = {
    */
   metaAppId: '1552342763052863',
   metaConfigId: '3007420636275811',
+  /** Ver environment.ts: v23.0 por la coexistencia. */
+  metaSdkVersion: 'v23.0',
 };

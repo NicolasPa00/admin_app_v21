@@ -4,7 +4,11 @@ import { Observable, map } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../../auth/models/auth.models';
-import { ConexionCanalWhatsapp, EstadoCanalWhatsapp } from '../models/canalWhatsapp.models';
+import {
+  ConexionCanalWhatsapp,
+  DatosEmbeddedSignup,
+  EstadoCanalWhatsapp,
+} from '../models/canalWhatsapp.models';
 
 /**
  * CanalWhatsappService — conexión del número de WhatsApp de un negocio (F8-D).
@@ -32,17 +36,11 @@ export class CanalWhatsappService {
    * `code` caduca en 30 segundos, así que este método nunca debe encolarse ni reintentarse con el
    * mismo valor.
    */
-  canjear(
-    idNegocio: number,
-    code: string,
-    phoneNumberId: string,
-    numeroE164: string | null,
-    businessId: string | null = null,
-  ): Observable<ConexionCanalWhatsapp> {
+  canjear(idNegocio: number, datos: DatosEmbeddedSignup): Observable<ConexionCanalWhatsapp> {
     return this.http
       .post<ApiResponse<ConexionCanalWhatsapp>>(
         `${this.API}/negocios/${idNegocio}/canal-whatsapp/embedded-signup/canjear`,
-        { code, phoneNumberId, numeroE164, businessId },
+        datos,
       )
       .pipe(map((res) => res.data as ConexionCanalWhatsapp));
   }

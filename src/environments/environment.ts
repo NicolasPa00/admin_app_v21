@@ -32,4 +32,10 @@ export const environment = {
   metaAppId: '1552342763052863',
   /** "EscalApp — Registro insertado", creada el 2026-09-19. */
   metaConfigId: '3007420636275811',
+  /**
+   * Versión de la Graph API con la que se inicializa el SDK de JS. v23.0 porque la coexistencia
+   * (`featureType: 'whatsapp_business_app_onboarding'`) salió en 2025 y los ejemplos de Meta
+   * usan esa versión; no vale la pena arriesgar el flujo con una anterior.
+   */
+  metaSdkVersion: 'v23.0',
 };

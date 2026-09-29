@@ -24,6 +24,9 @@ import { ConversacionEsperando, Notificacion } from '../../models/notificacion.m
  */
 const DESTINO: Record<string, string> = {
   CONVERSACION_ESCALADA: '/admin/whatsapp',
+  // Meta desconectó el número propio del negocio (p. ej. 14 días sin abrir WhatsApp Business):
+  // se lleva directo a la pantalla desde la que se reconecta.
+  WHATSAPP_DESCONECTADO: '/admin/whatsapp/numero',
 };
 
 @Component({
@@ -468,6 +471,7 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
     switch (tipo) {
       case 'VENCIMIENTO_PLAN': return 'alert-triangle';
       case 'CONVERSACION_ESCALADA': return 'message-circle';
+      case 'WHATSAPP_DESCONECTADO': return 'alert-triangle';
       default: return 'bell';
     }
   }
