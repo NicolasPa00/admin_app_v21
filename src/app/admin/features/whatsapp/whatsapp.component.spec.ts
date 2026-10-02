@@ -56,6 +56,7 @@ async function montar<T>(
               ],
             }).pipe(delay(5)),
           getConversacion: () => of(null),
+          getPreparacion: () => of(null),
           getConfiguracion: () => of({ id_negocio: 1, reactivar_asistente_min: 0, puede_editar: true }),
         },
       },

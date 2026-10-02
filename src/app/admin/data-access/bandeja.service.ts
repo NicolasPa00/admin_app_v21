@@ -7,6 +7,7 @@ import { ApiResponse } from '../../auth/models/auth.models';
 import {
   BandejaListado,
   ConfiguracionReactivacion,
+  PreparacionAsistente,
   ConversacionBandejaDetalle,
   ReportesConversacion,
   RespuestaEncolada,
@@ -156,6 +157,15 @@ export class BandejaService {
   }
 
   /** Cuándo vuelve solo el asistente en este negocio (0 = nunca) y si este usuario puede cambiarlo. */
+  /** Lo que le falta al negocio para que el asistente atienda bien, con dónde se arregla. */
+  getPreparacion(idNegocio: number): Observable<PreparacionAsistente | null> {
+    return this.http
+      .get<ApiResponse<PreparacionAsistente>>(`${this.API}/intelligence/bandeja/preparacion`, {
+        params: { id_negocio: String(idNegocio) },
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
   getConfiguracion(idNegocio: number): Observable<ConfiguracionReactivacion | null> {
     return this.http
       .get<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
@@ -170,6 +180,22 @@ export class BandejaService {
       .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
         id_negocio: idNegocio,
         reactivar_asistente_min: minutos,
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Información libre para el asistente (Nequi, valor del domicilio, formas de pago…).
+   * `null` la borra. Exige ser administrador de ESE negocio.
+   */
+  guardarInfoAsistente(
+    idNegocio: number,
+    texto: string | null,
+  ): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        id_negocio: idNegocio,
+        info_asistente: texto,
       })
       .pipe(map((res) => res.data ?? null));
   }

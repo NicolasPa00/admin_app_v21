@@ -89,6 +89,8 @@ export interface ConfiguracionReactivacion {
   tiempo_estimado_min?: number | null;
   /** Opcional: sin él el asistente dice «unos X minutos». */
   tiempo_estimado_max?: number | null;
+  /** Notas libres para el asistente (Nequi, domicilio, formas de pago). null = nada. */
+  info_asistente?: string | null;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }
@@ -167,4 +169,22 @@ export interface ReportesConversacion {
   del_asistente: number;
   mio: string | null;
   ultimo: string | null;
+}
+
+/** Un punto de la revisión «¿qué le falta al asistente para atender bien?». */
+export interface PuntoPreparacion {
+  clave: string;
+  titulo: string;
+  /** Dónde se arregla, en palabras del dueño («App del restaurante → Horarios»). */
+  donde: string;
+  /** `falta`: el asistente falla sin esto. `recomendado`: funciona, pero contesta «no sé». */
+  estado: 'falta' | 'recomendado' | 'ok';
+  por_que: string | null;
+}
+
+export interface PreparacionAsistente {
+  tipo: string | null;
+  criticos: number;
+  pendientes: number;
+  puntos: PuntoPreparacion[];
 }

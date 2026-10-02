@@ -131,6 +131,39 @@
           }
         </div>
       }
+      <!-- ¿Qué le falta al asistente para atender bien? Revisión del backend, con dónde se arregla. -->
+      @if (preparacion(); as prep) {
+        <button
+          type="button"
+          class="bdj__chip"
+          [class.bdj__chip--on]="prepAbierta()"
+          [class.bdj__chip--alerta]="prep.criticos > 0"
+          [attr.aria-expanded]="prepAbierta()"
+          (click)="prepAbierta() ? cerrarPreparacion() : prepAbierta.set(true)"
+        >
+          @if (prep.pendientes > 0) {
+            Al asistente le faltan datos
+            <span class="bdj__contador" [class.bdj__contador--alerta]="prep.criticos > 0">{{
+              prep.pendientes
+            }}</span>
+          } @else {
+            <lucide-icon name="check" [size]="14" aria-hidden="true" />
+            Asistente listo
+          }
+        </button>
+      }
+      <!-- Lo que el asistente le dice al cliente de pagos, Nequi, domicilio… (texto libre). -->
+      @if (config()) {
+        <button
+          type="button"
+          class="bdj__chip"
+          [class.bdj__chip--on]="infoAbierta()"
+          [attr.aria-expanded]="infoAbierta()"
+          (click)="infoAbierta.set(!infoAbierta())"
+        >
+          Info para el asistente
+        </button>
+      }
       <button
         type="button"
         class="bdj__chip bdj__chip--espera"
@@ -147,6 +180,88 @@
         <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
       </button>
     </div>
+    @if (prepAbierta()) {
+      @if (preparacion(); as prep) {
+        <section class="bdj__prep" aria-labelledby="bdj-prep-titulo">
+          <div class="bdj__prep-cabeza">
+            <h2 id="bdj-prep-titulo" class="bdj__prep-titulo">
+              @if (prep.pendientes > 0) {
+                Para que tu asistente atienda bien a tus clientes, completa esto
+              } @else {
+                Tu asistente tiene todo lo que necesita
+              }
+            </h2>
+            <button type="button" class="bdj__icono" (click)="cerrarPreparacion()" aria-label="Cerrar">
+              <lucide-icon name="x" [size]="16" aria-hidden="true" />
+            </button>
+          </div>
+          <ul class="bdj__prep-lista">
+            @for (p of puntosPendientes(); track p.clave) {
+              <li class="bdj__prep-punto" [class.bdj__prep-punto--falta]="p.estado === 'falta'">
+                <span class="bdj__prep-marca" aria-hidden="true">
+                  <lucide-icon [name]="p.estado === 'falta' ? 'triangle-alert' : 'alert-circle'" [size]="16" />
+                </span>
+                <div>
+                  <p class="bdj__prep-nombre">
+                    {{ p.titulo }}
+                    <span class="bdj__prep-nivel">{{ p.estado === 'falta' ? 'Necesario' : 'Recomendado' }}</span>
+                  </p>
+                  @if (p.por_que) {
+                    <p class="bdj__prep-texto">{{ p.por_que }}</p>
+                  }
+                  <p class="bdj__prep-donde">Dónde: {{ p.donde }}</p>
+                  @if (p.clave === 'info_asistente') {
+                    <button type="button" class="bdj__auto-guardar" (click)="infoAbierta.set(true)">
+                      Escribirla ahora
+                    </button>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+          @if (puntosListos() > 0) {
+            <p class="bdj__prep-ok">
+              <lucide-icon name="check" [size]="14" aria-hidden="true" />
+              {{ puntosListos() }} {{ puntosListos() === 1 ? 'punto ya está listo' : 'puntos ya están listos' }}
+            </p>
+          }
+        </section>
+      }
+    }
+    @if (infoAbierta()) {
+      @if (config(); as cfg) {
+        <div class="bdj__info" role="group" aria-label="Información para el asistente">
+          <label class="bdj__info-etq" for="bdj-info-asistente">
+            Lo que el asistente puede decirle a tus clientes: número de Nequi o cuenta para
+            transferir, si reciben efectivo o datáfono, cuánto vale el domicilio, zonas a las que
+            llegan… Sin esto, contesta «confírmalo con el restaurante».
+          </label>
+          <textarea
+            id="bdj-info-asistente"
+            class="bdj__info-texto"
+            rows="4"
+            maxlength="1500"
+            placeholder="Ej.: Nequi 300 123 4567 a nombre de Zona Burger. Recibimos efectivo y Nequi. Domicilio $8.000 en el casco urbano."
+            [ngModel]="infoTexto()"
+            (ngModelChange)="infoTexto.set($event)"
+            [disabled]="!cfg.puede_editar"
+          ></textarea>
+          <div class="bdj__info-pie">
+            <span>{{ infoTexto().length }}/1500</span>
+            @if (infoSucia()) {
+              <button
+                type="button"
+                class="bdj__auto-guardar"
+                [disabled]="guardandoInfo()"
+                (click)="guardarInfo()"
+              >
+                Guardar
+              </button>
+            }
+          </div>
+        </div>
+      }
+    }
   </header>
 
   <!-- ── Panel izquierdo: la lista ─────────────────────────────── -->

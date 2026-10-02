@@ -34,6 +34,7 @@ import {
   RetomadaAsistente,
   NegocioConConversaciones,
   ReportesConversacion,
+  PreparacionAsistente,
 } from '../../models/bandeja.models';
 import { LoadingState } from '../../models/admin.models';
 
@@ -209,6 +210,31 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly tiempoMax = signal<number | null>(null);
   readonly guardandoTiempo = signal(false);
 
+  // ── Lo que le falta al asistente para atender bien ──
+  // Revisión que hace el backend (horario, carta, tiempo de entrega, pagos…). Se abre sola la
+  // primera vez que el negocio entra con algo pendiente —justo después de conectar el número—, y
+  // se puede cerrar: no vuelve a abrirse sola en esa sesión para ese negocio.
+  readonly preparacion = signal<PreparacionAsistente | null>(null);
+  readonly prepAbierta = signal(false);
+  readonly puntosPendientes = computed(
+    () => this.preparacion()?.puntos.filter((p) => p.estado !== 'ok') ?? [],
+  );
+  readonly puntosListos = computed(
+    () => this.preparacion()?.puntos.filter((p) => p.estado === 'ok').length ?? 0,
+  );
+
+  // ── Información libre para el asistente ──
+  // Pagos, Nequi, valor del domicilio…: lo que ninguna tabla dice y el cliente pregunta. El
+  // asistente la lee con `consultar_info_negocio`. Vacío = no se le dice nada extra.
+  readonly infoAbierta = signal(false);
+  readonly infoTexto = signal('');
+  readonly guardandoInfo = signal(false);
+  readonly infoSucia = computed(() => {
+    const c = this.config();
+    if (!c) return false;
+    return this.infoTexto().trim() !== (c.info_asistente ?? '').trim();
+  });
+
   readonly tiempoSucio = computed(() => {
     const c = this.config();
     if (!c) return false;
@@ -289,8 +315,11 @@ export class BandejaComponent implements OnInit, OnDestroy {
   private cargarConfig(idNegocio: number | null): void {
     if (idNegocio === null) {
       this.config.set(null);
+      this.preparacion.set(null);
+      this.prepAbierta.set(false);
       return;
     }
+    this.cargarPreparacion(idNegocio, true);
     this.service.getConfiguracion(idNegocio).subscribe({
       next: (c) => {
         // El negocio pudo cambiar mientras la respuesta venía.
@@ -301,9 +330,77 @@ export class BandejaComponent implements OnInit, OnDestroy {
           this.autoMinutos.set(c.reactivar_asistente_min > 0 ? c.reactivar_asistente_min : 30);
           this.tiempoMin.set(c.tiempo_estimado_min ?? null);
           this.tiempoMax.set(c.tiempo_estimado_max ?? null);
+          this.infoTexto.set(c.info_asistente ?? '');
         }
       },
       error: () => this.config.set(null),
+    });
+  }
+
+  private claveVistaPrep(idNegocio: number): string {
+    return `escalapp.preparacion.vista.${idNegocio}`;
+  }
+
+  /** `abrirSiFalta`: al entrar al negocio, se abre sola si hay algo pendiente y no se cerró antes. */
+  cargarPreparacion(idNegocio: number, abrirSiFalta = false): void {
+    this.service.getPreparacion(idNegocio).subscribe({
+      next: (p) => {
+        if (this.negocioConfig() !== idNegocio) return;
+        this.preparacion.set(p);
+        if (!abrirSiFalta || !p || p.pendientes === 0) return;
+        let yaVista = false;
+        if (isPlatformBrowser(this.platformId)) {
+          try {
+            yaVista = sessionStorage.getItem(this.claveVistaPrep(idNegocio)) === '1';
+          } catch {
+            yaVista = false;
+          }
+        }
+        if (!yaVista) this.prepAbierta.set(true);
+      },
+      error: () => this.preparacion.set(null),
+    });
+  }
+
+  cerrarPreparacion(): void {
+    this.prepAbierta.set(false);
+    const id = this.negocioConfig();
+    if (id === null || !isPlatformBrowser(this.platformId)) return;
+    try {
+      sessionStorage.setItem(this.claveVistaPrep(id), '1');
+    } catch {
+      /* sin almacenamiento: solo se vuelve a abrir al recargar */
+    }
+  }
+
+  /** Tras guardar algo aquí mismo, la lista se pone al día. */
+  private refrescarPreparacion(): void {
+    const id = this.negocioConfig();
+    if (id !== null) this.cargarPreparacion(id);
+  }
+
+  guardarInfo(): void {
+    const c = this.config();
+    if (!c || !this.infoSucia() || this.guardandoInfo()) return;
+
+    const texto = this.infoTexto().trim();
+    this.guardandoInfo.set(true);
+    this.service.guardarInfoAsistente(c.id_negocio, texto || null).subscribe({
+      next: () => {
+        this.guardandoInfo.set(false);
+        this.config.set({ ...c, info_asistente: texto || null });
+        this.infoTexto.set(texto);
+        this.refrescarPreparacion();
+        this.toast.exito(
+          texto
+            ? 'El asistente ya puede usar esta información con tus clientes.'
+            : 'Se borró la información para el asistente.',
+        );
+      },
+      error: (err) => {
+        this.guardandoInfo.set(false);
+        this.toast.errorHttp(err, 'No se pudo guardar la información para el asistente.');
+      },
     });
   }
 
@@ -319,6 +416,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
         this.guardandoTiempo.set(false);
         this.config.set({ ...c, tiempo_estimado_min: min, tiempo_estimado_max: max });
         this.tiempoMax.set(max);
+        this.refrescarPreparacion();
         this.toast.exito(
           min === null
             ? 'El asistente ya no dará un tiempo estimado de entrega.'
@@ -344,6 +442,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
       next: () => {
         this.guardandoConfig.set(false);
         this.config.set({ ...c, reactivar_asistente_min: minutos });
+        this.refrescarPreparacion();
         this.detalle.update((d) =>
           d && d.conversacion.id_negocio === c.id_negocio
             ? { ...d, conversacion: { ...d.conversacion, reactivar_asistente_min: minutos } }

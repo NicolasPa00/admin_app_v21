@@ -621,6 +621,134 @@
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
+  /* Qué le falta al asistente: panel bajo la barra superior, se abre solo si hay pendientes. */
+  &__prep {
+    flex: 1 1 100%;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 40%, var(--color-border));
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--color-warning, #d97706) 6%, var(--color-surface));
+  }
+
+  &__prep-cabeza {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  &__prep-titulo {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__prep-lista {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.625rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__prep-punto {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-warning, #d97706);
+  }
+
+  &__prep-punto--falta {
+    color: var(--color-error);
+  }
+
+  &__prep-marca {
+    flex: 0 0 auto;
+    padding-top: 0.0625rem;
+  }
+
+  &__prep-nombre {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  &__prep-nivel {
+    margin-left: 0.375rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: inherit;
+  }
+
+  &__prep-texto,
+  &__prep-donde {
+    margin: 0.125rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+
+  &__prep-donde {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+  }
+
+  &__prep-ok {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-success, #16a34a);
+  }
+
+  /* Información libre para el asistente: panel bajo la barra superior. */
+  &__info {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+  }
+
+  &__info-etq {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+
+  &__info-texto {
+    width: 100%;
+    min-height: 5rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 0.8125rem;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      box-shadow: var(--focus-ring);
+    }
+  }
+
+  &__info-pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+  }
+
   /* Línea del hilo: el asistente retomó (automático o manual). */
   &__evento {
     align-self: center;

@@ -88,6 +88,7 @@ async function montar(
           getConversacion: (id: string) =>
             of(detalle(conversaciones.find((c) => c.id_conversacion === id)!, opts.ventanaAbierta ?? true, opts.detalle)),
           responder,
+          getPreparacion: () => of({ tipo: "RESTAURANTE", criticos: 0, pendientes: 0, puntos: [] }),
           getConfiguracion: (idNegocio: number) =>
             of({ id_negocio: idNegocio, ...(opts.config ?? { reactivar_asistente_min: 0, puede_editar: true }) }),
           guardarConfiguracion,
