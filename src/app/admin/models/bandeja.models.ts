@@ -89,8 +89,14 @@ export interface ConfiguracionReactivacion {
   tiempo_estimado_min?: number | null;
   /** Opcional: sin él el asistente dice «unos X minutos». */
   tiempo_estimado_max?: number | null;
-  /** Notas libres para el asistente (Nequi, domicilio, formas de pago). null = nada. */
+  /** Notas libres para el asistente (Nequi, formas de pago…). null = nada. */
   info_asistente?: string | null;
+  /** Valor del domicilio como rango, en pesos («entre $7.000 y $9.000»). null = sin configurar. */
+  domicilio_valor_min?: number | null;
+  /** Opcional: sin él el asistente dice «desde $X». */
+  domicilio_valor_max?: number | null;
+  /** Lo que no cabe en el rango, p. ej. «Fuera de la ciudad, desde $10.000». */
+  domicilio_nota?: string | null;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }

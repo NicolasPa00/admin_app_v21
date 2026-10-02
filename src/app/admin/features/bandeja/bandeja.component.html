@@ -131,6 +131,55 @@
           }
         </div>
       }
+      <!-- Lo que el asistente contesta a «¿cuánto vale el domicilio?»: un rango, no barrio por barrio. -->
+      @if (config(); as cfg) {
+        <div class="bdj__auto" role="group" aria-label="Valor del domicilio">
+          <span class="bdj__auto-etq">Domicilio $</span>
+          <input
+            type="number"
+            class="bdj__auto-min bdj__auto-min--pesos"
+            min="0"
+            step="500"
+            placeholder="7000"
+            aria-label="Valor mínimo del domicilio en pesos"
+            [ngModel]="domicilioMin()"
+            (ngModelChange)="domicilioMin.set($event === '' ? null : $event)"
+            [disabled]="!cfg.puede_editar"
+          />
+          <span class="bdj__auto-etq">a $</span>
+          <input
+            type="number"
+            class="bdj__auto-min bdj__auto-min--pesos"
+            min="0"
+            step="500"
+            placeholder="9000"
+            aria-label="Valor máximo del domicilio en pesos (opcional)"
+            [ngModel]="domicilioMax()"
+            (ngModelChange)="domicilioMax.set($event === '' ? null : $event)"
+            [disabled]="domicilioMin() === null || !cfg.puede_editar"
+          />
+          <input
+            type="text"
+            class="bdj__auto-min bdj__auto-min--nota"
+            maxlength="200"
+            placeholder="Nota: fuera de la ciudad, desde $10.000"
+            aria-label="Nota sobre el domicilio (opcional)"
+            [ngModel]="domicilioNota()"
+            (ngModelChange)="domicilioNota.set($event ?? '')"
+            [disabled]="!cfg.puede_editar"
+          />
+          @if (domicilioSucio()) {
+            <button
+              type="button"
+              class="bdj__auto-guardar"
+              [disabled]="!domicilioValido() || guardandoDomicilio()"
+              (click)="guardarDomicilio()"
+            >
+              Guardar
+            </button>
+          }
+        </div>
+      }
       <!-- ¿Qué le falta al asistente para atender bien? Revisión del backend, con dónde se arregla. -->
       @if (preparacion(); as prep) {
         <button
@@ -233,15 +282,16 @@
         <div class="bdj__info" role="group" aria-label="Información para el asistente">
           <label class="bdj__info-etq" for="bdj-info-asistente">
             Lo que el asistente puede decirle a tus clientes: número de Nequi o cuenta para
-            transferir, si reciben efectivo o datáfono, cuánto vale el domicilio, zonas a las que
-            llegan… Sin esto, contesta «confírmalo con el restaurante».
+            transferir, si reciben efectivo o datáfono, zonas a las que llegan… (el valor del
+            domicilio va arriba, en «Domicilio $ … a $ …»). Sin esto, contesta «confírmalo con el
+            restaurante».
           </label>
           <textarea
             id="bdj-info-asistente"
             class="bdj__info-texto"
             rows="4"
             maxlength="1500"
-            placeholder="Ej.: Nequi 300 123 4567 a nombre de Zona Burger. Recibimos efectivo y Nequi. Domicilio $8.000 en el casco urbano."
+            placeholder="Ej.: Nequi 300 123 4567 a nombre de Zona Burger. Recibimos efectivo y Nequi."
             [ngModel]="infoTexto()"
             (ngModelChange)="infoTexto.set($event)"
             [disabled]="!cfg.puede_editar"

@@ -217,4 +217,25 @@ export class BandejaService {
       })
       .pipe(map((res) => res.data ?? null));
   }
+
+  /**
+   * Valor del domicilio como rango, en pesos («entre $7.000 y $9.000»), más una nota corta
+   * («Fuera de la ciudad, desde $10.000»). `min = null` borra el rango (y sin mínimo no hay
+   * máximo). Exige ser administrador de ESE negocio.
+   */
+  guardarDomicilio(
+    idNegocio: number,
+    min: number | null,
+    max: number | null,
+    nota: string | null,
+  ): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        id_negocio: idNegocio,
+        domicilio_valor_min: min,
+        domicilio_valor_max: min === null ? null : max,
+        domicilio_nota: nota,
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
 }

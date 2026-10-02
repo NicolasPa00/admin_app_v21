@@ -210,6 +210,33 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly tiempoMax = signal<number | null>(null);
   readonly guardandoTiempo = signal(false);
 
+  // ── Valor del domicilio ──
+  // Un rango («entre $7.000 y $9.000») y una nota corta («Fuera de la ciudad, desde $10.000»).
+  // Reemplaza cargar el precio barrio por barrio, que era tedioso. Vacío = el asistente no dice
+  // ningún valor.
+  readonly domicilioMin = signal<number | null>(null);
+  readonly domicilioMax = signal<number | null>(null);
+  readonly domicilioNota = signal('');
+  readonly guardandoDomicilio = signal(false);
+  readonly domicilioSucio = computed(() => {
+    const c = this.config();
+    if (!c) return false;
+    return (
+      this.domicilioMin() !== (c.domicilio_valor_min ?? null) ||
+      this.domicilioMax() !== (c.domicilio_valor_max ?? null) ||
+      this.domicilioNota().trim() !== (c.domicilio_nota ?? '').trim()
+    );
+  });
+  readonly domicilioValido = computed(() => {
+    const min = this.domicilioMin();
+    const max = this.domicilioMax();
+    const pesos = (n: number) => Number.isInteger(n) && n >= 0 && n <= 10_000_000;
+    if (this.domicilioNota().length > 200) return false;
+    if (min === null) return max === null; // sin mínimo no hay máximo
+    if (!pesos(min)) return false;
+    return max === null || (pesos(max) && max >= min);
+  });
+
   // ── Lo que le falta al asistente para atender bien ──
   // Revisión que hace el backend (horario, carta, tiempo de entrega, pagos…). Se abre sola la
   // primera vez que el negocio entra con algo pendiente —justo después de conectar el número—, y
@@ -331,6 +358,9 @@ export class BandejaComponent implements OnInit, OnDestroy {
           this.tiempoMin.set(c.tiempo_estimado_min ?? null);
           this.tiempoMax.set(c.tiempo_estimado_max ?? null);
           this.infoTexto.set(c.info_asistente ?? '');
+          this.domicilioMin.set(c.domicilio_valor_min ?? null);
+          this.domicilioMax.set(c.domicilio_valor_max ?? null);
+          this.domicilioNota.set(c.domicilio_nota ?? '');
         }
       },
       error: () => this.config.set(null),
@@ -428,6 +458,46 @@ export class BandejaComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.guardandoTiempo.set(false);
         this.toast.errorHttp(err, 'No se pudo guardar el tiempo estimado.');
+      },
+    });
+  }
+
+  guardarDomicilio(): void {
+    const c = this.config();
+    if (!c || !this.domicilioSucio() || !this.domicilioValido() || this.guardandoDomicilio()) return;
+
+    const min = this.domicilioMin();
+    // Un «máximo» igual al mínimo no es un rango: se guarda como valor único.
+    const maxCrudo = min === null ? null : this.domicilioMax();
+    const max = maxCrudo !== null && maxCrudo === min ? null : maxCrudo;
+    const nota = this.domicilioNota().trim() || null;
+    this.guardandoDomicilio.set(true);
+    this.service.guardarDomicilio(c.id_negocio, min, max, nota).subscribe({
+      next: () => {
+        this.guardandoDomicilio.set(false);
+        this.config.set({
+          ...c,
+          domicilio_valor_min: min,
+          domicilio_valor_max: max,
+          domicilio_nota: nota,
+        });
+        this.domicilioMax.set(max);
+        this.domicilioNota.set(nota ?? '');
+        this.refrescarPreparacion();
+        const pesos = (n: number) => `$${n.toLocaleString('es-CO')}`;
+        this.toast.exito(
+          min === null && !nota
+            ? 'El asistente ya no dirá el valor del domicilio.'
+            : min === null
+              ? 'El asistente dirá tu nota sobre el domicilio.'
+              : max !== null
+                ? `El asistente dirá que el domicilio vale entre ${pesos(min)} y ${pesos(max)}.`
+                : `El asistente dirá que el domicilio vale desde ${pesos(min)}.`,
+        );
+      },
+      error: (err) => {
+        this.guardandoDomicilio.set(false);
+        this.toast.errorHttp(err, 'No se pudo guardar el valor del domicilio.');
       },
     });
   }

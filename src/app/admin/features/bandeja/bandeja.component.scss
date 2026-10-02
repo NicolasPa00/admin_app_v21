@@ -597,6 +597,10 @@
       box-shadow: var(--focus-ring);
     }
     &:disabled { opacity: 0.55; }
+
+    // Pesos («9000») necesitan más ancho que minutos; la nota del domicilio, más aún.
+    &--pesos { width: 5.25rem; }
+    &--nota { width: 15rem; max-width: 100%; }
   }
 
   &__auto-nunca {
