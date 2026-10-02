@@ -89,6 +89,48 @@
           }
         </div>
       }
+      <!-- Lo que el asistente contesta a «¿cuánto se demora?». Vacío = no se promete ningún tiempo. -->
+      @if (config(); as cfg) {
+        <div class="bdj__auto" role="group" aria-label="Tiempo estimado de entrega">
+          <span class="bdj__auto-etq">Entrega en</span>
+          <input
+            type="number"
+            class="bdj__auto-min"
+            min="1"
+            max="600"
+            step="5"
+            placeholder="40"
+            aria-label="Minutos mínimos de entrega"
+            [ngModel]="tiempoMin()"
+            (ngModelChange)="tiempoMin.set($event === '' ? null : $event)"
+            [disabled]="!cfg.puede_editar"
+          />
+          <span class="bdj__auto-etq">a</span>
+          <input
+            type="number"
+            class="bdj__auto-min"
+            min="1"
+            max="600"
+            step="5"
+            placeholder="60"
+            aria-label="Minutos máximos de entrega (opcional)"
+            [ngModel]="tiempoMax()"
+            (ngModelChange)="tiempoMax.set($event === '' ? null : $event)"
+            [disabled]="tiempoMin() === null || !cfg.puede_editar"
+          />
+          <span class="bdj__auto-etq">min</span>
+          @if (tiempoSucio()) {
+            <button
+              type="button"
+              class="bdj__auto-guardar"
+              [disabled]="!tiempoValido() || guardandoTiempo()"
+              (click)="guardarTiempo()"
+            >
+              Guardar
+            </button>
+          }
+        </div>
+      }
       <button
         type="button"
         class="bdj__chip bdj__chip--espera"

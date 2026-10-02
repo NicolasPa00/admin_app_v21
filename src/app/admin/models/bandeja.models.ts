@@ -85,6 +85,10 @@ export interface ConfiguracionReactivacion {
   id_negocio: number;
   /** 0 = nunca (el valor de fábrica). */
   reactivar_asistente_min: number;
+  /** Lo que el asistente contesta a «¿cuánto se demora?». null = sin configurar. */
+  tiempo_estimado_min?: number | null;
+  /** Opcional: sin él el asistente dice «unos X minutos». */
+  tiempo_estimado_max?: number | null;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }

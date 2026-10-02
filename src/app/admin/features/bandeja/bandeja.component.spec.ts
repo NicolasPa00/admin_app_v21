@@ -56,12 +56,20 @@ async function montar(
   opts: {
     ventanaAbierta?: boolean;
     conversaciones?: ConversacionBandeja[];
-    config?: { reactivar_asistente_min: number; puede_editar: boolean };
+    config?: {
+      reactivar_asistente_min: number;
+      puede_editar: boolean;
+      tiempo_estimado_min?: number | null;
+      tiempo_estimado_max?: number | null;
+    };
     detalle?: OpcionesDetalle;
   } = {},
 ) {
   const guardarConfiguracion = vi.fn((id: number, minutos: number) =>
     of({ id_negocio: id, reactivar_asistente_min: minutos }),
+  );
+  const guardarTiempoEstimado = vi.fn((id: number, min: number | null, max: number | null) =>
+    of({ id_negocio: id, reactivar_asistente_min: 0, tiempo_estimado_min: min, tiempo_estimado_max: max }),
   );
   const responder = vi.fn(() => of({ id_mensaje: 'm1', estado_conversacion: 'handoff_humano', estado_entrega: 'pendiente' }));
   const conversaciones = opts.conversaciones ?? [CON_NOMBRE, SIN_NOMBRE, SIN_NADA];
@@ -83,6 +91,7 @@ async function montar(
           getConfiguracion: (idNegocio: number) =>
             of({ id_negocio: idNegocio, ...(opts.config ?? { reactivar_asistente_min: 0, puede_editar: true }) }),
           guardarConfiguracion,
+          guardarTiempoEstimado,
         },
       },
     ],
@@ -92,7 +101,7 @@ async function montar(
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  return { fixture, el, responder, guardarConfiguracion, tick: () => fixture.detectChanges() };
+  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, tick: () => fixture.detectChanges() };
 }
 
 function teclear(el: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
@@ -346,5 +355,83 @@ describe('Bandeja — el asistente vuelve solo (ADR-023, Enmienda 2)', () => {
       expect(eventos[0]).toContain('El asistente retomó la conversación (automático');
       expect(eventos[1]).toContain('manual, por Ana Admin');
     });
+  });
+});
+
+describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a «¿cuánto se demora?»)', () => {
+  const MIN = 'input[aria-label="Minutos mínimos de entrega"]';
+  const MAX = 'input[aria-label="Minutos máximos de entrega (opcional)"]';
+  const GUARDAR = '[aria-label="Tiempo estimado de entrega"] .bdj__auto-guardar';
+  const input = (el: HTMLElement, sel: string) => el.querySelector(sel) as HTMLInputElement;
+  const escribir = (i: HTMLInputElement, valor: string) => {
+    i.value = valor;
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
+  it('sin configurar: los campos vacíos, el máximo deshabilitado y nada que guardar', async () => {
+    const v = await montar();
+    expect(input(v.el, MIN).value).toBe('');
+    expect(input(v.el, MAX).disabled).toBe(true);
+    expect(v.el.querySelector(GUARDAR)).toBeFalsy();
+  });
+
+  it('muestra lo guardado («de 40 a 60»)', async () => {
+    const v = await montar({
+      config: { reactivar_asistente_min: 0, puede_editar: true, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
+    });
+    expect(input(v.el, MIN).value).toBe('40');
+    expect(input(v.el, MAX).value).toBe('60');
+  });
+
+  it('escribe «de 40 a 60» y guarda ese rango', async () => {
+    const v = await montar();
+    escribir(input(v.el, MIN), '40');
+    v.tick();
+    await v.fixture.whenStable();
+    v.tick();
+    escribir(input(v.el, MAX), '60');
+    v.tick();
+    (v.el.querySelector(GUARDAR) as HTMLElement).click();
+    expect(v.guardarTiempoEstimado).toHaveBeenCalledWith(1, 40, 60);
+  });
+
+  it('solo el mínimo → el máximo va vacío («unos X minutos»)', async () => {
+    const v = await montar();
+    escribir(input(v.el, MIN), '45');
+    v.tick();
+    (v.el.querySelector(GUARDAR) as HTMLElement).click();
+    expect(v.guardarTiempoEstimado).toHaveBeenCalledWith(1, 45, null);
+  });
+
+  it('un máximo menor que el mínimo no se puede guardar', async () => {
+    const v = await montar({
+      config: { reactivar_asistente_min: 0, puede_editar: true, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
+    });
+    escribir(input(v.el, MAX), '20');
+    v.tick();
+    expect((v.el.querySelector(GUARDAR) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('vaciar el mínimo borra el tiempo (guarda null)', async () => {
+    const v = await montar({
+      config: { reactivar_asistente_min: 0, puede_editar: true, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
+    });
+    escribir(input(v.el, MIN), '');
+    v.tick();
+    await v.fixture.whenStable();
+    v.tick();
+    // sin mínimo no hay máximo: queda vacío también
+    escribir(input(v.el, MAX), '');
+    v.tick();
+    (v.el.querySelector(GUARDAR) as HTMLElement).click();
+    expect(v.guardarTiempoEstimado).toHaveBeenCalledWith(1, null, null);
+  });
+
+  it('quien no es administrador de ese negocio lo ve pero no lo puede cambiar', async () => {
+    const v = await montar({
+      config: { reactivar_asistente_min: 0, puede_editar: false, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
+    });
+    expect(input(v.el, MIN).disabled).toBe(true);
+    expect(input(v.el, MAX).disabled).toBe(true);
   });
 });

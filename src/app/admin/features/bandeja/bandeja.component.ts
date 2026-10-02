@@ -202,6 +202,30 @@ export class BandejaComponent implements OnInit, OnDestroy {
     return Number.isInteger(m) && m >= 1 && m <= 1440;
   });
 
+  // ── Tiempo estimado de entrega ──
+  // Lo que el asistente contesta a «¿cuánto se demora?»: «de 40 a 60 minutos», o «unos 45» si solo
+  // hay mínimo. Vacío = el negocio no lo ha dicho y el asistente no inventa ninguno.
+  readonly tiempoMin = signal<number | null>(null);
+  readonly tiempoMax = signal<number | null>(null);
+  readonly guardandoTiempo = signal(false);
+
+  readonly tiempoSucio = computed(() => {
+    const c = this.config();
+    if (!c) return false;
+    return (
+      this.tiempoMin() !== (c.tiempo_estimado_min ?? null) ||
+      this.tiempoMax() !== (c.tiempo_estimado_max ?? null)
+    );
+  });
+  readonly tiempoValido = computed(() => {
+    const min = this.tiempoMin();
+    const max = this.tiempoMax();
+    const entero = (n: number) => Number.isInteger(n) && n >= 1 && n <= 600;
+    if (min === null) return max === null; // sin mínimo no hay máximo
+    if (!entero(min)) return false;
+    return max === null || (entero(max) && max >= min);
+  });
+
   /** Recarga la configuración cada vez que cambia el negocio en pantalla. */
   private readonly recargaConfig = effect(() => {
     const id = this.negocioConfig();
@@ -275,9 +299,38 @@ export class BandejaComponent implements OnInit, OnDestroy {
         if (c) {
           this.autoNunca.set(c.reactivar_asistente_min === 0);
           this.autoMinutos.set(c.reactivar_asistente_min > 0 ? c.reactivar_asistente_min : 30);
+          this.tiempoMin.set(c.tiempo_estimado_min ?? null);
+          this.tiempoMax.set(c.tiempo_estimado_max ?? null);
         }
       },
       error: () => this.config.set(null),
+    });
+  }
+
+  guardarTiempo(): void {
+    const c = this.config();
+    if (!c || !this.tiempoSucio() || !this.tiempoValido() || this.guardandoTiempo()) return;
+
+    const min = this.tiempoMin();
+    const max = min === null ? null : this.tiempoMax();
+    this.guardandoTiempo.set(true);
+    this.service.guardarTiempoEstimado(c.id_negocio, min, max).subscribe({
+      next: () => {
+        this.guardandoTiempo.set(false);
+        this.config.set({ ...c, tiempo_estimado_min: min, tiempo_estimado_max: max });
+        this.tiempoMax.set(max);
+        this.toast.exito(
+          min === null
+            ? 'El asistente ya no dará un tiempo estimado de entrega.'
+            : max !== null && max > min
+              ? `El asistente dirá que el pedido tarda de ${min} a ${max} minutos.`
+              : `El asistente dirá que el pedido tarda unos ${min} minutos.`,
+        );
+      },
+      error: (err) => {
+        this.guardandoTiempo.set(false);
+        this.toast.errorHttp(err, 'No se pudo guardar el tiempo estimado.');
+      },
     });
   }
 

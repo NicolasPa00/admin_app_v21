@@ -173,4 +173,22 @@ export class BandejaService {
       })
       .pipe(map((res) => res.data ?? null));
   }
+
+  /**
+   * Tiempo estimado de entrega que el asistente le dice al cliente («de 40 a 60 minutos»).
+   * `min = null` lo borra (y sin mínimo no hay máximo). Exige ser administrador de ESE negocio.
+   */
+  guardarTiempoEstimado(
+    idNegocio: number,
+    min: number | null,
+    max: number | null,
+  ): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        id_negocio: idNegocio,
+        tiempo_estimado_min: min,
+        tiempo_estimado_max: min === null ? null : max,
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
 }
