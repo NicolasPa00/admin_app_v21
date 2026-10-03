@@ -189,15 +189,24 @@ describe('WhatsappComponent — «Gestionar número»', () => {
     expect(v.el.textContent).toContain('Ver conversaciones');
   });
 
-  it('con varios negocios va en la misma barra que los chips', async () => {
-    const v = await montar(
+  // Desde 2026-10-02 va en la cabecera de la Bandeja: la fila de arriba le quitaba alto a los
+  // mensajes y, con un solo negocio, existía solo para este botón.
+  it('con un negocio: va en la cabecera de la Bandeja y no hay fila de arriba', async () => {
+    const uno = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
+    expect(uno.el.querySelector('.wa__barra')).toBeFalsy();
+    expect(enlace(uno.el)?.closest('.bdj__top')).toBeTruthy();
+  });
+
+  it('con varios negocios: la fila de arriba solo lleva los negocios', async () => {
+    const varios = await montar(
       WhatsappComponent,
       [negocio(1, 'Prueba Barbería', ['asistente_ia']), negocio(2, 'Prueba Tienda', ['asistente_ia'])],
       true,
     );
-    const barra = v.el.querySelector('.wa__barra') as HTMLElement;
+    const barra = varios.el.querySelector('.wa__barra') as HTMLElement;
     expect(barra.querySelector('[role="tab"]')).toBeTruthy();
-    expect(barra.querySelector('.wa__gestionar')).toBeTruthy();
+    expect(enlace(barra)).toBeFalsy();
+    expect(enlace(varios.el)?.closest('.bdj__top')).toBeTruthy();
   });
 
   it('sin conectar no aparece (ya está en esa vista)', async () => {

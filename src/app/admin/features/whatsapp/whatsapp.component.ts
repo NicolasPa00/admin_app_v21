@@ -121,7 +121,10 @@ interface NegocioWhatsapp {
         </header>
       }
 
-      @if (negocios().length > 1 || enConversaciones()) {
+      <!-- La fila de arriba solo cuando hay varios negocios que elegir. «Gestionar número» ya no
+           va aquí sino en la cabecera de la Bandeja (2026-10-02): con un solo negocio esta fila
+           existía solo para ese botón y le quitaba alto a los mensajes. -->
+      @if (negocios().length > 1) {
         <div class="wa__barra" [class.wa__ancho-canal]="!enConversaciones()">
           <app-selector-negocio
             class="wa__chips"
@@ -130,19 +133,11 @@ interface NegocioWhatsapp {
             [seleccionado]="seleccion()"
             (cambiar)="elegir($event)"
           />
-          <!-- Acceso discreto a la gestión del número (conectar, desconectar). Solo con el número
-               ya conectado y las conversaciones a la vista: si no, ya se está en esa vista. -->
-          @if (enConversaciones()) {
-            <button type="button" class="wa__gestionar" (click)="vista.set('numero')">
-              <lucide-icon name="settings" [size]="15" aria-hidden="true" />
-              Gestionar número
-            </button>
-          }
         </div>
       }
 
       <!-- El @for con una sola clave recrea la vista al cambiar de negocio. -->
-      <div [class.wa__vista--con-barra]="enConversaciones()">
+      <div [class.wa__vista--con-barra]="enConversaciones() && negocios().length > 1">
       @for (id of claveVista(); track id) {
         @if (!habilitado()) {
           <!-- Sin la feature en su plan: no hay nada que conectar. Se ofrece mejorar el plan. -->
@@ -173,7 +168,11 @@ interface NegocioWhatsapp {
             </a>
           </section>
         } @else if (enConversaciones()) {
-          <app-bandeja [negocioFijo]="seleccion()" />
+          <app-bandeja
+            [negocioFijo]="seleccion()"
+            [mostrarGestionarNumero]="true"
+            (gestionarNumero)="vista.set('numero')"
+          />
         } @else {
           <app-canal-whatsapp
             [negocioInicial]="seleccion()"
@@ -216,26 +215,8 @@ interface NegocioWhatsapp {
     }
     .wa__chips { flex: 1 1 auto; min-width: 0; }
 
-    /* «Gestionar número»: enlace discreto, no un botón protagonista. */
-    .wa__gestionar {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      flex: none;
-      margin-left: auto;
-      padding: 0.25rem 0.375rem;
-      border: 0;
-      border-radius: 0.375rem;
-      background: none;
-      color: var(--color-text-secondary);
-      font: inherit;
-      font-size: 0.8125rem;
-      cursor: pointer;
-    }
-    .wa__gestionar:hover { color: var(--color-primary); }
-    .wa__gestionar:focus-visible { outline: none; box-shadow: var(--focus-ring); }
     /* Alto que la barra le quita a la bandeja (ver --bdj-extra en bandeja.component.scss):
-       2.75 (fila de chips o de enlace) + 0.75. */
+       2.75 (fila de chips) + 0.75. Solo existe con varios negocios. */
     .wa__vista--con-barra { --bdj-extra: 3.5rem; }
 
     /* Cabecera de la vista de conexión y de la de mejora: mismo aspecto que .cw__head. */

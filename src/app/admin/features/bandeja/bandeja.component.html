@@ -51,6 +51,12 @@
     }
 
     <div class="bdj__top-acciones">
+      @if (mostrarGestionarNumero()) {
+        <button type="button" class="bdj__chip" (click)="gestionarNumero.emit()">
+          <lucide-icon name="smartphone" [size]="14" aria-hidden="true" />
+          Gestionar número
+        </button>
+      }
       <!-- Los ajustes del asistente viven en su propia ventana (pedido del dueño, 2026-10-02):
            en la cabecera le quitaban altura a los mensajes. -->
       @if (config()) {

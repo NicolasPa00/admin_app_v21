@@ -9,6 +9,7 @@ import {
   signal,
   computed,
   input,
+  output,
   effect,
   untracked,
   viewChild,
@@ -19,7 +20,7 @@ import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-  Flag, ShieldAlert, MessageCircle, User, FileText, Settings,
+  Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -132,7 +133,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle, User, FileText, Settings,
+        Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone,
       }),
     },
   ],
@@ -174,6 +175,12 @@ export class BandejaComponent implements OnInit, OnDestroy {
    * selectores de negocio en la misma pantalla se contradirían.
    */
   readonly negocioFijo = input<number | null>(null);
+  /**
+   * La pantalla de WhatsApp pide aquí el botón «Gestionar número» (2026-10-02): antes ocupaba una
+   * fila entera encima de la Bandeja, y con un solo negocio esa fila no tenía nada más.
+   */
+  readonly mostrarGestionarNumero = input(false);
+  readonly gestionarNumero = output<void>();
 
   readonly detalle = signal<ConversacionBandejaDetalle | null>(null);
 
