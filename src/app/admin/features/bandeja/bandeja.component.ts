@@ -868,7 +868,25 @@ export class BandejaComponent implements OnInit, OnDestroy {
    */
   quien(c: ConversacionBandeja): string {
     if (this.tieneNombre(c)) return c.persona!.trim();
+    if (!c.telefono_e164 && this.esIdSinNumero(c.id_externo)) return 'Cliente sin número visible';
     return this.formatearTelefono(c.telefono_e164 || c.id_externo) || 'Sin identificar';
+  }
+
+  /**
+   * El número (o lo que lo reemplaza) bajo el nombre. Quien escribe con usuario de WhatsApp sin
+   * enseñar su número llega con un identificador como `CO.1084387837819952`: sus dígitos NO son un
+   * teléfono, y mostrarlos como «+1084…» invita a llamar a un número que no existe.
+   */
+  contacto(c: ConversacionBandeja): string {
+    if (c.telefono_e164) return c.telefono_e164;
+    if (this.esIdSinNumero(c.id_externo)) return 'WhatsApp no comparte su número';
+    return c.id_externo ?? '';
+  }
+
+  /** ¿Es un identificador de WhatsApp sin número (`CO.123…`) y no un teléfono? */
+  esIdSinNumero(idExterno: string | null | undefined): boolean {
+    const v = (idExterno ?? '').trim();
+    return v.length > 0 && !/^\+?\d{7,15}$/.test(v);
   }
 
   /** La inicial del nombre. Sin nombre no hay inicial: el avatar enseña un ícono de persona. */

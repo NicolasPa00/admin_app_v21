@@ -433,7 +433,7 @@
         <div class="bdj__hilo-quien">
           <strong>{{ quien(d.conversacion) }}</strong>
           <span>
-            {{ d.conversacion.telefono_e164 || d.conversacion.id_externo }}
+            {{ contacto(d.conversacion) }}
             @if (d.conversacion.negocio) { · {{ d.conversacion.negocio }} }
           </span>
         </div>

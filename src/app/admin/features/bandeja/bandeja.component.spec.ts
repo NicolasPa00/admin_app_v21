@@ -134,6 +134,18 @@ describe('Bandeja — lista de chats', () => {
     const nada = Array.from(v.el.querySelectorAll('.bdj__item'))[2];
     expect(nada.querySelector('.bdj__item-quien')?.textContent?.trim()).toBe('Sin identificar');
   });
+
+  // Zona Burger, 2026-10-02: «CO.1084387837819952» se veía como «+1084387837819952».
+  it('un usuario de WhatsApp sin número NO se muestra como teléfono', async () => {
+    const v = await montar();
+    const bsuid = base({ id_externo: 'CO.1084387837819952', telefono_e164: null });
+    const c = v.fixture.componentInstance;
+    expect(c.quien(bsuid)).toBe('Cliente sin número visible');
+    expect(c.contacto(bsuid)).toBe('WhatsApp no comparte su número');
+    // Un número de verdad sigue saliendo como número.
+    expect(c.esIdSinNumero('573104445566')).toBe(false);
+    expect(c.contacto(SIN_NOMBRE)).toBe('+573104445566');
+  });
 });
 
 describe('Bandeja — estado vacío', () => {
