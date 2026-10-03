@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { describe, it, expect, vi } from 'vitest';
 
 import { BandejaService } from '../../data-access/bandeja.service';
-import { ConversacionBandeja, ConversacionBandejaDetalle } from '../../models/bandeja.models';
+import { ConversacionBandeja, ConversacionBandejaDetalle, MensajeBandeja } from '../../models/bandeja.models';
 import { BandejaComponent } from './bandeja.component';
 
 const base = (over: Partial<ConversacionBandeja>): ConversacionBandeja => ({
@@ -63,6 +63,8 @@ async function montar(
       tiempo_estimado_max?: number | null;
     };
     detalle?: OpcionesDetalle;
+    mensajes?: MensajeBandeja[];
+    archivo?: (idConversacion: string, idMensaje: string) => unknown;
   } = {},
 ) {
   const guardarConfiguracion = vi.fn((id: number, minutos: number) =>
@@ -86,7 +88,11 @@ async function montar(
               conversaciones,
             }),
           getConversacion: (id: string) =>
-            of(detalle(conversaciones.find((c) => c.id_conversacion === id)!, opts.ventanaAbierta ?? true, opts.detalle)),
+            of({
+              ...detalle(conversaciones.find((c) => c.id_conversacion === id)!, opts.ventanaAbierta ?? true, opts.detalle),
+              mensajes: opts.mensajes ?? [],
+            }),
+          archivoDeMensaje: opts.archivo ?? (() => of(new Blob(['x'], { type: 'image/jpeg' }))),
           responder,
           getPreparacion: () => of({ tipo: "RESTAURANTE", criticos: 0, pendientes: 0, puntos: [] }),
           getConfiguracion: (idNegocio: number) =>
@@ -446,5 +452,62 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
     });
     expect(input(v.el, MIN).disabled).toBe(true);
     expect(input(v.el, MAX).disabled).toBe(true);
+  });
+});
+
+// Fotos, stickers y audios del cliente (2026-10-02): se traen al abrir el chat, sin guardar copia.
+describe('Bandeja — archivos del cliente', () => {
+  const msg = (over: Partial<MensajeBandeja>): MensajeBandeja => ({
+    id_mensaje: 'm-foto',
+    direccion: 'entrante',
+    canal: 'whatsapp',
+    contenido: '[image]',
+    estado_entrega: null,
+    enviado_en: null,
+    entregado_en: null,
+    creado_en: '2026-10-02T20:00:00',
+    media: { tipo: 'image', mime: 'image/jpeg', caption: 'el comprobante', nombre: null },
+    ...over,
+  });
+  const abrirPrimera = async (v: Awaited<ReturnType<typeof montar>>) => {
+    (v.el.querySelector('.bdj__item') as HTMLElement).click();
+    v.tick();
+    await v.fixture.whenStable();
+    v.tick();
+  };
+
+  it('una foto se ve en el hilo (en vez de «[image]»), con su pie', async () => {
+    const crear = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:prueba-foto');
+    const archivo = vi.fn(() => of(new Blob(['x'], { type: 'image/jpeg' })));
+    const v = await montar({ mensajes: [msg({})], archivo });
+    await abrirPrimera(v);
+
+    expect(archivo).toHaveBeenCalledWith('c1', 'm-foto');
+    const img = v.el.querySelector('.bdj__archivo img') as HTMLImageElement;
+    expect(img?.getAttribute('src')).toBe('blob:prueba-foto');
+    expect(v.el.querySelector('.bdj__mensajes')?.textContent).toContain('el comprobante');
+    expect(v.el.querySelector('.bdj__mensajes')?.textContent).not.toContain('[image]');
+    crear.mockRestore();
+  });
+
+  it('pasados 7 días (410) lo dice, en vez de una imagen rota', async () => {
+    const archivo = vi.fn(() => throwError(() => ({ status: 410 })));
+    const v = await montar({ mensajes: [msg({})], archivo });
+    await abrirPrimera(v);
+
+    expect(v.el.querySelector('.bdj__archivo-aviso')?.textContent).toContain('7 días');
+    expect(v.el.querySelector('.bdj__archivo img')).toBeFalsy();
+  });
+
+  it('un documento NO se descarga solo: es un botón', async () => {
+    const archivo = vi.fn(() => of(new Blob(['%PDF'])));
+    const v = await montar({
+      mensajes: [msg({ media: { tipo: 'document', mime: 'application/pdf', caption: null, nombre: 'factura.pdf' } })],
+      archivo,
+    });
+    await abrirPrimera(v);
+
+    expect(archivo).not.toHaveBeenCalled();
+    expect(v.el.querySelector('.bdj__archivo-doc')?.textContent).toContain('factura.pdf');
   });
 });

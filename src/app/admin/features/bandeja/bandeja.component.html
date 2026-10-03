@@ -533,7 +533,46 @@
           @if (it.tipo === 'msg') {
             @let m = it.m;
             <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">
-              <p class="bdj__msg-texto">{{ m.contenido }}</p>
+              @if (m.media; as a) {
+                <!-- Foto, sticker, audio… que mandó el cliente: se trae de WhatsApp al abrir el
+                     chat (no se guarda copia; WhatsApp lo conserva 7 días). -->
+                <div class="bdj__archivo">
+                  @if (urlArchivo(m); as url) {
+                    @if (a.tipo === 'image' || a.tipo === 'sticker') {
+                      <a [href]="url" target="_blank" rel="noopener" title="Ver en grande">
+                        <img
+                          [src]="url"
+                          [class.bdj__archivo-sticker]="a.tipo === 'sticker'"
+                          [alt]="a.caption || (a.tipo === 'sticker' ? 'Sticker' : 'Foto del cliente')"
+                        />
+                      </a>
+                    } @else if (a.tipo === 'audio') {
+                      <audio controls [src]="url"></audio>
+                    } @else if (a.tipo === 'video') {
+                      <video controls [src]="url"></video>
+                    } @else {
+                      <button type="button" class="bdj__archivo-doc" (click)="abrirDocumento(m)">
+                        <lucide-icon name="file-text" [size]="15" aria-hidden="true" />
+                        {{ a.nombre || 'Abrir documento' }}
+                      </button>
+                    }
+                  } @else if (errorArchivo(m); as aviso) {
+                    <span class="bdj__archivo-aviso">{{ aviso }}</span>
+                  } @else if (a.tipo === 'document') {
+                    <button type="button" class="bdj__archivo-doc" (click)="abrirDocumento(m)" [disabled]="cargandoArchivo(m)">
+                      <lucide-icon name="file-text" [size]="15" aria-hidden="true" />
+                      {{ cargandoArchivo(m) ? 'Abriendo…' : a.nombre || 'Abrir documento' }}
+                    </button>
+                  } @else {
+                    <span class="bdj__archivo-aviso">Cargando {{ nombreDeArchivo(a.tipo) }}…</span>
+                  }
+                </div>
+                @if (a.caption) {
+                  <p class="bdj__msg-texto">{{ a.caption }}</p>
+                }
+              } @else {
+                <p class="bdj__msg-texto">{{ m.contenido }}</p>
+              }
               <span class="bdj__msg-pie">
                 {{ m.creado_en | date: 'HH:mm' }}
                 @if (etiquetaEntrega(m); as et) {

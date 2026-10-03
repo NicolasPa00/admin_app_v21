@@ -51,6 +51,21 @@ export class BandejaService {
   }
 
   /**
+   * El archivo que mandó el cliente (foto, sticker, audio…), como `Blob`.
+   *
+   * Se pide con HttpClient —y no poniendo la URL en un `<img src>`— porque la ruta exige el
+   * token, y un `<img>` no lo manda: así la sesión viaja por el interceptor y nunca en la URL. El
+   * servidor se lo pide a Meta en el momento y no guarda copia; WhatsApp lo conserva 7 días
+   * (pasado eso, 410).
+   */
+  archivoDeMensaje(idConversacion: string, idMensaje: string): Observable<Blob> {
+    return this.http.get(
+      `${this.API}/intelligence/bandeja/conversaciones/${idConversacion}/mensajes/${idMensaje}/archivo`,
+      { responseType: 'blob' },
+    );
+  }
+
+  /**
    * «Ya me ocupé de esto», sin escribir nada.
    *
    * No devuelve la conversación al asistente: eso lo prohíbe ADR-023 y sigue prohibido. Lo

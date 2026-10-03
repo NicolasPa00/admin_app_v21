@@ -19,7 +19,7 @@ import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-  Flag, ShieldAlert, MessageCircle, User,
+  Flag, ShieldAlert, MessageCircle, User, FileText,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -37,6 +37,12 @@ import {
   PreparacionAsistente,
 } from '../../models/bandeja.models';
 import { LoadingState } from '../../models/admin.models';
+
+/** Un archivo del cliente, ya traído (o no) para pintarlo en el hilo. */
+type EstadoArchivo =
+  | { estado: 'cargando' }
+  | { estado: 'listo'; url: string }
+  | { estado: 'error'; mensaje: string };
 
 /** Una línea del hilo: un mensaje, o el aviso de que el asistente retomó la conversación. */
 type ItemHilo =
@@ -126,7 +132,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle, User,
+        Flag, ShieldAlert, MessageCircle, User, FileText,
       }),
     },
   ],
@@ -170,6 +176,12 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly negocioFijo = input<number | null>(null);
 
   readonly detalle = signal<ConversacionBandejaDetalle | null>(null);
+
+  // ── Archivos de los clientes (fotos, stickers, audios…) ──
+  // Se guardan aquí como URL `blob:` por id de mensaje: el hilo se recarga cada pocos segundos y
+  // no hay que volver a pedírselos al servidor (que a su vez se los pide a Meta). Se liberan al
+  // cambiar de conversación. El archivo nunca se guarda en el servidor (decisión del dueño).
+  readonly archivos = signal<Record<string, EstadoArchivo>>({});
   readonly estadoDetalle = signal<LoadingState>('idle');
   readonly abierta = signal<string | null>(null);
 
@@ -585,6 +597,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.liberarArchivos();
     if (this.temporizador) clearInterval(this.temporizador);
     if (this.anchoPedido) this.pantallaAncha.soltar();
   }
@@ -653,6 +666,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
   }
 
   abrir(conversacion: ConversacionBandeja): void {
+    if (this.abierta() !== conversacion.id_conversacion) this.liberarArchivos();
     this.abierta.set(conversacion.id_conversacion);
     this.errorEnvio.set(null);
     this.borrador.set('');
@@ -679,6 +693,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
         if (this.abierta() !== id) return;
         this.detalle.set(data);
         this.estadoDetalle.set('success');
+        this.pedirArchivos(id, data?.mensajes ?? []);
         if (pegadoAbajo) this.alFinal();
       },
       error: () => {
@@ -687,6 +702,87 @@ export class BandejaComponent implements OnInit, OnDestroy {
         this.estadoDetalle.set('error');
       },
     });
+  }
+
+  /** Lo que se carga solo al abrir el chat. Un documento puede ser grande: ése, al tocarlo. */
+  private static readonly SE_MUESTRAN = new Set(['image', 'sticker', 'audio', 'video']);
+
+  /** Pide los archivos que falten. Solo en el navegador: en SSR no hay `URL.createObjectURL`. */
+  private pedirArchivos(idConversacion: string, mensajes: MensajeBandeja[]): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    for (const m of mensajes) {
+      if (!m.media || this.archivos()[m.id_mensaje]) continue;
+      if (!BandejaComponent.SE_MUESTRAN.has(m.media.tipo)) continue;
+      this.cargarArchivo(idConversacion, m.id_mensaje);
+    }
+  }
+
+  private cargarArchivo(idConversacion: string, idMensaje: string, alTerminar?: (url: string) => void): void {
+    this.archivos.update((a) => ({ ...a, [idMensaje]: { estado: 'cargando' } }));
+    this.service.archivoDeMensaje(idConversacion, idMensaje).subscribe({
+      next: (blob) => {
+        // Si en el camino se cambió de conversación, el archivo ya no se pinta: se suelta.
+        if (this.abierta() !== idConversacion) return;
+        const url = URL.createObjectURL(blob);
+        this.archivos.update((a) => ({ ...a, [idMensaje]: { estado: 'listo', url } }));
+        alTerminar?.(url);
+      },
+      error: (err: { status?: number }) => {
+        if (this.abierta() !== idConversacion) return;
+        const mensaje =
+          err?.status === 410
+            ? 'Ya no está disponible: WhatsApp guarda los archivos 7 días.'
+            : err?.status === 413
+              ? 'Es demasiado grande para mostrarlo aquí.'
+              : 'No se pudo cargar el archivo.';
+        this.archivos.update((a) => ({ ...a, [idMensaje]: { estado: 'error', mensaje } }));
+      },
+    });
+  }
+
+  /** La URL ya cargada de un archivo, o `null`. */
+  urlArchivo(m: MensajeBandeja): string | null {
+    const a = this.archivos()[m.id_mensaje];
+    return a?.estado === 'listo' ? a.url : null;
+  }
+
+  /** El aviso de un archivo que no se pudo traer, o `null`. */
+  errorArchivo(m: MensajeBandeja): string | null {
+    const a = this.archivos()[m.id_mensaje];
+    return a?.estado === 'error' ? a.mensaje : null;
+  }
+
+  cargandoArchivo(m: MensajeBandeja): boolean {
+    return this.archivos()[m.id_mensaje]?.estado === 'cargando';
+  }
+
+  /** Un documento se trae al tocarlo y se abre en otra pestaña. */
+  abrirDocumento(m: MensajeBandeja): void {
+    const id = this.abierta();
+    if (!id || !isPlatformBrowser(this.platformId)) return;
+    const ya = this.urlArchivo(m);
+    if (ya) {
+      window.open(ya, '_blank', 'noopener');
+      return;
+    }
+    this.cargarArchivo(id, m.id_mensaje, (url) => window.open(url, '_blank', 'noopener'));
+  }
+
+  /** Qué es, en palabras, para los avisos («Cargando la foto…»). */
+  nombreDeArchivo(tipo: string): string {
+    return (
+      { image: 'la foto', sticker: 'el sticker', audio: 'el audio', video: 'el video', document: 'el documento' }[
+        tipo
+      ] ?? 'el archivo'
+    );
+  }
+
+  private liberarArchivos(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    for (const a of Object.values(this.archivos())) {
+      if (a.estado === 'listo') URL.revokeObjectURL(a.url);
+    }
+    this.archivos.set({});
   }
 
   /**
@@ -817,6 +913,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
   }
 
   cerrar(): void {
+    this.liberarArchivos();
     this.detalle.set(null);
     this.abierta.set(null);
     this.estadoDetalle.set('idle');

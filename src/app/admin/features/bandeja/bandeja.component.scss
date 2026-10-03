@@ -953,6 +953,53 @@
     overflow-wrap: anywhere;
   }
 
+  /* Foto, sticker, audio… del cliente. Ancho acotado para que una foto vertical no ocupe la
+     pantalla; el sticker va sin fondo y más pequeño, como en WhatsApp. */
+  &__archivo {
+    margin-bottom: 0.25rem;
+
+    img {
+      display: block;
+      max-width: min(100%, 16rem);
+      max-height: 20rem;
+      border-radius: 0.5rem;
+      object-fit: cover;
+      cursor: zoom-in;
+    }
+    audio { display: block; width: min(100%, 16rem); }
+    video { display: block; max-width: min(100%, 16rem); max-height: 20rem; border-radius: 0.5rem; }
+  }
+
+  img.bdj__archivo-sticker {
+    max-width: 8rem;
+    border-radius: 0;
+    object-fit: contain;
+    background: transparent;
+  }
+
+  &__archivo-aviso {
+    display: block;
+    font-size: 0.8125rem;
+    font-style: italic;
+    color: var(--color-text-secondary);
+  }
+
+  &__archivo-doc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.625rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.6; cursor: progress; }
+  }
+
   &__msg-pie {
     display: block;
     margin-top: 0.125rem;

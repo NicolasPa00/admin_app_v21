@@ -56,6 +56,18 @@ export interface MensajeBandeja {
   enviado_en: string | null;
   entregado_en: string | null;
   creado_en: string;
+  /**
+   * Si el cliente mandó un archivo (foto, sticker, audio, video, documento). El archivo no se
+   * guarda: se pide con `BandejaService.archivoDeMensaje` y WhatsApp lo conserva 7 días.
+   */
+  media?: ArchivoMensaje | null;
+}
+
+export interface ArchivoMensaje {
+  tipo: 'image' | 'sticker' | 'audio' | 'video' | 'document' | string;
+  mime: string | null;
+  caption: string | null;
+  nombre: string | null;
 }
 
 /**
