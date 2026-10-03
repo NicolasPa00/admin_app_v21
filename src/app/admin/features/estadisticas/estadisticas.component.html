@@ -1,0 +1,416 @@
+<!--
+  Estadísticas de plataforma (Super Admin) — «EscalApp en números».
+
+  Pensada para enseñarse: por defecto todo el historial, cuatro cifras grandes arriba y el resto
+  en gráficas. Los nombres de los inquilinos se pueden ocultar con el botón del ranking.
+-->
+<div class="est">
+
+  <!-- ── Cabecera ── -->
+  <header class="est__head">
+    <div>
+      <h1 class="est__title">Estadísticas de la plataforma</h1>
+      <p class="est__subtitle">
+        Todo lo que EscalApp lleva procesando, sumando los negocios que ya lo usan.
+      </p>
+    </div>
+
+    <div class="est__head-actions">
+      <div class="est__rangos" role="group" aria-label="Rango de tiempo">
+        @for (r of rangos; track r.valor) {
+          <button
+            type="button"
+            class="est__rango"
+            [class.is-active]="rango() === r.valor"
+            [attr.aria-pressed]="rango() === r.valor"
+            (click)="cambiarRango(r.valor)"
+          >
+            {{ r.label }}
+          </button>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="btn btn--outline est__refresh"
+        (click)="cargar()"
+        [disabled]="estado() === 'loading'"
+        aria-label="Actualizar estadísticas"
+      >
+        <lucide-icon
+          name="refresh-cw"
+          [size]="16"
+          [class.est__spin]="estado() === 'loading'"
+          aria-hidden="true"
+        />
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- ── ESTADO: cargando ── -->
+  @if (estado() === 'loading' || estado() === 'idle') {
+    <div class="est__skeleton" aria-busy="true" aria-label="Cargando estadísticas">
+      <div class="est__sk est__sk--hero"></div>
+      <div class="est__sk-grid">
+        @for (_ of [1,2,3,4,5,6,7,8]; track $index) {
+          <div class="est__sk est__sk--tile"></div>
+        }
+      </div>
+      <div class="est__sk est__sk--chart"></div>
+    </div>
+  }
+
+  <!-- ── ESTADO: error ── -->
+  @if (estado() === 'error') {
+    <div class="est__state" role="alert">
+      <lucide-icon name="alert-circle" [size]="36" aria-hidden="true" />
+      <p class="est__state-title">No se pudieron cargar las estadísticas</p>
+      <p class="est__state-desc">Revisa la conexión con el servidor e intenta de nuevo.</p>
+      <button type="button" class="btn btn--primary" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  <!-- ── ESTADO: con datos ── -->
+  @if (estado() === 'success' && datos(); as d) {
+
+    <!-- Titular: las cuatro cifras que se leen desde lejos -->
+    <section class="est__hero" aria-label="Cifras principales">
+      <p class="est__hero-caption">
+        <lucide-icon name="trending-up" [size]="16" aria-hidden="true" />
+        @if (rango() === 'todo') {
+          <span>
+            {{ diasOperacion() }} días en operación · desde el
+            {{ fmtFecha(d.periodo.inicio_operacion) }}
+          </span>
+        } @else {
+          <span>Del {{ fmtFecha(d.periodo.desde) }} al {{ fmtFecha(d.periodo.hasta) }}</span>
+        }
+      </p>
+
+      <div class="est__hero-grid">
+        @for (h of hero(); track h.label) {
+          <article class="est__hero-item">
+            <p class="est__hero-value">{{ h.valor }}</p>
+            <p class="est__hero-label">{{ h.label }}</p>
+            <p class="est__hero-note">{{ h.nota }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <!-- Detalle por módulo -->
+    <section class="est__tiles" aria-label="Actividad por módulo">
+      @for (t of tarjetas(); track t.label) {
+        <article class="est__tile">
+          <span class="est__tile-icon" aria-hidden="true">
+            <lucide-icon [name]="t.icon" [size]="18" />
+          </span>
+          <div>
+            <p class="est__tile-value">{{ t.valor }}</p>
+            <p class="est__tile-label">{{ t.label }}</p>
+          </div>
+        </article>
+      }
+    </section>
+
+    <!-- ── Gráfica grande: crecimiento mes a mes ── -->
+    <article class="est__card">
+      <header class="est__card-head">
+        <div>
+          <h2 class="est__card-title">Crecimiento mes a mes</h2>
+          <p class="est__card-desc">
+            {{ metrica() === 'monto'
+              ? 'Dinero cobrado cada mes, sumando todos los negocios.'
+              : 'Operaciones gestionadas cada mes, sumando todos los negocios.' }}
+          </p>
+        </div>
+        <div class="est__seg" role="group" aria-label="Métrica de la gráfica">
+          <button
+            type="button" class="est__seg-btn"
+            [class.is-active]="metrica() === 'transacciones'"
+            [attr.aria-pressed]="metrica() === 'transacciones'"
+            (click)="cambiarMetrica('transacciones')"
+          >Operaciones</button>
+          <button
+            type="button" class="est__seg-btn"
+            [class.is-active]="metrica() === 'monto'"
+            [attr.aria-pressed]="metrica() === 'monto'"
+            (click)="cambiarMetrica('monto')"
+          >Ventas</button>
+        </div>
+      </header>
+
+      @if (area().hayDatos) {
+        <div class="est__area-wrap" #areaWrap>
+          <svg
+            class="est__area"
+            [attr.viewBox]="'0 0 ' + anchoArea() + ' ' + altoArea"
+            [attr.height]="altoArea"
+            role="img"
+            [attr.aria-label]="metrica() === 'monto'
+              ? 'Gráfica de área: ventas cobradas por mes'
+              : 'Gráfica de área: operaciones gestionadas por mes'"
+            (mousemove)="moverSobreArea($event)"
+            (touchstart)="moverSobreArea($event)"
+            (touchmove)="moverSobreArea($event)"
+            (mouseleave)="salirDelArea()"
+          >
+            <defs>
+              <linearGradient id="estAreaFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" class="est__stop-top" />
+                <stop offset="100%" class="est__stop-bottom" />
+              </linearGradient>
+            </defs>
+
+            @for (t of area().ticks; track t.y) {
+              <line class="est__grid" x1="58" [attr.x2]="anchoArea() - 16"
+                    [attr.y1]="t.y" [attr.y2]="t.y" />
+              <text class="est__axis" x="50" [attr.y]="t.y + 4" text-anchor="end">{{ t.label }}</text>
+            }
+
+            <path class="est__area-fill" [attr.d]="area().relleno" />
+            <path class="est__area-line" [attr.d]="area().linea" />
+
+            @for (p of area().puntos; track p.mes) {
+              <circle class="est__dot" [attr.cx]="p.x" [attr.cy]="p.y" r="4" />
+            }
+
+            @if (puntoHover(); as h) {
+              <line class="est__crosshair" [attr.x1]="h.x" [attr.x2]="h.x"
+                    [attr.y1]="16" [attr.y2]="area().baseY" />
+              <circle class="est__dot est__dot--activo" [attr.cx]="h.x" [attr.cy]="h.y" r="6" />
+            }
+
+            @for (e of area().etiquetas; track e.x) {
+              <text class="est__axis" [attr.x]="e.x" [attr.y]="altoArea - 8"
+                    text-anchor="middle">{{ e.label }}</text>
+            }
+          </svg>
+
+          @if (puntoHover(); as h) {
+            <div
+              class="est__tooltip"
+              [class.flip]="h.x > anchoArea() * 0.7"
+              [style.left.%]="(h.x / anchoArea()) * 100"
+              [style.top.%]="(h.y / altoArea) * 100"
+            >
+              <span class="est__tt-mes">{{ fmtMes(h.mes) }}</span>
+              <strong>{{ valorMetrica(h.valor) }}</strong>
+              <span class="est__tt-extra">
+                {{ fmtEntero(h.transacciones) }} operaciones ·
+                {{ h.negocios }} {{ h.negocios === 1 ? 'negocio' : 'negocios' }}
+              </span>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="est__vacio">Sin operaciones en este rango.</p>
+      }
+    </article>
+
+    <!-- ── Dos columnas: reparto por vertical + base de clientes ── -->
+    <div class="est__row">
+
+      <article class="est__card">
+        <header class="est__card-head">
+          <div>
+            <h2 class="est__card-title">Qué se usa</h2>
+            <p class="est__card-desc">Reparto de las operaciones entre los módulos del sistema.</p>
+          </div>
+        </header>
+
+        @if (donut().total > 0) {
+          <div class="est__donut-wrap">
+            <div class="est__donut-box">
+              <svg class="est__donut" viewBox="0 0 140 140" role="img"
+                   aria-label="Gráfica de anillo: operaciones por módulo">
+                <circle class="est__donut-track" cx="70" cy="70" [attr.r]="donut().r" />
+                @for (s of donut().segmentos; track s.key) {
+                  <circle
+                    class="est__donut-seg"
+                    cx="70" cy="70"
+                    [attr.r]="donut().r"
+                    [attr.stroke]="s.color"
+                    [attr.stroke-dasharray]="s.dash"
+                    [attr.stroke-dashoffset]="s.offset"
+                    transform="rotate(-90 70 70)"
+                  />
+                }
+              </svg>
+              <div class="est__donut-center">
+                <strong>{{ fmtEntero(donut().total) }}</strong>
+                <span>operaciones</span>
+              </div>
+            </div>
+
+            <ul class="est__legend">
+              @for (s of donut().segmentos; track s.key) {
+                <li>
+                  <span class="est__legend-dot" [style.background]="s.color" aria-hidden="true"></span>
+                  <span class="est__legend-name">{{ s.label }}</span>
+                  <span class="est__legend-pct">{{ fmtPct(s.pct) }}</span>
+                  <span class="est__legend-val">{{ fmtEntero(s.valor) }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <ul class="est__verticales">
+            @for (v of verticalesConNegocios(); track v.vertical) {
+              <li>
+                <span class="est__legend-dot" [style.background]="verticalColor(v.vertical)"
+                      aria-hidden="true"></span>
+                {{ v.negocios }} {{ v.negocios === 1 ? 'negocio' : 'negocios' }}
+                en {{ verticalLabel(v.vertical) }}
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="est__vacio">Sin operaciones en este rango.</p>
+        }
+      </article>
+
+      <article class="est__card">
+        <header class="est__card-head">
+          <div>
+            <h2 class="est__card-title">Negocios en el sistema</h2>
+            <p class="est__card-desc">Cuántos inquilinos había cada mes, acumulado.</p>
+          </div>
+        </header>
+
+        @if (altas().length > 0) {
+          <ul class="est__bars est__bars--meses">
+            @for (a of altas(); track a.mes) {
+              <li class="est__bar-row">
+                <span class="est__bar-label">{{ a.mesLabel }}</span>
+                <span class="est__bar-track">
+                  <span class="est__bar-fill" [style.width.%]="a.pct"></span>
+                </span>
+                <span class="est__bar-value">
+                  {{ a.acumulado }}
+                  @if (a.nuevos > 0) {
+                    <small>+{{ a.nuevos }}</small>
+                  }
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="est__vacio">Sin altas en este rango.</p>
+        }
+      </article>
+    </div>
+
+    <!-- ── Dos columnas: ritmo de uso ── -->
+    <div class="est__row">
+
+      <article class="est__card">
+        <header class="est__card-head">
+          <div>
+            <h2 class="est__card-title">A qué hora se trabaja</h2>
+            <p class="est__card-desc">
+              @if (horaPunta(); as p) {
+                Hora punta: las {{ p.hora }}:00, con {{ fmtEntero(p.transacciones) }} operaciones.
+              } @else {
+                Operaciones según la hora en que se crearon.
+              }
+            </p>
+          </div>
+        </header>
+
+        <div class="est__cols" role="img" aria-label="Gráfica de barras: operaciones por hora del día">
+          @for (h of horas(); track h.hora) {
+            <div class="est__col" [attr.title]="h.label + ' · ' + fmtEntero(h.valor) + ' operaciones'">
+              <span class="est__col-bar" [style.height.%]="h.pct"></span>
+              @if (h.hora % 3 === 0) {
+                <span class="est__col-tick">{{ h.hora }}</span>
+              }
+            </div>
+          }
+        </div>
+      </article>
+
+      <article class="est__card">
+        <header class="est__card-head">
+          <div>
+            <h2 class="est__card-title">Qué días se mueve más</h2>
+            <p class="est__card-desc">Operaciones repartidas por día de la semana.</p>
+          </div>
+        </header>
+
+        @if (dias().length > 0) {
+          <ul class="est__bars">
+            @for (d2 of dias(); track d2.dia) {
+              <li class="est__bar-row">
+                <span class="est__bar-label">{{ d2.label }}</span>
+                <span class="est__bar-track">
+                  <span class="est__bar-fill" [style.width.%]="d2.pct"></span>
+                </span>
+                <span class="est__bar-value">{{ fmtEntero(d2.valor) }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="est__vacio">Sin operaciones en este rango.</p>
+        }
+      </article>
+    </div>
+
+    <!-- ── Ranking de inquilinos ── -->
+    <article class="est__card">
+      <header class="est__card-head">
+        <div>
+          <h2 class="est__card-title">Los negocios que más mueven</h2>
+          <p class="est__card-desc">
+            Operaciones y dinero cobrado por cada inquilino en el rango elegido.
+          </p>
+        </div>
+        <button type="button" class="btn btn--ghost est__anon" (click)="alternarAnonimo()">
+          <lucide-icon [name]="anonimo() ? 'eye' : 'eye-off'" [size]="16" aria-hidden="true" />
+          {{ anonimo() ? 'Mostrar nombres' : 'Ocultar nombres' }}
+        </button>
+      </header>
+
+      @if (top().length > 0) {
+        <div class="est__tabla-wrap">
+          <table class="est__tabla">
+            <thead>
+              <tr>
+                <th scope="col">Negocio</th>
+                <th scope="col">Módulo</th>
+                <th scope="col" class="est__num">Operaciones</th>
+                <th scope="col" class="est__num">Cobrado</th>
+                <th scope="col">Activo desde</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (n of top(); track n.id_negocio) {
+                <tr>
+                  <td>
+                    <span class="est__td-nombre">{{ n.etiqueta }}</span>
+                    <span class="est__bar-track est__bar-track--mini">
+                      <span class="est__bar-fill" [style.width.%]="n.pct"></span>
+                    </span>
+                  </td>
+                  <td><span class="es-badge es-badge--primary">{{ n.tipo ?? '—' }}</span></td>
+                  <td class="est__num">{{ fmtEntero(n.transacciones) }}</td>
+                  <td class="est__num">{{ fmtMoneda(n.monto) }}</td>
+                  <td>{{ fmtFecha(n.desde) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="est__vacio">Sin operaciones en este rango.</p>
+      }
+    </article>
+
+    <p class="est__nota">
+      Cifras reales tomadas de la base de producción en el momento de abrir la vista. Las
+      operaciones suman pedidos de restaurante, citas y reservas, facturas de parqueadero y ventas
+      de tienda y gimnasio; «cobrado» cuenta solo lo que quedó confirmado como pagado.
+    </p>
+  }
+</div>

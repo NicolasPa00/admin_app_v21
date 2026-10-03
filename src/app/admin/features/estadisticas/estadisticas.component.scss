@@ -1,0 +1,648 @@
+/*
+  EstadisticasComponent — «EscalApp en números» (Super Admin).
+
+  Tokens: los del admin (`--color-*`, `_theme.scss`). Los colores de serie los pone el
+  componente en línea (paleta categórica verificada, ver el .ts) porque identifican al vertical
+  y no al estado: ni son tokens de marca ni deben cambiar con la paleta del inquilino.
+*/
+:host {
+  display: block;
+
+  /* Las dos únicas variables propias: el relleno del área y el grosor del anillo. */
+  --est-serie: var(--color-primary-hover);
+  --est-anillo: 14px;
+}
+
+.est {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  /* ── Cabecera ─────────────────────────────────────────── */
+  &__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    max-width: 46ch;
+  }
+
+  &__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  /* Los cuatro rangos. Un solo control de filtro en toda la vista, a propósito. */
+  &__rangos {
+    display: inline-flex;
+    padding: 2px;
+    gap: 2px;
+    background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+    border-radius: var(--radius-full);
+  }
+
+  &__rango {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.4rem 0.85rem;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+
+    &:hover { color: var(--color-primary); }
+
+    &.is-active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &__refresh { font-size: 0.8125rem; padding: 0.45rem 0.9rem; }
+
+  &__spin { animation: est-spin 0.9s linear infinite; }
+
+  /* ── Titular ──────────────────────────────────────────── */
+  &__hero {
+    padding: 1.25rem 1.5rem 1.5rem;
+    border-radius: var(--radius-lg);
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--color-primary) 96%, transparent),
+        color-mix(in srgb, var(--color-primary-hover) 92%, transparent));
+    color: #fff;
+    box-shadow: var(--shadow-md);
+  }
+
+  &__hero-caption {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0 0 1.1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  &__hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1.25rem;
+  }
+
+  &__hero-item { min-width: 0; }
+
+  &__hero-value {
+    margin: 0;
+    font-size: 2.125rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  &__hero-label {
+    margin: 0.3rem 0 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  &__hero-note {
+    margin: 0.15rem 0 0;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.68);
+  }
+
+  /* ── Tarjetas de detalle ──────────────────────────────── */
+  &__tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 0.75rem;
+  }
+
+  &__tile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  &__tile-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+  }
+
+  &__tile-value {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--color-text-primary);
+  }
+
+  &__tile-label {
+    margin: 0.1rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    line-height: 1.35;
+  }
+
+  /* ── Tarjeta de gráfica ───────────────────────────────── */
+  &__card {
+    padding: 1.1rem 1.25rem 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    min-width: 0;
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  &__card-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__card-desc {
+    margin: 0.2rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    max-width: 52ch;
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 1.25rem;
+  }
+
+  /* Un control de dos estados para elegir la métrica. No hay doble eje Y: se cambia la serie. */
+  &__seg {
+    display: inline-flex;
+    padding: 2px;
+    gap: 2px;
+    background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+    border-radius: var(--radius-full);
+  }
+
+  &__seg-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-full);
+    color: var(--color-text-secondary);
+
+    &:hover { color: var(--color-primary); }
+
+    &.is-active {
+      background: var(--color-surface);
+      color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  /* ── Gráfica de área ──────────────────────────────────── */
+  &__area-wrap {
+    position: relative;
+    width: 100%;
+  }
+
+  &__area {
+    display: block;
+    width: 100%;
+    touch-action: pan-y;
+  }
+
+  &__grid {
+    stroke: var(--color-border);
+    stroke-width: 1;
+  }
+
+  &__axis {
+    fill: var(--color-text-muted);
+    font-size: 0.6875rem;
+  }
+
+  &__stop-top { stop-color: var(--est-serie); stop-opacity: 0.28; }
+  &__stop-bottom { stop-color: var(--est-serie); stop-opacity: 0.02; }
+
+  &__area-fill {
+    fill: url(#estAreaFill);
+    stroke: none;
+  }
+
+  &__area-line {
+    fill: none;
+    stroke: var(--est-serie);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  &__dot {
+    fill: var(--est-serie);
+    /* Anillo del color de la superficie: separa el punto de la línea sin pintar un borde falso. */
+    stroke: var(--color-surface);
+    stroke-width: 2;
+  }
+
+  &__dot--activo { stroke-width: 3; }
+
+  &__crosshair {
+    stroke: var(--color-text-muted);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+
+  &__tooltip {
+    position: absolute;
+    transform: translate(10px, -115%);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 0.5rem 0.7rem;
+    background: var(--color-text-primary);
+    color: #fff;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: var(--shadow-md);
+    z-index: 2;
+
+    &.flip { transform: translate(-100%, -115%) translateX(-10px); }
+
+    strong { font-size: 0.9375rem; font-weight: 700; }
+  }
+
+  &__tt-mes { color: rgba(255, 255, 255, 0.7); }
+  &__tt-extra { color: rgba(255, 255, 255, 0.7); }
+
+  /* ── Anillo ───────────────────────────────────────────── */
+  &__donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__donut-box {
+    position: relative;
+    flex: 0 0 150px;
+    width: 150px;
+  }
+
+  &__donut {
+    display: block;
+    width: 100%;
+    overflow: visible;
+  }
+
+  &__donut-track {
+    fill: none;
+    stroke: color-mix(in srgb, var(--color-text-primary) 7%, transparent);
+    stroke-width: var(--est-anillo);
+  }
+
+  &__donut-seg {
+    fill: none;
+    stroke-width: var(--est-anillo);
+    stroke-linecap: butt;
+  }
+
+  &__donut-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+
+    strong {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--color-text-primary);
+    }
+
+    span {
+      font-size: 0.6875rem;
+      color: var(--color-text-secondary);
+    }
+  }
+
+  /* Leyenda: con dos o más series siempre está, y lleva el nombre al lado del color para que la
+     identidad nunca dependa del color solo. */
+  &__legend {
+    flex: 1 1 190px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+
+    li {
+      display: grid;
+      grid-template-columns: 10px 1fr auto auto;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+    }
+  }
+
+  &__legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  &__legend-name {
+    color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__legend-pct { font-weight: 700; color: var(--color-text-primary); }
+  &__legend-val { color: var(--color-text-muted); font-size: 0.75rem; }
+
+  &__verticales {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0.85rem 0 0;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+
+    li { display: inline-flex; align-items: center; gap: 0.4rem; }
+  }
+
+  /* ── Barras horizontales ──────────────────────────────── */
+  &__bars {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  &__bars--meses { max-height: 17rem; overflow-y: auto; }
+
+  &__bar-row {
+    display: grid;
+    grid-template-columns: 4.6rem 1fr 4.5rem;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8125rem;
+  }
+
+  &__bar-label {
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__bar-track {
+    display: block;
+    height: 10px;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+    overflow: hidden;
+
+    &--mini {
+      height: 5px;
+      margin-top: 0.3rem;
+      max-width: 13rem;
+    }
+  }
+
+  &__bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--est-serie);
+    min-width: 3px;
+  }
+
+  &__bar-value {
+    text-align: right;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+
+    small {
+      display: inline-block;
+      margin-left: 0.25rem;
+      font-weight: 600;
+      color: var(--color-success);
+    }
+  }
+
+  /* ── Columnas (24 horas) ──────────────────────────────── */
+  &__cols {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 170px;
+  }
+
+  &__col {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+
+  &__col-bar {
+    display: block;
+    /* 4px redondeados solo arriba: la base queda anclada a la línea cero. */
+    border-radius: 4px 4px 0 0;
+    background: var(--est-serie);
+    min-height: 2px;
+  }
+
+  &__col-tick {
+    font-size: 0.625rem;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  /* ── Tabla del ranking ────────────────────────────────── */
+  &__tabla-wrap { overflow-x: auto; }
+
+  &__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+
+    th {
+      text-align: left;
+      padding: 0 0.6rem 0.5rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.6rem;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-text-secondary);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+  }
+
+  &__td-nombre {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  &__num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* ── Estados ──────────────────────────────────────────── */
+  &__vacio {
+    margin: 0;
+    padding: 1.75rem 0;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-error);
+    text-align: center;
+  }
+
+  &__state-title {
+    margin: 0.25rem 0 0;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__state-desc {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+
+  &__skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  &__sk {
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--color-text-primary) 6%, transparent);
+    animation: est-pulse 1.4s ease-in-out infinite;
+
+    &--hero { height: 10.5rem; }
+    &--tile { height: 4.1rem; border-radius: var(--radius-md); }
+    &--chart { height: 19rem; }
+  }
+
+  &__sk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 0.75rem;
+  }
+
+  &__nota {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+    max-width: 92ch;
+  }
+}
+
+@keyframes est-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes est-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .est__spin, .est__sk { animation: none; }
+}
+
+@media (max-width: 640px) {
+  .est__hero { padding: 1rem 1.1rem 1.25rem; }
+  .est__hero-value { font-size: 1.75rem; }
+  .est__rangos { width: 100%; overflow-x: auto; }
+  .est__bar-row { grid-template-columns: 4rem 1fr 3.6rem; }
+}

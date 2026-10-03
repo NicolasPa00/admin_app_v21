@@ -149,6 +149,18 @@ export const adminRoutes: Routes = [
         title: 'Cobranza',
       },
       {
+        // Estadísticas: «EscalApp en números», el recorrido completo de la plataforma. Es la
+        // vista que se abre delante de un interesado, y solo el super admin la ve: cruza las
+        // cifras de todos los inquilinos.
+        path: 'estadisticas',
+        loadComponent: () =>
+          import('./features/estadisticas/estadisticas.component').then(
+            (m) => m.EstadisticasComponent,
+          ),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Estadísticas de la plataforma',
+      },
+      {
         path: 'auditoria',
         loadComponent: () =>
           import('./features/auditoria/auditoria.component').then(
