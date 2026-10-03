@@ -111,6 +111,16 @@ async function montar(
   return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, tick: () => fixture.detectChanges() };
 }
 
+/** Desde 2026-10-02 los ajustes del asistente viven en la ventana «Configuración del asistente». */
+async function montarConConfig(opts: Parameters<typeof montar>[0] = {}) {
+  const v = await montar(opts);
+  v.fixture.componentInstance.configAbierta.set(true);
+  v.tick();
+  await v.fixture.whenStable();
+  v.tick();
+  return v;
+}
+
 function teclear(el: HTMLElement, init: KeyboardEventInit): KeyboardEvent {
   const ev = new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init });
   el.dispatchEvent(ev);
@@ -280,14 +290,14 @@ describe('Bandeja — el asistente vuelve solo (ADR-023, Enmienda 2)', () => {
   };
 
   it('de fábrica es «Nunca»: la casilla marcada y los minutos deshabilitados', async () => {
-    const v = await montar();
+    const v = await montarConConfig();
     expect(input(v.el, '.bdj__auto-nunca input').checked).toBe(true);
     expect(input(v.el, '.bdj__auto-min').disabled).toBe(true);
     expect(v.el.querySelector('.bdj__auto-guardar')).toBeFalsy(); // nada que guardar
   });
 
   it('desmarcar «Nunca» propone 30 minutos y guarda con toast', async () => {
-    const v = await montar();
+    const v = await montarConConfig();
     const nunca = input(v.el, '.bdj__auto-nunca input');
     nunca.click();
     v.tick();
@@ -302,7 +312,7 @@ describe('Bandeja — el asistente vuelve solo (ADR-023, Enmienda 2)', () => {
   });
 
   it('cambia los minutos y guarda ese valor', async () => {
-    const v = await montar({ config: { reactivar_asistente_min: 15, puede_editar: true } });
+    const v = await montarConConfig({ config: { reactivar_asistente_min: 15, puede_editar: true } });
     expect(input(v.el, '.bdj__auto-min').value).toBe('15');
     escribir(input(v.el, '.bdj__auto-min'), '45');
     v.tick();
@@ -311,7 +321,7 @@ describe('Bandeja — el asistente vuelve solo (ADR-023, Enmienda 2)', () => {
   });
 
   it('volver a «Nunca» guarda 0', async () => {
-    const v = await montar({ config: { reactivar_asistente_min: 30, puede_editar: true } });
+    const v = await montarConConfig({ config: { reactivar_asistente_min: 30, puede_editar: true } });
     input(v.el, '.bdj__auto-nunca input').click();
     v.tick();
     (v.el.querySelector('.bdj__auto-guardar') as HTMLElement).click();
@@ -319,13 +329,13 @@ describe('Bandeja — el asistente vuelve solo (ADR-023, Enmienda 2)', () => {
   });
 
   it('quien no es administrador de ese negocio la ve pero no la puede cambiar', async () => {
-    const v = await montar({ config: { reactivar_asistente_min: 30, puede_editar: false } });
+    const v = await montarConConfig({ config: { reactivar_asistente_min: 30, puede_editar: false } });
     expect(input(v.el, '.bdj__auto-nunca input').disabled).toBe(true);
     expect(input(v.el, '.bdj__auto-min').disabled).toBe(true);
   });
 
   it('un valor fuera de rango no se puede guardar', async () => {
-    const v = await montar({ config: { reactivar_asistente_min: 30, puede_editar: true } });
+    const v = await montarConConfig({ config: { reactivar_asistente_min: 30, puede_editar: true } });
     escribir(input(v.el, '.bdj__auto-min'), '0');
     v.tick();
     expect((v.el.querySelector('.bdj__auto-guardar') as HTMLButtonElement).disabled).toBe(true);
@@ -333,7 +343,7 @@ describe('Bandeja — el asistente vuelve solo (ADR-023, Enmienda 2)', () => {
 
   describe('en el hilo', () => {
     async function abrir(extra: OpcionesDetalle) {
-      const v = await montar({ detalle: extra });
+      const v = await montarConConfig({ detalle: extra });
       (v.el.querySelector('.bdj__item') as HTMLElement).click();
       v.tick();
       return v;
@@ -388,14 +398,14 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
   };
 
   it('sin configurar: los campos vacíos, el máximo deshabilitado y nada que guardar', async () => {
-    const v = await montar();
+    const v = await montarConConfig();
     expect(input(v.el, MIN).value).toBe('');
     expect(input(v.el, MAX).disabled).toBe(true);
     expect(v.el.querySelector(GUARDAR)).toBeFalsy();
   });
 
   it('muestra lo guardado («de 40 a 60»)', async () => {
-    const v = await montar({
+    const v = await montarConConfig({
       config: { reactivar_asistente_min: 0, puede_editar: true, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
     });
     expect(input(v.el, MIN).value).toBe('40');
@@ -403,7 +413,7 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
   });
 
   it('escribe «de 40 a 60» y guarda ese rango', async () => {
-    const v = await montar();
+    const v = await montarConConfig();
     escribir(input(v.el, MIN), '40');
     v.tick();
     await v.fixture.whenStable();
@@ -415,7 +425,7 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
   });
 
   it('solo el mínimo → el máximo va vacío («unos X minutos»)', async () => {
-    const v = await montar();
+    const v = await montarConConfig();
     escribir(input(v.el, MIN), '45');
     v.tick();
     (v.el.querySelector(GUARDAR) as HTMLElement).click();
@@ -423,7 +433,7 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
   });
 
   it('un máximo menor que el mínimo no se puede guardar', async () => {
-    const v = await montar({
+    const v = await montarConConfig({
       config: { reactivar_asistente_min: 0, puede_editar: true, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
     });
     escribir(input(v.el, MAX), '20');
@@ -432,7 +442,7 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
   });
 
   it('vaciar el mínimo borra el tiempo (guarda null)', async () => {
-    const v = await montar({
+    const v = await montarConConfig({
       config: { reactivar_asistente_min: 0, puede_editar: true, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
     });
     escribir(input(v.el, MIN), '');
@@ -447,7 +457,7 @@ describe('Bandeja — tiempo estimado de entrega (lo que el asistente contesta a
   });
 
   it('quien no es administrador de ese negocio lo ve pero no lo puede cambiar', async () => {
-    const v = await montar({
+    const v = await montarConConfig({
       config: { reactivar_asistente_min: 0, puede_editar: false, tiempo_estimado_min: 40, tiempo_estimado_max: 60 },
     });
     expect(input(v.el, MIN).disabled).toBe(true);
@@ -568,5 +578,24 @@ describe('Bandeja — el recuadro de «espera respuesta» se quita al abrir', ()
     // Llega otro mensaje del cliente: cambia ultimo_mensaje_en y el recuadro vuelve.
     const c = v.fixture.componentInstance;
     expect(c.recuadroEspera({ ...espera, ultimo_mensaje_en: '2026-10-02T21:05:00' })).toBe(true);
+  });
+});
+
+describe('Bandeja — Configuración del asistente', () => {
+  it('los ajustes ya no están en la cabecera: se abren en su ventana', async () => {
+    const v = await montar();
+    expect(v.el.querySelector('.bdj__top .bdj__auto')).toBeFalsy();
+    const boton = Array.from(v.el.querySelectorAll('.bdj__top .bdj__chip')).find((b) =>
+      b.textContent?.includes('Configuración del asistente'),
+    ) as HTMLElement;
+    expect(boton).toBeTruthy();
+
+    boton.click();
+    v.tick();
+    const ventana = v.el.querySelector('.bdj-cfg');
+    expect(ventana?.textContent).toContain('Cuándo vuelve el asistente');
+    expect(ventana?.textContent).toContain('Tiempo de entrega');
+    expect(ventana?.textContent).toContain('Valor del domicilio');
+    expect(ventana?.textContent).toContain('Información para el asistente');
   });
 });

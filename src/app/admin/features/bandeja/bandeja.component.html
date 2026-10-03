@@ -51,134 +51,19 @@
     }
 
     <div class="bdj__top-acciones">
-      <!-- El asistente vuelve solo: decisión del negocio (ADR-023, Enmienda 2). «Nunca» es el
-           valor de fábrica. Solo con un negocio determinado, y solo un administrador lo cambia. -->
-      @if (config(); as cfg) {
-        <div class="bdj__auto" role="group" aria-label="Cuándo vuelve solo el asistente">
-          <span class="bdj__auto-etq">Asistente vuelve tras</span>
-          <input
-            type="number"
-            class="bdj__auto-min"
-            min="1"
-            max="1440"
-            step="5"
-            aria-label="Minutos hasta que el asistente vuelve"
-            [ngModel]="autoMinutos()"
-            (ngModelChange)="autoMinutos.set($event)"
-            [disabled]="autoNunca() || !cfg.puede_editar"
-          />
-          <span class="bdj__auto-etq">min</span>
-          <label class="bdj__auto-nunca">
-            <input
-              type="checkbox"
-              [ngModel]="autoNunca()"
-              (ngModelChange)="autoNunca.set($event)"
-              [disabled]="!cfg.puede_editar"
-            />
-            Nunca
-          </label>
-          @if (autoSucio()) {
-            <button
-              type="button"
-              class="bdj__auto-guardar"
-              [disabled]="!autoValido() || guardandoConfig()"
-              (click)="guardarConfig()"
-            >
-              Guardar
-            </button>
-          }
-        </div>
-      }
-      <!-- Lo que el asistente contesta a «¿cuánto se demora?». Vacío = no se promete ningún tiempo. -->
-      @if (config(); as cfg) {
-        <div class="bdj__auto" role="group" aria-label="Tiempo estimado de entrega">
-          <span class="bdj__auto-etq">Entrega en</span>
-          <input
-            type="number"
-            class="bdj__auto-min"
-            min="1"
-            max="600"
-            step="5"
-            placeholder="40"
-            aria-label="Minutos mínimos de entrega"
-            [ngModel]="tiempoMin()"
-            (ngModelChange)="tiempoMin.set($event === '' ? null : $event)"
-            [disabled]="!cfg.puede_editar"
-          />
-          <span class="bdj__auto-etq">a</span>
-          <input
-            type="number"
-            class="bdj__auto-min"
-            min="1"
-            max="600"
-            step="5"
-            placeholder="60"
-            aria-label="Minutos máximos de entrega (opcional)"
-            [ngModel]="tiempoMax()"
-            (ngModelChange)="tiempoMax.set($event === '' ? null : $event)"
-            [disabled]="tiempoMin() === null || !cfg.puede_editar"
-          />
-          <span class="bdj__auto-etq">min</span>
-          @if (tiempoSucio()) {
-            <button
-              type="button"
-              class="bdj__auto-guardar"
-              [disabled]="!tiempoValido() || guardandoTiempo()"
-              (click)="guardarTiempo()"
-            >
-              Guardar
-            </button>
-          }
-        </div>
-      }
-      <!-- Lo que el asistente contesta a «¿cuánto vale el domicilio?»: un rango, no barrio por barrio. -->
-      @if (config(); as cfg) {
-        <div class="bdj__auto" role="group" aria-label="Valor del domicilio">
-          <span class="bdj__auto-etq">Domicilio $</span>
-          <input
-            type="number"
-            class="bdj__auto-min bdj__auto-min--pesos"
-            min="0"
-            step="500"
-            placeholder="7000"
-            aria-label="Valor mínimo del domicilio en pesos"
-            [ngModel]="domicilioMin()"
-            (ngModelChange)="domicilioMin.set($event === '' ? null : $event)"
-            [disabled]="!cfg.puede_editar"
-          />
-          <span class="bdj__auto-etq">a $</span>
-          <input
-            type="number"
-            class="bdj__auto-min bdj__auto-min--pesos"
-            min="0"
-            step="500"
-            placeholder="9000"
-            aria-label="Valor máximo del domicilio en pesos (opcional)"
-            [ngModel]="domicilioMax()"
-            (ngModelChange)="domicilioMax.set($event === '' ? null : $event)"
-            [disabled]="domicilioMin() === null || !cfg.puede_editar"
-          />
-          <input
-            type="text"
-            class="bdj__auto-min bdj__auto-min--nota"
-            maxlength="200"
-            placeholder="Nota: fuera de la ciudad, desde $10.000"
-            aria-label="Nota sobre el domicilio (opcional)"
-            [ngModel]="domicilioNota()"
-            (ngModelChange)="domicilioNota.set($event ?? '')"
-            [disabled]="!cfg.puede_editar"
-          />
-          @if (domicilioSucio()) {
-            <button
-              type="button"
-              class="bdj__auto-guardar"
-              [disabled]="!domicilioValido() || guardandoDomicilio()"
-              (click)="guardarDomicilio()"
-            >
-              Guardar
-            </button>
-          }
-        </div>
+      <!-- Los ajustes del asistente viven en su propia ventana (pedido del dueño, 2026-10-02):
+           en la cabecera le quitaban altura a los mensajes. -->
+      @if (config()) {
+        <button
+          type="button"
+          class="bdj__chip"
+          aria-haspopup="dialog"
+          [attr.aria-expanded]="configAbierta()"
+          (click)="configAbierta.set(true)"
+        >
+          <lucide-icon name="settings" [size]="14" aria-hidden="true" />
+          Configuración del asistente
+        </button>
       }
       <!-- ¿Qué le falta al asistente para atender bien? Revisión del backend, con dónde se arregla. -->
       @if (preparacion(); as prep) {
@@ -199,18 +84,6 @@
             <lucide-icon name="check" [size]="14" aria-hidden="true" />
             Asistente listo
           }
-        </button>
-      }
-      <!-- Lo que el asistente le dice al cliente de pagos, Nequi, domicilio… (texto libre). -->
-      @if (config()) {
-        <button
-          type="button"
-          class="bdj__chip"
-          [class.bdj__chip--on]="infoAbierta()"
-          [attr.aria-expanded]="infoAbierta()"
-          (click)="infoAbierta.set(!infoAbierta())"
-        >
-          Info para el asistente
         </button>
       }
       <button
@@ -260,7 +133,7 @@
                   }
                   <p class="bdj__prep-donde">Dónde: {{ p.donde }}</p>
                   @if (p.clave === 'info_asistente') {
-                    <button type="button" class="bdj__auto-guardar" (click)="infoAbierta.set(true)">
+                    <button type="button" class="bdj__auto-guardar" (click)="configAbierta.set(true)">
                       Escribirla ahora
                     </button>
                   }
@@ -275,41 +148,6 @@
             </p>
           }
         </section>
-      }
-    }
-    @if (infoAbierta()) {
-      @if (config(); as cfg) {
-        <div class="bdj__info" role="group" aria-label="Información para el asistente">
-          <label class="bdj__info-etq" for="bdj-info-asistente">
-            Lo que el asistente puede decirle a tus clientes: número de Nequi o cuenta para
-            transferir, si reciben efectivo o datáfono, zonas a las que llegan… (el valor del
-            domicilio va arriba, en «Domicilio $ … a $ …»). Sin esto, contesta «confírmalo con el
-            restaurante».
-          </label>
-          <textarea
-            id="bdj-info-asistente"
-            class="bdj__info-texto"
-            rows="4"
-            maxlength="1500"
-            placeholder="Ej.: Nequi 300 123 4567 a nombre de Zona Burger. Recibimos efectivo y Nequi."
-            [ngModel]="infoTexto()"
-            (ngModelChange)="infoTexto.set($event)"
-            [disabled]="!cfg.puede_editar"
-          ></textarea>
-          <div class="bdj__info-pie">
-            <span>{{ infoTexto().length }}/1500</span>
-            @if (infoSucia()) {
-              <button
-                type="button"
-                class="bdj__auto-guardar"
-                [disabled]="guardandoInfo()"
-                (click)="guardarInfo()"
-              >
-                Guardar
-              </button>
-            }
-          </div>
-        </div>
       }
     }
   </header>
@@ -718,6 +556,205 @@
           {{ bloqueando() ? 'Reportando…' : 'Reportar y bloquear' }}
         </button>
       </footer>
+    </div>
+  </div>
+}
+
+<!-- ── Ventana «Configuración del asistente» ─────────────────────── -->
+@if (configAbierta()) {
+  <div class="bdj-modal" (click)="configAbierta.set(false)" (keydown.escape)="configAbierta.set(false)">
+    <div
+      class="bdj-modal__card bdj-cfg"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bdj-cfg-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-modal-cabecera
+        icono="settings"
+        titulo="Configuración del asistente"
+        subtitulo="Cada apartado se guarda por separado"
+        tituloId="bdj-cfg-title"
+        (cerrar)="configAbierta.set(false)"
+      />
+      <div class="bdj-modal__body">
+        @if (config(); as cfg) {
+          @if (!cfg.puede_editar) {
+            <p class="bdj-cfg__aviso">Solo un administrador de este negocio puede cambiar estos ajustes.</p>
+          }
+        }
+        <h3 class="bdj-cfg__titulo">Cuándo vuelve el asistente</h3>
+        <p class="bdj-cfg__ayuda">Cuando alguien del negocio contesta, el asistente se calla en ese chat. Aquí decides si vuelve solo y tras cuántos minutos.</p>
+        <!-- El asistente vuelve solo: decisión del negocio (ADR-023, Enmienda 2). «Nunca» es el
+             valor de fábrica. Solo con un negocio determinado, y solo un administrador lo cambia. -->
+        @if (config(); as cfg) {
+          <div class="bdj__auto" role="group" aria-label="Cuándo vuelve solo el asistente">
+            <span class="bdj__auto-etq">Asistente vuelve tras</span>
+            <input
+              type="number"
+              class="bdj__auto-min"
+              min="1"
+              max="1440"
+              step="5"
+              aria-label="Minutos hasta que el asistente vuelve"
+              [ngModel]="autoMinutos()"
+              (ngModelChange)="autoMinutos.set($event)"
+              [disabled]="autoNunca() || !cfg.puede_editar"
+            />
+            <span class="bdj__auto-etq">min</span>
+            <label class="bdj__auto-nunca">
+              <input
+                type="checkbox"
+                [ngModel]="autoNunca()"
+                (ngModelChange)="autoNunca.set($event)"
+                [disabled]="!cfg.puede_editar"
+              />
+              Nunca
+            </label>
+            @if (autoSucio()) {
+              <button
+                type="button"
+                class="bdj__auto-guardar"
+                [disabled]="!autoValido() || guardandoConfig()"
+                (click)="guardarConfig()"
+              >
+                Guardar
+              </button>
+            }
+          </div>
+        }
+        <h3 class="bdj-cfg__titulo">Tiempo de entrega</h3>
+        <p class="bdj-cfg__ayuda">Lo que el asistente contesta a «¿cuánto se demora?».</p>
+        <!-- Lo que el asistente contesta a «¿cuánto se demora?». Vacío = no se promete ningún tiempo. -->
+        @if (config(); as cfg) {
+          <div class="bdj__auto" role="group" aria-label="Tiempo estimado de entrega">
+            <span class="bdj__auto-etq">Entrega en</span>
+            <input
+              type="number"
+              class="bdj__auto-min"
+              min="1"
+              max="600"
+              step="5"
+              placeholder="40"
+              aria-label="Minutos mínimos de entrega"
+              [ngModel]="tiempoMin()"
+              (ngModelChange)="tiempoMin.set($event === '' ? null : $event)"
+              [disabled]="!cfg.puede_editar"
+            />
+            <span class="bdj__auto-etq">a</span>
+            <input
+              type="number"
+              class="bdj__auto-min"
+              min="1"
+              max="600"
+              step="5"
+              placeholder="60"
+              aria-label="Minutos máximos de entrega (opcional)"
+              [ngModel]="tiempoMax()"
+              (ngModelChange)="tiempoMax.set($event === '' ? null : $event)"
+              [disabled]="tiempoMin() === null || !cfg.puede_editar"
+            />
+            <span class="bdj__auto-etq">min</span>
+            @if (tiempoSucio()) {
+              <button
+                type="button"
+                class="bdj__auto-guardar"
+                [disabled]="!tiempoValido() || guardandoTiempo()"
+                (click)="guardarTiempo()"
+              >
+                Guardar
+              </button>
+            }
+          </div>
+        }
+        <h3 class="bdj-cfg__titulo">Valor del domicilio</h3>
+        <p class="bdj-cfg__ayuda">Un rango y, si hace falta, una nota (por ejemplo, fuera de la ciudad).</p>
+        <!-- Lo que el asistente contesta a «¿cuánto vale el domicilio?»: un rango, no barrio por barrio. -->
+        @if (config(); as cfg) {
+          <div class="bdj__auto" role="group" aria-label="Valor del domicilio">
+            <span class="bdj__auto-etq">Domicilio $</span>
+            <input
+              type="number"
+              class="bdj__auto-min bdj__auto-min--pesos"
+              min="0"
+              step="500"
+              placeholder="7000"
+              aria-label="Valor mínimo del domicilio en pesos"
+              [ngModel]="domicilioMin()"
+              (ngModelChange)="domicilioMin.set($event === '' ? null : $event)"
+              [disabled]="!cfg.puede_editar"
+            />
+            <span class="bdj__auto-etq">a $</span>
+            <input
+              type="number"
+              class="bdj__auto-min bdj__auto-min--pesos"
+              min="0"
+              step="500"
+              placeholder="9000"
+              aria-label="Valor máximo del domicilio en pesos (opcional)"
+              [ngModel]="domicilioMax()"
+              (ngModelChange)="domicilioMax.set($event === '' ? null : $event)"
+              [disabled]="domicilioMin() === null || !cfg.puede_editar"
+            />
+            <input
+              type="text"
+              class="bdj__auto-min bdj__auto-min--nota"
+              maxlength="200"
+              placeholder="Nota: fuera de la ciudad, desde $10.000"
+              aria-label="Nota sobre el domicilio (opcional)"
+              [ngModel]="domicilioNota()"
+              (ngModelChange)="domicilioNota.set($event ?? '')"
+              [disabled]="!cfg.puede_editar"
+            />
+            @if (domicilioSucio()) {
+              <button
+                type="button"
+                class="bdj__auto-guardar"
+                [disabled]="!domicilioValido() || guardandoDomicilio()"
+                (click)="guardarDomicilio()"
+              >
+                Guardar
+              </button>
+            }
+          </div>
+        }
+  
+        <h3 class="bdj-cfg__titulo">Información para el asistente</h3>
+        @if (config(); as cfg) {
+          <div class="bdj__info" role="group" aria-label="Información para el asistente">
+            <label class="bdj__info-etq" for="bdj-info-asistente">
+              Lo que el asistente puede decirle a tus clientes: número de Nequi o cuenta para
+              transferir, si reciben efectivo o datáfono, zonas a las que llegan… (el valor del
+              domicilio va en su propio apartado, arriba). Sin esto, el asistente le pasa la pregunta
+              a una persona.
+            </label>
+            <textarea
+              id="bdj-info-asistente"
+              class="bdj__info-texto"
+              rows="4"
+              maxlength="1500"
+              placeholder="Ej.: Nequi 300 123 4567 a nombre de Zona Burger. Recibimos efectivo y Nequi."
+              [ngModel]="infoTexto()"
+              (ngModelChange)="infoTexto.set($event)"
+              [disabled]="!cfg.puede_editar"
+            ></textarea>
+            <div class="bdj__info-pie">
+              <span>{{ infoTexto().length }}/1500</span>
+              @if (infoSucia()) {
+                <button
+                  type="button"
+                  class="bdj__auto-guardar"
+                  [disabled]="guardandoInfo()"
+                  (click)="guardarInfo()"
+                >
+                  Guardar
+                </button>
+              }
+            </div>
+          </div>
+        }
+  
+      </div>
     </div>
   </div>
 }

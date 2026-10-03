@@ -19,7 +19,7 @@ import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-  Flag, ShieldAlert, MessageCircle, User, FileText,
+  Flag, ShieldAlert, MessageCircle, User, FileText, Settings,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -132,7 +132,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle, User, FileText,
+        Flag, ShieldAlert, MessageCircle, User, FileText, Settings,
       }),
     },
   ],
@@ -266,6 +266,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
   // Pagos, Nequi, valor del domicilio…: lo que ninguna tabla dice y el cliente pregunta. El
   // asistente la lee con `consultar_info_negocio`. Vacío = no se le dice nada extra.
   readonly infoAbierta = signal(false);
+  /** La ventana «Configuración del asistente» (vuelve tras, entrega, domicilio, info). */
+  readonly configAbierta = signal(false);
   readonly infoTexto = signal('');
   readonly guardandoInfo = signal(false);
   readonly infoSucia = computed(() => {

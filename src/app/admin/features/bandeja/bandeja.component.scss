@@ -1258,3 +1258,47 @@
   padding: 0.875rem 1.25rem;
   border-top: 1px solid var(--color-border);
 }
+
+/* ── Ventana «Configuración del asistente» ───────────────────────── */
+.bdj-cfg {
+  width: min(36rem, 100%);
+
+  .bdj-modal__body {
+    gap: 0.375rem;
+  }
+
+  /* En la cabecera eran grupos en línea; aquí, cada uno en su renglón y sin el margen lateral. */
+  .bdj__auto {
+    display: flex;
+    margin: 0 0 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .bdj__info {
+    padding: 0;
+    border: none;
+    background: none;
+  }
+}
+
+.bdj-cfg__titulo {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.bdj-cfg__ayuda {
+  margin: 0 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.bdj-cfg__aviso {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-warning) 10%, var(--color-surface));
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+}
