@@ -61,6 +61,10 @@ export interface MensajeBandeja {
    * guarda: se pide con `BandejaService.archivoDeMensaje` y WhatsApp lo conserva 7 días.
    */
   media?: ArchivoMensaje | null;
+  /** Quien lo escribió lo editó desde WhatsApp: se muestra el texto nuevo y la marca «editado». */
+  editado?: boolean;
+  /** Quien lo escribió lo borró: el contenido ya no se guarda y se muestra «Mensaje eliminado». */
+  eliminado?: boolean;
 }
 
 export interface ArchivoMensaje {

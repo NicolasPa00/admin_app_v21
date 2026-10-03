@@ -511,3 +511,40 @@ describe('Bandeja — archivos del cliente', () => {
     expect(v.el.querySelector('.bdj__archivo-doc')?.textContent).toContain('factura.pdf');
   });
 });
+
+// Pedido del dueño (2026-10-02): en «Todos», las que esperan respuesta arriba y recuadradas; y los
+// mensajes editados o borrados desde WhatsApp se ven como tales.
+describe('Bandeja — esperan respuesta arriba, y mensajes editados/eliminados', () => {
+  it('en «Todos» la que espera va primero y lleva el recuadro', async () => {
+    const espera = base({ id_conversacion: 'c9', persona: 'Zoe Espera', escalada: true });
+    const v = await montar({ conversaciones: [CON_NOMBRE, SIN_NOMBRE, espera] });
+
+    const items = Array.from(v.el.querySelectorAll('.bdj__item'));
+    expect(items[0].querySelector('.bdj__item-quien')?.textContent?.trim()).toBe('Zoe Espera');
+    expect(items[0].classList.contains('bdj__item--espera')).toBe(true);
+    expect(items[1].classList.contains('bdj__item--espera')).toBe(false);
+  });
+
+  it('un mensaje editado dice «Editado»; uno eliminado no enseña su texto', async () => {
+    const m = (over: Partial<MensajeBandeja>): MensajeBandeja => ({
+      id_mensaje: 'x', direccion: 'entrante', canal: 'whatsapp', contenido: '', estado_entrega: null,
+      enviado_en: null, entregado_en: null, creado_en: '2026-10-02T21:43:00', ...over,
+    });
+    const v = await montar({
+      mensajes: [
+        m({ id_mensaje: 'e1', contenido: 'Si perfecto', editado: true }),
+        m({ id_mensaje: 'e2', contenido: '', eliminado: true }),
+      ],
+    });
+    (v.el.querySelector('.bdj__item') as HTMLElement).click();
+    v.tick();
+    await v.fixture.whenStable();
+    v.tick();
+
+    const hilo = v.el.querySelector('.bdj__mensajes')?.textContent ?? '';
+    expect(hilo).toContain('Si perfecto');
+    expect(hilo).toContain('Editado');
+    expect(hilo).toContain('Mensaje eliminado');
+    expect(hilo).not.toContain('[edit]');
+  });
+});

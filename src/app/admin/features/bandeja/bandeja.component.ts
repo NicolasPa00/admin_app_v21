@@ -338,10 +338,15 @@ export class BandejaComponent implements OnInit, OnDestroy {
   /** La búsqueda sí es local: filtra lo que ya está en pantalla, como la de WhatsApp. */
   readonly visibles = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
-    if (!q) return this.conversaciones();
-    return this.conversaciones().filter((c) =>
-      `${this.quien(c)} ${c.ultimo_texto ?? ''}`.toLowerCase().includes(q),
-    );
+    const lista = q
+      ? this.conversaciones().filter((c) =>
+          `${this.quien(c)} ${c.ultimo_texto ?? ''}`.toLowerCase().includes(q),
+        )
+      : this.conversaciones();
+    // Las que esperan respuesta, arriba (pedido del dueño, 2026-10-02). El servidor ya las manda
+    // así; se repite aquí porque el orden de `sort` es estable y conserva «la más reciente
+    // primero» dentro de cada grupo, pase lo que pase con la lista entre recargas.
+    return [...lista].sort((a, b) => Number(b.escalada) - Number(a.escalada));
   });
 
   readonly puedeEnviar = computed(

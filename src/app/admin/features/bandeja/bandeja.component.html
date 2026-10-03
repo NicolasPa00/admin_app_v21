@@ -353,6 +353,8 @@
                 type="button"
                 class="bdj__item"
                 [class.bdj__item--activa]="abierta() === c.id_conversacion"
+                [class.bdj__item--espera]="c.escalada && !soloEscaladas()"
+                [attr.aria-label]="c.escalada ? quien(c) + ' — espera respuesta' : null"
                 (click)="abrir(c)"
               >
                 <span class="bdj__avatar" [class.bdj__avatar--espera]="c.escalada">
@@ -570,10 +572,19 @@
                 @if (a.caption) {
                   <p class="bdj__msg-texto">{{ a.caption }}</p>
                 }
+              } @else if (m.eliminado) {
+                <!-- Lo borró quien lo escribió: el contenido ya no se guarda. -->
+                <p class="bdj__msg-texto bdj__msg-texto--eliminado">
+                  <lucide-icon name="ban" [size]="13" aria-hidden="true" />
+                  Mensaje eliminado
+                </p>
               } @else {
                 <p class="bdj__msg-texto">{{ m.contenido }}</p>
               }
               <span class="bdj__msg-pie">
+                @if (m.editado && !m.eliminado) {
+                  <em class="bdj__msg-editado">Editado ·</em>
+                }
                 {{ m.creado_en | date: 'HH:mm' }}
                 @if (etiquetaEntrega(m); as et) {
                   <em
