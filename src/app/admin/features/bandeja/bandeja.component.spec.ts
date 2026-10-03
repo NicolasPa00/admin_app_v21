@@ -525,14 +525,22 @@ describe('Bandeja — archivos del cliente', () => {
 // Pedido del dueño (2026-10-02): en «Todos», las que esperan respuesta arriba y recuadradas; y los
 // mensajes editados o borrados desde WhatsApp se ven como tales.
 describe('Bandeja — esperan respuesta arriba, y mensajes editados/eliminados', () => {
-  it('en «Todos» la que espera va primero y lleva el recuadro', async () => {
+  // El anclaje arriba se retiró el mismo día (2026-10-02): la lista va por fecha y la que espera
+  // se distingue solo por el recuadro.
+  it('en «Todos» la que espera NO se ancla arriba, pero lleva el recuadro', async () => {
     const espera = base({ id_conversacion: 'c9', persona: 'Zoe Espera', escalada: true });
     const v = await montar({ conversaciones: [CON_NOMBRE, SIN_NOMBRE, espera] });
 
     const items = Array.from(v.el.querySelectorAll('.bdj__item'));
-    expect(items[0].querySelector('.bdj__item-quien')?.textContent?.trim()).toBe('Zoe Espera');
-    expect(items[0].classList.contains('bdj__item--espera')).toBe(true);
-    expect(items[1].classList.contains('bdj__item--espera')).toBe(false);
+    expect(items[2].querySelector('.bdj__item-quien')?.textContent?.trim()).toBe('Zoe Espera');
+    expect(items[2].classList.contains('bdj__item--espera')).toBe(true);
+    expect(items[0].classList.contains('bdj__item--espera')).toBe(false);
+  });
+
+  it('«Esperan respuesta» está sobre la lista, no en la cabecera', async () => {
+    const v = await montar();
+    expect(v.el.querySelector('.bdj__lista-filtros .bdj__chip--espera')).toBeTruthy();
+    expect(v.el.querySelector('.bdj__top .bdj__chip--espera')).toBeFalsy();
   });
 
   it('un mensaje editado dice «Editado»; uno eliminado no enseña su texto', async () => {

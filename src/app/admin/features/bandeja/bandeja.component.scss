@@ -139,6 +139,13 @@
     background: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-surface));
   }
 
+  &__lista-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin: 0 0.875rem 0.5rem;
+  }
+
   &__buscador {
     display: flex;
     align-items: center;

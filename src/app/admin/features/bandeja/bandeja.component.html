@@ -92,18 +92,6 @@
           }
         </button>
       }
-      <button
-        type="button"
-        class="bdj__chip bdj__chip--espera"
-        [class.bdj__chip--on]="soloEscaladas()"
-        [class.bdj__chip--alerta]="escaladas() > 0"
-        (click)="alternarEscaladas()"
-      >
-        Esperan respuesta
-        @if (escaladas() > 0) {
-          <span class="bdj__contador bdj__contador--alerta">{{ escaladas() }}</span>
-        }
-      </button>
       <button type="button" class="bdj__icono" (click)="cargar()" aria-label="Actualizar">
         <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
       </button>
@@ -168,6 +156,23 @@
         [ngModel]="busqueda()"
         (ngModelChange)="busqueda.set($event)"
       />
+    </div>
+
+    <!-- «Esperan respuesta» sobre la lista que filtra, como estuvo hasta septiembre (pedido del
+         dueño, 2026-10-02): en la cabecera quedaba lejos de lo que filtra. -->
+    <div class="bdj__lista-filtros">
+      <button
+        type="button"
+        class="bdj__chip bdj__chip--espera"
+        [class.bdj__chip--on]="soloEscaladas()"
+        [class.bdj__chip--alerta]="escaladas() > 0"
+        (click)="alternarEscaladas()"
+      >
+        Esperan respuesta
+        @if (escaladas() > 0) {
+          <span class="bdj__contador bdj__contador--alerta">{{ escaladas() }}</span>
+        }
+      </button>
     </div>
 
     <div class="bdj__scroll">

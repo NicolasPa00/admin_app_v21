@@ -394,10 +394,9 @@ export class BandejaComponent implements OnInit, OnDestroy {
           `${this.quien(c)} ${c.ultimo_texto ?? ''}`.toLowerCase().includes(q),
         )
       : this.conversaciones();
-    // Las que esperan respuesta, arriba (pedido del dueño, 2026-10-02). El servidor ya las manda
-    // así; se repite aquí porque el orden de `sort` es estable y conserva «la más reciente
-    // primero» dentro de cada grupo, pase lo que pase con la lista entre recargas.
-    return [...lista].sort((a, b) => Number(b.escalada) - Number(a.escalada));
+    // Por fecha, como siempre: anclar arriba las que esperan respuesta se probó y se retiró el
+    // mismo día (2026-10-02) — muchas «esperaban» solo un «gracias». Se distinguen por el recuadro.
+    return lista;
   });
 
   readonly puedeEnviar = computed(
