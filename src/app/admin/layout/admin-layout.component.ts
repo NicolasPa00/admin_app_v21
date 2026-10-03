@@ -71,6 +71,8 @@ const COLLAPSE_KEY = 'admin_sidebar_collapsed';
 
 /** Dónde se recuerda que el usuario ya cerró el aviso de plan vencido. */
 const PLAN_AVISO_KEY = 'admin_plan_aviso_oculto';
+/** El aviso de impersonación reducido a pastilla, en esta pestaña (guarda el token de la sesión). */
+const IMPERSONACION_AVISO_KEY = 'admin_impersonacion_aviso_min';
 
 /** Cuántos accesos caben en la barra inferior del móvil; el resto va al panel «Más». */
 const ATAJOS_MOVIL = 4;
@@ -328,6 +330,35 @@ export class AdminLayoutComponent {
   protected logout(): void {
     this.cerrarMas();
     this.auth.logout();
+  }
+
+  /**
+   * El aviso de impersonación reducido a una pastilla. Por pestaña (sessionStorage): al abrir otra
+   * pestaña, o al impersonar a otra persona, vuelve a salir entero — es un aviso que importa.
+   */
+  protected readonly impersonacionMinimizada = signal(this.leerImpersonacionMinimizada());
+
+  protected minimizarImpersonacion(minimizar: boolean): void {
+    this.impersonacionMinimizada.set(minimizar);
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      if (minimizar) sessionStorage.setItem(IMPERSONACION_AVISO_KEY, this.auth.getAccessToken() ?? '');
+      else sessionStorage.removeItem(IMPERSONACION_AVISO_KEY);
+    } catch {
+      // Sin almacenamiento: el aviso vuelve a salir entero al recargar, que es lo seguro.
+    }
+  }
+
+  private leerImpersonacionMinimizada(): boolean {
+    if (!isPlatformBrowser(this.platformId)) return false;
+    try {
+      const guardado = sessionStorage.getItem(IMPERSONACION_AVISO_KEY);
+      const token = this.auth.getAccessToken();
+      // Atado al token: impersonar a otra persona es otra sesión y el aviso vuelve a salir.
+      return !!guardado && !!token && guardado === token;
+    } catch {
+      return false;
+    }
   }
 
   /** Termina la impersonación y vuelve a la sesión de super admin. */

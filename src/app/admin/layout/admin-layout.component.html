@@ -127,17 +127,41 @@
       </div>
     }
 
-    <!-- Banner de impersonación (super admin actuando como otro usuario) -->
+    <!-- Aviso de impersonación (super admin actuando como otro usuario). FLOTA sobre el contenido
+         en vez de empujarlo hacia abajo, y la X lo reduce a una pastilla: no desaparece del todo
+         porque «Volver a mi cuenta» no está en ningún otro sitio del panel. -->
     @if (isImpersonating()) {
-      <div class="adm__impersonation" role="status">
-        <span>
-          Estás usando el sistema como <strong>{{ displayName() }}</strong> (impersonación).
-        </span>
-        <button type="button" class="adm__impersonation-btn" (click)="stopImpersonation()">
-          <lucide-icon name="log-out" [size]="15" aria-hidden="true" />
-          Volver a mi cuenta
+      @if (!impersonacionMinimizada()) {
+        <div class="adm__impersonation" role="status">
+          <span>
+            Estás usando el sistema como <strong>{{ displayName() }}</strong> (impersonación).
+          </span>
+          <button type="button" class="adm__impersonation-btn" (click)="stopImpersonation()">
+            <lucide-icon name="log-out" [size]="15" aria-hidden="true" />
+            Volver a mi cuenta
+          </button>
+          <button
+            type="button"
+            class="adm__impersonation-cerrar"
+            aria-label="Ocultar el aviso de impersonación"
+            title="Ocultar"
+            (click)="minimizarImpersonacion(true)"
+          >
+            <lucide-icon name="x" [size]="16" aria-hidden="true" />
+          </button>
+        </div>
+      } @else {
+        <button
+          type="button"
+          class="adm__impersonation-pastilla"
+          [attr.aria-label]="'Estás usando el sistema como ' + displayName() + '. Ver opciones'"
+          [title]="'Estás usando el sistema como ' + displayName()"
+          (click)="minimizarImpersonacion(false)"
+        >
+          <lucide-icon name="log-out" [size]="14" aria-hidden="true" />
+          Como {{ displayName() }}
         </button>
-      </div>
+      }
     }
 
     <!-- Contenido -->

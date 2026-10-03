@@ -336,6 +336,48 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly escaladas = computed(() => this.conversaciones().filter((c) => c.escalada).length);
 
   /** La búsqueda sí es local: filtra lo que ya está en pantalla, como la de WhatsApp. */
+  // ── Conversaciones que esperan respuesta y YA se abrieron ──
+  // Pedido del dueño (2026-10-02): el recuadro de «espera respuesta» se quita al ABRIR la
+  // conversación, sin tener que contestar. Se recuerda el último mensaje visto: si el cliente
+  // vuelve a escribir, `ultimo_mensaje_en` cambia y el recuadro vuelve. Es una comodidad de quien
+  // mira (localStorage, por navegador): no cambia «Esperan respuesta» para nadie más.
+  private static readonly CLAVE_VISTAS = 'bandeja_vistas_v1';
+  private static readonly MAX_VISTAS = 300;
+  readonly vistas = signal<Record<string, string>>(this.leerVistas());
+
+  /** ¿Lleva el recuadro? Espera respuesta, estamos en «Todos» y no se ha abierto desde su último mensaje. */
+  recuadroEspera(c: ConversacionBandeja): boolean {
+    if (!c.escalada || this.soloEscaladas()) return false;
+    const visto = this.vistas()[c.id_conversacion];
+    return !visto || visto !== String(c.ultimo_mensaje_en ?? c.creado_en);
+  }
+
+  private marcarVista(c: ConversacionBandeja): void {
+    const marca = String(c.ultimo_mensaje_en ?? c.creado_en);
+    if (this.vistas()[c.id_conversacion] === marca) return;
+    const nuevas = { ...this.vistas(), [c.id_conversacion]: marca };
+    // Tope: las más viejas se olvidan (el orden de inserción de un objeto se conserva).
+    const claves = Object.keys(nuevas);
+    for (const k of claves.slice(0, Math.max(0, claves.length - BandejaComponent.MAX_VISTAS))) delete nuevas[k];
+    this.vistas.set(nuevas);
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      localStorage.setItem(BandejaComponent.CLAVE_VISTAS, JSON.stringify(nuevas));
+    } catch {
+      /* Sin almacenamiento: el recuadro vuelve a salir al recargar. */
+    }
+  }
+
+  private leerVistas(): Record<string, string> {
+    if (!isPlatformBrowser(this.platformId)) return {};
+    try {
+      const v = JSON.parse(localStorage.getItem(BandejaComponent.CLAVE_VISTAS) ?? '{}');
+      return v && typeof v === 'object' ? v : {};
+    } catch {
+      return {};
+    }
+  }
+
   readonly visibles = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
     const lista = q
@@ -672,6 +714,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
 
   abrir(conversacion: ConversacionBandeja): void {
     if (this.abierta() !== conversacion.id_conversacion) this.liberarArchivos();
+    this.marcarVista(conversacion);
     this.abierta.set(conversacion.id_conversacion);
     this.errorEnvio.set(null);
     this.borrador.set('');

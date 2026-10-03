@@ -283,16 +283,16 @@
     background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   }
 
-  /* En «Todos», las que esperan respuesta van arriba y RECUADRADAS, con el mismo tono que el
-     botón «Esperan respuesta» de la cabecera: se reconocen sin leer. En el filtro de escaladas
-     sobra (todas lo son), por eso solo se pone en «Todos». */
+  /* En «Todos», las que esperan respuesta y AÚN NO SE ABRIERON van recuadradas (se quita al
+     abrirlas). Con el color del sistema —el mismo del punto y del aro del avatar— y no con el
+     ámbar de advertencia: el ámbar sobre el fondo crema del panel no contrastaba (2026-10-02). */
   &__item--espera {
-    box-shadow: inset 0 0 0 1.5px var(--color-warning);
-    background: color-mix(in srgb, var(--color-warning) 7%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 6%, transparent);
     margin-bottom: 0.25rem;
 
     &:hover {
-      background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+      background: color-mix(in srgb, var(--color-primary) 11%, transparent);
     }
   }
 

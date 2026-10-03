@@ -353,7 +353,7 @@
                 type="button"
                 class="bdj__item"
                 [class.bdj__item--activa]="abierta() === c.id_conversacion"
-                [class.bdj__item--espera]="c.escalada && !soloEscaladas()"
+                [class.bdj__item--espera]="recuadroEspera(c)"
                 [attr.aria-label]="c.escalada ? quien(c) + ' — espera respuesta' : null"
                 (click)="abrir(c)"
               >

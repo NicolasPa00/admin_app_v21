@@ -325,18 +325,73 @@
   }
 }
 
-// ── Banner de impersonación ─────────────────────────────────
+// ── Aviso de impersonación (flotante) ───────────────────────
+// Flota ARRIBA, justo bajo la cabecera, centrado: antes era una banda que empujaba toda la
+// página. Arriba y no abajo porque abajo tapaba la caja de escribir de la Bandeja; bajo la
+// cabecera casi todas las pantallas tienen aire. Fondo sólido para leerse encima de cualquiera.
 .adm__impersonation {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--hdr-h) + var(--spacing-sm));
+  transform: translateX(-50%);
+  z-index: 150;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: color-mix(in srgb, var(--color-warning, #d97706) 15%, transparent);
+  gap: var(--spacing-sm) var(--spacing-md);
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  padding: var(--spacing-sm) var(--spacing-sm) var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 55%, var(--color-border));
+  border-radius: var(--radius-lg, 12px);
+  background: color-mix(in srgb, var(--color-warning, #d97706) 10%, var(--color-surface));
   color: var(--color-text);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 40%, transparent);
+  box-shadow: 0 8px 24px rgba(15, 10, 42, 0.18);
   font-size: 0.9rem;
+}
+
+.adm__impersonation-cerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary, var(--color-text));
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  }
+}
+
+// Reducido: una pastilla en el mismo sitio, que lo vuelve a abrir.
+.adm__impersonation-pastilla {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--hdr-h) + var(--spacing-sm));
+  transform: translateX(-50%);
+  z-index: 150;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  max-width: calc(100% - 2rem);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 1px solid color-mix(in srgb, var(--color-warning, #d97706) 55%, var(--color-border));
+  border-radius: var(--radius-full, 999px);
+  background: color-mix(in srgb, var(--color-warning, #d97706) 10%, var(--color-surface));
+  color: var(--color-text);
+  box-shadow: 0 4px 14px rgba(15, 10, 42, 0.16);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
 
 .adm__impersonation-btn {
@@ -479,6 +534,7 @@
   :host {
     --inf-h: 62px;
   }
+
 
   .adm__sidebar,
   .adm__overlay,

@@ -548,3 +548,25 @@ describe('Bandeja — esperan respuesta arriba, y mensajes editados/eliminados',
     expect(hilo).not.toContain('[edit]');
   });
 });
+
+// Pedido del dueño (2026-10-02): el recuadro se quita al ABRIR la conversación, sin contestar; y
+// vuelve si el cliente escribe algo nuevo.
+describe('Bandeja — el recuadro de «espera respuesta» se quita al abrir', () => {
+  afterEach(() => localStorage.removeItem('bandeja_vistas_v1'));
+
+  it('abrirla quita el recuadro; un mensaje nuevo del cliente lo devuelve', async () => {
+    localStorage.removeItem('bandeja_vistas_v1');
+    const espera = base({ id_conversacion: 'c9', persona: 'Zoe Espera', escalada: true, ultimo_mensaje_en: '2026-10-02T21:00:00' });
+    const v = await montar({ conversaciones: [espera, CON_NOMBRE] });
+    const primera = () => v.el.querySelector('.bdj__item') as HTMLElement;
+
+    expect(primera().classList.contains('bdj__item--espera')).toBe(true);
+    primera().click();
+    v.tick();
+    expect(primera().classList.contains('bdj__item--espera')).toBe(false);
+
+    // Llega otro mensaje del cliente: cambia ultimo_mensaje_en y el recuadro vuelve.
+    const c = v.fixture.componentInstance;
+    expect(c.recuadroEspera({ ...espera, ultimo_mensaje_en: '2026-10-02T21:05:00' })).toBe(true);
+  });
+});
