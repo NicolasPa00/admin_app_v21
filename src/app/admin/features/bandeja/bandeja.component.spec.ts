@@ -61,6 +61,7 @@ async function montar(
       puede_editar: boolean;
       tiempo_estimado_min?: number | null;
       tiempo_estimado_max?: number | null;
+      asistente_pausado?: boolean;
     };
     detalle?: OpcionesDetalle;
     mensajes?: MensajeBandeja[];
@@ -72,6 +73,9 @@ async function montar(
   );
   const guardarTiempoEstimado = vi.fn((id: number, min: number | null, max: number | null) =>
     of({ id_negocio: id, reactivar_asistente_min: 0, tiempo_estimado_min: min, tiempo_estimado_max: max }),
+  );
+  const pausarAsistente = vi.fn((_id: number, pausado: boolean) =>
+    of({ asistente_pausado: pausado, asistente_pausado_en: pausado ? '2026-10-04T20:45:00-05:00' : null }),
   );
   const responder = vi.fn(() => of({ id_mensaje: 'm1', estado_conversacion: 'handoff_humano', estado_entrega: 'pendiente' }));
   const conversaciones = opts.conversaciones ?? [CON_NOMBRE, SIN_NOMBRE, SIN_NADA];
@@ -99,6 +103,7 @@ async function montar(
             of({ id_negocio: idNegocio, ...(opts.config ?? { reactivar_asistente_min: 0, puede_editar: true }) }),
           guardarConfiguracion,
           guardarTiempoEstimado,
+          pausarAsistente,
         },
       },
     ],
@@ -108,7 +113,7 @@ async function montar(
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, tick: () => fixture.detectChanges() };
+  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, tick: () => fixture.detectChanges() };
 }
 
 /** Desde 2026-10-02 los ajustes del asistente viven en la ventana «Configuración del asistente». */
@@ -605,5 +610,33 @@ describe('Bandeja — Configuración del asistente', () => {
     expect(ventana?.textContent).toContain('Tiempo de entrega');
     expect(ventana?.textContent).toContain('Valor del domicilio');
     expect(ventana?.textContent).toContain('Información para el asistente');
+  });
+});
+
+describe('Bandeja — pausa de emergencia del asistente', () => {
+  const boton = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('button')).find((b) => /asistente$/.test(b.textContent!.trim()) && /Pausar|Reanudar/.test(b.textContent!)) as HTMLButtonElement;
+
+  it('un clic lo pausa y aparece la franja', async () => {
+    const v = await montar();
+    expect(v.el.querySelector('.bdj__pausa')).toBeFalsy();
+    boton(v.el).click();
+    v.tick();
+    expect(v.pausarAsistente).toHaveBeenCalledWith(1, true);
+    expect(v.el.querySelector('.bdj__pausa')?.textContent).toContain('El asistente está en pausa');
+    expect(boton(v.el).textContent).toContain('Reanudar asistente');
+  });
+
+  it('en pausa, «Reanudar» de la franja lo reactiva', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true, asistente_pausado: true } });
+    (v.el.querySelector('.bdj__pausa-boton') as HTMLButtonElement).click();
+    v.tick();
+    expect(v.pausarAsistente).toHaveBeenCalledWith(1, false);
+    expect(v.el.querySelector('.bdj__pausa')).toBeFalsy();
+  });
+
+  it('quien no es administrador ve el botón deshabilitado', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: false } });
+    expect(boton(v.el).disabled).toBe(true);
   });
 });

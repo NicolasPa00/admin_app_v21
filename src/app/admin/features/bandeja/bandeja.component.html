@@ -57,6 +57,22 @@
           Gestionar número
         </button>
       }
+      <!-- Pausa de emergencia: un clic y el asistente deja de contestar (2026-10-04). -->
+      @if (config(); as cfg) {
+        <button
+          type="button"
+          class="bdj__chip"
+          [class.bdj__chip--pausa]="!pausado()"
+          [class.bdj__chip--on]="pausado()"
+          [disabled]="!cfg.puede_editar || cambiandoPausa()"
+          [attr.aria-pressed]="pausado()"
+          [title]="cfg.puede_editar ? '' : 'Solo un administrador del negocio puede pausar el asistente'"
+          (click)="alternarPausa()"
+        >
+          <lucide-icon [name]="pausado() ? 'play' : 'pause'" [size]="14" aria-hidden="true" />
+          {{ pausado() ? 'Reanudar asistente' : 'Pausar asistente' }}
+        </button>
+      }
       <!-- Los ajustes del asistente viven en su propia ventana (pedido del dueño, 2026-10-02):
            en la cabecera le quitaban altura a los mensajes. -->
       @if (config()) {
@@ -96,6 +112,20 @@
         <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
       </button>
     </div>
+    @if (pausado()) {
+      <div class="bdj__pausa" role="status">
+        <lucide-icon name="pause" [size]="16" aria-hidden="true" />
+        <span>
+          <strong>El asistente está en pausa</strong>@if (config()?.asistente_pausado_en; as desde) { desde las {{ desde | date: 'h:mm a' }}}. No le contesta a nadie. Los mensajes nuevos te llegan aquí, en «Esperan respuesta».
+        </span>
+        @if (config()?.puede_editar) {
+          <button type="button" class="bdj__pausa-boton" [disabled]="cambiandoPausa()" (click)="alternarPausa()">
+            <lucide-icon name="play" [size]="14" aria-hidden="true" />
+            Reanudar
+          </button>
+        }
+      </div>
+    }
     @if (prepAbierta()) {
       @if (preparacion(); as prep) {
         <section class="bdj__prep" aria-labelledby="bdj-prep-titulo">

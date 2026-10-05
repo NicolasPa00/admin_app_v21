@@ -113,6 +113,10 @@ export interface ConfiguracionReactivacion {
   domicilio_valor_max?: number | null;
   /** Lo que no cabe en el rango, p. ej. «Fuera de la ciudad, desde $10.000». */
   domicilio_nota?: string | null;
+  /** Pausa de emergencia: el asistente no contesta a nadie hasta que se reanude. */
+  asistente_pausado?: boolean;
+  /** Desde cuándo está en pausa (hora Bogotá). null si no lo está. */
+  asistente_pausado_en?: string | null;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }

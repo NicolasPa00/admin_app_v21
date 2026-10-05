@@ -20,7 +20,7 @@ import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-  Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone,
+  Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -133,7 +133,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone,
+        Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play,
       }),
     },
   ],
@@ -277,6 +277,37 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly configAbierta = signal(false);
   readonly infoTexto = signal('');
   readonly guardandoInfo = signal(false);
+
+  // ── Pausa de emergencia (2026-10-04: Zona Burger sin papas) ─────────────────────────────
+  readonly cambiandoPausa = signal(false);
+  readonly pausado = computed(() => this.config()?.asistente_pausado === true);
+
+  /** Pausa o reanuda el asistente de este negocio. Un clic: es para emergencias. */
+  alternarPausa(): void {
+    const c = this.config();
+    if (!c || !c.puede_editar || this.cambiandoPausa()) return;
+    const pausar = !this.pausado();
+    this.cambiandoPausa.set(true);
+    this.service.pausarAsistente(c.id_negocio, pausar).subscribe({
+      next: (r) => {
+        this.cambiandoPausa.set(false);
+        this.config.set({
+          ...c,
+          asistente_pausado: r?.asistente_pausado ?? pausar,
+          asistente_pausado_en: r?.asistente_pausado_en ?? null,
+        });
+        this.toast.exito(
+          pausar
+            ? 'Asistente en pausa: no le contesta a nadie. Los mensajes te llegan aquí.'
+            : 'El asistente volvió a contestar.',
+        );
+      },
+      error: (err) => {
+        this.cambiandoPausa.set(false);
+        this.toast.errorHttp(err, 'No se pudo cambiar la pausa del asistente.');
+      },
+    });
+  }
   readonly infoSucia = computed(() => {
     const c = this.config();
     if (!c) return false;

@@ -181,6 +181,22 @@ export class BandejaService {
       .pipe(map((res) => res.data ?? null));
   }
 
+  /**
+   * Pausa de emergencia del asistente (p. ej. se acabó un ingrediente): mientras dure, los
+   * mensajes llegan aquí en «Esperan respuesta» y el asistente no contesta a nadie.
+   */
+  pausarAsistente(
+    idNegocio: number,
+    pausado: boolean,
+  ): Observable<{ asistente_pausado: boolean; asistente_pausado_en: string | null } | null> {
+    return this.http
+      .post<ApiResponse<{ asistente_pausado: boolean; asistente_pausado_en: string | null }>>(
+        `${this.API}/intelligence/bandeja/asistente-pausa`,
+        { id_negocio: idNegocio, pausado },
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
   getConfiguracion(idNegocio: number): Observable<ConfiguracionReactivacion | null> {
     return this.http
       .get<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
