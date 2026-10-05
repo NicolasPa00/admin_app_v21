@@ -45,6 +45,36 @@ import {
  *   Ver README — se puede guardar refreshToken en localStorage,
  *   pero esto reduce la seguridad frente a XSS.
  */
+
+/**
+ * El `id_usuario` que lleva dentro un JWT, o `null` si no se puede leer.
+ *
+ * **No valida la firma y no hace falta:** quien valida es el backend en cada petición. Esto solo
+ * contesta «¿este token y estos datos guardados son de la misma persona?». Un token manipulado
+ * daría un `id_usuario` falso, pero con él no se consigue nada: el servidor lo rechaza igual.
+ * Lo que se evita es un desajuste accidental, no un ataque.
+ */
+function idUsuarioDelToken(token: string): number | null {
+  try {
+    const cuerpo = token.split('.')[1];
+    if (!cuerpo) return null;
+    const base64 = cuerpo.replace(/-/g, '+').replace(/_/g, '/');
+    const relleno = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const id = JSON.parse(atob(relleno))?.id_usuario;
+    return typeof id === 'number' ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** ¿Los datos de usuario guardados pertenecen al token guardado? */
+function metaCorrespondeAlToken(user: User, token: string): boolean {
+  const idDelToken = idUsuarioDelToken(token);
+  // Token ilegible: no se puede afirmar que correspondan, así que no se restaura.
+  if (idDelToken === null) return false;
+  return Number(user?.id_usuario) === idDelToken;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -106,6 +136,24 @@ export class AuthService {
       if (token && metaRaw) {
         try {
           const user: User = JSON.parse(metaRaw);
+
+          // El usuario guardado tiene que ser el DEL token guardado.
+          //
+          // `negocio_app` se sirve del mismo origen (escalapp.cloud/admin y /restaurante) y
+          // guarda su token bajo esta misma clave `app_token`. Entrar a la app de restaurante
+          // y volver aquí dejaba el token de una persona junto a los datos guardados de otra, y
+          // la consola arrancaba enseñando una identidad que no correspondía al token con el
+          // que iba a hablar con el backend. El caso simétrico en `negocio_app` dejó 1.705
+          // peticiones al negocio equivocado en la auditoría (módulo `authz`, 2026-10-04).
+          //
+          // Ante la duda se descarta, no se conserva: el backend es la fuente de verdad y
+          // volver a preguntarle cuesta una petición.
+          if (!metaCorrespondeAlToken(user, token)) {
+            localStorage.removeItem('app_user_meta');
+            this.limpiarImpersonacion();
+            return;
+          }
+
           this._accessToken.set(token);
           this.currentUser.set(user);
           this._impersonating.set(!!localStorage.getItem('admin_token'));
