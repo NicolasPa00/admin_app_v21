@@ -113,6 +113,10 @@ export interface ConfiguracionReactivacion {
   domicilio_valor_max?: number | null;
   /** Lo que no cabe en el rango, p. ej. «Fuera de la ciudad, desde $10.000». */
   domicilio_nota?: string | null;
+  /** Pausa de emergencia: el asistente no contesta a nadie hasta que se reanude. */
+  asistente_pausado?: boolean;
+  /** Desde cuándo está en pausa (hora Bogotá). null si no lo está. */
+  asistente_pausado_en?: string | null;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }
@@ -202,6 +206,100 @@ export interface PuntoPreparacion {
   /** `falta`: el asistente falla sin esto. `recomendado`: funciona, pero contesta «no sé». */
   estado: 'falta' | 'recomendado' | 'ok';
   por_que: string | null;
+}
+
+/** Un hallazgo del diagnóstico a fondo: qué pasa, por qué importa, dónde se arregla y con qué productos. */
+export interface HallazgoDiagnostico {
+  clave: string;
+  titulo: string;
+  estado: 'falta' | 'recomendado';
+  por_que: string;
+  donde: string;
+  /** Cuántos casos hay en total; `detalles` trae solo los primeros. */
+  total: number;
+  detalles: string[];
+}
+
+/** Diagnóstico a fondo de la carta para el asistente (reglas + prueba de su buscador). */
+export interface DiagnosticoAsistente {
+  tipo: string | null;
+  generado_en: string;
+  /** false en verticales que el diagnóstico todavía no cubre (hoy solo restaurante). */
+  aplica: boolean;
+  hallazgos: HallazgoDiagnostico[];
+  pruebas: { total: number; fallidas: number; hecha?: boolean };
+  criticos: number;
+  pendientes: number;
+}
+
+/** Un cambio que la IA propone para la carta. Es una sugerencia: nada se aplica solo. */
+export interface CambioRecomendado {
+  accion: 'renombrar' | 'separar' | 'describir' | 'revisar_precio' | 'ocultar' | 'otro';
+  /** Nombre actual del producto (o categoría) en la carta. */
+  producto: string;
+  /** En `renombrar`, el nombre nuevo; en las demás, qué hacer. */
+  propuesta: string;
+  motivo: string;
+  prioridad: 'alta' | 'media';
+}
+
+/** Recomendaciones redactadas por IA sobre la carta (fase 2 del diagnóstico). */
+export interface RecomendacionesAsistente {
+  aplica: boolean;
+  resumen: string;
+  cambios: CambioRecomendado[];
+  /** Lo que solo el negocio puede contestar (precios reales, sabores…). */
+  preguntas: string[];
+  generado_en?: string;
+  /** true si es el mismo análisis de hace un rato (la carta no cambió): no se volvió a cobrar. */
+  de_cache: boolean;
+}
+
+/** Los números de una ventana del informe del asistente. */
+export interface CifrasInforme {
+  conversaciones: number;
+  mensajes_entrantes: number;
+  turnos: number;
+  turnos_con_modelo: number;
+  pct_con_modelo: number;
+  pedidos: {
+    total: number;
+    de_carta: number;
+    por_chat: number;
+    pct_por_chat: number;
+    modelo_por_pedido_carta: number | null;
+    modelo_por_pedido_chat: number | null;
+  };
+}
+
+/** Una acción del informe: qué pasó, por qué importa, dónde se arregla y con qué casos. */
+export interface AccionInforme {
+  clave: string;
+  titulo: string;
+  por_que: string;
+  donde: string;
+  detalles: string[];
+}
+
+/** Cómo le fue al asistente con las conversaciones reales (fase 3 del diagnóstico). */
+export interface InformeAsistente {
+  dias: number;
+  desde: string;
+  hasta: string;
+  con_actividad: boolean;
+  actual: CifrasInforme;
+  anterior: CifrasInforme;
+  a_persona: { total: number; esperan_respuesta_ahora: number };
+  que_hacer: AccionInforme[];
+  /** Gasto en IA: es de EscalApp, solo viaja al super admin. */
+  costo?: {
+    usd: number;
+    usd_anterior: number;
+    llamadas: number;
+    usd_por_conversacion: number | null;
+    usd_por_pedido: number | null;
+    usd_proyeccion_mes: number;
+  };
 }
 
 export interface PreparacionAsistente {

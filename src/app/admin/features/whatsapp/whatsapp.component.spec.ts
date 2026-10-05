@@ -10,6 +10,18 @@ import { BandejaService } from '../../data-access/bandeja.service';
 import { Negocio } from '../../models/admin.models';
 import { WhatsappComponent } from './whatsapp.component';
 import { CanalWhatsappComponent } from '../canal-whatsapp/canal-whatsapp.component';
+import { AuthService } from '../../../auth/data-access/auth.service';
+import { User } from '../../../auth/models/auth.models';
+
+/** Por defecto, un super admin: todo lo de antes de 2026-10-04 se probaba así. */
+const SUPER: User = {
+  id_usuario: 1, primer_nombre: 'Ana', primer_apellido: 'Admin', email: 'a@a.co',
+  negocios: [], roles_globales: [{ id_rol: 1, descripcion: 'SUPER ADMINISTRADOR' }],
+};
+const cajeroDe = (...ids: number[]): User => ({
+  id_usuario: 9, primer_nombre: 'Caro', primer_apellido: 'Caja', email: 'c@c.co', roles_globales: [],
+  negocios: ids.map((id) => ({ id_negocio: id, nombre: 'N' + id, roles: [{ id_rol: 5, descripcion: 'CAJERO' }] })),
+});
 
 const negocio = (id: number, nombre: string, features?: string[]): Negocio =>
   ({ id_negocio: id, nombre, estado: 'A', features }) as Negocio;
@@ -19,6 +31,7 @@ async function montar<T>(
   negocios: Negocio[],
   conectado = false,
   query: Record<string, string> = {},
+  usuario: User = SUPER,
 ) {
   TestBed.configureTestingModule({
     imports: [comp],
@@ -29,6 +42,7 @@ async function montar<T>(
         useValue: { queryParamMap: of(convertToParamMap(query)), snapshot: { queryParamMap: convertToParamMap(query) } },
       },
       { provide: AdminService, useValue: { getMisNegociosUsuario: () => of(negocios).pipe(delay(5)) } },
+      { provide: AuthService, useValue: { currentUser: () => usuario } },
       {
         // La bandeja pide su lista al montarse; con un negocio conectado se renderiza de verdad.
         provide: BandejaService,
@@ -257,5 +271,31 @@ describe('CanalWhatsappComponent suelto (/admin/whatsapp/numero)', () => {
     expect(v.titulos()).toEqual(['Conectar WhatsApp']);
     expect(v.cabeceras()).toBe(1);
     expect(v.el.querySelectorAll('[role="tab"]').length).toBe(2);
+  });
+});
+
+describe('WhatsappComponent — el cajero (2026-10-04)', () => {
+  it('con el plan y número conectado: ve las conversaciones, sin «Gestionar número»', async () => {
+    const v = await montar(WhatsappComponent, [negocio(1, 'Zona', ['asistente_ia'])], true, {}, cajeroDe(1));
+    expect(v.el.querySelector('app-bandeja')).toBeTruthy();
+    expect(v.el.textContent).not.toContain('Gestionar número');
+  });
+
+  it('sin número conectado: le pide al administrador que lo conecte (no ve cómo conectarlo)', async () => {
+    const v = await montar(WhatsappComponent, [negocio(1, 'Zona', ['asistente_ia'])], false, {}, cajeroDe(1));
+    expect(v.el.textContent).toContain('Pídele al administrador');
+    expect(v.el.querySelector('app-canal-whatsapp')).toBeFalsy();
+  });
+
+  it('solo ve los negocios cuyo plan incluye WhatsApp', async () => {
+    const v = await montar(
+      WhatsappComponent,
+      [negocio(1, 'Con plan', ['asistente_ia']), negocio(2, 'Sin plan', [])],
+      true,
+      {},
+      cajeroDe(1, 2),
+    );
+    expect(v.el.textContent).not.toContain('Sin plan');
+    expect(v.el.textContent).not.toContain('Mejora tu plan');
   });
 });

@@ -61,8 +61,11 @@ async function montar(
       puede_editar: boolean;
       tiempo_estimado_min?: number | null;
       tiempo_estimado_max?: number | null;
+      asistente_pausado?: boolean;
     };
     detalle?: OpcionesDetalle;
+    /** El gasto en IA solo lo manda el backend al super admin. */
+    informeConCosto?: boolean;
     mensajes?: MensajeBandeja[];
     archivo?: (idConversacion: string, idMensaje: string) => unknown;
   } = {},
@@ -72,6 +75,46 @@ async function montar(
   );
   const guardarTiempoEstimado = vi.fn((id: number, min: number | null, max: number | null) =>
     of({ id_negocio: id, reactivar_asistente_min: 0, tiempo_estimado_min: min, tiempo_estimado_max: max }),
+  );
+  const pausarAsistente = vi.fn((_id: number, pausado: boolean) =>
+    of({ asistente_pausado: pausado, asistente_pausado_en: pausado ? '2026-10-04T20:45:00-05:00' : null }),
+  );
+  const getDiagnostico = vi.fn(() =>
+    of({
+      tipo: 'RESTAURANTE', generado_en: '2026-10-05T00:00:00Z', aplica: true, criticos: 1, pendientes: 2,
+      pruebas: { total: 75, fallidas: 1, hecha: true },
+      hallazgos: [
+        { clave: 'carta_precios', titulo: 'Precios que parecen un error', estado: 'falta', por_que: 'x', donde: 'Menú', total: 1, detalles: ['«Cigarra 400ml» vale $1'] },
+        { clave: 'busqueda_clientes', titulo: 'Formas de pedir que el asistente no entiende', estado: 'recomendado', por_que: 'y', donde: 'Menú', total: 14, detalles: ['Si escriben «gaseosa grande», el asistente no encuentra nada'] },
+      ],
+    }),
+  );
+  const pedirRecomendaciones = vi.fn((_id: number, _forzar: boolean) =>
+    of({
+      aplica: true, de_cache: false,
+      resumen: 'Hay nombres que no dicen qué son.',
+      cambios: [
+        { accion: 'renombrar', producto: 'cuatro', propuesta: 'Gaseosa Cuatro personal', motivo: 'El cliente pide «una gaseosa».', prioridad: 'alta' },
+      ],
+      preguntas: ['¿Cuál es el precio real de la Cigarra?'],
+    }),
+  );
+  const cifras = (conversaciones: number, pedidos: number) => ({
+    conversaciones, mensajes_entrantes: 900, turnos: 700, turnos_con_modelo: 400, pct_con_modelo: 57,
+    pedidos: { total: pedidos, de_carta: 28, por_chat: pedidos - 28, pct_por_chat: 70, modelo_por_pedido_carta: 2.5, modelo_por_pedido_chat: 5.6 },
+  });
+  const getInforme = vi.fn((_id: number, dias: number) =>
+    of({
+      dias, desde: '2026-09-28T00:00:00Z', hasta: '2026-10-05T00:00:00Z', con_actividad: true,
+      actual: cifras(199, 94), anterior: cifras(100, 47),
+      a_persona: { total: 25, esperan_respuesta_ahora: 14 },
+      que_hacer: [
+        { clave: 'busquedas_sin_resultado', titulo: 'Tus clientes pidieron 24 veces algo que el asistente no encuentra en la carta', por_que: 'x', donde: 'Menú', detalles: ['«salchilimon» (8 veces)'] },
+      ],
+      ...(opts.informeConCosto
+        ? { costo: { usd: 1.78, usd_anterior: 0, llamadas: 945, usd_por_conversacion: 0.009, usd_por_pedido: 0.019, usd_proyeccion_mes: 7.64 } }
+        : {}),
+    }),
   );
   const responder = vi.fn(() => of({ id_mensaje: 'm1', estado_conversacion: 'handoff_humano', estado_entrega: 'pendiente' }));
   const conversaciones = opts.conversaciones ?? [CON_NOMBRE, SIN_NOMBRE, SIN_NADA];
@@ -99,6 +142,10 @@ async function montar(
             of({ id_negocio: idNegocio, ...(opts.config ?? { reactivar_asistente_min: 0, puede_editar: true }) }),
           guardarConfiguracion,
           guardarTiempoEstimado,
+          pausarAsistente,
+          getDiagnostico,
+          pedirRecomendaciones,
+          getInforme,
         },
       },
     ],
@@ -108,7 +155,7 @@ async function montar(
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, tick: () => fixture.detectChanges() };
+  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, getDiagnostico, pedirRecomendaciones, getInforme, tick: () => fixture.detectChanges() };
 }
 
 /** Desde 2026-10-02 los ajustes del asistente viven en la ventana «Configuración del asistente». */
@@ -605,5 +652,173 @@ describe('Bandeja — Configuración del asistente', () => {
     expect(ventana?.textContent).toContain('Tiempo de entrega');
     expect(ventana?.textContent).toContain('Valor del domicilio');
     expect(ventana?.textContent).toContain('Información para el asistente');
+  });
+});
+
+describe('Bandeja — pausa de emergencia del asistente', () => {
+  const boton = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('button')).find((b) => /asistente$/.test(b.textContent!.trim()) && /Pausar|Reanudar/.test(b.textContent!)) as HTMLButtonElement;
+
+  it('un clic lo pausa y aparece la franja', async () => {
+    const v = await montar();
+    expect(v.el.querySelector('.bdj__pausa')).toBeFalsy();
+    boton(v.el).click();
+    v.tick();
+    expect(v.pausarAsistente).toHaveBeenCalledWith(1, true);
+    expect(v.el.querySelector('.bdj__pausa')?.textContent).toContain('El asistente está en pausa');
+    expect(boton(v.el).textContent).toContain('Reanudar asistente');
+  });
+
+  it('en pausa, «Reanudar» de la franja lo reactiva', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true, asistente_pausado: true } });
+    (v.el.querySelector('.bdj__pausa-boton') as HTMLButtonElement).click();
+    v.tick();
+    expect(v.pausarAsistente).toHaveBeenCalledWith(1, false);
+    expect(v.el.querySelector('.bdj__pausa')).toBeFalsy();
+  });
+
+  it('quien no es administrador ve el botón deshabilitado', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: false } });
+    expect(boton(v.el).disabled).toBe(true);
+  });
+});
+
+describe('Bandeja — diagnóstico a fondo de la carta', () => {
+  const abrirPanel = async (config: { reactivar_asistente_min: number; puede_editar: boolean }) => {
+    const v = await montar({ config });
+    v.fixture.componentInstance.prepAbierta.set(true);
+    v.tick();
+    return v;
+  };
+  const boton = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('button')).find((b) => /Revisar la carta a fondo/.test(b.textContent ?? '')) as HTMLButtonElement;
+
+  it('el administrador lo pide con un botón y ve los hallazgos con sus productos', async () => {
+    const v = await abrirPanel({ reactivar_asistente_min: 0, puede_editar: true });
+    expect(v.getDiagnostico).not.toHaveBeenCalled(); // bajo demanda: no al abrir la Bandeja
+    boton(v.el).click();
+    v.tick();
+    expect(v.getDiagnostico).toHaveBeenCalledWith(1);
+    const texto = v.el.querySelector('.bdj__diag')?.textContent ?? '';
+    expect(texto).toContain('2 puntos por mejorar');
+    expect(texto).toContain('probamos 75 formas de pedir');
+    expect(texto).toContain('«Cigarra 400ml» vale $1');
+    expect(texto).toContain('y 13 más');
+  });
+
+  it('quien no puede editar el negocio no ve el botón', async () => {
+    const v = await abrirPanel({ reactivar_asistente_min: 0, puede_editar: false });
+    expect(boton(v.el)).toBeUndefined();
+  });
+});
+
+describe('Bandeja — recomendaciones con IA sobre la carta', () => {
+  const botonCon = (el: HTMLElement, texto: RegExp) =>
+    Array.from(el.querySelectorAll('button')).find((b) => texto.test(b.textContent ?? '')) as HTMLButtonElement;
+
+  it('solo se ofrece después del diagnóstico, y enseña «hoy → sugerido» con las preguntas', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    v.fixture.componentInstance.prepAbierta.set(true);
+    v.tick();
+    expect(botonCon(v.el, /recomendaciones con IA/)).toBeUndefined();
+
+    botonCon(v.el, /Revisar la carta a fondo/).click();
+    v.tick();
+    botonCon(v.el, /recomendaciones con IA/).click();
+    v.tick();
+
+    expect(v.pedirRecomendaciones).toHaveBeenCalledWith(1, false);
+    const texto = v.el.querySelector('.bdj__ia')?.textContent ?? '';
+    expect(texto).toContain('Cambiar el nombre');
+    expect(texto).toContain('cuatro');
+    expect(texto).toContain('Gaseosa Cuatro personal');
+    expect(texto).toContain('¿Cuál es el precio real de la Cigarra?');
+    expect(texto).toContain('nada cambia hasta que lo edites en Menú');
+
+    // «Analizar otra vez» fuerza un análisis nuevo.
+    botonCon(v.el, /Analizar otra vez/).click();
+    expect(v.pedirRecomendaciones).toHaveBeenLastCalledWith(1, true);
+  });
+});
+
+describe('Bandeja — informe con las conversaciones reales', () => {
+  const boton = (el: HTMLElement, texto: RegExp) =>
+    Array.from(el.querySelectorAll('button')).find((b) => texto.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
+
+  it('se pide al abrirlo (no antes) y enseña cifras, comparación y qué hacer', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    expect(v.getInforme).not.toHaveBeenCalled();
+    boton(v.el, /^Informe$/).click();
+    v.tick();
+    expect(v.getInforme).toHaveBeenCalledWith(1, 7);
+    const texto = v.el.querySelector('.bdj__informe')?.textContent ?? '';
+    expect(texto).toContain('199');
+    expect(texto).toContain('+99 % frente al periodo anterior');
+    expect(texto).toContain('desde la carta digital');
+    expect(texto).toContain('14 esperan respuesta ahora');
+    expect(texto).toContain('«salchilimon» (8 veces)');
+    expect(texto).not.toContain('gasto en IA'); // el negocio no ve lo que le cuesta la IA a EscalApp
+  });
+
+  it('30 días vuelve a pedirlo con ese periodo', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    boton(v.el, /^Informe$/).click();
+    v.tick();
+    boton(v.el, /^30 días$/).click();
+    v.tick();
+    expect(v.getInforme).toHaveBeenLastCalledWith(1, 30);
+  });
+
+  it('el super admin ve además el gasto en IA', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true }, informeConCosto: true });
+    boton(v.el, /^Informe$/).click();
+    v.tick();
+    const texto = v.el.querySelector('.bdj__informe')?.textContent ?? '';
+    expect(texto).toContain('gasto en IA');
+    expect(texto).toContain('1.78');
+    expect(texto).toContain('7.64');
+  });
+
+  it('quien no puede editar el negocio no ve el botón', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: false } });
+    expect(boton(v.el, /^Informe$/)).toBeUndefined();
+  });
+});
+
+describe('Bandeja — la revisión y el informe son ventanas, no paneles en la cabecera', () => {
+  // 2026-10-05: como panel dentro de la cabecera (alto fijo) el diagnóstico crecía fuera de la
+  // pantalla y no se podía hacer scroll. El cuerpo del modal es el que hace scroll.
+  it('«Asistente listo» abre un modal con cuerpo desplazable, fuera de la cabecera', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    const chip = Array.from(v.el.querySelectorAll('button')).find((b) => /Asistente listo/.test(b.textContent ?? '')) as HTMLButtonElement;
+    chip.click();
+    v.tick();
+
+    const dialogo = v.el.querySelector('[role="dialog"][aria-labelledby="bdj-rev-title"]') as HTMLElement;
+    expect(dialogo).toBeTruthy();
+    expect(dialogo.closest('.bdj-modal')).toBeTruthy();
+    expect(dialogo.closest('.bdj__top')).toBeNull(); // ya no vive en la cabecera
+    expect(dialogo.querySelector('.bdj-modal__body')).toBeTruthy();
+    expect(v.el.querySelector('.bdj__top .bdj__prep')).toBeNull();
+    expect(dialogo.textContent).toContain('Datos del negocio');
+    expect(dialogo.textContent).toContain('¿Tu carta está lista para el asistente?');
+  });
+
+  it('se cierra con la X y al pulsar fuera', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    v.fixture.componentInstance.prepAbierta.set(true);
+    v.tick();
+    (v.el.querySelector('.bdj-modal') as HTMLElement).click();
+    v.tick();
+    expect(v.el.querySelector('[aria-labelledby="bdj-rev-title"]')).toBeNull();
+  });
+
+  it('el informe también es un modal', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    v.fixture.componentInstance.alternarInforme();
+    v.tick();
+    const dialogo = v.el.querySelector('[role="dialog"][aria-labelledby="bdj-inf-title"]') as HTMLElement;
+    expect(dialogo).toBeTruthy();
+    expect(dialogo.closest('.bdj__top')).toBeNull();
   });
 });

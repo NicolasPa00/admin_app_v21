@@ -1,5 +1,5 @@
 import { Routes }    from '@angular/router';
-import { adminGuard } from './guards/admin.guard';
+import { adminGuard, whatsappGuard } from './guards/admin.guard';
 import { authGuard } from '../auth/guards/auth.guard';
 
 /**
@@ -89,7 +89,8 @@ export const adminRoutes: Routes = [
         path: 'whatsapp',
         loadComponent: () =>
           import('./features/whatsapp/whatsapp.component').then((m) => m.WhatsappComponent),
-        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        // Administrador, o cajero si el plan de su negocio incluye WhatsApp (2026-10-04).
+        canActivate: [whatsappGuard()],
         title: 'WhatsApp',
       },
       {
@@ -129,6 +130,21 @@ export const adminRoutes: Routes = [
           ),
         canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
         title: 'Intelligence',
+      },
+      {
+        // Terceros: lo que se les paga a OpenAI (IA) y a Meta (WhatsApp), saldo y recargas.
+        // Solo super admin — esos costos son de EscalApp, no del cliente.
+        path: 'terceros',
+        loadComponent: () =>
+          import('./features/consumo-ia/consumo-ia.component').then((m) => m.ConsumoIaComponent),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Consumo de terceros',
+      },
+      {
+        // Nombre con el que nació (2026-10-04), antes de sumar WhatsApp.
+        path: 'consumo-ia',
+        redirectTo: 'terceros',
+        pathMatch: 'full',
       },
       {
         // Mis pagos: la mensualidad vista por el DUEÑO del negocio. No es de super admin — el

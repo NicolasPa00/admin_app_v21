@@ -46,6 +46,8 @@ export interface UserNegocio {
   plan_activo?: boolean;
   /** Detalle del plan: vencimiento y días de gracia. */
   plan?: EstadoPlan | null;
+  /** Lo que incluye el plan (p. ej. `asistente_ia` = WhatsApp). Ausente en sesiones viejas. */
+  features?: string[];
 }
 
 /**

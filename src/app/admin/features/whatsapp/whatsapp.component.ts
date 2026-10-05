@@ -29,6 +29,8 @@ import {
 } from 'lucide-angular';
 
 import { AdminService } from '../../data-access/admin.service';
+import { AuthService } from '../../../auth/data-access/auth.service';
+import { ADMINISTRADOR_ROL, CAJERO_ROL, esSuperAdmin } from '../../guards/admin.guard';
 import { CanalWhatsappService } from '../../data-access/canalWhatsapp.service';
 import { BandejaComponent } from '../bandeja/bandeja.component';
 import { CanalWhatsappComponent } from '../canal-whatsapp/canal-whatsapp.component';
@@ -46,6 +48,8 @@ interface NegocioWhatsapp {
   conectado: boolean;
   /** ¿Su plan incluye el asistente? Sin dato del backend se da por sí: no se bloquea a nadie. */
   habilitado: boolean;
+  /** ¿Puede conectar o gestionar el número? Solo su administrador; el cajero solo conversa. */
+  administra: boolean;
 }
 
 /**
@@ -101,7 +105,7 @@ interface NegocioWhatsapp {
           <div>
             <h1 class="wa__titulo">
               <lucide-icon name="message-circle" [size]="20" aria-hidden="true" />
-              {{ habilitado() ? 'Conectar WhatsApp' : 'WhatsApp' }}
+              {{ habilitado() && actual()?.administra !== false ? 'Conectar WhatsApp' : 'WhatsApp' }}
             </h1>
             <p class="wa__sub">
               @if (habilitado()) {
@@ -170,9 +174,21 @@ interface NegocioWhatsapp {
         } @else if (enConversaciones()) {
           <app-bandeja
             [negocioFijo]="seleccion()"
-            [mostrarGestionarNumero]="true"
+            [mostrarGestionarNumero]="actual()?.administra !== false"
             (gestionarNumero)="vista.set('numero')"
           />
+        } @else if (actual()?.administra === false) {
+          <!-- Cajero en un negocio sin número conectado: no puede conectarlo, solo avisar. -->
+          <section class="wa__ancho-canal wa__mejora" aria-labelledby="wa-sin-numero-titulo">
+            <span class="wa__mejora-icono" aria-hidden="true">
+              <lucide-icon name="smartphone" [size]="22" />
+            </span>
+            <h2 id="wa-sin-numero-titulo" class="wa__mejora-titulo">Aún no hay WhatsApp conectado</h2>
+            <p class="wa__mejora-texto">
+              {{ actual()?.nombre }} todavía no tiene su número conectado. Pídele al administrador del
+              negocio que lo conecte; cuando esté listo, aquí verás las conversaciones.
+            </p>
+          </section>
         } @else {
           <app-canal-whatsapp
             [negocioInicial]="seleccion()"
@@ -335,6 +351,7 @@ interface NegocioWhatsapp {
 })
 export class WhatsappComponent implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly auth = inject(AuthService);
   private readonly canalService = inject(CanalWhatsappService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly route = inject(ActivatedRoute);
@@ -421,7 +438,11 @@ export class WhatsappComponent implements OnInit {
           negocios.length === 0
             ? of([] as NegocioWhatsapp[])
             : forkJoin(
-                negocios.map((n) => {
+                negocios
+                  // El cajero solo ve los negocios donde puede entrar: los de su plan con WhatsApp.
+                  // El administrador, todos los suyos (también los que tienen que mejorar el plan).
+                  .filter((n) => this.administra(n.id_negocio) || this.esCajeroConPlan(n))
+                  .map((n) => {
                   const habilitado = n.features?.includes(FEATURE_WHATSAPP) ?? true;
                   // Sin la feature no hay canal que consultar.
                   const conectado$ = habilitado
@@ -436,6 +457,7 @@ export class WhatsappComponent implements OnInit {
                       nombre: n.nombre,
                       conectado,
                       habilitado,
+                      administra: this.administra(n.id_negocio),
                     })),
                   );
                 }),
@@ -455,6 +477,21 @@ export class WhatsappComponent implements OnInit {
         },
         error: () => this.estado.set('error'),
       });
+  }
+
+  /** ¿Es administrador de ese negocio (o super admin)? Solo él gestiona el número. */
+  private administra(idNegocio: number): boolean {
+    const user = this.auth.currentUser();
+    if (esSuperAdmin(user)) return true;
+    const n = (user?.negocios ?? []).find((x) => x.id_negocio === idNegocio);
+    return (n?.roles ?? []).some((r) => r.descripcion.trim().toUpperCase().includes(ADMINISTRADOR_ROL));
+  }
+
+  /** ¿Es cajero de ese negocio y su plan incluye WhatsApp? (misma regla que el backend). */
+  private esCajeroConPlan(n: { id_negocio: number; features?: string[] }): boolean {
+    const deSesion = (this.auth.currentUser()?.negocios ?? []).find((x) => x.id_negocio === n.id_negocio);
+    const cajero = (deSesion?.roles ?? []).some((r) => r.descripcion.trim().toUpperCase() === CAJERO_ROL);
+    return cajero && (n.features ?? []).includes(FEATURE_WHATSAPP);
   }
 
   protected elegir(id: number): void {

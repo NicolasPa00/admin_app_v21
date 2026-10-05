@@ -7,6 +7,9 @@ import { ApiResponse } from '../../auth/models/auth.models';
 import {
   BandejaListado,
   ConfiguracionReactivacion,
+  DiagnosticoAsistente,
+  InformeAsistente,
+  RecomendacionesAsistente,
   PreparacionAsistente,
   ConversacionBandejaDetalle,
   ReportesConversacion,
@@ -177,6 +180,56 @@ export class BandejaService {
     return this.http
       .get<ApiResponse<PreparacionAsistente>>(`${this.API}/intelligence/bandeja/preparacion`, {
         params: { id_negocio: String(idNegocio) },
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Pausa de emergencia del asistente (p. ej. se acabó un ingrediente): mientras dure, los
+   * mensajes llegan aquí en «Esperan respuesta» y el asistente no contesta a nadie.
+   */
+  pausarAsistente(
+    idNegocio: number,
+    pausado: boolean,
+  ): Observable<{ asistente_pausado: boolean; asistente_pausado_en: string | null } | null> {
+    return this.http
+      .post<ApiResponse<{ asistente_pausado: boolean; asistente_pausado_en: string | null }>>(
+        `${this.API}/intelligence/bandeja/asistente-pausa`,
+        { id_negocio: idNegocio, pausado },
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Diagnóstico a fondo de la carta: reglas sobre nombres, precios y descripciones, y una prueba
+   * del buscador del asistente con las formas más comunes de pedir. Bajo demanda (tarda un poco).
+   */
+  getDiagnostico(idNegocio: number): Observable<DiagnosticoAsistente | null> {
+    return this.http
+      .get<ApiResponse<DiagnosticoAsistente>>(`${this.API}/intelligence/bandeja/diagnostico`, {
+        params: { id_negocio: String(idNegocio) },
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Recomendaciones con IA sobre la carta: qué renombrar, separar o describir. Solo recomienda.
+   * Tarda cerca de medio minuto; si la carta no cambió, devuelve el análisis anterior.
+   */
+  pedirRecomendaciones(idNegocio: number, forzar = false): Observable<RecomendacionesAsistente | null> {
+    return this.http
+      .post<ApiResponse<RecomendacionesAsistente>>(
+        `${this.API}/intelligence/bandeja/diagnostico/recomendaciones`,
+        { id_negocio: idNegocio, forzar },
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /** Informe del asistente con las conversaciones reales de los últimos `dias` (tarda unos segundos). */
+  getInforme(idNegocio: number, dias = 7): Observable<InformeAsistente | null> {
+    return this.http
+      .get<ApiResponse<InformeAsistente>>(`${this.API}/intelligence/bandeja/informe`, {
+        params: { id_negocio: String(idNegocio), dias: String(dias) },
       })
       .pipe(map((res) => res.data ?? null));
   }

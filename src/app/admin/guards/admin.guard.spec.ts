@@ -3,7 +3,7 @@ import { TestBed }    from '@angular/core/testing';
 import { Router }     from '@angular/router';
 import { signal }     from '@angular/core';
 
-import { adminGuard } from './admin.guard';
+import { adminGuard, veWhatsapp } from './admin.guard';
 import { AuthService } from '../../auth/data-access/auth.service';
 import { User }       from '../../auth/models/auth.models';
 
@@ -211,4 +211,15 @@ describe('adminGuard', () => {
 
     expect(result).toBe(true);
   });
+});
+
+describe('veWhatsapp (2026-10-04)', () => {
+  const conRol = (rol: string, features?: string[]) =>
+    buildUser({ negocios: [{ id_negocio: 6, nombre: 'Zona', roles: [{ id_rol: 1, descripcion: rol }], features }] });
+
+  it('el administrador siempre', () => expect(veWhatsapp(conRol('ADMINISTRADOR', []))).toBe(true));
+  it('el cajero con el plan de WhatsApp', () => expect(veWhatsapp(conRol('CAJERO', ['asistente_ia']))).toBe(true));
+  it('el cajero sin el plan, no', () => expect(veWhatsapp(conRol('CAJERO', []))).toBe(false));
+  it('el cajero con una sesión vieja (sin features), no', () => expect(veWhatsapp(conRol('CAJERO'))).toBe(false));
+  it('el mesero, nunca', () => expect(veWhatsapp(conRol('MESERO', ['asistente_ia']))).toBe(false));
 });

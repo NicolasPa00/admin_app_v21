@@ -36,6 +36,44 @@ export function esAdministrador(user: User | null | undefined): boolean {
   return roles.includes(SUPER_ADMIN_ROL) || roles.includes(ADMINISTRADOR_ROL);
 }
 
+/** Cajero: entra a WhatsApp si el plan de su negocio lo incluye (2026-10-04). */
+export const CAJERO_ROL = 'CAJERO';
+/** La feature del plan que trae WhatsApp (ver `intelligence/core/features.js`). */
+export const FEATURE_WHATSAPP_PLAN = 'asistente_ia';
+
+/** ¿Es CAJERO en algún negocio cuyo plan incluye WhatsApp? */
+export function esCajeroConWhatsapp(user: User | null | undefined): boolean {
+  return (user?.negocios ?? []).some(
+    (n) =>
+      (n.roles ?? []).some((r) => normalizar(r.descripcion) === CAJERO_ROL) &&
+      (n.features ?? []).includes(FEATURE_WHATSAPP_PLAN),
+  );
+}
+
+/**
+ * ¿Ve la vista de WhatsApp? El administrador siempre (es quien conecta el número); el cajero si el
+ * plan de su negocio lo incluye. El backend aplica la misma regla en cada petición.
+ */
+export function veWhatsapp(user: User | null | undefined): boolean {
+  return esAdministrador(user) || esCajeroConWhatsapp(user);
+}
+
+/** Protege `/admin/whatsapp` con `veWhatsapp`. Misma forma que `adminGuard`. */
+export function whatsappGuard(): CanActivateFn {
+  return () => {
+    if (!isPlatformBrowser(inject(PLATFORM_ID))) return true;
+    const authService = inject(AuthService);
+    const router = inject(Router);
+    if (!authService.isAuthenticated() || !authService.currentUser()) {
+      router.navigate(['/auth/login']);
+      return false;
+    }
+    if (veWhatsapp(authService.currentUser())) return true;
+    router.navigate(['/admin/dashboard']);
+    return false;
+  };
+}
+
 /**
  * adminGuard — Protege rutas del módulo Admin.
  *
