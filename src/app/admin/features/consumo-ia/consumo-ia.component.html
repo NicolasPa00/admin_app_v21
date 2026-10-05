@@ -1,6 +1,7 @@
 <!--
   Terceros (Super Admin): lo que se les paga a OpenAI (IA) y a Meta (WhatsApp).
-  Arriba lo que se mira todos los días; abajo una sección por proveedor.
+  Arriba el total del mes en pesos; debajo una pestaña por proveedor, cada una en su moneda
+  (OpenAI en dólares, Meta en pesos), marcada siempre con su etiqueta USD / COP.
 -->
 <div class="cia">
 
@@ -65,622 +66,702 @@
 
   @if (estado() !== 'error' && datos(); as d) {
 
-    @if (d.aviso_oficial; as aviso) {
-      <div class="cia__banner cia__banner--aviso" role="status">
-        <lucide-icon name="triangle-alert" [size]="18" aria-hidden="true" />
-        <div>
-          <strong>OpenAI no contestó; se muestra solo lo que gastó el bot según nuestra cuenta.</strong>
-          <span>
-            Puede faltar gasto hecho fuera del bot.
-            @if (aviso.code === 'OPENAI_ADMIN_KEY_FALTA') {
-              Falta la clave <code>OPENAI_ADMIN_KEY</code> en el servidor.
-            } @else if (aviso.code === 'OPENAI_ADMIN_KEY_RECHAZADA') {
-              OpenAI rechazó la clave de administrador: revisa que siga vigente.
-            } @else {
-              {{ aviso.mensaje }}
-            }
-          </span>
-        </div>
-      </div>
-    }
-
-    <!-- ── Titular ── -->
-    <section class="cia__hero" aria-label="Saldo y gasto">
-      <article class="cia__hero-item">
-        <p class="cia__hero-label">Pagado a terceros este mes</p>
+    <!-- ── Total del mes (lo único que mezcla monedas, y por eso va en pesos) ── -->
+    <section class="cia__total" aria-label="Pagado a terceros este mes">
+      <div class="cia__total-main">
+        <p class="cia__total-label">
+          Pagado a terceros este mes <span class="cia__cur cia__cur--cop">COP</span>
+        </p>
         @if (d.terceros.total_mes_cop !== null) {
-          <p class="cia__hero-value">{{ cop(d.terceros.total_mes_cop) }}</p>
-          <p class="cia__hero-note">
-            OpenAI {{ cop(d.terceros.openai_mes_cop) }} ({{ usd(d.terceros.openai_mes_usd) }})
-            · WhatsApp {{ cop(d.terceros.whatsapp_mes_cop) }}
-          </p>
+          <p class="cia__total-value">{{ cop(d.terceros.total_mes_cop) }}</p>
         } @else {
-          <p class="cia__hero-value">{{ usd(d.terceros.openai_mes_usd) }}</p>
-          <p class="cia__hero-note">
-            Solo OpenAI: {{ d.trm ? 'Meta no contestó' : 'sin TRM para sumar los pesos de WhatsApp' }}
-          </p>
+          <p class="cia__total-value cia__total-value--vacio">—</p>
         }
-      </article>
-
-      <article class="cia__hero-item">
-        <p class="cia__hero-label">Saldo de OpenAI</p>
-        @if (d.saldo; as s) {
-          <p class="cia__hero-value">{{ usd(s.saldo_estimado) }}</p>
-          <p class="cia__hero-note">
-            {{ usd(s.saldo_partida) }} el {{ fechaHora(s.fecha_partida) }}
-            @if (s.recargas_posteriores > 0) { + {{ usd(s.recargas_posteriores) }} en recargas }
-            − {{ usd(s.gasto_desde_partida) }} gastado
-          </p>
-        } @else {
-          <p class="cia__hero-value cia__hero-value--vacio">—</p>
-          <p class="cia__hero-note">Registra abajo el saldo que ves en OpenAI para empezar.</p>
-        }
-      </article>
-
-      <article class="cia__hero-item">
-        <p class="cia__hero-label">Te alcanza para</p>
-        @if (d.saldo?.dias_restantes != null) {
-          <p class="cia__hero-value">
-            {{ entero(d.saldo!.dias_restantes) }}
-            <span class="cia__hero-unit">{{ d.saldo!.dias_restantes === 1 ? 'día' : 'días' }}</span>
-          </p>
-          <p class="cia__hero-note">al ritmo de la última semana</p>
-        } @else {
-          <p class="cia__hero-value cia__hero-value--vacio">—</p>
-          <p class="cia__hero-note">
-            {{ d.saldo ? 'Aún no hay gasto con qué estimarlo' : 'Necesita el saldo de partida' }}
-          </p>
-        }
-      </article>
-
-      <article class="cia__hero-item">
-        <p class="cia__hero-label">Mensajes de WhatsApp este mes</p>
-        @if (d.whatsapp) {
-          <p class="cia__hero-value">{{ entero(mensajesMes()) }}</p>
-          <p class="cia__hero-note">
-            @if (numerosEnRiesgo().length) {
-              {{ numerosEnRiesgo().length }}
-              {{ numerosEnRiesgo().length === 1 ? 'número cerca' : 'números cerca' }}
-              o por encima de los gratis
-            } @else {
-              todos dentro de los 1.000 gratis por número
-            }
-          </p>
-        } @else {
-          <p class="cia__hero-value cia__hero-value--vacio">—</p>
-          <p class="cia__hero-note">Meta no contestó</p>
-        }
-      </article>
-    </section>
-
-    @if (d.trm) {
-      <p class="cia__trm">
-        Pesos calculados con la TRM del {{ d.trm.vigente_desde }}: {{ cop(d.trm.valor) }} por dólar.
-        Es una referencia: el banco cobra la tarjeta a su propia tasa.
-      </p>
-    }
-
-    @if (estadoSaldo(); as e) {
-      @if (e !== 'ok') {
-        <div
-          class="cia__banner"
-          [class.cia__banner--aviso]="e === 'aviso'"
-          [class.cia__banner--critico]="e === 'critico'"
-          role="alert"
-        >
-          <lucide-icon [name]="e === 'critico' ? 'alert-circle' : 'triangle-alert'" [size]="18" aria-hidden="true" />
-          <div>
-            <strong>{{ e === 'critico' ? 'Saldo casi agotado' : 'Saldo bajo' }}:</strong>
-            <span>
-              al ritmo actual alcanza para unos {{ d.saldo!.dias_restantes }} días. Cuando se acabe,
-              el bot deja de contestar con IA. Recarga en OpenAI y regístralo abajo.
-            </span>
-          </div>
-        </div>
-      }
-    }
-
-    <!-- ══════════════ OpenAI ══════════════ -->
-    <div class="cia__seccion">
-      <span class="cia__seccion-icon" aria-hidden="true"><lucide-icon name="bot" [size]="18" /></span>
-      <div>
-        <h2 class="cia__seccion-title">Inteligencia artificial · OpenAI</h2>
-        <p class="cia__seccion-desc">
-          Hoy {{ usd(d.resumen.hoy) }} · este mes {{ usd(d.resumen.mes) }} · a este ritmo
-          ~{{ usd(d.resumen.proyeccion_mes) }} cada 30 días. En dólares.
-        </p>
-      </div>
-    </div>
-
-    <!-- ── Gasto por día ── -->
-    <article class="cia__card">
-      <header class="cia__card-head">
-        <div>
-          <h2 class="cia__card-title">Gasto por día</h2>
-          <p class="cia__card-desc">
-            {{ d.aviso_oficial ? 'Lo que gastó el bot, según nuestra cuenta.' : 'Lo que cobra OpenAI cada día.' }}
-            Los días se cortan a las 7 p. m. de Colombia, como los cuenta OpenAI.
-          </p>
-        </div>
-        <div class="cia__card-total">
-          <span>{{ usd(d.aviso_oficial ? d.resumen.periodo_interno : d.resumen.periodo_oficial) }}</span>
-          <small>en {{ d.periodo.dias }} días</small>
-        </div>
-      </header>
-
-      <div class="cia__chart" (mouseleave)="hover.set(null)">
-        <div class="cia__axis" aria-hidden="true">
-          @for (m of ejeMarcas(); track $index) {
-            <span>{{ usd(m) }}</span>
-          }
-        </div>
-
-        <div class="cia__plot">
-          <div class="cia__grid" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </div>
-
-          <div class="cia__bars" role="list" aria-label="Gasto por día">
-            @for (p of serie(); track p.fecha; let i = $index) {
-              <div
-                class="cia__bar-slot"
-                role="listitem"
-                tabindex="0"
-                [attr.aria-label]="dia(p.fecha) + ': ' + usd(p.valor)"
-                (mouseenter)="hover.set(i)"
-                (focus)="hover.set(i)"
-                (blur)="hover.set(null)"
-              >
-                <div
-                  class="cia__bar"
-                  [class.is-hover]="hover() === i"
-                  [style.height.%]="altura(p.valor)"
-                ></div>
-              </div>
-            }
-          </div>
-
-          @if (puntoHover(); as p) {
-            <div
-              class="cia__tooltip"
-              [style.left.%]="((hover()! + 0.5) / serie().length) * 100"
-              [class.cia__tooltip--izq]="hover()! > serie().length / 2"
-              role="status"
-            >
-              <strong>{{ dia(p.fecha) }}</strong>
-              @if (p.oficial !== null) {
-                <span>Cobrado por OpenAI: <b>{{ usd(p.oficial) }}</b></span>
-              }
-              <span>Del bot (cuenta interna): <b>{{ usd(p.interno) }}</b></span>
-            </div>
-          }
-        </div>
-
-        <div class="cia__xlabels" aria-hidden="true">
-          @for (p of serie(); track p.fecha; let i = $index) {
-            <span>{{ i % cadaCuanto() === 0 ? dia(p.fecha) : '' }}</span>
-          }
-        </div>
       </div>
 
-      @if (d.resumen.periodo_oficial !== null) {
-        <p class="cia__footnote">
-          <lucide-icon name="info" [size]="14" aria-hidden="true" />
-          <span>
-            De {{ usd(d.resumen.periodo_oficial) }} cobrados, el bot registró
-            {{ usd(d.resumen.periodo_interno) }}.
-            @if ((fueraDelBot() ?? 0) >= 0.01) {
-              La diferencia ({{ usd(fueraDelBot()) }}) es gasto que nuestra cuenta no ve: pruebas,
-              otros computadores usando la clave, o partes de la tarifa que no estamos sumando.
+      <div class="cia__total-parts">
+        <div class="cia__total-part">
+          <span class="cia__total-part-label">
+            <lucide-icon name="bot" [size]="14" aria-hidden="true" /> OpenAI
+          </span>
+          <span class="cia__total-part-value">
+            {{ usd(d.terceros.openai_mes_usd) }}
+            @if (d.terceros.openai_mes_cop !== null) {
+              <small>≈ {{ cop(d.terceros.openai_mes_cop) }}</small>
             }
           </span>
-        </p>
-      }
-    </article>
+        </div>
+        <div class="cia__total-part">
+          <span class="cia__total-part-label">
+            <lucide-icon name="message-circle" [size]="14" aria-hidden="true" /> WhatsApp
+          </span>
+          <span class="cia__total-part-value">
+            {{ d.terceros.whatsapp_mes_cop !== null ? cop(d.terceros.whatsapp_mes_cop) : 'Meta no contestó' }}
+          </span>
+        </div>
+      </div>
 
-    <div class="cia__duo">
-      <!-- ── Por negocio ── -->
-      <article class="cia__card">
-        <header class="cia__card-head">
-          <div>
-            <h2 class="cia__card-title">Por negocio</h2>
-            <p class="cia__card-desc">Lo que cuesta atender a cada cliente, según nuestra cuenta.</p>
-          </div>
-        </header>
-        @if (d.por_negocio.length === 0) {
-          <p class="cia__empty">Ningún negocio usó IA en este periodo.</p>
+      <p class="cia__trm">
+        @if (d.trm) {
+          Dólares pasados a pesos con la TRM del {{ d.trm.vigente_desde }}: {{ cop(d.trm.valor) }}
+          por dólar. Es una referencia: el banco cobra la tarjeta a su propia tasa.
         } @else {
-          <ul class="cia__rank">
-            @for (n of d.por_negocio; track n.id_negocio) {
-              <li class="cia__rank-item">
-                <div class="cia__rank-top">
-                  <span class="cia__rank-name">{{ n.negocio ?? 'Negocio ' + n.id_negocio }}</span>
-                  <span class="cia__rank-value">{{ usd(n.costo_usd) }}</span>
-                </div>
-                <div class="cia__rank-track">
-                  <div class="cia__rank-fill" [style.width.%]="ancho(n.costo_usd, maxNegocio())"></div>
-                </div>
-                <p class="cia__rank-meta">
-                  {{ entero(n.conversaciones) }} conversaciones · {{ usdFino(n.costo_por_conversacion) }} c/u
-                </p>
-              </li>
-            }
-          </ul>
+          Sin TRM del día: no se pueden sumar los dólares de OpenAI con los pesos de Meta.
         }
-      </article>
-
-      <!-- ── En qué se va ── -->
-      <article class="cia__card">
-        <header class="cia__card-head">
-          <div>
-            <h2 class="cia__card-title">En qué se va</h2>
-            <p class="cia__card-desc">Cómo reparte OpenAI la factura del periodo.</p>
-          </div>
-        </header>
-        @if (d.aviso_oficial) {
-          <p class="cia__empty">Sin respuesta de OpenAI no hay desglose.</p>
-        } @else if (conceptos().length === 0) {
-          <p class="cia__empty">Sin gasto en este periodo.</p>
-        } @else {
-          <ul class="cia__rank">
-            @for (c of conceptos(); track c.modelo + c.parte) {
-              <li class="cia__rank-item">
-                <div class="cia__rank-top">
-                  <span class="cia__rank-name">
-                    {{ c.parte }} <small>{{ c.modelo }}</small>
-                  </span>
-                  <span class="cia__rank-value">{{ usd(c.usd) }}</span>
-                </div>
-                <div class="cia__rank-track">
-                  <div class="cia__rank-fill" [style.width.%]="ancho(c.usd, maxConcepto())"></div>
-                </div>
-              </li>
-            }
-          </ul>
-        }
-      </article>
-    </div>
-
-    <!-- ── Mensajes ── -->
-    <section class="cia__tiles" aria-label="Mensajes contestados">
-      <article class="cia__tile">
-        <p class="cia__tile-value">{{ entero(d.turnos.total) }}</p>
-        <p class="cia__tile-label">mensajes contestados por el asistente</p>
-      </article>
-      <article class="cia__tile">
-        <p class="cia__tile-value">{{ pctSinIa() === null ? '—' : pctSinIa() + ' %' }}</p>
-        <p class="cia__tile-label">contestados <b>sin gastar IA</b> (respuestas automáticas)</p>
-      </article>
-      <article class="cia__tile">
-        <p class="cia__tile-value">{{ entero(d.conversaciones.con_ia) }}</p>
-        <p class="cia__tile-label">conversaciones que usaron IA</p>
-      </article>
-      <article class="cia__tile">
-        <p class="cia__tile-value">{{ usdFino(d.conversaciones.costo_promedio) }}</p>
-        <p class="cia__tile-label">costo promedio por conversación</p>
-      </article>
+      </p>
     </section>
 
-    <!-- ══════════════ WhatsApp ══════════════ -->
-    <div class="cia__seccion">
-      <span class="cia__seccion-icon" aria-hidden="true">
-        <lucide-icon name="message-circle" [size]="18" />
-      </span>
-      <div>
-        <h2 class="cia__seccion-title">WhatsApp · Meta</h2>
-        <p class="cia__seccion-desc">
-          Meta cobra por mensaje que envía el negocio; las primeras 1.000 respuestas a clientes de
-          cada número son gratis cada mes. Cada cuenta paga lo suyo: la de EscalApp la pagas tú,
-          las que conectó el cliente las paga el cliente con su tarjeta.
-        </p>
-      </div>
+    <!-- ── Pestañas ── -->
+    <div class="cia__tabs" role="tablist" aria-label="Proveedor">
+      <button
+        type="button"
+        role="tab"
+        id="tab-openai"
+        class="cia__tab"
+        [class.is-active]="pestana() === 'openai'"
+        [attr.aria-selected]="pestana() === 'openai'"
+        aria-controls="panel-openai"
+        (click)="cambiarPestana('openai')"
+      >
+        <lucide-icon name="bot" [size]="16" aria-hidden="true" />
+        OpenAI
+        <span class="cia__cur cia__cur--usd">USD</span>
+        @if (alertaOpenai()) {
+          <span class="cia__tab-alerta" title="Hay un aviso en esta pestaña">
+            <lucide-icon name="triangle-alert" [size]="14" aria-hidden="true" />
+            <span class="sr-only">(hay un aviso)</span>
+          </span>
+        }
+      </button>
+      <button
+        type="button"
+        role="tab"
+        id="tab-meta"
+        class="cia__tab"
+        [class.is-active]="pestana() === 'meta'"
+        [attr.aria-selected]="pestana() === 'meta'"
+        aria-controls="panel-meta"
+        (click)="cambiarPestana('meta')"
+      >
+        <lucide-icon name="message-circle" [size]="16" aria-hidden="true" />
+        WhatsApp · Meta
+        <span class="cia__cur cia__cur--cop">COP</span>
+        @if (alertaMeta()) {
+          <span class="cia__tab-alerta" title="Hay un aviso en esta pestaña">
+            <lucide-icon name="triangle-alert" [size]="14" aria-hidden="true" />
+            <span class="sr-only">(hay un aviso)</span>
+          </span>
+        }
+      </button>
     </div>
 
-    @if (d.aviso_whatsapp; as aviso) {
-      <div class="cia__banner cia__banner--aviso" role="status">
-        <lucide-icon name="triangle-alert" [size]="18" aria-hidden="true" />
-        <div>
-          <strong>Meta no contestó.</strong>
-          <span>{{ aviso.mensaje }}</span>
-        </div>
-      </div>
-    }
+    <!-- ══════════════ Pestaña OpenAI ══════════════ -->
+    @if (pestana() === 'openai') {
+      <div class="cia__panel" role="tabpanel" id="panel-openai" aria-labelledby="tab-openai">
 
-    @if (d.whatsapp; as w) {
-      @for (n of numerosEnRiesgo(); track n.telefono) {
-        <div
-          class="cia__banner"
-          [class.cia__banner--aviso]="estadoCuota(n) === 'aviso'"
-          [class.cia__banner--critico]="estadoCuota(n) === 'pasada'"
-          role="alert"
-        >
-          <lucide-icon
-            [name]="estadoCuota(n) === 'pasada' ? 'alert-circle' : 'triangle-alert'"
-            [size]="18"
-            aria-hidden="true"
-          />
-          <div>
-            <strong>{{ n.negocio ?? n.cuenta }}:</strong>
-            @if (estadoCuota(n) === 'pasada') {
+        @if (d.aviso_oficial; as aviso) {
+          <div class="cia__banner cia__banner--aviso" role="status">
+            <lucide-icon name="triangle-alert" [size]="18" aria-hidden="true" />
+            <div>
+              <strong>OpenAI no contestó; se muestra solo lo que gastó el bot según nuestra cuenta.</strong>
               <span>
-                pasó los {{ entero(n.gratis_limite) }} mensajes gratis del mes
-                ({{ entero(n.servicio_mes) }}). Desde aquí Meta cobra cada mensaje
-                @if (n.paga === 'cliente') {
-                  a la cuenta del cliente: si no tiene tarjeta, los mensajes pueden empezar a fallar.
+                Puede faltar gasto hecho fuera del bot.
+                @if (aviso.code === 'OPENAI_ADMIN_KEY_FALTA') {
+                  Falta la clave <code>OPENAI_ADMIN_KEY</code> en el servidor.
+                } @else if (aviso.code === 'OPENAI_ADMIN_KEY_RECHAZADA') {
+                  OpenAI rechazó la clave de administrador: revisa que siga vigente.
                 } @else {
-                  a la cuenta de EscalApp.
+                  {{ aviso.mensaje }}
                 }
               </span>
+            </div>
+          </div>
+        }
+
+        <section class="cia__hero" aria-label="Saldo y gasto de OpenAI">
+          <article class="cia__hero-item">
+            <p class="cia__hero-label">Saldo estimado <span class="cia__cur cia__cur--hero">USD</span></p>
+            @if (d.saldo; as s) {
+              <p class="cia__hero-value">{{ usd(s.saldo_estimado) }}</p>
+              <p class="cia__hero-note">
+                {{ usd(s.saldo_partida) }} el {{ fechaHora(s.fecha_partida) }}
+                @if (s.recargas_posteriores > 0) { + {{ usd(s.recargas_posteriores) }} en recargas }
+                − {{ usd(s.gasto_desde_partida) }} gastado después
+              </p>
             } @else {
-              <span>
-                va en {{ entero(n.servicio_mes) }} de {{ entero(n.gratis_limite) }} mensajes gratis
-                del mes. Al pasarlos, Meta cobra
-                @if (n.paga === 'cliente') {
-                  a la cuenta del cliente: conviene confirmar que tenga tarjeta.
-                } @else {
-                  a la cuenta de EscalApp.
-                }
-              </span>
+              <p class="cia__hero-value cia__hero-value--vacio">—</p>
+              <p class="cia__hero-note">Registra abajo el saldo que ves en OpenAI para empezar.</p>
             }
-          </div>
-        </div>
-      }
+          </article>
 
-      <article class="cia__card">
-        <header class="cia__card-head">
-          <div>
-            <h2 class="cia__card-title">Mensajes enviados por día</h2>
-            <p class="cia__card-desc">
-              Todos los números juntos, según Meta. Los días se cortan a la medianoche de Colombia.
-            </p>
-          </div>
-          <div class="cia__card-total">
-            <span>{{ entero(w.totales.mensajes_periodo) }}</span>
-            <small>mensajes en {{ d.periodo.dias }} días</small>
-          </div>
-        </header>
-
-        <div class="cia__chart" (mouseleave)="hoverWa.set(null)">
-          <div class="cia__axis" aria-hidden="true">
-            @for (m of ejeMarcasWa(); track $index) {
-              <span>{{ entero(m) }}</span>
+          <article class="cia__hero-item">
+            <p class="cia__hero-label">Te alcanza para</p>
+            @if (d.saldo?.dias_restantes != null) {
+              <p class="cia__hero-value">
+                {{ entero(d.saldo!.dias_restantes) }}
+                <span class="cia__hero-unit">{{ d.saldo!.dias_restantes === 1 ? 'día' : 'días' }}</span>
+              </p>
+              <p class="cia__hero-note">al ritmo de la última semana ({{ usd(d.promedio_diario_7d) }}/día)</p>
+            } @else {
+              <p class="cia__hero-value cia__hero-value--vacio">—</p>
+              <p class="cia__hero-note">
+                {{ d.saldo ? 'Aún no hay gasto con qué estimarlo' : 'Necesita el saldo de partida' }}
+              </p>
             }
-          </div>
-          <div class="cia__plot">
-            <div class="cia__grid" aria-hidden="true"><span></span><span></span><span></span></div>
-            <div class="cia__bars" role="list" aria-label="Mensajes de WhatsApp por día">
-              @for (p of serieWa(); track p.fecha; let i = $index) {
-                <div
-                  class="cia__bar-slot"
-                  role="listitem"
-                  tabindex="0"
-                  [attr.aria-label]="dia(p.fecha) + ': ' + entero(p.valor) + ' mensajes'"
-                  (mouseenter)="hoverWa.set(i)"
-                  (focus)="hoverWa.set(i)"
-                  (blur)="hoverWa.set(null)"
-                >
+          </article>
+
+          <article class="cia__hero-item">
+            <p class="cia__hero-label">Hoy <span class="cia__cur cia__cur--hero">USD</span></p>
+            <p class="cia__hero-value">{{ usd(d.resumen.hoy) }}</p>
+            <p class="cia__hero-note">desde las 7 p. m. de ayer (día de OpenAI)</p>
+          </article>
+
+          <article class="cia__hero-item">
+            <p class="cia__hero-label">Este mes <span class="cia__cur cia__cur--hero">USD</span></p>
+            <p class="cia__hero-value">{{ usd(d.resumen.mes) }}</p>
+            <p class="cia__hero-note">a este ritmo, ~{{ usd(d.resumen.proyeccion_mes) }} cada 30 días</p>
+          </article>
+        </section>
+
+        @if (estadoSaldo(); as e) {
+          @if (e !== 'ok') {
+            <div
+              class="cia__banner"
+              [class.cia__banner--aviso]="e === 'aviso'"
+              [class.cia__banner--critico]="e === 'critico'"
+              role="alert"
+            >
+              <lucide-icon [name]="e === 'critico' ? 'alert-circle' : 'triangle-alert'" [size]="18" aria-hidden="true" />
+              <div>
+                <strong>{{ e === 'critico' ? 'Saldo casi agotado' : 'Saldo bajo' }}:</strong>
+                <span>
+                  al ritmo actual alcanza para unos {{ d.saldo!.dias_restantes }} días. Cuando se acabe,
+                  el bot deja de contestar con IA. Recarga en OpenAI y regístralo abajo.
+                </span>
+              </div>
+            </div>
+          }
+        }
+
+        <!-- Gasto por día -->
+        <article class="cia__card">
+          <header class="cia__card-head">
+            <div>
+              <h2 class="cia__card-title">Gasto por día <span class="cia__cur cia__cur--usd">USD</span></h2>
+              <p class="cia__card-desc">
+                {{ d.aviso_oficial ? 'Lo que gastó el bot, según nuestra cuenta.' : 'Lo que cobra OpenAI cada día.' }}
+                Los días se cortan a las 7 p. m. de Colombia, como los cuenta OpenAI.
+              </p>
+            </div>
+            <div class="cia__card-total">
+              <span>{{ usd(d.aviso_oficial ? d.resumen.periodo_interno : d.resumen.periodo_oficial) }}</span>
+              <small>en {{ d.periodo.dias }} días</small>
+            </div>
+          </header>
+
+          <div class="cia__chart" (mouseleave)="hover.set(null)">
+            <div class="cia__axis" aria-hidden="true">
+              @for (m of ejeMarcas(); track $index) {
+                <span>{{ usd(m) }}</span>
+              }
+            </div>
+
+            <div class="cia__plot">
+              <div class="cia__grid" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+
+              <div class="cia__bars" role="list" aria-label="Gasto por día en dólares">
+                @for (p of serie(); track p.fecha; let i = $index) {
                   <div
-                    class="cia__bar"
-                    [class.is-hover]="hoverWa() === i"
-                    [style.height.%]="alturaWa(p.valor)"
-                  ></div>
+                    class="cia__bar-slot"
+                    role="listitem"
+                    tabindex="0"
+                    [attr.aria-label]="dia(p.fecha) + ': ' + usd(p.valor)"
+                    (mouseenter)="hover.set(i)"
+                    (focus)="hover.set(i)"
+                    (blur)="hover.set(null)"
+                  >
+                    <div
+                      class="cia__bar"
+                      [class.is-hover]="hover() === i"
+                      [style.height.%]="altura(p.valor)"
+                    ></div>
+                  </div>
+                }
+              </div>
+
+              @if (puntoHover(); as p) {
+                <div
+                  class="cia__tooltip"
+                  [style.left.%]="((hover()! + 0.5) / serie().length) * 100"
+                  [class.cia__tooltip--izq]="hover()! > serie().length / 2"
+                  role="status"
+                >
+                  <strong>{{ dia(p.fecha) }}</strong>
+                  @if (p.oficial !== null) {
+                    <span>Cobrado por OpenAI: <b>{{ usd(p.oficial) }}</b></span>
+                  }
+                  <span>Del bot (cuenta interna): <b>{{ usd(p.interno) }}</b></span>
+                  @if (d.trm && p.oficial !== null) {
+                    <span>En pesos: <b>≈ {{ cop(p.oficial * d.trm.valor) }}</b></span>
+                  }
                 </div>
               }
             </div>
-            @if (puntoHoverWa(); as p) {
-              <div
-                class="cia__tooltip"
-                [style.left.%]="((hoverWa()! + 0.5) / serieWa().length) * 100"
-                [class.cia__tooltip--izq]="hoverWa()! > serieWa().length / 2"
-                role="status"
-              >
-                <strong>{{ dia(p.fecha) }} · {{ entero(p.valor) }} mensajes</strong>
-                <span>Cuenta de EscalApp: <b>{{ entero(p.escalapp) }}</b></span>
-                <span>Cuentas de clientes: <b>{{ entero(p.clientes) }}</b></span>
-              </div>
-            }
-          </div>
-          <div class="cia__xlabels" aria-hidden="true">
-            @for (p of serieWa(); track p.fecha; let i = $index) {
-              <span>{{ i % cadaCuantoWa() === 0 ? dia(p.fecha) : '' }}</span>
-            }
-          </div>
-        </div>
-      </article>
 
-      <div class="cia__duo">
-        @for (c of w.cuentas; track c.nombre) {
+            <div class="cia__xlabels" aria-hidden="true">
+              @for (p of serie(); track p.fecha; let i = $index) {
+                <span>{{ i % cadaCuanto() === 0 ? dia(p.fecha) : '' }}</span>
+              }
+            </div>
+          </div>
+
+          @if (d.resumen.periodo_oficial !== null) {
+            <p class="cia__footnote">
+              <lucide-icon name="info" [size]="14" aria-hidden="true" />
+              <span>
+                De {{ usd(d.resumen.periodo_oficial) }} cobrados, el bot registró
+                {{ usd(d.resumen.periodo_interno) }}.
+                @if ((fueraDelBot() ?? 0) >= 0.01) {
+                  La diferencia ({{ usd(fueraDelBot()) }}) es gasto que nuestra cuenta no ve:
+                  pruebas, otros computadores usando la clave, o diferencias de tarifa.
+                }
+              </span>
+            </p>
+          }
+        </article>
+
+        <div class="cia__duo">
           <article class="cia__card">
             <header class="cia__card-head">
               <div>
-                <h2 class="cia__card-title">{{ c.nombre }}</h2>
-                <p class="cia__card-desc">
-                  <span class="cia__pill" [class.cia__pill--saldo]="c.paga === 'escalapp'">
-                    {{ c.paga === 'escalapp' ? 'La pagas tú' : 'La paga el cliente' }}
-                  </span>
-                </p>
-              </div>
-              <div class="cia__card-total">
-                <span>{{ moneda(c.costo_mes, c.moneda) }}</span>
-                <small>cobrado este mes</small>
+                <h2 class="cia__card-title">Por negocio <span class="cia__cur cia__cur--usd">USD</span></h2>
+                <p class="cia__card-desc">Lo que cuesta atender a cada cliente, según nuestra cuenta.</p>
               </div>
             </header>
-
-            @if (c.error) {
-              <p class="cia__empty">No se pudo leer esta cuenta: {{ c.error }}</p>
+            @if (d.por_negocio.length === 0) {
+              <p class="cia__empty">Ningún negocio usó IA en este periodo.</p>
             } @else {
-              @if (c.numeros.length === 0) {
-                <p class="cia__empty">Sin mensajes este mes.</p>
-              }
               <ul class="cia__rank">
-                @for (n of c.numeros; track n.telefono) {
+                @for (n of d.por_negocio; track n.id_negocio) {
                   <li class="cia__rank-item">
                     <div class="cia__rank-top">
-                      <span class="cia__rank-name">
-                        {{ n.negocio ?? c.nombre }} <small>{{ n.telefono }}</small>
-                      </span>
-                      <span class="cia__rank-value">
-                        {{ entero(n.servicio_mes) }} / {{ entero(n.gratis_limite) }}
-                      </span>
+                      <span class="cia__rank-name">{{ n.negocio ?? 'Negocio ' + n.id_negocio }}</span>
+                      <span class="cia__rank-value">{{ usd(n.costo_usd) }}</span>
                     </div>
                     <div class="cia__rank-track">
-                      <div
-                        class="cia__rank-fill"
-                        [class.cia__rank-fill--aviso]="estadoCuota(n) === 'aviso'"
-                        [class.cia__rank-fill--critico]="estadoCuota(n) === 'pasada'"
-                        [style.width.%]="pctCuota(n)"
-                      ></div>
+                      <div class="cia__rank-fill" [style.width.%]="ancho(n.costo_usd, maxNegocio())"></div>
                     </div>
                     <p class="cia__rank-meta">
-                      respuestas gratis usadas este mes
-                      @if (n.cobrados_mes > 0) {
-                        · <b>{{ entero(n.cobrados_mes) }} cobrados</b>
-                      }
-                      @if (estadoCuota(n) !== 'ok') {
-                        · {{ estadoCuota(n) === 'pasada' ? 'cuota agotada' : 'cerca del límite' }}
-                      }
+                      {{ entero(n.conversaciones) }} conversaciones · {{ usdFino(n.costo_por_conversacion) }} c/u
                     </p>
                   </li>
                 }
               </ul>
-
-              @if (c.por_categoria.length) {
-                <ul class="cia__cats">
-                  @for (k of c.por_categoria; track k.categoria + k.tipo) {
-                    <li>
-                      <span>{{ categoriaMeta(k.categoria, k.tipo) }}</span>
-                      <b>{{ entero(k.mensajes) }}</b>
-                    </li>
-                  }
-                </ul>
-                <p class="cia__rank-meta">Mensajes de los últimos {{ d.periodo.dias }} días, por tipo.</p>
-              }
             }
           </article>
-        }
+
+          <article class="cia__card">
+            <header class="cia__card-head">
+              <div>
+                <h2 class="cia__card-title">En qué se va <span class="cia__cur cia__cur--usd">USD</span></h2>
+                <p class="cia__card-desc">Cómo reparte OpenAI la factura del periodo.</p>
+              </div>
+            </header>
+            @if (d.aviso_oficial) {
+              <p class="cia__empty">Sin respuesta de OpenAI no hay desglose.</p>
+            } @else if (conceptos().length === 0) {
+              <p class="cia__empty">Sin gasto en este periodo.</p>
+            } @else {
+              <ul class="cia__rank">
+                @for (c of conceptos(); track c.modelo + c.parte) {
+                  <li class="cia__rank-item">
+                    <div class="cia__rank-top">
+                      <span class="cia__rank-name">
+                        {{ c.parte }} <small>{{ c.modelo }}</small>
+                      </span>
+                      <span class="cia__rank-value">{{ usd(c.usd) }}</span>
+                    </div>
+                    <div class="cia__rank-track">
+                      <div class="cia__rank-fill" [style.width.%]="ancho(c.usd, maxConcepto())"></div>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </article>
+        </div>
+
+        <section class="cia__tiles" aria-label="Mensajes contestados">
+          <article class="cia__tile">
+            <p class="cia__tile-value">{{ entero(d.turnos.total) }}</p>
+            <p class="cia__tile-label">mensajes contestados por el asistente</p>
+          </article>
+          <article class="cia__tile">
+            <p class="cia__tile-value">{{ pctSinIa() === null ? '—' : pctSinIa() + ' %' }}</p>
+            <p class="cia__tile-label">contestados <b>sin gastar IA</b> (respuestas automáticas)</p>
+          </article>
+          <article class="cia__tile">
+            <p class="cia__tile-value">{{ entero(d.conversaciones.con_ia) }}</p>
+            <p class="cia__tile-label">conversaciones que usaron IA</p>
+          </article>
+          <article class="cia__tile">
+            <p class="cia__tile-value">{{ usdFino(d.conversaciones.costo_promedio) }}</p>
+            <p class="cia__tile-label">costo promedio por conversación</p>
+          </article>
+        </section>
+
+        <!-- Saldo y recargas -->
+        <article class="cia__card">
+          <header class="cia__card-head">
+            <div>
+              <h2 class="cia__card-title">Saldo y recargas <span class="cia__cur cia__cur--usd">USD</span></h2>
+              <p class="cia__card-desc">
+                OpenAI no deja consultar el saldo desde el sistema, así que se calcula con lo que
+                registres aquí. Todo en dólares, como lo muestra OpenAI.
+              </p>
+            </div>
+          </header>
+
+          <form class="cia__form" (submit)="$event.preventDefault(); guardarMovimiento()">
+            <div class="cia__seg cia__seg--form" role="group" aria-label="Tipo de movimiento">
+              <button
+                type="button"
+                class="cia__seg-btn"
+                [class.is-active]="formTipo() === 'SALDO'"
+                [attr.aria-pressed]="formTipo() === 'SALDO'"
+                (click)="formTipo.set('SALDO')"
+              >Saldo actual</button>
+              <button
+                type="button"
+                class="cia__seg-btn"
+                [class.is-active]="formTipo() === 'RECARGA'"
+                [attr.aria-pressed]="formTipo() === 'RECARGA'"
+                (click)="formTipo.set('RECARGA')"
+              >Recarga</button>
+            </div>
+
+            <p class="cia__form-help">
+              @if (formTipo() === 'SALDO') {
+                Copia el <b>Credit balance</b> que muestra OpenAI en su página de inicio. Desde ese
+                momento solo se resta lo que se gaste después. Sirve para empezar y para corregir
+                el cálculo cuando quieras: siempre se parte del más reciente. Déjalo con la fecha
+                de ahora.
+              } @else {
+                Plata que le metiste a OpenAI <b>después</b> del último saldo registrado. Si ya
+                está incluida en el saldo que copiaste, no la registres aparte.
+              }
+            </p>
+
+            <div class="cia__form-row">
+              <label class="cia__field">
+                <span>Monto <span class="cia__cur cia__cur--usd">USD</span></span>
+                <span class="cia__input-moneda">
+                  <span aria-hidden="true">US$</span>
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="10.00"
+                    [value]="formMonto()"
+                    (input)="formMonto.set(leerInput($event))"
+                    required
+                  />
+                </span>
+              </label>
+              <label class="cia__field">
+                <span>Fecha y hora <small>(vacío = ahora)</small></span>
+                <input
+                  type="datetime-local"
+                  [value]="formFecha()"
+                  (input)="formFecha.set(leerInput($event))"
+                />
+              </label>
+              <label class="cia__field cia__field--ancho">
+                <span>Nota <small>(opcional)</small></span>
+                <input
+                  type="text"
+                  maxlength="200"
+                  placeholder="Ej.: recarga con tarjeta de la empresa"
+                  [value]="formNota()"
+                  (input)="formNota.set(leerInput($event))"
+                />
+              </label>
+              <button type="submit" class="btn btn--primary cia__form-btn" [disabled]="guardando() || !formMonto()">
+                <lucide-icon name="plus" [size]="16" aria-hidden="true" />
+                {{ formTipo() === 'SALDO' ? 'Registrar saldo' : 'Registrar recarga' }}
+              </button>
+            </div>
+          </form>
+
+          @if (d.movimientos.length > 0) {
+            <div class="cia__table-wrap">
+              <table class="cia__table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th class="cia__num">Monto (USD)</th>
+                    <th>Nota</th>
+                    <th><span class="sr-only">Acciones</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (m of d.movimientos; track m.id_recarga) {
+                    <tr>
+                      <td>{{ fechaHora(m.fecha) }}</td>
+                      <td>
+                        <span class="cia__pill" [class.cia__pill--saldo]="m.tipo === 'SALDO'">
+                          {{ m.tipo === 'SALDO' ? 'Saldo' : 'Recarga' }}
+                        </span>
+                      </td>
+                      <td class="cia__num">{{ usd(m.monto_usd) }}</td>
+                      <td class="cia__nota">
+                        {{ m.nota || '—' }}
+                        @if (m.registrado_por) { <small>· {{ m.registrado_por }}</small> }
+                      </td>
+                      <td class="cia__acciones">
+                        <button
+                          type="button"
+                          class="btn btn--ghost btn--sm"
+                          [class.cia__confirmar]="porAnular() === m.id_recarga"
+                          (click)="anular(m.id_recarga)"
+                          (blur)="porAnular() === m.id_recarga && porAnular.set(null)"
+                        >
+                          <lucide-icon name="trash-2" [size]="14" aria-hidden="true" />
+                          {{ porAnular() === m.id_recarga ? '¿Anular?' : 'Anular' }}
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </article>
       </div>
     }
 
-    <!-- ── Saldo y recargas ── -->
-    <article class="cia__card">
-      <header class="cia__card-head">
-        <div>
-          <h2 class="cia__card-title">Saldo y recargas de OpenAI</h2>
-          <p class="cia__card-desc">
-            OpenAI no deja consultar el saldo desde el sistema, así que se calcula con lo que
-            registres aquí.
-          </p>
-        </div>
-      </header>
+    <!-- ══════════════ Pestaña WhatsApp · Meta ══════════════ -->
+    @if (pestana() === 'meta') {
+      <div class="cia__panel" role="tabpanel" id="panel-meta" aria-labelledby="tab-meta">
 
-      <form class="cia__form" (submit)="$event.preventDefault(); guardarMovimiento()">
-        <div class="cia__seg cia__seg--form" role="group" aria-label="Tipo de movimiento">
-          <button
-            type="button"
-            class="cia__seg-btn"
-            [class.is-active]="formTipo() === 'SALDO'"
-            [attr.aria-pressed]="formTipo() === 'SALDO'"
-            (click)="formTipo.set('SALDO')"
-          >Saldo actual</button>
-          <button
-            type="button"
-            class="cia__seg-btn"
-            [class.is-active]="formTipo() === 'RECARGA'"
-            [attr.aria-pressed]="formTipo() === 'RECARGA'"
-            (click)="formTipo.set('RECARGA')"
-          >Recarga</button>
-        </div>
-
-        <p class="cia__form-help">
-          @if (formTipo() === 'SALDO') {
-            Copia el saldo que muestra OpenAI en <b>Settings → Billing</b>. Sirve para empezar y
-            para corregir el cálculo cuando quieras: siempre se parte del más reciente.
-          } @else {
-            Plata que le metiste a OpenAI después del último saldo registrado.
-          }
+        <p class="cia__panel-intro">
+          Meta cobra en <b>pesos colombianos</b> por cada mensaje que envía el negocio. Las primeras
+          1.000 respuestas a clientes de cada número son gratis cada mes. Cada cuenta paga lo suyo:
+          la de EscalApp la pagas tú; las que conectó el cliente las paga el cliente con su tarjeta.
         </p>
 
-        <div class="cia__form-row">
-          <label class="cia__field">
-            <span>Monto (USD)</span>
-            <input
-              type="text"
-              inputmode="decimal"
-              placeholder="10.00"
-              [value]="formMonto()"
-              (input)="formMonto.set(leerInput($event))"
-              required
-            />
-          </label>
-          <label class="cia__field">
-            <span>Fecha y hora <small>(vacío = ahora)</small></span>
-            <input
-              type="datetime-local"
-              [value]="formFecha()"
-              (input)="formFecha.set(leerInput($event))"
-            />
-          </label>
-          <label class="cia__field cia__field--ancho">
-            <span>Nota <small>(opcional)</small></span>
-            <input
-              type="text"
-              maxlength="200"
-              placeholder="Ej.: recarga con tarjeta de la empresa"
-              [value]="formNota()"
-              (input)="formNota.set(leerInput($event))"
-            />
-          </label>
-          <button type="submit" class="btn btn--primary cia__form-btn" [disabled]="guardando() || !formMonto()">
-            <lucide-icon name="plus" [size]="16" aria-hidden="true" />
-            {{ formTipo() === 'SALDO' ? 'Registrar saldo' : 'Registrar recarga' }}
-          </button>
-        </div>
-      </form>
+        @if (d.aviso_whatsapp; as aviso) {
+          <div class="cia__banner cia__banner--aviso" role="status">
+            <lucide-icon name="triangle-alert" [size]="18" aria-hidden="true" />
+            <div>
+              <strong>Meta no contestó.</strong>
+              <span>{{ aviso.mensaje }}</span>
+            </div>
+          </div>
+        }
 
-      @if (d.movimientos.length > 0) {
-        <div class="cia__table-wrap">
-          <table class="cia__table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Tipo</th>
-                <th class="cia__num">Monto</th>
-                <th>Nota</th>
-                <th><span class="sr-only">Acciones</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (m of d.movimientos; track m.id_recarga) {
-                <tr>
-                  <td>{{ fechaHora(m.fecha) }}</td>
-                  <td>
-                    <span class="cia__pill" [class.cia__pill--saldo]="m.tipo === 'SALDO'">
-                      {{ m.tipo === 'SALDO' ? 'Saldo' : 'Recarga' }}
-                    </span>
-                  </td>
-                  <td class="cia__num">{{ usd(m.monto_usd) }}</td>
-                  <td class="cia__nota">
-                    {{ m.nota || '—' }}
-                    @if (m.registrado_por) { <small>· {{ m.registrado_por }}</small> }
-                  </td>
-                  <td class="cia__acciones">
-                    <button
-                      type="button"
-                      class="btn btn--ghost btn--sm"
-                      [class.cia__confirmar]="porAnular() === m.id_recarga"
-                      (click)="anular(m.id_recarga)"
-                      (blur)="porAnular() === m.id_recarga && porAnular.set(null)"
+        @if (d.whatsapp; as w) {
+          <section class="cia__hero" aria-label="Mensajes y costo de WhatsApp">
+            <article class="cia__hero-item">
+              <p class="cia__hero-label">Mensajes este mes</p>
+              <p class="cia__hero-value">{{ entero(mensajesMes()) }}</p>
+              <p class="cia__hero-note">enviados por todos los números</p>
+            </article>
+            <article class="cia__hero-item">
+              <p class="cia__hero-label">Cobrado a EscalApp <span class="cia__cur cia__cur--hero">COP</span></p>
+              <p class="cia__hero-value">{{ cop(w.totales.costo_escalapp_mes_cop) }}</p>
+              <p class="cia__hero-note">este mes, lo pagas tú</p>
+            </article>
+            <article class="cia__hero-item">
+              <p class="cia__hero-label">Cobrado a clientes <span class="cia__cur cia__cur--hero">COP</span></p>
+              <p class="cia__hero-value">{{ cop(w.totales.costo_clientes_mes_cop) }}</p>
+              <p class="cia__hero-note">este mes, en sus propias cuentas</p>
+            </article>
+            <article class="cia__hero-item">
+              <p class="cia__hero-label">Números cerca del límite gratis</p>
+              <p class="cia__hero-value">{{ numerosEnRiesgo().length }}</p>
+              <p class="cia__hero-note">
+                {{ numerosEnRiesgo().length ? 'mira los avisos de abajo' : 'todos dentro de los 1.000 gratis' }}
+              </p>
+            </article>
+          </section>
+
+          @for (n of numerosEnRiesgo(); track n.telefono) {
+            <div
+              class="cia__banner"
+              [class.cia__banner--aviso]="estadoCuota(n) === 'aviso'"
+              [class.cia__banner--critico]="estadoCuota(n) === 'pasada'"
+              role="alert"
+            >
+              <lucide-icon
+                [name]="estadoCuota(n) === 'pasada' ? 'alert-circle' : 'triangle-alert'"
+                [size]="18"
+                aria-hidden="true"
+              />
+              <div>
+                <strong>{{ n.negocio ?? n.cuenta }}:</strong>
+                @if (estadoCuota(n) === 'pasada') {
+                  <span>
+                    pasó los {{ entero(n.gratis_limite) }} mensajes gratis del mes
+                    ({{ entero(n.servicio_mes) }}). Desde aquí Meta cobra cada mensaje
+                    @if (n.paga === 'cliente') {
+                      a la cuenta del cliente: si no tiene tarjeta, los mensajes pueden empezar a fallar.
+                    } @else {
+                      a la cuenta de EscalApp.
+                    }
+                  </span>
+                } @else {
+                  <span>
+                    va en {{ entero(n.servicio_mes) }} de {{ entero(n.gratis_limite) }} mensajes
+                    gratis del mes. Al pasarlos, Meta cobra
+                    @if (n.paga === 'cliente') {
+                      a la cuenta del cliente: conviene confirmar que tenga tarjeta.
+                    } @else {
+                      a la cuenta de EscalApp.
+                    }
+                  </span>
+                }
+              </div>
+            </div>
+          }
+
+          <article class="cia__card">
+            <header class="cia__card-head">
+              <div>
+                <h2 class="cia__card-title">Mensajes enviados por día</h2>
+                <p class="cia__card-desc">
+                  Todos los números juntos, según Meta. Los días se cortan a la medianoche de Colombia.
+                </p>
+              </div>
+              <div class="cia__card-total">
+                <span>{{ entero(w.totales.mensajes_periodo) }}</span>
+                <small>mensajes en {{ d.periodo.dias }} días</small>
+              </div>
+            </header>
+
+            <div class="cia__chart" (mouseleave)="hoverWa.set(null)">
+              <div class="cia__axis" aria-hidden="true">
+                @for (m of ejeMarcasWa(); track $index) {
+                  <span>{{ entero(m) }}</span>
+                }
+              </div>
+              <div class="cia__plot">
+                <div class="cia__grid" aria-hidden="true"><span></span><span></span><span></span></div>
+                <div class="cia__bars" role="list" aria-label="Mensajes de WhatsApp por día">
+                  @for (p of serieWa(); track p.fecha; let i = $index) {
+                    <div
+                      class="cia__bar-slot"
+                      role="listitem"
+                      tabindex="0"
+                      [attr.aria-label]="dia(p.fecha) + ': ' + entero(p.valor) + ' mensajes'"
+                      (mouseenter)="hoverWa.set(i)"
+                      (focus)="hoverWa.set(i)"
+                      (blur)="hoverWa.set(null)"
                     >
-                      <lucide-icon name="trash-2" [size]="14" aria-hidden="true" />
-                      {{ porAnular() === m.id_recarga ? '¿Anular?' : 'Anular' }}
-                    </button>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </article>
+                      <div
+                        class="cia__bar"
+                        [class.is-hover]="hoverWa() === i"
+                        [style.height.%]="alturaWa(p.valor)"
+                      ></div>
+                    </div>
+                  }
+                </div>
+                @if (puntoHoverWa(); as p) {
+                  <div
+                    class="cia__tooltip"
+                    [style.left.%]="((hoverWa()! + 0.5) / serieWa().length) * 100"
+                    [class.cia__tooltip--izq]="hoverWa()! > serieWa().length / 2"
+                    role="status"
+                  >
+                    <strong>{{ dia(p.fecha) }} · {{ entero(p.valor) }} mensajes</strong>
+                    <span>Cuenta de EscalApp: <b>{{ entero(p.escalapp) }}</b></span>
+                    <span>Cuentas de clientes: <b>{{ entero(p.clientes) }}</b></span>
+                  </div>
+                }
+              </div>
+              <div class="cia__xlabels" aria-hidden="true">
+                @for (p of serieWa(); track p.fecha; let i = $index) {
+                  <span>{{ i % cadaCuantoWa() === 0 ? dia(p.fecha) : '' }}</span>
+                }
+              </div>
+            </div>
+          </article>
+
+          <div class="cia__duo">
+            @for (c of w.cuentas; track c.nombre) {
+              <article class="cia__card">
+                <header class="cia__card-head">
+                  <div>
+                    <h2 class="cia__card-title">{{ c.nombre }}</h2>
+                    <p class="cia__card-desc">
+                      <span class="cia__pill" [class.cia__pill--saldo]="c.paga === 'escalapp'">
+                        {{ c.paga === 'escalapp' ? 'La pagas tú' : 'La paga el cliente' }}
+                      </span>
+                    </p>
+                  </div>
+                  <div class="cia__card-total">
+                    <span>{{ moneda(c.costo_mes, c.moneda) }}</span>
+                    <small>cobrado este mes</small>
+                  </div>
+                </header>
+
+                @if (c.error) {
+                  <p class="cia__empty">No se pudo leer esta cuenta: {{ c.error }}</p>
+                } @else {
+                  @if (c.numeros.length === 0) {
+                    <p class="cia__empty">Sin mensajes este mes.</p>
+                  }
+                  <ul class="cia__rank">
+                    @for (n of c.numeros; track n.telefono) {
+                      <li class="cia__rank-item">
+                        <div class="cia__rank-top">
+                          <span class="cia__rank-name">
+                            {{ n.negocio ?? c.nombre }} <small>{{ n.telefono }}</small>
+                          </span>
+                          <span class="cia__rank-value">
+                            {{ entero(n.servicio_mes) }} / {{ entero(n.gratis_limite) }}
+                          </span>
+                        </div>
+                        <div class="cia__rank-track">
+                          <div
+                            class="cia__rank-fill"
+                            [class.cia__rank-fill--aviso]="estadoCuota(n) === 'aviso'"
+                            [class.cia__rank-fill--critico]="estadoCuota(n) === 'pasada'"
+                            [style.width.%]="pctCuota(n)"
+                          ></div>
+                        </div>
+                        <p class="cia__rank-meta">
+                          respuestas gratis usadas este mes
+                          @if (n.cobrados_mes > 0) {
+                            · <b>{{ entero(n.cobrados_mes) }} cobrados</b>
+                          }
+                          @if (estadoCuota(n) !== 'ok') {
+                            · {{ estadoCuota(n) === 'pasada' ? 'cuota agotada' : 'cerca del límite' }}
+                          }
+                        </p>
+                      </li>
+                    }
+                  </ul>
+
+                  @if (c.por_categoria.length) {
+                    <ul class="cia__cats">
+                      @for (k of c.por_categoria; track k.categoria + k.tipo) {
+                        <li>
+                          <span>{{ categoriaMeta(k.categoria, k.tipo) }}</span>
+                          <b>{{ entero(k.mensajes) }}</b>
+                        </li>
+                      }
+                    </ul>
+                    <p class="cia__rank-meta">Mensajes de los últimos {{ d.periodo.dias }} días, por tipo.</p>
+                  }
+                }
+              </article>
+            }
+          </div>
+        }
+      </div>
+    }
   }
 </div>

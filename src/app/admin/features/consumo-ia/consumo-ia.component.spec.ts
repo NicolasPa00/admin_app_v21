@@ -89,6 +89,7 @@ function datos(parcial: Partial<ConsumoIa> = {}): ConsumoIa {
 
 describe('ConsumoIaComponent', () => {
   let http: HttpTestingController;
+  let fixture: ReturnType<typeof TestBed.createComponent<ConsumoIaComponent>>;
 
   function montar(respuesta: ConsumoIa) {
     TestBed.configureTestingModule({
@@ -96,7 +97,7 @@ describe('ConsumoIaComponent', () => {
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
-    const fixture = TestBed.createComponent(ConsumoIaComponent);
+    fixture = TestBed.createComponent(ConsumoIaComponent);
     fixture.detectChanges();
     http.expectOne((r) => r.url === URL && r.params.get('dias') === '30').flush({
       success: true,
@@ -107,26 +108,50 @@ describe('ConsumoIaComponent', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
+  beforeEach(() => {
+    try {
+      localStorage.clear();
+    } catch {
+      /* sin almacenamiento en el entorno de pruebas */
+    }
+  });
+
   afterEach(() => http.verify());
+
+  /** Cambia de pestaña como lo haría el usuario. */
+  function abrirPestana(el: HTMLElement, id: 'tab-openai' | 'tab-meta') {
+    (el.querySelector(`#${id}`) as HTMLButtonElement).click();
+    fixture.detectChanges();
+  }
 
   it('muestra saldo, días restantes, gasto y desglose en palabras', () => {
     const el = montar(datos());
     const texto = el.textContent ?? '';
-    expect(texto).toContain('$8.21');
+    expect(texto).toContain('US$8.21');
     expect(texto).toContain('41');
     expect(texto).toContain('Zona Burger');
     expect(texto).toContain('Guardar en caché');
     expect(texto).toContain('75 %'); // 150 de 200 sin IA
-    // 3 barras de OpenAI + 2 de WhatsApp
-    expect(el.querySelectorAll('.cia__bar').length).toBe(5);
+    // Abre en OpenAI: solo sus 3 barras; WhatsApp no se pinta hasta abrir su pestaña.
+    expect(el.querySelectorAll('.cia__bar').length).toBe(3);
     expect(el.querySelector('.cia__banner--critico')).toBeNull();
   });
 
-  it('suma terceros en pesos y avisa del número cerca de la cuota gratis, diciendo quién paga', () => {
+  it('marca cada importe con su moneda: US$ los dólares y COP los pesos', () => {
     const el = montar(datos());
     const texto = (el.textContent ?? '').replace(/\s+/g, ' ');
+    expect(texto).toContain('$9.548 COP'); // total del mes
+    expect(texto).toContain('US$2.92'); // OpenAI del mes
+    expect(texto).not.toMatch(/(^|[^S])\$8\.21/); // ningún dólar sin «US»
+  });
+
+  it('suma terceros en pesos y, en la pestaña de Meta, avisa del número cerca de la cuota', () => {
+    const el = montar(datos());
+    expect(el.querySelector('#tab-meta .cia__tab-alerta')).not.toBeNull();
+    abrirPestana(el, 'tab-meta');
+    const texto = (el.textContent ?? '').replace(/\s+/g, ' ');
     expect(texto).toContain('Pagado a terceros este mes');
-    expect(texto).toMatch(/9\.548/);
+    expect(el.querySelectorAll('.cia__bar').length).toBe(2);
     expect(texto).toContain('La paga el cliente');
     expect(texto).toContain('919 / 1.000');
     const aviso = el.querySelector('.cia__banner--aviso');
@@ -141,8 +166,9 @@ describe('ConsumoIaComponent', () => {
         terceros: { openai_mes_usd: 2.92, openai_mes_cop: 9548, whatsapp_mes_cop: null, total_mes_cop: null },
       }),
     );
+    expect(el.textContent).toContain('US$8.21');
+    abrirPestana(el, 'tab-meta');
     expect(el.textContent).toContain('Meta no contestó');
-    expect(el.textContent).toContain('$8.21');
   });
 
   it('sin saldo de partida no inventa un saldo y pide registrarlo', () => {
@@ -168,6 +194,6 @@ describe('ConsumoIaComponent', () => {
       }),
     );
     expect(el.textContent).toContain('OpenAI rechazó la clave');
-    expect(el.textContent).toContain('$0.70');
+    expect(el.textContent).toContain('US$0.70');
   });
 });

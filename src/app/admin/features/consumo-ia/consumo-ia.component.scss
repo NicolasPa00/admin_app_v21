@@ -421,40 +421,180 @@
     b { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
   }
 
-  /* ── Encabezado de cada proveedor ─────────────────────── */
-  &__seccion {
-    display: flex;
-    gap: 0.75rem;
-    align-items: flex-start;
-    margin-top: 0.75rem;
-    padding-bottom: 0.25rem;
+  /* ── Total del mes ────────────────────────────────────── */
+  &__total {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    gap: 0.5rem 2rem;
+    align-items: end;
+    padding: 1.1rem 1.4rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+
+    .cia__trm { grid-column: 1 / -1; margin: 0.35rem 0 0; }
   }
 
-  &__seccion-icon {
+  &__total-label {
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex: 0 0 34px;
-    width: 34px;
-    height: 34px;
-    border-radius: var(--radius-sm);
-    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
-    color: var(--color-primary);
+    gap: 0.4rem;
+    margin: 0 0 0.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
   }
 
-  &__seccion-title {
+  &__total-value {
     margin: 0;
-    font-size: 1.125rem;
+    font-size: 1.875rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+
+    &--vacio { color: var(--color-text-muted); }
+  }
+
+  &__total-parts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+  }
+
+  &__total-part {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  &__total-part-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  &__total-part-value {
+    font-size: 1rem;
     font-weight: 700;
     color: var(--color-text-primary);
+    font-variant-numeric: tabular-nums;
+
+    small {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+    }
   }
 
-  &__seccion-desc {
-    margin: 0.2rem 0 0;
-    font-size: 0.8125rem;
-    line-height: 1.45;
+  /* ── Etiqueta de moneda ───────────────────────────────── */
+  /* Va junto a cada título y cifra principal: en esta pantalla «$» solo no basta. */
+  &__cur {
+    display: inline-block;
+    padding: 0.05rem 0.4rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+    vertical-align: middle;
+    border: 1px solid currentColor;
+
+    &--usd { color: var(--color-accent-green); }
+    &--cop { color: var(--color-accent-blue); }
+
+    /* Sobre el degradado del titular: blanco, sin color de moneda. */
+    &--hero { color: rgba(255, 255, 255, 0.9); }
+  }
+
+  /* ── Pestañas ─────────────────────────────────────────── */
+  &__tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--color-border);
+    overflow-x: auto;
+    margin-bottom: -0.25rem;
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.65rem 1rem;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: none;
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--color-text-secondary);
-    max-width: 75ch;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+
+    &:hover { color: var(--color-text-primary); }
+
+    &:focus-visible { outline: 2px solid var(--color-focus); outline-offset: -2px; }
+
+    &.is-active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+    }
+  }
+
+  &__tab-alerta {
+    display: inline-flex;
+    color: var(--color-warning);
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  &__panel-intro {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+    max-width: 80ch;
+  }
+
+  /* El campo de monto lleva la moneda pegada: imposible escribir pesos creyendo que son dólares. */
+  &__input-moneda {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    overflow: hidden;
+
+    > span {
+      padding: 0 0.55rem;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      border-right: 1px solid var(--color-border);
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+
+    input {
+      border: none !important;
+      border-radius: 0 !important;
+      flex: 1;
+    }
+
+    input:focus { outline: none !important; }
+
+    &:focus-within { outline: 2px solid var(--color-focus); }
   }
 
   &__trm {
@@ -647,6 +787,7 @@
 }
 
 @media (max-width: 560px) {
+  .cia__total { grid-template-columns: 1fr; }
   .cia__hero { padding: 1rem 1.1rem 1.15rem; gap: 1rem; }
   .cia__hero-value { font-size: 1.625rem; }
   .cia__chart { grid-template-rows: 180px auto; }

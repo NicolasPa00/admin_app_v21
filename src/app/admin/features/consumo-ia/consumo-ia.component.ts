@@ -2,10 +2,12 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  PLATFORM_ID,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule,
   LUCIDE_ICONS,
@@ -53,6 +55,9 @@ const TIPOS_META: Record<string, string> = {
   FREE_ENTRY_POINT: 'gratis (anuncio)',
   REGULAR: 'cobrado',
 };
+
+type Pestana = 'openai' | 'meta';
+const CLAVE_PESTANA = 'escalapp.terceros.pestana';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -104,6 +109,7 @@ function techo(valor: number): number {
 export class ConsumoIaComponent implements OnInit {
   private readonly api = inject(ConsumoIaService);
   private readonly toast = inject(ToastService);
+  private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly ventanas: VentanaConsumo[] = [7, 30, 90];
   protected readonly ventana = signal<VentanaConsumo>(30);
@@ -121,9 +127,47 @@ export class ConsumoIaComponent implements OnInit {
   protected readonly hover = signal<number | null>(null);
   protected readonly hoverWa = signal<number | null>(null);
 
+  /** Pestaña visible. Se recuerda en este navegador: es comodidad, no estado que importe. */
+  protected readonly pestana = signal<Pestana>(this.leerPestana());
+
   ngOnInit(): void {
     this.cargar();
   }
+
+  protected cambiarPestana(p: Pestana): void {
+    this.pestana.set(p);
+    this.hover.set(null);
+    this.hoverWa.set(null);
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      localStorage.setItem(CLAVE_PESTANA, p);
+    } catch {
+      // Navegación privada o almacenamiento bloqueado: se olvida al recargar, nada más.
+    }
+  }
+
+  private leerPestana(): Pestana {
+    if (!isPlatformBrowser(this.platformId)) return 'openai';
+    try {
+      return localStorage.getItem(CLAVE_PESTANA) === 'meta' ? 'meta' : 'openai';
+    } catch {
+      return 'openai';
+    }
+  }
+
+  /** Un triángulo en la pestaña cuando dentro hay un aviso: así no se pierde en la otra. */
+  protected readonly alertaOpenai = computed(() => {
+    const d = this.datos();
+    if (!d) return false;
+    const e = this.estadoSaldo();
+    return !!d.aviso_oficial || e === 'aviso' || e === 'critico';
+  });
+
+  protected readonly alertaMeta = computed(() => {
+    const d = this.datos();
+    if (!d) return false;
+    return !!d.aviso_whatsapp || this.numerosEnRiesgo().length > 0;
+  });
 
   protected cargar(forzar = false): void {
     this.estado.set('loading');
@@ -331,33 +375,33 @@ export class ConsumoIaComponent implements OnInit {
 
   // ── Formato ────────────────────────────────────────────────
 
-  /** Dólares: centavos casi siempre; más decimales solo cuando la cifra es diminuta. */
+  // Dólares y pesos conviven en esta pantalla, y «$» a secas es ambiguo en Colombia: los dólares
+  // llevan siempre «US$» delante y los pesos «COP» detrás. Nunca un importe sin su moneda.
+
+  /** Dólares (`US$1.36`): centavos casi siempre; menos de un centavo se dice así. */
   protected usd(valor: number | null | undefined): string {
     const v = Number(valor ?? 0);
-    if (v === 0) return '$0.00';
-    if (Math.abs(v) < 0.01) return v < 0 ? '−$0.01' : '< $0.01';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    if (v === 0) return 'US$0.00';
+    if (Math.abs(v) < 0.01) return v < 0 ? '−US$0.01' : '< US$0.01';
+    const cifra = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(v);
+    }).format(Math.abs(v));
+    return `${v < 0 ? '−' : ''}US$${cifra}`;
   }
 
-  /** Para costos por unidad (por conversación), donde importan las milésimas. */
+  /** Dólares por unidad (por conversación), donde importan las milésimas. */
   protected usdFino(valor: number | null | undefined): string {
     const v = Number(valor ?? 0);
-    if (v === 0) return '$0';
-    return `$${v < 0.1 ? v.toFixed(4) : v.toFixed(2)}`;
+    if (v === 0) return 'US$0';
+    return `US$${v < 0.1 ? v.toFixed(4) : v.toFixed(2)}`;
   }
 
-  /** Pesos colombianos, sin centavos. */
+  /** Pesos colombianos sin centavos (`$9.622 COP`). */
   protected cop(valor: number | null | undefined): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      maximumFractionDigits: 0,
-    }).format(Math.round(Number(valor ?? 0)));
+    const v = Math.round(Number(valor ?? 0));
+    const cifra = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(Math.abs(v));
+    return `${v < 0 ? '−' : ''}$${cifra} COP`;
   }
 
   /** Costo en la moneda de la cuenta de Meta. */
