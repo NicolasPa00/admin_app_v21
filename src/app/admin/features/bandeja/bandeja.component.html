@@ -139,290 +139,6 @@
         }
       </div>
     }
-    @if (informeAbierto()) {
-      <section class="bdj__prep bdj__informe" aria-labelledby="bdj-informe-titulo">
-        <div class="bdj__prep-cabeza">
-          <h2 id="bdj-informe-titulo" class="bdj__prep-titulo">Cómo le fue a tu asistente</h2>
-          <div class="bdj__informe-periodo" role="group" aria-label="Periodo del informe">
-            @for (d of [7, 30]; track d) {
-              <button
-                type="button"
-                class="bdj__chip"
-                [class.bdj__chip--on]="informeDias() === d"
-                [disabled]="cargandoInforme()"
-                (click)="cargarInforme(d)"
-              >
-                {{ d }} días
-              </button>
-            }
-            <button type="button" class="bdj__icono" (click)="informeAbierto.set(false)" aria-label="Cerrar">
-              <lucide-icon name="x" [size]="16" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        @if (cargandoInforme()) {
-          <p class="bdj__prep-texto">Revisando las conversaciones… tarda unos segundos.</p>
-        } @else if (informe(); as inf) {
-          @if (!inf.con_actividad) {
-            <p class="bdj__prep-texto">El asistente no tuvo conversaciones en los últimos {{ inf.dias }} días.</p>
-          } @else {
-            <div class="bdj__informe-cifras">
-              <div class="bdj__informe-cifra">
-                <span class="bdj__informe-numero">{{ inf.actual.conversaciones }}</span>
-                <span class="bdj__informe-nombre">conversaciones</span>
-                <span class="bdj__informe-nota">{{ variacion(inf.actual.conversaciones, inf.anterior.conversaciones) }}</span>
-              </div>
-              <div class="bdj__informe-cifra">
-                <span class="bdj__informe-numero">{{ inf.actual.pedidos.total }}</span>
-                <span class="bdj__informe-nombre">pedidos tomados por el asistente</span>
-                <span class="bdj__informe-nota">{{ variacion(inf.actual.pedidos.total, inf.anterior.pedidos.total) }}</span>
-              </div>
-              <div class="bdj__informe-cifra">
-                <span class="bdj__informe-numero">{{ inf.actual.pedidos.de_carta }}</span>
-                <span class="bdj__informe-nombre">desde la carta digital</span>
-                <span class="bdj__informe-nota">{{ inf.actual.pedidos.por_chat }} conversando por chat</span>
-              </div>
-              <div class="bdj__informe-cifra">
-                <span class="bdj__informe-numero">{{ inf.a_persona.total }}</span>
-                <span class="bdj__informe-nombre">chats que terminó atendiendo una persona</span>
-                <span class="bdj__informe-nota">
-                  @if (inf.a_persona.esperan_respuesta_ahora > 0) {
-                    {{ inf.a_persona.esperan_respuesta_ahora }} esperan respuesta ahora
-                  }
-                </span>
-              </div>
-              <!-- El gasto en IA es de EscalApp: el backend solo lo manda al super admin. -->
-              @if (inf.costo; as c) {
-                <div class="bdj__informe-cifra bdj__informe-cifra--interna">
-                  <span class="bdj__informe-numero">US$ {{ c.usd | number: '1.2-2' }}</span>
-                  <span class="bdj__informe-nombre">gasto en IA (solo lo ves tú)</span>
-                  <span class="bdj__informe-nota">
-                    ≈ US$ {{ c.usd_proyeccion_mes | number: '1.2-2' }} al mes
-                    @if (c.usd_por_pedido !== null) {
-                      · US$ {{ c.usd_por_pedido | number: '1.3-3' }} por pedido
-                    }
-                  </span>
-                </div>
-              }
-            </div>
-
-            @if (inf.que_hacer.length === 0) {
-              <p class="bdj__prep-ok">
-                <lucide-icon name="check" [size]="14" aria-hidden="true" />
-                No encontramos nada que corregir en este periodo
-              </p>
-            } @else {
-              <p class="bdj__diag-resumen">Qué puedes hacer</p>
-              <ul class="bdj__prep-lista">
-                @for (a of inf.que_hacer; track a.clave) {
-                  <li class="bdj__prep-punto">
-                    <span class="bdj__prep-marca" aria-hidden="true">
-                      <lucide-icon name="alert-circle" [size]="16" />
-                    </span>
-                    <div>
-                      <p class="bdj__prep-nombre">{{ a.titulo }}</p>
-                      <p class="bdj__prep-texto">{{ a.por_que }}</p>
-                      @if (a.detalles.length > 0) {
-                        <ul class="bdj__diag-detalles">
-                          @for (x of a.detalles; track x) {
-                            <li>{{ x }}</li>
-                          }
-                        </ul>
-                      }
-                      <p class="bdj__prep-donde">Dónde: {{ a.donde }}</p>
-                    </div>
-                  </li>
-                }
-              </ul>
-            }
-          }
-        }
-      </section>
-    }
-    @if (prepAbierta()) {
-      @if (preparacion(); as prep) {
-        <section class="bdj__prep" aria-labelledby="bdj-prep-titulo">
-          <div class="bdj__prep-cabeza">
-            <h2 id="bdj-prep-titulo" class="bdj__prep-titulo">
-              @if (prep.pendientes > 0) {
-                Para que tu asistente atienda bien a tus clientes, completa esto
-              } @else {
-                Tu asistente tiene todo lo que necesita
-              }
-            </h2>
-            <button type="button" class="bdj__icono" (click)="cerrarPreparacion()" aria-label="Cerrar">
-              <lucide-icon name="x" [size]="16" aria-hidden="true" />
-            </button>
-          </div>
-          <ul class="bdj__prep-lista">
-            @for (p of puntosPendientes(); track p.clave) {
-              <li class="bdj__prep-punto" [class.bdj__prep-punto--falta]="p.estado === 'falta'">
-                <span class="bdj__prep-marca" aria-hidden="true">
-                  <lucide-icon [name]="p.estado === 'falta' ? 'triangle-alert' : 'alert-circle'" [size]="16" />
-                </span>
-                <div>
-                  <p class="bdj__prep-nombre">
-                    {{ p.titulo }}
-                    <span class="bdj__prep-nivel">{{ p.estado === 'falta' ? 'Necesario' : 'Recomendado' }}</span>
-                  </p>
-                  @if (p.por_que) {
-                    <p class="bdj__prep-texto">{{ p.por_que }}</p>
-                  }
-                  <p class="bdj__prep-donde">Dónde: {{ p.donde }}</p>
-                  @if (p.clave === 'info_asistente') {
-                    <button type="button" class="bdj__auto-guardar" (click)="configAbierta.set(true)">
-                      Escribirla ahora
-                    </button>
-                  }
-                </div>
-              </li>
-            }
-          </ul>
-          @if (puntosListos() > 0) {
-            <p class="bdj__prep-ok">
-              <lucide-icon name="check" [size]="14" aria-hidden="true" />
-              {{ puntosListos() }} {{ puntosListos() === 1 ? 'punto ya está listo' : 'puntos ya están listos' }}
-            </p>
-          }
-
-          <!-- Diagnóstico a fondo de la carta (2026-10-05): lo que la lista de arriba no ve. Solo
-               para quien puede arreglarlo (administrador del negocio o super admin). -->
-          @if (config()?.puede_editar && prep.tipo === 'RESTAURANTE') {
-            <div class="bdj__diag">
-              <div class="bdj__diag-cabeza">
-                <div>
-                  <p class="bdj__prep-nombre">¿Tu carta está lista para el asistente?</p>
-                  <p class="bdj__prep-texto">
-                    Revisamos nombres, precios y descripciones, y probamos si el asistente encuentra
-                    los productos cuando un cliente los pide como se piden de verdad.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  class="bdj__auto-guardar"
-                  [disabled]="diagnosticando()"
-                  (click)="revisarCartaAFondo()"
-                >
-                  {{ diagnosticando() ? 'Revisando…' : diagnostico() ? 'Revisar otra vez' : 'Revisar la carta a fondo' }}
-                </button>
-              </div>
-
-              @if (diagnostico(); as d) {
-                @if (d.hallazgos.length === 0) {
-                  <p class="bdj__prep-ok">
-                    <lucide-icon name="check" [size]="14" aria-hidden="true" />
-                    No encontramos nada que mejorar en la carta
-                    @if (d.pruebas.hecha) {
-                      ({{ d.pruebas.total }} formas de pedir probadas)
-                    }
-                  </p>
-                } @else {
-                  <p class="bdj__diag-resumen">
-                    {{ d.hallazgos.length }} {{ d.hallazgos.length === 1 ? 'punto' : 'puntos' }} por mejorar
-                    @if (d.pruebas.hecha) {
-                      · probamos {{ d.pruebas.total }} formas de pedir y {{ d.pruebas.fallidas }}
-                      {{ d.pruebas.fallidas === 1 ? 'no encontró' : 'no encontraron' }} el producto
-                    }
-                  </p>
-                  <ul class="bdj__prep-lista">
-                    @for (h of d.hallazgos; track h.clave) {
-                      <li class="bdj__prep-punto" [class.bdj__prep-punto--falta]="h.estado === 'falta'">
-                        <span class="bdj__prep-marca" aria-hidden="true">
-                          <lucide-icon [name]="h.estado === 'falta' ? 'triangle-alert' : 'alert-circle'" [size]="16" />
-                        </span>
-                        <div>
-                          <p class="bdj__prep-nombre">
-                            {{ h.titulo }}
-                            <span class="bdj__prep-nivel">{{ h.estado === 'falta' ? 'Necesario' : 'Recomendado' }}</span>
-                          </p>
-                          <p class="bdj__prep-texto">{{ h.por_que }}</p>
-                          @if (h.detalles.length > 0) {
-                            <ul class="bdj__diag-detalles">
-                              @for (x of h.detalles; track x) {
-                                <li>{{ x }}</li>
-                              }
-                              @if (h.total > h.detalles.length) {
-                                <li class="bdj__diag-mas">y {{ h.total - h.detalles.length }} más</li>
-                              }
-                            </ul>
-                          }
-                          <p class="bdj__prep-donde">Dónde: {{ h.donde }}</p>
-                        </div>
-                      </li>
-                    }
-                  </ul>
-                }
-
-                <!-- Fase 2: la IA propone el arreglo concreto. Solo después del diagnóstico. -->
-                <div class="bdj__ia">
-                  <div class="bdj__diag-cabeza">
-                    <div>
-                      <p class="bdj__prep-nombre">¿Cómo debería quedar la carta?</p>
-                      <p class="bdj__prep-texto">
-                        La inteligencia artificial revisa la carta y propone nombres y ajustes
-                        concretos. Son sugerencias: nada cambia hasta que lo edites en Menú.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      class="bdj__auto-guardar"
-                      [disabled]="recomendando()"
-                      (click)="pedirRecomendaciones(!!recomendaciones())"
-                    >
-                      {{
-                        recomendando()
-                          ? 'Analizando… (medio minuto)'
-                          : recomendaciones()
-                            ? 'Analizar otra vez'
-                            : 'Pedir recomendaciones con IA'
-                      }}
-                    </button>
-                  </div>
-
-                  @if (recomendaciones(); as r) {
-                    @if (r.resumen) {
-                      <p class="bdj__ia-resumen">{{ r.resumen }}</p>
-                    }
-                    @if (r.cambios.length > 0) {
-                      <ul class="bdj__ia-cambios">
-                        @for (c of r.cambios; track $index) {
-                          <li class="bdj__ia-cambio" [class.bdj__ia-cambio--alta]="c.prioridad === 'alta'">
-                            <p class="bdj__ia-linea">
-                              <span class="bdj__prep-nivel">{{ ACCION_TEXTO[c.accion] }}</span>
-                              <span class="bdj__ia-hoy">{{ c.producto }}</span>
-                              <span aria-hidden="true">→</span>
-                              <strong class="bdj__ia-nuevo">{{ c.propuesta }}</strong>
-                            </p>
-                            @if (c.motivo) {
-                              <p class="bdj__prep-texto">{{ c.motivo }}</p>
-                            }
-                          </li>
-                        }
-                      </ul>
-                    } @else {
-                      <p class="bdj__prep-ok">
-                        <lucide-icon name="check" [size]="14" aria-hidden="true" />
-                        La IA no propone cambios en la carta
-                      </p>
-                    }
-                    @if (r.preguntas.length > 0) {
-                      <p class="bdj__diag-resumen">Lo que solo tú puedes contestar</p>
-                      <ul class="bdj__diag-detalles">
-                        @for (q of r.preguntas; track q) {
-                          <li>{{ q }}</li>
-                        }
-                      </ul>
-                    }
-                    <p class="bdj__prep-donde">Los cambios se hacen en: App del restaurante → Menú</p>
-                  }
-                </div>
-              }
-            </div>
-          }
-        </section>
-      }
-    }
   </header>
 
   <!-- ── Panel izquierdo: la lista ─────────────────────────────── -->
@@ -1044,6 +760,338 @@
           </div>
         }
   
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Ventana «Revisión del asistente» ──────────────────────────────
+     Antes era un panel dentro de la cabecera de la Bandeja, que tiene alto fijo: con el
+     diagnóstico de la carta y las recomendaciones crecía fuera de la pantalla sin scroll
+     (2026-10-05). Aquí el cuerpo tiene su propio scroll. -->
+@if (prepAbierta()) {
+  @if (preparacion(); as prep) {
+    <div class="bdj-modal" (click)="cerrarPreparacion()" (keydown.escape)="cerrarPreparacion()">
+      <div
+        class="bdj-modal__card bdj-rev"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bdj-rev-title"
+        (click)="$event.stopPropagation()"
+      >
+        <app-modal-cabecera
+          icono="bot"
+          titulo="Revisión del asistente"
+          [subtitulo]="
+            prep.pendientes > 0
+              ? 'Completa esto para que atienda bien a tus clientes'
+              : 'Tiene todo lo que necesita para atender'
+          "
+          tituloId="bdj-rev-title"
+          (cerrar)="cerrarPreparacion()"
+        />
+        <div class="bdj-modal__body bdj-rev__body">
+          <!-- 1. Los datos del negocio (la revisión ligera de siempre). -->
+          <section class="bdj-rev__seccion" aria-labelledby="bdj-rev-datos">
+            <header class="bdj-rev__cabeza">
+              <span class="bdj-rev__paso" aria-hidden="true">1</span>
+              <div class="bdj-rev__titulos">
+                <h3 id="bdj-rev-datos" class="bdj-rev__titulo">Datos del negocio</h3>
+                <p class="bdj-rev__ayuda">Horario, pagos, domicilio y lo demás que el asistente le dice al cliente.</p>
+              </div>
+              <span class="bdj-rev__estado" [class.bdj-rev__estado--ok]="prep.pendientes === 0">
+                {{ prep.pendientes === 0 ? 'Completo' : prep.pendientes + (prep.pendientes === 1 ? ' pendiente' : ' pendientes') }}
+              </span>
+            </header>
+            @if (puntosPendientes().length > 0) {
+              <ul class="bdj__prep-lista">
+                @for (p of puntosPendientes(); track p.clave) {
+                  <li class="bdj__prep-punto" [class.bdj__prep-punto--falta]="p.estado === 'falta'">
+                    <span class="bdj__prep-marca" aria-hidden="true">
+                      <lucide-icon [name]="p.estado === 'falta' ? 'triangle-alert' : 'alert-circle'" [size]="16" />
+                    </span>
+                    <div>
+                      <p class="bdj__prep-nombre">
+                        {{ p.titulo }}
+                        <span class="bdj__prep-nivel">{{ p.estado === 'falta' ? 'Necesario' : 'Recomendado' }}</span>
+                      </p>
+                      @if (p.por_que) {
+                        <p class="bdj__prep-texto">{{ p.por_que }}</p>
+                      }
+                      <p class="bdj__prep-donde">Dónde: {{ p.donde }}</p>
+                      @if (p.clave === 'info_asistente') {
+                        <button type="button" class="bdj__auto-guardar" (click)="cerrarPreparacion(); configAbierta.set(true)">
+                          Escribirla ahora
+                        </button>
+                      }
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+            @if (puntosListos() > 0) {
+              <p class="bdj__prep-ok">
+                <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                {{ puntosListos() }} {{ puntosListos() === 1 ? 'punto ya está listo' : 'puntos ya están listos' }}
+              </p>
+            }
+          </section>
+
+          <!-- 2 y 3. Diagnóstico a fondo de la carta y recomendaciones con IA: solo para quien puede
+               arreglarlo (administrador del negocio o super admin), y hoy solo en restaurantes. -->
+          @if (config()?.puede_editar && prep.tipo === 'RESTAURANTE') {
+            <section class="bdj-rev__seccion bdj__diag" aria-labelledby="bdj-rev-carta">
+              <header class="bdj-rev__cabeza">
+                <span class="bdj-rev__paso" aria-hidden="true">2</span>
+                <div class="bdj-rev__titulos">
+                  <h3 id="bdj-rev-carta" class="bdj-rev__titulo">¿Tu carta está lista para el asistente?</h3>
+                  <p class="bdj-rev__ayuda">
+                    Revisamos nombres, precios y descripciones, y probamos si el asistente encuentra
+                    los productos cuando un cliente los pide como se piden de verdad.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="bdj__auto-guardar"
+                  [disabled]="diagnosticando()"
+                  (click)="revisarCartaAFondo()"
+                >
+                  {{ diagnosticando() ? 'Revisando…' : diagnostico() ? 'Revisar otra vez' : 'Revisar la carta a fondo' }}
+                </button>
+              </header>
+
+              @if (diagnostico(); as d) {
+                @if (d.hallazgos.length === 0) {
+                  <p class="bdj__prep-ok">
+                    <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                    No encontramos nada que mejorar en la carta
+                    @if (d.pruebas.hecha) {
+                      ({{ d.pruebas.total }} formas de pedir probadas)
+                    }
+                  </p>
+                } @else {
+                  <p class="bdj__diag-resumen">
+                    {{ d.hallazgos.length }} {{ d.hallazgos.length === 1 ? 'punto' : 'puntos' }} por mejorar
+                    @if (d.pruebas.hecha) {
+                      · probamos {{ d.pruebas.total }} formas de pedir y {{ d.pruebas.fallidas }}
+                      {{ d.pruebas.fallidas === 1 ? 'no encontró' : 'no encontraron' }} el producto
+                    }
+                  </p>
+                  <ul class="bdj__prep-lista">
+                    @for (h of d.hallazgos; track h.clave) {
+                      <li class="bdj__prep-punto" [class.bdj__prep-punto--falta]="h.estado === 'falta'">
+                        <span class="bdj__prep-marca" aria-hidden="true">
+                          <lucide-icon [name]="h.estado === 'falta' ? 'triangle-alert' : 'alert-circle'" [size]="16" />
+                        </span>
+                        <div>
+                          <p class="bdj__prep-nombre">
+                            {{ h.titulo }}
+                            <span class="bdj__prep-nivel">{{ h.estado === 'falta' ? 'Necesario' : 'Recomendado' }}</span>
+                          </p>
+                          <p class="bdj__prep-texto">{{ h.por_que }}</p>
+                          @if (h.detalles.length > 0) {
+                            <ul class="bdj__diag-detalles bdj__diag-detalles--columnas">
+                              @for (x of h.detalles; track x) {
+                                <li>{{ x }}</li>
+                              }
+                              @if (h.total > h.detalles.length) {
+                                <li class="bdj__diag-mas">y {{ h.total - h.detalles.length }} más</li>
+                              }
+                            </ul>
+                          }
+                          <p class="bdj__prep-donde">Dónde: {{ h.donde }}</p>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                }
+              }
+            </section>
+
+            @if (diagnostico()) {
+              <section class="bdj-rev__seccion bdj__ia" aria-labelledby="bdj-rev-ia">
+                <header class="bdj-rev__cabeza">
+                  <span class="bdj-rev__paso" aria-hidden="true">3</span>
+                  <div class="bdj-rev__titulos">
+                    <h3 id="bdj-rev-ia" class="bdj-rev__titulo">¿Cómo debería quedar la carta?</h3>
+                    <p class="bdj-rev__ayuda">
+                      La inteligencia artificial revisa la carta y propone nombres y ajustes concretos.
+                      Son sugerencias: nada cambia hasta que lo edites en Menú.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    class="bdj__auto-guardar"
+                    [disabled]="recomendando()"
+                    (click)="pedirRecomendaciones(!!recomendaciones())"
+                  >
+                    {{
+                      recomendando()
+                        ? 'Analizando… (medio minuto)'
+                        : recomendaciones()
+                          ? 'Analizar otra vez'
+                          : 'Pedir recomendaciones con IA'
+                    }}
+                  </button>
+                </header>
+
+                @if (recomendaciones(); as r) {
+                  @if (r.resumen) {
+                    <p class="bdj__ia-resumen">{{ r.resumen }}</p>
+                  }
+                  @if (r.cambios.length > 0) {
+                    <ul class="bdj__ia-cambios">
+                      @for (c of r.cambios; track $index) {
+                        <li class="bdj__ia-cambio" [class.bdj__ia-cambio--alta]="c.prioridad === 'alta'">
+                          <p class="bdj__ia-linea">
+                            <span class="bdj__prep-nivel">{{ ACCION_TEXTO[c.accion] }}</span>
+                            <span class="bdj__ia-hoy">{{ c.producto }}</span>
+                            <span aria-hidden="true">→</span>
+                            <strong class="bdj__ia-nuevo">{{ c.propuesta }}</strong>
+                          </p>
+                          @if (c.motivo) {
+                            <p class="bdj__prep-texto">{{ c.motivo }}</p>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <p class="bdj__prep-ok">
+                      <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                      La IA no propone cambios en la carta
+                    </p>
+                  }
+                  @if (r.preguntas.length > 0) {
+                    <p class="bdj__diag-resumen">Lo que solo tú puedes contestar</p>
+                    <ul class="bdj__diag-detalles">
+                      @for (q of r.preguntas; track q) {
+                        <li>{{ q }}</li>
+                      }
+                    </ul>
+                  }
+                  <p class="bdj__prep-donde">Los cambios se hacen en: App del restaurante → Menú</p>
+                }
+              </section>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+}
+
+<!-- ── Ventana «Informe»: cómo le fue al asistente con las conversaciones reales ───── -->
+@if (informeAbierto()) {
+  <div class="bdj-modal" (click)="informeAbierto.set(false)" (keydown.escape)="informeAbierto.set(false)">
+    <div
+      class="bdj-modal__card bdj-rev"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bdj-inf-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-modal-cabecera
+        icono="calendar-range"
+        titulo="Cómo le fue a tu asistente"
+        [subtitulo]="'Con las conversaciones de los últimos ' + informeDias() + ' días'"
+        tituloId="bdj-inf-title"
+        (cerrar)="informeAbierto.set(false)"
+      />
+      <div class="bdj-modal__body bdj-rev__body bdj__informe">
+        <div class="bdj__informe-periodo" role="group" aria-label="Periodo del informe">
+          @for (d of [7, 30]; track d) {
+            <button
+              type="button"
+              class="bdj__chip"
+              [class.bdj__chip--on]="informeDias() === d"
+              [disabled]="cargandoInforme()"
+              (click)="cargarInforme(d)"
+            >
+              {{ d }} días
+            </button>
+          }
+        </div>
+
+        @if (cargandoInforme()) {
+          <p class="bdj-rev__cargando">
+            <lucide-icon name="loader-2" [size]="16" class="bdj-rev__giro" aria-hidden="true" />
+            Revisando las conversaciones… tarda unos segundos.
+          </p>
+        } @else if (informe(); as inf) {
+          @if (!inf.con_actividad) {
+            <p class="bdj__prep-texto">El asistente no tuvo conversaciones en los últimos {{ inf.dias }} días.</p>
+          } @else {
+            <div class="bdj__informe-cifras">
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.actual.conversaciones }}</span>
+                <span class="bdj__informe-nombre">conversaciones</span>
+                <span class="bdj__informe-nota">{{ variacion(inf.actual.conversaciones, inf.anterior.conversaciones) }}</span>
+              </div>
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.actual.pedidos.total }}</span>
+                <span class="bdj__informe-nombre">pedidos tomados por el asistente</span>
+                <span class="bdj__informe-nota">{{ variacion(inf.actual.pedidos.total, inf.anterior.pedidos.total) }}</span>
+              </div>
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.actual.pedidos.de_carta }}</span>
+                <span class="bdj__informe-nombre">desde la carta digital</span>
+                <span class="bdj__informe-nota">{{ inf.actual.pedidos.por_chat }} conversando por chat</span>
+              </div>
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.a_persona.total }}</span>
+                <span class="bdj__informe-nombre">chats que terminó atendiendo una persona</span>
+                <span class="bdj__informe-nota">
+                  @if (inf.a_persona.esperan_respuesta_ahora > 0) {
+                    {{ inf.a_persona.esperan_respuesta_ahora }} esperan respuesta ahora
+                  }
+                </span>
+              </div>
+              <!-- El gasto en IA es de EscalApp: el backend solo lo manda al super admin. -->
+              @if (inf.costo; as c) {
+                <div class="bdj__informe-cifra bdj__informe-cifra--interna">
+                  <span class="bdj__informe-numero">US$ {{ c.usd | number: '1.2-2' }}</span>
+                  <span class="bdj__informe-nombre">gasto en IA (solo lo ves tú)</span>
+                  <span class="bdj__informe-nota">
+                    ≈ US$ {{ c.usd_proyeccion_mes | number: '1.2-2' }} al mes
+                    @if (c.usd_por_pedido !== null) {
+                      · US$ {{ c.usd_por_pedido | number: '1.3-3' }} por pedido
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+
+            @if (inf.que_hacer.length === 0) {
+              <p class="bdj__prep-ok">
+                <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                No encontramos nada que corregir en este periodo
+              </p>
+            } @else {
+              <h3 class="bdj-rev__titulo">Qué puedes hacer</h3>
+              <ul class="bdj__prep-lista">
+                @for (a of inf.que_hacer; track a.clave) {
+                  <li class="bdj__prep-punto">
+                    <span class="bdj__prep-marca" aria-hidden="true">
+                      <lucide-icon name="alert-circle" [size]="16" />
+                    </span>
+                    <div>
+                      <p class="bdj__prep-nombre">{{ a.titulo }}</p>
+                      <p class="bdj__prep-texto">{{ a.por_que }}</p>
+                      @if (a.detalles.length > 0) {
+                        <ul class="bdj__diag-detalles bdj__diag-detalles--columnas">
+                          @for (x of a.detalles; track x) {
+                            <li>{{ x }}</li>
+                          }
+                        </ul>
+                      }
+                      <p class="bdj__prep-donde">Dónde: {{ a.donde }}</p>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
       </div>
     </div>
   </div>

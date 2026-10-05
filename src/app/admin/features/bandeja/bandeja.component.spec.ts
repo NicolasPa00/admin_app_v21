@@ -784,3 +784,41 @@ describe('Bandeja — informe con las conversaciones reales', () => {
     expect(boton(v.el, /^Informe$/)).toBeUndefined();
   });
 });
+
+describe('Bandeja — la revisión y el informe son ventanas, no paneles en la cabecera', () => {
+  // 2026-10-05: como panel dentro de la cabecera (alto fijo) el diagnóstico crecía fuera de la
+  // pantalla y no se podía hacer scroll. El cuerpo del modal es el que hace scroll.
+  it('«Asistente listo» abre un modal con cuerpo desplazable, fuera de la cabecera', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    const chip = Array.from(v.el.querySelectorAll('button')).find((b) => /Asistente listo/.test(b.textContent ?? '')) as HTMLButtonElement;
+    chip.click();
+    v.tick();
+
+    const dialogo = v.el.querySelector('[role="dialog"][aria-labelledby="bdj-rev-title"]') as HTMLElement;
+    expect(dialogo).toBeTruthy();
+    expect(dialogo.closest('.bdj-modal')).toBeTruthy();
+    expect(dialogo.closest('.bdj__top')).toBeNull(); // ya no vive en la cabecera
+    expect(dialogo.querySelector('.bdj-modal__body')).toBeTruthy();
+    expect(v.el.querySelector('.bdj__top .bdj__prep')).toBeNull();
+    expect(dialogo.textContent).toContain('Datos del negocio');
+    expect(dialogo.textContent).toContain('¿Tu carta está lista para el asistente?');
+  });
+
+  it('se cierra con la X y al pulsar fuera', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    v.fixture.componentInstance.prepAbierta.set(true);
+    v.tick();
+    (v.el.querySelector('.bdj-modal') as HTMLElement).click();
+    v.tick();
+    expect(v.el.querySelector('[aria-labelledby="bdj-rev-title"]')).toBeNull();
+  });
+
+  it('el informe también es un modal', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    v.fixture.componentInstance.alternarInforme();
+    v.tick();
+    const dialogo = v.el.querySelector('[role="dialog"][aria-labelledby="bdj-inf-title"]') as HTMLElement;
+    expect(dialogo).toBeTruthy();
+    expect(dialogo.closest('.bdj__top')).toBeNull();
+  });
+});
