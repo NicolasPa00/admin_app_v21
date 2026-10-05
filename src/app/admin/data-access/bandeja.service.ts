@@ -8,6 +8,7 @@ import {
   BandejaListado,
   ConfiguracionReactivacion,
   DiagnosticoAsistente,
+  RecomendacionesAsistente,
   PreparacionAsistente,
   ConversacionBandejaDetalle,
   ReportesConversacion,
@@ -207,6 +208,19 @@ export class BandejaService {
       .get<ApiResponse<DiagnosticoAsistente>>(`${this.API}/intelligence/bandeja/diagnostico`, {
         params: { id_negocio: String(idNegocio) },
       })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Recomendaciones con IA sobre la carta: qué renombrar, separar o describir. Solo recomienda.
+   * Tarda cerca de medio minuto; si la carta no cambió, devuelve el análisis anterior.
+   */
+  pedirRecomendaciones(idNegocio: number, forzar = false): Observable<RecomendacionesAsistente | null> {
+    return this.http
+      .post<ApiResponse<RecomendacionesAsistente>>(
+        `${this.API}/intelligence/bandeja/diagnostico/recomendaciones`,
+        { id_negocio: idNegocio, forzar },
+      )
       .pipe(map((res) => res.data ?? null));
   }
 

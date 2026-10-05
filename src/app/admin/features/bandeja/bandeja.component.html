@@ -239,6 +239,70 @@
                     }
                   </ul>
                 }
+
+                <!-- Fase 2: la IA propone el arreglo concreto. Solo después del diagnóstico. -->
+                <div class="bdj__ia">
+                  <div class="bdj__diag-cabeza">
+                    <div>
+                      <p class="bdj__prep-nombre">¿Cómo debería quedar la carta?</p>
+                      <p class="bdj__prep-texto">
+                        La inteligencia artificial revisa la carta y propone nombres y ajustes
+                        concretos. Son sugerencias: nada cambia hasta que lo edites en Menú.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="bdj__auto-guardar"
+                      [disabled]="recomendando()"
+                      (click)="pedirRecomendaciones(!!recomendaciones())"
+                    >
+                      {{
+                        recomendando()
+                          ? 'Analizando… (medio minuto)'
+                          : recomendaciones()
+                            ? 'Analizar otra vez'
+                            : 'Pedir recomendaciones con IA'
+                      }}
+                    </button>
+                  </div>
+
+                  @if (recomendaciones(); as r) {
+                    @if (r.resumen) {
+                      <p class="bdj__ia-resumen">{{ r.resumen }}</p>
+                    }
+                    @if (r.cambios.length > 0) {
+                      <ul class="bdj__ia-cambios">
+                        @for (c of r.cambios; track $index) {
+                          <li class="bdj__ia-cambio" [class.bdj__ia-cambio--alta]="c.prioridad === 'alta'">
+                            <p class="bdj__ia-linea">
+                              <span class="bdj__prep-nivel">{{ ACCION_TEXTO[c.accion] }}</span>
+                              <span class="bdj__ia-hoy">{{ c.producto }}</span>
+                              <span aria-hidden="true">→</span>
+                              <strong class="bdj__ia-nuevo">{{ c.propuesta }}</strong>
+                            </p>
+                            @if (c.motivo) {
+                              <p class="bdj__prep-texto">{{ c.motivo }}</p>
+                            }
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      <p class="bdj__prep-ok">
+                        <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                        La IA no propone cambios en la carta
+                      </p>
+                    }
+                    @if (r.preguntas.length > 0) {
+                      <p class="bdj__diag-resumen">Lo que solo tú puedes contestar</p>
+                      <ul class="bdj__diag-detalles">
+                        @for (q of r.preguntas; track q) {
+                          <li>{{ q }}</li>
+                        }
+                      </ul>
+                    }
+                    <p class="bdj__prep-donde">Los cambios se hacen en: App del restaurante → Menú</p>
+                  }
+                </div>
               }
             </div>
           }

@@ -232,6 +232,29 @@ export interface DiagnosticoAsistente {
   pendientes: number;
 }
 
+/** Un cambio que la IA propone para la carta. Es una sugerencia: nada se aplica solo. */
+export interface CambioRecomendado {
+  accion: 'renombrar' | 'separar' | 'describir' | 'revisar_precio' | 'ocultar' | 'otro';
+  /** Nombre actual del producto (o categoría) en la carta. */
+  producto: string;
+  /** En `renombrar`, el nombre nuevo; en las demás, qué hacer. */
+  propuesta: string;
+  motivo: string;
+  prioridad: 'alta' | 'media';
+}
+
+/** Recomendaciones redactadas por IA sobre la carta (fase 2 del diagnóstico). */
+export interface RecomendacionesAsistente {
+  aplica: boolean;
+  resumen: string;
+  cambios: CambioRecomendado[];
+  /** Lo que solo el negocio puede contestar (precios reales, sabores…). */
+  preguntas: string[];
+  generado_en?: string;
+  /** true si es el mismo análisis de hace un rato (la carta no cambió): no se volvió a cobrar. */
+  de_cache: boolean;
+}
+
 export interface PreparacionAsistente {
   tipo: string | null;
   criticos: number;

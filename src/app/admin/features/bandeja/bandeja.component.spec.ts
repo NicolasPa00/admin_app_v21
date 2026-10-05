@@ -87,6 +87,16 @@ async function montar(
       ],
     }),
   );
+  const pedirRecomendaciones = vi.fn((_id: number, _forzar: boolean) =>
+    of({
+      aplica: true, de_cache: false,
+      resumen: 'Hay nombres que no dicen qué son.',
+      cambios: [
+        { accion: 'renombrar', producto: 'cuatro', propuesta: 'Gaseosa Cuatro personal', motivo: 'El cliente pide «una gaseosa».', prioridad: 'alta' },
+      ],
+      preguntas: ['¿Cuál es el precio real de la Cigarra?'],
+    }),
+  );
   const responder = vi.fn(() => of({ id_mensaje: 'm1', estado_conversacion: 'handoff_humano', estado_entrega: 'pendiente' }));
   const conversaciones = opts.conversaciones ?? [CON_NOMBRE, SIN_NOMBRE, SIN_NADA];
   TestBed.configureTestingModule({
@@ -115,6 +125,7 @@ async function montar(
           guardarTiempoEstimado,
           pausarAsistente,
           getDiagnostico,
+          pedirRecomendaciones,
         },
       },
     ],
@@ -124,7 +135,7 @@ async function montar(
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, getDiagnostico, tick: () => fixture.detectChanges() };
+  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, getDiagnostico, pedirRecomendaciones, tick: () => fixture.detectChanges() };
 }
 
 /** Desde 2026-10-02 los ajustes del asistente viven en la ventana «Configuración del asistente». */
@@ -678,5 +689,34 @@ describe('Bandeja — diagnóstico a fondo de la carta', () => {
   it('quien no puede editar el negocio no ve el botón', async () => {
     const v = await abrirPanel({ reactivar_asistente_min: 0, puede_editar: false });
     expect(boton(v.el)).toBeUndefined();
+  });
+});
+
+describe('Bandeja — recomendaciones con IA sobre la carta', () => {
+  const botonCon = (el: HTMLElement, texto: RegExp) =>
+    Array.from(el.querySelectorAll('button')).find((b) => texto.test(b.textContent ?? '')) as HTMLButtonElement;
+
+  it('solo se ofrece después del diagnóstico, y enseña «hoy → sugerido» con las preguntas', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    v.fixture.componentInstance.prepAbierta.set(true);
+    v.tick();
+    expect(botonCon(v.el, /recomendaciones con IA/)).toBeUndefined();
+
+    botonCon(v.el, /Revisar la carta a fondo/).click();
+    v.tick();
+    botonCon(v.el, /recomendaciones con IA/).click();
+    v.tick();
+
+    expect(v.pedirRecomendaciones).toHaveBeenCalledWith(1, false);
+    const texto = v.el.querySelector('.bdj__ia')?.textContent ?? '';
+    expect(texto).toContain('Cambiar el nombre');
+    expect(texto).toContain('cuatro');
+    expect(texto).toContain('Gaseosa Cuatro personal');
+    expect(texto).toContain('¿Cuál es el precio real de la Cigarra?');
+    expect(texto).toContain('nada cambia hasta que lo edites en Menú');
+
+    // «Analizar otra vez» fuerza un análisis nuevo.
+    botonCon(v.el, /Analizar otra vez/).click();
+    expect(v.pedirRecomendaciones).toHaveBeenLastCalledWith(1, true);
   });
 });

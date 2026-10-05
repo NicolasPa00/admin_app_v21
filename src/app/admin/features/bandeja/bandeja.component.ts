@@ -31,6 +31,7 @@ import {
   ConversacionBandeja,
   ConfiguracionReactivacion,
   DiagnosticoAsistente,
+  RecomendacionesAsistente,
   ConversacionBandejaDetalle,
   MensajeBandeja,
   RetomadaAsistente,
@@ -300,6 +301,36 @@ export class BandejaComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Recomendaciones con IA (fase 2 del diagnóstico) ──────────────────────────────────────
+  readonly recomendaciones = signal<RecomendacionesAsistente | null>(null);
+  readonly recomendando = signal(false);
+  /** Cómo se dice cada acción en la pantalla. */
+  readonly ACCION_TEXTO: Record<string, string> = {
+    renombrar: 'Cambiar el nombre',
+    separar: 'Separar',
+    describir: 'Añadir descripción',
+    revisar_precio: 'Revisar el precio',
+    ocultar: 'Ocultar',
+    otro: 'Revisar',
+  };
+
+  /** Le pide a la IA el arreglo concreto de la carta. Solo recomienda: nada cambia. */
+  pedirRecomendaciones(forzar = false): void {
+    const id = this.negocioConfig();
+    if (id === null || this.recomendando()) return;
+    this.recomendando.set(true);
+    this.service.pedirRecomendaciones(id, forzar).subscribe({
+      next: (r) => {
+        this.recomendando.set(false);
+        if (this.negocioConfig() === id) this.recomendaciones.set(r);
+      },
+      error: (err) => {
+        this.recomendando.set(false);
+        this.toast.errorHttp(err, 'No se pudieron generar las recomendaciones.');
+      },
+    });
+  }
+
   // ── Pausa de emergencia (2026-10-04: Zona Burger sin papas) ─────────────────────────────
   readonly cambiandoPausa = signal(false);
   readonly pausado = computed(() => this.config()?.asistente_pausado === true);
@@ -463,6 +494,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
     if (idNegocio === null) {
       this.config.set(null);
       this.diagnostico.set(null);
+      this.recomendaciones.set(null);
       this.preparacion.set(null);
       this.prepAbierta.set(false);
       return;
