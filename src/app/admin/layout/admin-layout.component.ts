@@ -51,7 +51,7 @@ import { AuthService } from '../../auth/data-access/auth.service';
 import { AssetService } from '../../core/services/asset.service';
 import { PantallaAnchaService } from '../../core/services/pantalla-ancha.service';
 import { NotificacionesBellComponent } from '../features/notificaciones/notificaciones-bell.component';
-import { esAdministrador, esSuperAdmin } from '../guards/admin.guard';
+import { esAdministrador, esSuperAdmin, veWhatsapp } from '../guards/admin.guard';
 import { ToastHostComponent } from '../../shared/toast/toast-host.component';
 import { environment } from '../../../environments/environment';
 
@@ -66,6 +66,8 @@ interface NavItem {
    * tiene cualquier otro rol —cajero, mesero, domiciliario…— solo ve Inicio y Configuración.
    */
   soloAdministrador?: boolean;
+  /** Visible para quien `veWhatsapp`: administradores, y cajeros con el plan que incluye WhatsApp. */
+  whatsapp?: boolean;
 }
 
 /** Clave de localStorage para recordar si el sidebar quedó colapsado. */
@@ -135,7 +137,8 @@ export class AdminLayoutComponent {
     // { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
     // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador. Una sola
     // entrada: sin número conectado enseña cómo activarlo; con número, las conversaciones.
-    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp', soloAdministrador: true },
+    // El cajero también, si el plan de su negocio incluye WhatsApp (2026-10-04): ver `veWhatsapp`.
+    { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp', whatsapp: true },
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion', soloAdministrador: true },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
@@ -167,6 +170,7 @@ export class AdminLayoutComponent {
     this.navItems.filter((item) => {
       if (item.superAdmin && !this.isSuperAdmin()) return false;
       if (item.soloAdministrador && !this.esAdmin()) return false;
+      if (item.whatsapp && !veWhatsapp(this.user())) return false;
       return true;
     }),
   );

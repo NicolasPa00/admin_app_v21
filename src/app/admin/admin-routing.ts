@@ -1,5 +1,5 @@
 import { Routes }    from '@angular/router';
-import { adminGuard } from './guards/admin.guard';
+import { adminGuard, whatsappGuard } from './guards/admin.guard';
 import { authGuard } from '../auth/guards/auth.guard';
 
 /**
@@ -89,7 +89,8 @@ export const adminRoutes: Routes = [
         path: 'whatsapp',
         loadComponent: () =>
           import('./features/whatsapp/whatsapp.component').then((m) => m.WhatsappComponent),
-        canActivate: [adminGuard(['ADMINISTRADOR'])],
+        // Administrador, o cajero si el plan de su negocio incluye WhatsApp (2026-10-04).
+        canActivate: [whatsappGuard()],
         title: 'WhatsApp',
       },
       {
