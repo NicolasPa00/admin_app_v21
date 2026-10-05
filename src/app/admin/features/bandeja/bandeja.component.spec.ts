@@ -77,6 +77,16 @@ async function montar(
   const pausarAsistente = vi.fn((_id: number, pausado: boolean) =>
     of({ asistente_pausado: pausado, asistente_pausado_en: pausado ? '2026-10-04T20:45:00-05:00' : null }),
   );
+  const getDiagnostico = vi.fn(() =>
+    of({
+      tipo: 'RESTAURANTE', generado_en: '2026-10-05T00:00:00Z', aplica: true, criticos: 1, pendientes: 2,
+      pruebas: { total: 75, fallidas: 1, hecha: true },
+      hallazgos: [
+        { clave: 'carta_precios', titulo: 'Precios que parecen un error', estado: 'falta', por_que: 'x', donde: 'Menú', total: 1, detalles: ['«Cigarra 400ml» vale $1'] },
+        { clave: 'busqueda_clientes', titulo: 'Formas de pedir que el asistente no entiende', estado: 'recomendado', por_que: 'y', donde: 'Menú', total: 14, detalles: ['Si escriben «gaseosa grande», el asistente no encuentra nada'] },
+      ],
+    }),
+  );
   const responder = vi.fn(() => of({ id_mensaje: 'm1', estado_conversacion: 'handoff_humano', estado_entrega: 'pendiente' }));
   const conversaciones = opts.conversaciones ?? [CON_NOMBRE, SIN_NOMBRE, SIN_NADA];
   TestBed.configureTestingModule({
@@ -104,6 +114,7 @@ async function montar(
           guardarConfiguracion,
           guardarTiempoEstimado,
           pausarAsistente,
+          getDiagnostico,
         },
       },
     ],
@@ -113,7 +124,7 @@ async function montar(
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, tick: () => fixture.detectChanges() };
+  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, getDiagnostico, tick: () => fixture.detectChanges() };
 }
 
 /** Desde 2026-10-02 los ajustes del asistente viven en la ventana «Configuración del asistente». */
@@ -638,5 +649,34 @@ describe('Bandeja — pausa de emergencia del asistente', () => {
   it('quien no es administrador ve el botón deshabilitado', async () => {
     const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: false } });
     expect(boton(v.el).disabled).toBe(true);
+  });
+});
+
+describe('Bandeja — diagnóstico a fondo de la carta', () => {
+  const abrirPanel = async (config: { reactivar_asistente_min: number; puede_editar: boolean }) => {
+    const v = await montar({ config });
+    v.fixture.componentInstance.prepAbierta.set(true);
+    v.tick();
+    return v;
+  };
+  const boton = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll('button')).find((b) => /Revisar la carta a fondo/.test(b.textContent ?? '')) as HTMLButtonElement;
+
+  it('el administrador lo pide con un botón y ve los hallazgos con sus productos', async () => {
+    const v = await abrirPanel({ reactivar_asistente_min: 0, puede_editar: true });
+    expect(v.getDiagnostico).not.toHaveBeenCalled(); // bajo demanda: no al abrir la Bandeja
+    boton(v.el).click();
+    v.tick();
+    expect(v.getDiagnostico).toHaveBeenCalledWith(1);
+    const texto = v.el.querySelector('.bdj__diag')?.textContent ?? '';
+    expect(texto).toContain('2 puntos por mejorar');
+    expect(texto).toContain('probamos 75 formas de pedir');
+    expect(texto).toContain('«Cigarra 400ml» vale $1');
+    expect(texto).toContain('y 13 más');
+  });
+
+  it('quien no puede editar el negocio no ve el botón', async () => {
+    const v = await abrirPanel({ reactivar_asistente_min: 0, puede_editar: false });
+    expect(boton(v.el)).toBeUndefined();
   });
 });

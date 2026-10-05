@@ -171,6 +171,77 @@
               {{ puntosListos() }} {{ puntosListos() === 1 ? 'punto ya está listo' : 'puntos ya están listos' }}
             </p>
           }
+
+          <!-- Diagnóstico a fondo de la carta (2026-10-05): lo que la lista de arriba no ve. Solo
+               para quien puede arreglarlo (administrador del negocio o super admin). -->
+          @if (config()?.puede_editar && prep.tipo === 'RESTAURANTE') {
+            <div class="bdj__diag">
+              <div class="bdj__diag-cabeza">
+                <div>
+                  <p class="bdj__prep-nombre">¿Tu carta está lista para el asistente?</p>
+                  <p class="bdj__prep-texto">
+                    Revisamos nombres, precios y descripciones, y probamos si el asistente encuentra
+                    los productos cuando un cliente los pide como se piden de verdad.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="bdj__auto-guardar"
+                  [disabled]="diagnosticando()"
+                  (click)="revisarCartaAFondo()"
+                >
+                  {{ diagnosticando() ? 'Revisando…' : diagnostico() ? 'Revisar otra vez' : 'Revisar la carta a fondo' }}
+                </button>
+              </div>
+
+              @if (diagnostico(); as d) {
+                @if (d.hallazgos.length === 0) {
+                  <p class="bdj__prep-ok">
+                    <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                    No encontramos nada que mejorar en la carta
+                    @if (d.pruebas.hecha) {
+                      ({{ d.pruebas.total }} formas de pedir probadas)
+                    }
+                  </p>
+                } @else {
+                  <p class="bdj__diag-resumen">
+                    {{ d.hallazgos.length }} {{ d.hallazgos.length === 1 ? 'punto' : 'puntos' }} por mejorar
+                    @if (d.pruebas.hecha) {
+                      · probamos {{ d.pruebas.total }} formas de pedir y {{ d.pruebas.fallidas }}
+                      {{ d.pruebas.fallidas === 1 ? 'no encontró' : 'no encontraron' }} el producto
+                    }
+                  </p>
+                  <ul class="bdj__prep-lista">
+                    @for (h of d.hallazgos; track h.clave) {
+                      <li class="bdj__prep-punto" [class.bdj__prep-punto--falta]="h.estado === 'falta'">
+                        <span class="bdj__prep-marca" aria-hidden="true">
+                          <lucide-icon [name]="h.estado === 'falta' ? 'triangle-alert' : 'alert-circle'" [size]="16" />
+                        </span>
+                        <div>
+                          <p class="bdj__prep-nombre">
+                            {{ h.titulo }}
+                            <span class="bdj__prep-nivel">{{ h.estado === 'falta' ? 'Necesario' : 'Recomendado' }}</span>
+                          </p>
+                          <p class="bdj__prep-texto">{{ h.por_que }}</p>
+                          @if (h.detalles.length > 0) {
+                            <ul class="bdj__diag-detalles">
+                              @for (x of h.detalles; track x) {
+                                <li>{{ x }}</li>
+                              }
+                              @if (h.total > h.detalles.length) {
+                                <li class="bdj__diag-mas">y {{ h.total - h.detalles.length }} más</li>
+                              }
+                            </ul>
+                          }
+                          <p class="bdj__prep-donde">Dónde: {{ h.donde }}</p>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                }
+              }
+            </div>
+          }
         </section>
       }
     }

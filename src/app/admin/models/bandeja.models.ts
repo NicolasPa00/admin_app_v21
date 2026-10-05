@@ -208,6 +208,30 @@ export interface PuntoPreparacion {
   por_que: string | null;
 }
 
+/** Un hallazgo del diagnóstico a fondo: qué pasa, por qué importa, dónde se arregla y con qué productos. */
+export interface HallazgoDiagnostico {
+  clave: string;
+  titulo: string;
+  estado: 'falta' | 'recomendado';
+  por_que: string;
+  donde: string;
+  /** Cuántos casos hay en total; `detalles` trae solo los primeros. */
+  total: number;
+  detalles: string[];
+}
+
+/** Diagnóstico a fondo de la carta para el asistente (reglas + prueba de su buscador). */
+export interface DiagnosticoAsistente {
+  tipo: string | null;
+  generado_en: string;
+  /** false en verticales que el diagnóstico todavía no cubre (hoy solo restaurante). */
+  aplica: boolean;
+  hallazgos: HallazgoDiagnostico[];
+  pruebas: { total: number; fallidas: number; hecha?: boolean };
+  criticos: number;
+  pendientes: number;
+}
+
 export interface PreparacionAsistente {
   tipo: string | null;
   criticos: number;

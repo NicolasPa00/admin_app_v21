@@ -30,6 +30,7 @@ import { ToastService } from '../../../shared/toast/toast.service';
 import {
   ConversacionBandeja,
   ConfiguracionReactivacion,
+  DiagnosticoAsistente,
   ConversacionBandejaDetalle,
   MensajeBandeja,
   RetomadaAsistente,
@@ -278,6 +279,27 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly infoTexto = signal('');
   readonly guardandoInfo = signal(false);
 
+  // ── Diagnóstico a fondo de la carta (2026-10-05) ─────────────────────────────────────────
+  readonly diagnostico = signal<DiagnosticoAsistente | null>(null);
+  readonly diagnosticando = signal(false);
+
+  /** Revisa la carta a fondo. Bajo demanda: hace decenas de búsquedas en el servidor. */
+  revisarCartaAFondo(): void {
+    const id = this.negocioConfig();
+    if (id === null || this.diagnosticando()) return;
+    this.diagnosticando.set(true);
+    this.service.getDiagnostico(id).subscribe({
+      next: (d) => {
+        this.diagnosticando.set(false);
+        if (this.negocioConfig() === id) this.diagnostico.set(d);
+      },
+      error: (err) => {
+        this.diagnosticando.set(false);
+        this.toast.errorHttp(err, 'No se pudo revisar la carta.');
+      },
+    });
+  }
+
   // ── Pausa de emergencia (2026-10-04: Zona Burger sin papas) ─────────────────────────────
   readonly cambiandoPausa = signal(false);
   readonly pausado = computed(() => this.config()?.asistente_pausado === true);
@@ -440,6 +462,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
   private cargarConfig(idNegocio: number | null): void {
     if (idNegocio === null) {
       this.config.set(null);
+      this.diagnostico.set(null);
       this.preparacion.set(null);
       this.prepAbierta.set(false);
       return;

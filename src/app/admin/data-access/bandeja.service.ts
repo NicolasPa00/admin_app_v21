@@ -7,6 +7,7 @@ import { ApiResponse } from '../../auth/models/auth.models';
 import {
   BandejaListado,
   ConfiguracionReactivacion,
+  DiagnosticoAsistente,
   PreparacionAsistente,
   ConversacionBandejaDetalle,
   ReportesConversacion,
@@ -194,6 +195,18 @@ export class BandejaService {
         `${this.API}/intelligence/bandeja/asistente-pausa`,
         { id_negocio: idNegocio, pausado },
       )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Diagnóstico a fondo de la carta: reglas sobre nombres, precios y descripciones, y una prueba
+   * del buscador del asistente con las formas más comunes de pedir. Bajo demanda (tarda un poco).
+   */
+  getDiagnostico(idNegocio: number): Observable<DiagnosticoAsistente | null> {
+    return this.http
+      .get<ApiResponse<DiagnosticoAsistente>>(`${this.API}/intelligence/bandeja/diagnostico`, {
+        params: { id_negocio: String(idNegocio) },
+      })
       .pipe(map((res) => res.data ?? null));
   }
 
