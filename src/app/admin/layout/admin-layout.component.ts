@@ -35,6 +35,7 @@ import {
   MessageCircle,
   FileText,
   Wallet,
+  Gauge,
   Sun,
   Moon,
   LogOut,
@@ -107,7 +108,7 @@ const ATAJOS_MOVIL = 4;
       multi: true,
       useValue: new LucideIconProvider({
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, ChartColumn, Bot, MessageSquare,
-        MessageCircle, FileText, Wallet,
+        MessageCircle, FileText, Wallet, Gauge,
         Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X,
       }),
@@ -138,6 +139,7 @@ export class AdminLayoutComponent {
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion', soloAdministrador: true },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
+    { label: 'Consumo IA', icon: 'gauge', route: '/admin/consumo-ia', superAdmin: true },
     // Sin `superAdmin`: es la mensualidad vista por el dueño del negocio.
     { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos', soloAdministrador: true },
     { label: 'Cobranza', icon: 'wallet', route: '/admin/cobranza', superAdmin: true },
@@ -302,6 +304,7 @@ export class AdminLayoutComponent {
     if (url.includes('/facturacion')) return 'Facturación';
     if (url.includes('/whatsapp')) return 'WhatsApp';
     if (url.includes('/intelligence')) return 'Intelligence';
+    if (url.includes('/consumo-ia')) return 'Consumo de IA';
     if (url.includes('/personas')) return 'Ficha 360';
     if (url.includes('/mis-pagos')) return 'Mis pagos';
     if (url.includes('/cobranza')) return 'Cobranza';

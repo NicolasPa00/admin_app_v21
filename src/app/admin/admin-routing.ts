@@ -131,6 +131,15 @@ export const adminRoutes: Routes = [
         title: 'Intelligence',
       },
       {
+        // Consumo IA: gasto de OpenAI, saldo estimado y recargas. Solo super admin — el costo
+        // de la IA es de EscalApp, no del cliente.
+        path: 'consumo-ia',
+        loadComponent: () =>
+          import('./features/consumo-ia/consumo-ia.component').then((m) => m.ConsumoIaComponent),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Consumo de IA',
+      },
+      {
         // Mis pagos: la mensualidad vista por el DUEÑO del negocio. No es de super admin — el
         // backend decide qué negocios le enseña cruzando el token con sus roles.
         path: 'mis-pagos',
