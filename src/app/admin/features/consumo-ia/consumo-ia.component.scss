@@ -397,6 +397,72 @@
     background: var(--color-primary);
   }
 
+  /* La cuota de WhatsApp sí es un estado: aviso al 80 %, crítico al pasarla. Siempre con texto. */
+  &__rank-fill--aviso { background: var(--color-warning); }
+  &__rank-fill--critico { background: var(--color-error); }
+
+  &__cats {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0.75rem 0 0;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+
+    b { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+  }
+
+  /* ── Encabezado de cada proveedor ─────────────────────── */
+  &__seccion {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    margin-top: 0.75rem;
+    padding-bottom: 0.25rem;
+  }
+
+  &__seccion-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+  }
+
+  &__seccion-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__seccion-desc {
+    margin: 0.2rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--color-text-secondary);
+    max-width: 75ch;
+  }
+
+  &__trm {
+    margin: -0.5rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
   &__rank-meta {
     margin: 0.3rem 0 0;
     font-size: 0.75rem;

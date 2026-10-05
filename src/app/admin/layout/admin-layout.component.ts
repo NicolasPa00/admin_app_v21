@@ -142,7 +142,7 @@ export class AdminLayoutComponent {
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion', soloAdministrador: true },
     { label: 'Intelligence', icon: 'bot', route: '/admin/intelligence', superAdmin: true },
-    { label: 'Consumo IA', icon: 'gauge', route: '/admin/consumo-ia', superAdmin: true },
+    { label: 'Terceros', icon: 'gauge', route: '/admin/terceros', superAdmin: true },
     // Sin `superAdmin`: es la mensualidad vista por el dueño del negocio.
     { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos', soloAdministrador: true },
     { label: 'Cobranza', icon: 'wallet', route: '/admin/cobranza', superAdmin: true },
@@ -308,7 +308,7 @@ export class AdminLayoutComponent {
     if (url.includes('/facturacion')) return 'Facturación';
     if (url.includes('/whatsapp')) return 'WhatsApp';
     if (url.includes('/intelligence')) return 'Intelligence';
-    if (url.includes('/consumo-ia')) return 'Consumo de IA';
+    if (url.includes('/terceros')) return 'Consumo de terceros';
     if (url.includes('/personas')) return 'Ficha 360';
     if (url.includes('/mis-pagos')) return 'Mis pagos';
     if (url.includes('/cobranza')) return 'Cobranza';

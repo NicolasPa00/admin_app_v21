@@ -40,6 +40,49 @@ function datos(parcial: Partial<ConsumoIa> = {}): ConsumoIa {
     movimientos: [
       { id_recarga: 1, tipo: 'SALDO', monto_usd: 10, fecha: '2026-10-01T13:00:00Z', nota: 'inicio' },
     ],
+    whatsapp: {
+      consultado_en: '2026-10-03T12:00:00Z',
+      cuentas: [
+        {
+          nombre: 'Zona Burger',
+          paga: 'cliente',
+          id_negocio: 6,
+          moneda: 'COP',
+          error: null,
+          mensajes_periodo: 919,
+          costo_periodo: 0,
+          mensajes_mes: 919,
+          costo_mes: 0,
+          numeros: [
+            {
+              telefono: '+57 ··· 8196',
+              id_negocio: 6,
+              negocio: 'Zona Burger',
+              mensajes_mes: 919,
+              servicio_mes: 919,
+              cobrados_mes: 0,
+              costo_mes: 0,
+              gratis_limite: 1000,
+            },
+          ],
+          por_categoria: [{ categoria: 'SERVICE', tipo: 'FREE_CUSTOMER_SERVICE', mensajes: 919, costo: 0 }],
+        },
+      ],
+      serie: [
+        { fecha: '2026-10-01', escalapp: 0, clientes: 158 },
+        { fecha: '2026-10-02', escalapp: 0, clientes: 178 },
+      ],
+      totales: {
+        mensajes_periodo: 919,
+        costo_escalapp_mes_cop: 0,
+        costo_escalapp_periodo_cop: 0,
+        costo_clientes_mes_cop: 0,
+        moneda_sin_convertir: false,
+      },
+    },
+    aviso_whatsapp: null,
+    trm: { valor: 3273.49, vigente_desde: '2026-10-03' },
+    terceros: { openai_mes_usd: 2.92, openai_mes_cop: 9548, whatsapp_mes_cop: 0, total_mes_cop: 9548 },
     ...parcial,
   };
 }
@@ -74,8 +117,32 @@ describe('ConsumoIaComponent', () => {
     expect(texto).toContain('Zona Burger');
     expect(texto).toContain('Guardar en caché');
     expect(texto).toContain('75 %'); // 150 de 200 sin IA
-    expect(el.querySelectorAll('.cia__bar').length).toBe(3);
-    expect(el.querySelector('.cia__banner')).toBeNull();
+    // 3 barras de OpenAI + 2 de WhatsApp
+    expect(el.querySelectorAll('.cia__bar').length).toBe(5);
+    expect(el.querySelector('.cia__banner--critico')).toBeNull();
+  });
+
+  it('suma terceros en pesos y avisa del número cerca de la cuota gratis, diciendo quién paga', () => {
+    const el = montar(datos());
+    const texto = (el.textContent ?? '').replace(/\s+/g, ' ');
+    expect(texto).toContain('Pagado a terceros este mes');
+    expect(texto).toMatch(/9\.548/);
+    expect(texto).toContain('La paga el cliente');
+    expect(texto).toContain('919 / 1.000');
+    const aviso = el.querySelector('.cia__banner--aviso');
+    expect(aviso?.textContent).toContain('conviene confirmar que tenga tarjeta');
+  });
+
+  it('si Meta no contesta, lo dice y la parte de OpenAI sigue', () => {
+    const el = montar(
+      datos({
+        whatsapp: null,
+        aviso_whatsapp: { code: 'META_ERROR', mensaje: 'sin permiso' },
+        terceros: { openai_mes_usd: 2.92, openai_mes_cop: 9548, whatsapp_mes_cop: null, total_mes_cop: null },
+      }),
+    );
+    expect(el.textContent).toContain('Meta no contestó');
+    expect(el.textContent).toContain('$8.21');
   });
 
   it('sin saldo de partida no inventa un saldo y pide registrarlo', () => {

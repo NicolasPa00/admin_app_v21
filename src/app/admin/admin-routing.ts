@@ -132,13 +132,19 @@ export const adminRoutes: Routes = [
         title: 'Intelligence',
       },
       {
-        // Consumo IA: gasto de OpenAI, saldo estimado y recargas. Solo super admin — el costo
-        // de la IA es de EscalApp, no del cliente.
-        path: 'consumo-ia',
+        // Terceros: lo que se les paga a OpenAI (IA) y a Meta (WhatsApp), saldo y recargas.
+        // Solo super admin — esos costos son de EscalApp, no del cliente.
+        path: 'terceros',
         loadComponent: () =>
           import('./features/consumo-ia/consumo-ia.component').then((m) => m.ConsumoIaComponent),
         canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
-        title: 'Consumo de IA',
+        title: 'Consumo de terceros',
+      },
+      {
+        // Nombre con el que nació (2026-10-04), antes de sumar WhatsApp.
+        path: 'consumo-ia',
+        redirectTo: 'terceros',
+        pathMatch: 'full',
       },
       {
         // Mis pagos: la mensualidad vista por el DUEÑO del negocio. No es de super admin — el

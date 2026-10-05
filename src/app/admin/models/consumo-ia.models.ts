@@ -1,7 +1,9 @@
 /**
- * Contrato de `GET /admin/consumo-ia` (admin_ws: consumoIaController).
+ * Contrato de `GET /admin/consumo-ia` (admin_ws: consumoIaController) — vista «Terceros».
  *
- * Todos los importes en USD. Los días son días UTC, como los cuenta OpenAI.
+ * Lo de OpenAI va en USD y en días UTC (como los cuenta OpenAI). Lo de WhatsApp (`whatsapp`)
+ * va en la moneda de cada cuenta de Meta (COP hoy) y en días de Colombia. `terceros` junta las
+ * dos en pesos con la TRM del día.
  */
 
 export type VentanaConsumo = 7 | 30 | 90;
@@ -74,6 +76,58 @@ export interface ConsumoIa {
   conversaciones: { con_ia: number; costo_promedio: number };
   turnos: { total: number; con_ia: number; sin_ia: number; humano: number };
   movimientos: MovimientoIa[];
+  whatsapp: ConsumoWhatsapp | null;
+  aviso_whatsapp: { code: string; mensaje: string } | null;
+  trm: { valor: number; vigente_desde: string } | null;
+  terceros: {
+    openai_mes_usd: number;
+    openai_mes_cop: number | null;
+    whatsapp_mes_cop: number | null;
+    total_mes_cop: number | null;
+  };
+}
+
+/** Quién le paga a Meta: la cuenta de EscalApp o la del propio cliente (Embedded Signup). */
+export type PagadorWhatsapp = 'escalapp' | 'cliente';
+
+export interface NumeroWhatsapp {
+  /** Enmascarado: `+57 ··· 8196`. */
+  telefono: string;
+  id_negocio: number | null;
+  negocio: string | null;
+  mensajes_mes: number;
+  /** Mensajes de servicio del mes: los que gastan la asignación gratis. */
+  servicio_mes: number;
+  cobrados_mes: number;
+  costo_mes: number;
+  gratis_limite: number;
+}
+
+export interface CuentaWhatsapp {
+  nombre: string;
+  paga: PagadorWhatsapp;
+  id_negocio: number | null;
+  moneda: string | null;
+  error: string | null;
+  mensajes_periodo: number;
+  costo_periodo: number;
+  mensajes_mes: number;
+  costo_mes: number;
+  numeros: NumeroWhatsapp[];
+  por_categoria: Array<{ categoria: string; tipo: string; mensajes: number; costo: number }>;
+}
+
+export interface ConsumoWhatsapp {
+  consultado_en: string;
+  cuentas: CuentaWhatsapp[];
+  serie: Array<{ fecha: string; escalapp: number; clientes: number }>;
+  totales: {
+    mensajes_periodo: number;
+    costo_escalapp_mes_cop: number;
+    costo_escalapp_periodo_cop: number;
+    costo_clientes_mes_cop: number;
+    moneda_sin_convertir: boolean;
+  };
 }
 
 export interface NuevoMovimientoIa {

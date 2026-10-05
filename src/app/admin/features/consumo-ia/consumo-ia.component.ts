@@ -19,11 +19,14 @@ import {
   Plus,
   Trash2,
   Info,
+  MessageCircle,
+  Bot,
 } from 'lucide-angular';
 
 import { ConsumoIaService } from '../../data-access/consumo-ia.service';
 import {
   ConsumoIa,
+  NumeroWhatsapp,
   PuntoConsumo,
   TipoMovimientoIa,
   VentanaConsumo,
@@ -34,6 +37,22 @@ import { ToastService } from '../../../shared/toast/toast.service';
 /** Menos de estos días de saldo = aviso; menos de CRITICO = urgente. */
 const DIAS_AVISO = 14;
 const DIAS_CRITICO = 5;
+
+/** Desde qué parte de la cuota gratis de WhatsApp se avisa. */
+const CUOTA_AVISO = 0.8;
+
+/** Categorías y tipos de precio de Meta, en palabras de aquí. */
+const CATEGORIAS_META: Record<string, string> = {
+  SERVICE: 'Respuestas a clientes',
+  UTILITY: 'Avisos y recordatorios',
+  MARKETING: 'Promociones',
+  AUTHENTICATION: 'Códigos de verificación',
+};
+const TIPOS_META: Record<string, string> = {
+  FREE_CUSTOMER_SERVICE: 'gratis',
+  FREE_ENTRY_POINT: 'gratis (anuncio)',
+  REGULAR: 'cobrado',
+};
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
@@ -54,7 +73,7 @@ function techo(valor: number): number {
 }
 
 /**
- * ConsumoIaComponent — cuánto se gasta en OpenAI, cuánto queda y en qué se va.
+ * ConsumoIaComponent — vista «Terceros»: lo que se les paga a OpenAI (IA) y a Meta (WhatsApp).
  *
  * Una sola serie en la gráfica (el gasto oficial de cada día), así que no lleva leyenda: el
  * título la nombra. Lo del bot según nuestra cuenta va en el tooltip y en la línea de abajo,
@@ -75,6 +94,7 @@ function techo(valor: number): number {
       multi: true,
       useValue: new LucideIconProvider({
         Gauge, RefreshCw, AlertCircle, TriangleAlert, CircleCheck, Wallet, Plus, Trash2, Info,
+        MessageCircle, Bot,
       }),
     },
   ],
@@ -99,6 +119,7 @@ export class ConsumoIaComponent implements OnInit {
   protected readonly porAnular = signal<number | null>(null);
 
   protected readonly hover = signal<number | null>(null);
+  protected readonly hoverWa = signal<number | null>(null);
 
   ngOnInit(): void {
     this.cargar();
@@ -188,6 +209,64 @@ export class ConsumoIaComponent implements OnInit {
     return i == null ? null : (this.serie()[i] ?? null);
   });
 
+  // ── WhatsApp (Meta) ────────────────────────────────────────
+
+  /** Mensajes por día de todas las cuentas: una sola serie, el reparto va en el tooltip. */
+  protected readonly serieWa = computed(() =>
+    (this.datos()?.whatsapp?.serie ?? []).map((p) => ({ ...p, valor: p.escalapp + p.clientes })),
+  );
+
+  protected readonly ejeMaxWa = computed(() =>
+    techo(Math.max(0, ...this.serieWa().map((p) => p.valor))),
+  );
+
+  protected readonly ejeMarcasWa = computed(() => {
+    const max = this.ejeMaxWa();
+    return [max, max / 2, 0];
+  });
+
+  protected readonly cadaCuantoWa = computed(() =>
+    Math.max(1, Math.ceil(this.serieWa().length / 6)),
+  );
+
+  protected readonly puntoHoverWa = computed(() => {
+    const i = this.hoverWa();
+    return i == null ? null : (this.serieWa()[i] ?? null);
+  });
+
+  protected readonly mensajesMes = computed(() =>
+    (this.datos()?.whatsapp?.cuentas ?? []).reduce((s, c) => s + c.mensajes_mes, 0),
+  );
+
+  /** Números que ya pasaron, o van por pasar, la cuota gratis del mes. Van arriba, en un aviso. */
+  protected readonly numerosEnRiesgo = computed(() =>
+    (this.datos()?.whatsapp?.cuentas ?? []).flatMap((c) =>
+      c.numeros
+        .filter((n) => this.estadoCuota(n) !== 'ok')
+        .map((n) => ({ ...n, paga: c.paga, cuenta: c.nombre })),
+    ),
+  );
+
+  protected estadoCuota(n: NumeroWhatsapp): 'ok' | 'aviso' | 'pasada' {
+    if (n.cobrados_mes > 0 || n.servicio_mes >= n.gratis_limite) return 'pasada';
+    if (n.servicio_mes >= n.gratis_limite * CUOTA_AVISO) return 'aviso';
+    return 'ok';
+  }
+
+  protected pctCuota(n: NumeroWhatsapp): number {
+    return Math.min(100, (n.servicio_mes / n.gratis_limite) * 100);
+  }
+
+  protected categoriaMeta(categoria: string, tipo: string): string {
+    const c = CATEGORIAS_META[categoria] ?? categoria;
+    const t = TIPOS_META[tipo] ?? tipo.toLowerCase();
+    return `${c} · ${t}`;
+  }
+
+  protected alturaWa(valor: number): number {
+    return Math.max(0, (valor / this.ejeMaxWa()) * 100);
+  }
+
   // ── Movimientos ────────────────────────────────────────────
 
   protected guardarMovimiento(): void {
@@ -270,6 +349,21 @@ export class ConsumoIaComponent implements OnInit {
     const v = Number(valor ?? 0);
     if (v === 0) return '$0';
     return `$${v < 0.1 ? v.toFixed(4) : v.toFixed(2)}`;
+  }
+
+  /** Pesos colombianos, sin centavos. */
+  protected cop(valor: number | null | undefined): string {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      maximumFractionDigits: 0,
+    }).format(Math.round(Number(valor ?? 0)));
+  }
+
+  /** Costo en la moneda de la cuenta de Meta. */
+  protected moneda(valor: number, codigo: string | null): string {
+    if (codigo === 'COP' || !codigo) return this.cop(valor);
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: codigo }).format(valor);
   }
 
   protected entero(valor: number | null | undefined): string {
