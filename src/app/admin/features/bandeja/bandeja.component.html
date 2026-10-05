@@ -87,6 +87,19 @@
           Configuración del asistente
         </button>
       }
+      <!-- Informe con las conversaciones reales (fase 3): para quien puede actuar sobre él. -->
+      @if (config()?.puede_editar) {
+        <button
+          type="button"
+          class="bdj__chip"
+          [class.bdj__chip--on]="informeAbierto()"
+          [attr.aria-expanded]="informeAbierto()"
+          (click)="alternarInforme()"
+        >
+          <lucide-icon name="chart-column" [size]="14" aria-hidden="true" />
+          Informe
+        </button>
+      }
       <!-- ¿Qué le falta al asistente para atender bien? Revisión del backend, con dónde se arregla. -->
       @if (preparacion(); as prep) {
         <button
@@ -125,6 +138,107 @@
           </button>
         }
       </div>
+    }
+    @if (informeAbierto()) {
+      <section class="bdj__prep bdj__informe" aria-labelledby="bdj-informe-titulo">
+        <div class="bdj__prep-cabeza">
+          <h2 id="bdj-informe-titulo" class="bdj__prep-titulo">Cómo le fue a tu asistente</h2>
+          <div class="bdj__informe-periodo" role="group" aria-label="Periodo del informe">
+            @for (d of [7, 30]; track d) {
+              <button
+                type="button"
+                class="bdj__chip"
+                [class.bdj__chip--on]="informeDias() === d"
+                [disabled]="cargandoInforme()"
+                (click)="cargarInforme(d)"
+              >
+                {{ d }} días
+              </button>
+            }
+            <button type="button" class="bdj__icono" (click)="informeAbierto.set(false)" aria-label="Cerrar">
+              <lucide-icon name="x" [size]="16" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        @if (cargandoInforme()) {
+          <p class="bdj__prep-texto">Revisando las conversaciones… tarda unos segundos.</p>
+        } @else if (informe(); as inf) {
+          @if (!inf.con_actividad) {
+            <p class="bdj__prep-texto">El asistente no tuvo conversaciones en los últimos {{ inf.dias }} días.</p>
+          } @else {
+            <div class="bdj__informe-cifras">
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.actual.conversaciones }}</span>
+                <span class="bdj__informe-nombre">conversaciones</span>
+                <span class="bdj__informe-nota">{{ variacion(inf.actual.conversaciones, inf.anterior.conversaciones) }}</span>
+              </div>
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.actual.pedidos.total }}</span>
+                <span class="bdj__informe-nombre">pedidos tomados por el asistente</span>
+                <span class="bdj__informe-nota">{{ variacion(inf.actual.pedidos.total, inf.anterior.pedidos.total) }}</span>
+              </div>
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.actual.pedidos.de_carta }}</span>
+                <span class="bdj__informe-nombre">desde la carta digital</span>
+                <span class="bdj__informe-nota">{{ inf.actual.pedidos.por_chat }} conversando por chat</span>
+              </div>
+              <div class="bdj__informe-cifra">
+                <span class="bdj__informe-numero">{{ inf.a_persona.total }}</span>
+                <span class="bdj__informe-nombre">chats que terminó atendiendo una persona</span>
+                <span class="bdj__informe-nota">
+                  @if (inf.a_persona.esperan_respuesta_ahora > 0) {
+                    {{ inf.a_persona.esperan_respuesta_ahora }} esperan respuesta ahora
+                  }
+                </span>
+              </div>
+              <!-- El gasto en IA es de EscalApp: el backend solo lo manda al super admin. -->
+              @if (inf.costo; as c) {
+                <div class="bdj__informe-cifra bdj__informe-cifra--interna">
+                  <span class="bdj__informe-numero">US$ {{ c.usd | number: '1.2-2' }}</span>
+                  <span class="bdj__informe-nombre">gasto en IA (solo lo ves tú)</span>
+                  <span class="bdj__informe-nota">
+                    ≈ US$ {{ c.usd_proyeccion_mes | number: '1.2-2' }} al mes
+                    @if (c.usd_por_pedido !== null) {
+                      · US$ {{ c.usd_por_pedido | number: '1.3-3' }} por pedido
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+
+            @if (inf.que_hacer.length === 0) {
+              <p class="bdj__prep-ok">
+                <lucide-icon name="check" [size]="14" aria-hidden="true" />
+                No encontramos nada que corregir en este periodo
+              </p>
+            } @else {
+              <p class="bdj__diag-resumen">Qué puedes hacer</p>
+              <ul class="bdj__prep-lista">
+                @for (a of inf.que_hacer; track a.clave) {
+                  <li class="bdj__prep-punto">
+                    <span class="bdj__prep-marca" aria-hidden="true">
+                      <lucide-icon name="alert-circle" [size]="16" />
+                    </span>
+                    <div>
+                      <p class="bdj__prep-nombre">{{ a.titulo }}</p>
+                      <p class="bdj__prep-texto">{{ a.por_que }}</p>
+                      @if (a.detalles.length > 0) {
+                        <ul class="bdj__diag-detalles">
+                          @for (x of a.detalles; track x) {
+                            <li>{{ x }}</li>
+                          }
+                        </ul>
+                      }
+                      <p class="bdj__prep-donde">Dónde: {{ a.donde }}</p>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        }
+      </section>
     }
     @if (prepAbierta()) {
       @if (preparacion(); as prep) {

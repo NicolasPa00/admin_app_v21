@@ -64,6 +64,8 @@ async function montar(
       asistente_pausado?: boolean;
     };
     detalle?: OpcionesDetalle;
+    /** El gasto en IA solo lo manda el backend al super admin. */
+    informeConCosto?: boolean;
     mensajes?: MensajeBandeja[];
     archivo?: (idConversacion: string, idMensaje: string) => unknown;
   } = {},
@@ -97,6 +99,23 @@ async function montar(
       preguntas: ['¿Cuál es el precio real de la Cigarra?'],
     }),
   );
+  const cifras = (conversaciones: number, pedidos: number) => ({
+    conversaciones, mensajes_entrantes: 900, turnos: 700, turnos_con_modelo: 400, pct_con_modelo: 57,
+    pedidos: { total: pedidos, de_carta: 28, por_chat: pedidos - 28, pct_por_chat: 70, modelo_por_pedido_carta: 2.5, modelo_por_pedido_chat: 5.6 },
+  });
+  const getInforme = vi.fn((_id: number, dias: number) =>
+    of({
+      dias, desde: '2026-09-28T00:00:00Z', hasta: '2026-10-05T00:00:00Z', con_actividad: true,
+      actual: cifras(199, 94), anterior: cifras(100, 47),
+      a_persona: { total: 25, esperan_respuesta_ahora: 14 },
+      que_hacer: [
+        { clave: 'busquedas_sin_resultado', titulo: 'Tus clientes pidieron 24 veces algo que el asistente no encuentra en la carta', por_que: 'x', donde: 'Menú', detalles: ['«salchilimon» (8 veces)'] },
+      ],
+      ...(opts.informeConCosto
+        ? { costo: { usd: 1.78, usd_anterior: 0, llamadas: 945, usd_por_conversacion: 0.009, usd_por_pedido: 0.019, usd_proyeccion_mes: 7.64 } }
+        : {}),
+    }),
+  );
   const responder = vi.fn(() => of({ id_mensaje: 'm1', estado_conversacion: 'handoff_humano', estado_entrega: 'pendiente' }));
   const conversaciones = opts.conversaciones ?? [CON_NOMBRE, SIN_NOMBRE, SIN_NADA];
   TestBed.configureTestingModule({
@@ -126,6 +145,7 @@ async function montar(
           pausarAsistente,
           getDiagnostico,
           pedirRecomendaciones,
+          getInforme,
         },
       },
     ],
@@ -135,7 +155,7 @@ async function montar(
   await fixture.whenStable();
   fixture.detectChanges();
   const el = fixture.nativeElement as HTMLElement;
-  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, getDiagnostico, pedirRecomendaciones, tick: () => fixture.detectChanges() };
+  return { fixture, el, responder, guardarConfiguracion, guardarTiempoEstimado, pausarAsistente, getDiagnostico, pedirRecomendaciones, getInforme, tick: () => fixture.detectChanges() };
 }
 
 /** Desde 2026-10-02 los ajustes del asistente viven en la ventana «Configuración del asistente». */
@@ -718,5 +738,49 @@ describe('Bandeja — recomendaciones con IA sobre la carta', () => {
     // «Analizar otra vez» fuerza un análisis nuevo.
     botonCon(v.el, /Analizar otra vez/).click();
     expect(v.pedirRecomendaciones).toHaveBeenLastCalledWith(1, true);
+  });
+});
+
+describe('Bandeja — informe con las conversaciones reales', () => {
+  const boton = (el: HTMLElement, texto: RegExp) =>
+    Array.from(el.querySelectorAll('button')).find((b) => texto.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
+
+  it('se pide al abrirlo (no antes) y enseña cifras, comparación y qué hacer', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    expect(v.getInforme).not.toHaveBeenCalled();
+    boton(v.el, /^Informe$/).click();
+    v.tick();
+    expect(v.getInforme).toHaveBeenCalledWith(1, 7);
+    const texto = v.el.querySelector('.bdj__informe')?.textContent ?? '';
+    expect(texto).toContain('199');
+    expect(texto).toContain('+99 % frente al periodo anterior');
+    expect(texto).toContain('desde la carta digital');
+    expect(texto).toContain('14 esperan respuesta ahora');
+    expect(texto).toContain('«salchilimon» (8 veces)');
+    expect(texto).not.toContain('gasto en IA'); // el negocio no ve lo que le cuesta la IA a EscalApp
+  });
+
+  it('30 días vuelve a pedirlo con ese periodo', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true } });
+    boton(v.el, /^Informe$/).click();
+    v.tick();
+    boton(v.el, /^30 días$/).click();
+    v.tick();
+    expect(v.getInforme).toHaveBeenLastCalledWith(1, 30);
+  });
+
+  it('el super admin ve además el gasto en IA', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: true }, informeConCosto: true });
+    boton(v.el, /^Informe$/).click();
+    v.tick();
+    const texto = v.el.querySelector('.bdj__informe')?.textContent ?? '';
+    expect(texto).toContain('gasto en IA');
+    expect(texto).toContain('1.78');
+    expect(texto).toContain('7.64');
+  });
+
+  it('quien no puede editar el negocio no ve el botón', async () => {
+    const v = await montar({ config: { reactivar_asistente_min: 0, puede_editar: false } });
+    expect(boton(v.el, /^Informe$/)).toBeUndefined();
   });
 });

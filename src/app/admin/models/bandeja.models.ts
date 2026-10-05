@@ -255,6 +255,53 @@ export interface RecomendacionesAsistente {
   de_cache: boolean;
 }
 
+/** Los números de una ventana del informe del asistente. */
+export interface CifrasInforme {
+  conversaciones: number;
+  mensajes_entrantes: number;
+  turnos: number;
+  turnos_con_modelo: number;
+  pct_con_modelo: number;
+  pedidos: {
+    total: number;
+    de_carta: number;
+    por_chat: number;
+    pct_por_chat: number;
+    modelo_por_pedido_carta: number | null;
+    modelo_por_pedido_chat: number | null;
+  };
+}
+
+/** Una acción del informe: qué pasó, por qué importa, dónde se arregla y con qué casos. */
+export interface AccionInforme {
+  clave: string;
+  titulo: string;
+  por_que: string;
+  donde: string;
+  detalles: string[];
+}
+
+/** Cómo le fue al asistente con las conversaciones reales (fase 3 del diagnóstico). */
+export interface InformeAsistente {
+  dias: number;
+  desde: string;
+  hasta: string;
+  con_actividad: boolean;
+  actual: CifrasInforme;
+  anterior: CifrasInforme;
+  a_persona: { total: number; esperan_respuesta_ahora: number };
+  que_hacer: AccionInforme[];
+  /** Gasto en IA: es de EscalApp, solo viaja al super admin. */
+  costo?: {
+    usd: number;
+    usd_anterior: number;
+    llamadas: number;
+    usd_por_conversacion: number | null;
+    usd_por_pedido: number | null;
+    usd_proyeccion_mes: number;
+  };
+}
+
 export interface PreparacionAsistente {
   tipo: string | null;
   criticos: number;

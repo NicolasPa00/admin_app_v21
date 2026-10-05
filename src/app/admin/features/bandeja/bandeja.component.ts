@@ -15,12 +15,12 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DatePipe, isPlatformBrowser } from '@angular/common';
+import { DatePipe, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import {
   LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-  Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play,
+  Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
 } from 'lucide-angular';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -32,6 +32,7 @@ import {
   ConfiguracionReactivacion,
   DiagnosticoAsistente,
   RecomendacionesAsistente,
+  InformeAsistente,
   ConversacionBandejaDetalle,
   MensajeBandeja,
   RetomadaAsistente,
@@ -124,7 +125,7 @@ const REFRESCO_MS = 5000;
   selector: 'app-bandeja',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, LucideAngularModule, ModalCabeceraComponent],
+  imports: [FormsModule, DatePipe, DecimalPipe, LucideAngularModule, ModalCabeceraComponent],
   // `viewProviders` y no `providers`: los `providers` también los ven los hijos PROYECTADOS
   // (<ng-content>), y como LUCIDE_ICONS es multi, un ícono declarado por quien proyecta (el botón
   // «Tu número» de WhatsApp) se buscaba aquí, no lo encontraba y cortaba el render de la bandeja.
@@ -135,7 +136,7 @@ const REFRESCO_MS = 5000;
       useValue: new LucideIconProvider({
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play,
+        Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
       }),
     },
   ],
@@ -299,6 +300,42 @@ export class BandejaComponent implements OnInit, OnDestroy {
         this.toast.errorHttp(err, 'No se pudo revisar la carta.');
       },
     });
+  }
+
+  // ── Informe con las conversaciones reales (fase 3 del diagnóstico) ───────────────────────
+  readonly informeAbierto = signal(false);
+  readonly informe = signal<InformeAsistente | null>(null);
+  readonly cargandoInforme = signal(false);
+  readonly informeDias = signal(7);
+
+  /** Abre el panel y, la primera vez, pide el informe. */
+  alternarInforme(): void {
+    this.informeAbierto.update((v) => !v);
+    if (this.informeAbierto() && !this.informe()) this.cargarInforme(this.informeDias());
+  }
+
+  cargarInforme(dias: number): void {
+    const id = this.negocioConfig();
+    if (id === null || this.cargandoInforme()) return;
+    this.informeDias.set(dias);
+    this.cargandoInforme.set(true);
+    this.service.getInforme(id, dias).subscribe({
+      next: (r) => {
+        this.cargandoInforme.set(false);
+        if (this.negocioConfig() === id) this.informe.set(r);
+      },
+      error: (err) => {
+        this.cargandoInforme.set(false);
+        this.toast.errorHttp(err, 'No se pudo generar el informe.');
+      },
+    });
+  }
+
+  /** «+12 %» / «−8 %» frente al periodo anterior; vacío si no había con qué comparar. */
+  variacion(actual: number, anterior: number): string {
+    if (!anterior) return '';
+    const p = Math.round((100 * (actual - anterior)) / anterior);
+    return p === 0 ? 'igual que antes' : `${p > 0 ? '+' : '−'}${Math.abs(p)} % frente al periodo anterior`;
   }
 
   // ── Recomendaciones con IA (fase 2 del diagnóstico) ──────────────────────────────────────
@@ -495,6 +532,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
       this.config.set(null);
       this.diagnostico.set(null);
       this.recomendaciones.set(null);
+      this.informe.set(null);
+      this.informeAbierto.set(false);
       this.preparacion.set(null);
       this.prepAbierta.set(false);
       return;

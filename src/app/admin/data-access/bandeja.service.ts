@@ -8,6 +8,7 @@ import {
   BandejaListado,
   ConfiguracionReactivacion,
   DiagnosticoAsistente,
+  InformeAsistente,
   RecomendacionesAsistente,
   PreparacionAsistente,
   ConversacionBandejaDetalle,
@@ -221,6 +222,15 @@ export class BandejaService {
         `${this.API}/intelligence/bandeja/diagnostico/recomendaciones`,
         { id_negocio: idNegocio, forzar },
       )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /** Informe del asistente con las conversaciones reales de los últimos `dias` (tarda unos segundos). */
+  getInforme(idNegocio: number, dias = 7): Observable<InformeAsistente | null> {
+    return this.http
+      .get<ApiResponse<InformeAsistente>>(`${this.API}/intelligence/bandeja/informe`, {
+        params: { id_negocio: String(idNegocio), dias: String(dias) },
+      })
       .pipe(map((res) => res.data ?? null));
   }
 
