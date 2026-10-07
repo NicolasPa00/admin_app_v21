@@ -213,7 +213,9 @@
           <article class="cia__hero-item">
             <p class="cia__hero-label">Hoy <span class="cia__cur cia__cur--hero">USD</span></p>
             <p class="cia__hero-value">{{ usd(d.resumen.hoy) }}</p>
-            <p class="cia__hero-note">desde las 7 p. m. de ayer (día de OpenAI)</p>
+            <p class="cia__hero-note">
+              {{ d.reparto_dias === 'aproximado' ? 'desde las 7 p. m. de ayer (día de OpenAI)' : 'desde la medianoche, hora de Colombia' }}
+            </p>
           </article>
 
           <article class="cia__hero-item">
@@ -250,7 +252,12 @@
               <h2 class="cia__card-title">Gasto por día <span class="cia__cur cia__cur--usd">USD</span></h2>
               <p class="cia__card-desc">
                 {{ d.aviso_oficial ? 'Lo que gastó el bot, según nuestra cuenta.' : 'Lo que cobra OpenAI cada día.' }}
-                Los días se cortan a las 7 p. m. de Colombia, como los cuenta OpenAI.
+                @if (d.reparto_dias === 'aproximado') {
+                  OpenAI no entregó el detalle por hora: por ahora los días se cortan a las 7 p. m.
+                  de Colombia, como los cuenta OpenAI.
+                } @else {
+                  Los días se cortan a la medianoche de Colombia.
+                }
               </p>
             </div>
             <div class="cia__card-total">
