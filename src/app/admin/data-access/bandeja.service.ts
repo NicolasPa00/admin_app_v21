@@ -253,6 +253,24 @@ export class BandejaService {
   }
 
   /**
+   * Tiempo de un pedido PARA RECOGER («de 20 a 40 minutos»), aparte del de entrega a domicilio.
+   * `min = null` lo borra: para recoger se dice entonces el tiempo de entrega.
+   */
+  guardarTiempoRecoger(
+    idNegocio: number,
+    min: number | null,
+    max: number | null,
+  ): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        id_negocio: idNegocio,
+        tiempo_recoger_min: min,
+        tiempo_recoger_max: min === null ? null : max,
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
    * ¿El asistente deja de ofrecer lo que no tiene insumos? Aparte del control de inventario
    * de caja. Exige ser administrador de ESE negocio.
    */

@@ -630,7 +630,10 @@
           </div>
         }
         <h3 class="bdj-cfg__titulo">Tiempo de entrega</h3>
-        <p class="bdj-cfg__ayuda">Lo que el asistente contesta a «¿cuánto se demora?».</p>
+        <p class="bdj-cfg__ayuda">
+          Lo que el asistente dice en el resumen del pedido y contesta a «¿cuánto se demora?». El
+          primero es para domicilios; el segundo, para lo que el cliente recoge o come en el local.
+        </p>
         <!-- Lo que el asistente contesta a «¿cuánto se demora?». Vacío = no se promete ningún tiempo. -->
         @if (config(); as cfg) {
           <div class="bdj__auto" role="group" aria-label="Tiempo estimado de entrega">
@@ -667,6 +670,46 @@
                 class="bdj__auto-guardar"
                 [disabled]="!tiempoValido() || guardandoTiempo()"
                 (click)="guardarTiempo()"
+              >
+                Guardar
+              </button>
+            }
+          </div>
+          <!-- Para recoger no hay camino: vacío = se dice el tiempo de entrega de arriba. -->
+          <div class="bdj__auto" role="group" aria-label="Tiempo para recoger">
+            <span class="bdj__auto-etq">Para recoger en</span>
+            <input
+              type="number"
+              class="bdj__auto-min"
+              min="1"
+              max="600"
+              step="5"
+              placeholder="20"
+              aria-label="Minutos mínimos para recoger"
+              [ngModel]="recogerMin()"
+              (ngModelChange)="recogerMin.set($event === '' ? null : $event)"
+              [disabled]="!cfg.puede_editar"
+            />
+            <span class="bdj__auto-etq">a</span>
+            <input
+              type="number"
+              class="bdj__auto-min"
+              min="1"
+              max="600"
+              step="5"
+              placeholder="40"
+              aria-label="Minutos máximos para recoger (opcional)"
+              [ngModel]="recogerMax()"
+              (ngModelChange)="recogerMax.set($event === '' ? null : $event)"
+              [disabled]="recogerMin() === null || !cfg.puede_editar"
+            />
+            <span class="bdj__auto-etq">min</span>
+            @if (recogerSucio()) {
+              <button
+                type="button"
+                class="bdj__auto-guardar"
+                [disabled]="!recogerValido() || guardandoRecoger()"
+                (click)="guardarRecoger()"
               >
                 Guardar
               </button>

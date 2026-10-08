@@ -105,6 +105,9 @@ export interface ConfiguracionReactivacion {
   tiempo_estimado_min?: number | null;
   /** Opcional: sin él el asistente dice «unos X minutos». */
   tiempo_estimado_max?: number | null;
+  /** Tiempo de un pedido PARA RECOGER, aparte del de entrega. null = vale el de entrega. */
+  tiempo_recoger_min?: number | null;
+  tiempo_recoger_max?: number | null;
   /** Notas libres para el asistente (Nequi, formas de pago…). null = nada. */
   info_asistente?: string | null;
   /** Valor del domicilio como rango, en pesos («entre $7.000 y $9.000»). null = sin configurar. */
