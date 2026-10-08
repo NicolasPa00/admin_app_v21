@@ -368,6 +368,37 @@ export class BandejaComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Inventario (2026-10-07) ─────────────────────────────────────────────────────────────
+  // Que el asistente mire las existencias es una decisión aparte de controlar inventario en
+  // caja: se puede tener una encendida y la otra no, en cualquier combinación.
+  readonly cambiandoStock = signal(false);
+  readonly miraStock = computed(() => this.config()?.asistente_mira_stock === true);
+  /** El control de caja, solo para avisar de cómo se combinan. */
+  readonly cajaControlaInventario = computed(() => this.config()?.controla_inventario === true);
+
+  alternarMiraStock(activo: boolean): void {
+    const c = this.config();
+    if (!c || !c.puede_editar || this.cambiandoStock()) return;
+    this.cambiandoStock.set(true);
+    this.service.guardarMiraStock(c.id_negocio, activo).subscribe({
+      next: (r) => {
+        this.cambiandoStock.set(false);
+        this.config.set({ ...c, asistente_mira_stock: r?.asistente_mira_stock ?? activo });
+        this.toast.exito(
+          activo
+            ? 'El asistente tendrá en cuenta el inventario.'
+            : 'El asistente ya no tendrá en cuenta el inventario.',
+        );
+      },
+      error: (err) => {
+        this.cambiandoStock.set(false);
+        // El interruptor vuelve a como estaba: se repinta desde la configuración.
+        this.config.set({ ...c });
+        this.toast.errorHttp(err, 'No se pudo cambiar el ajuste de inventario.');
+      },
+    });
+  }
+
   // ── Pausa de emergencia (2026-10-04: Zona Burger sin papas) ─────────────────────────────
   readonly cambiandoPausa = signal(false);
   readonly pausado = computed(() => this.config()?.asistente_pausado === true);

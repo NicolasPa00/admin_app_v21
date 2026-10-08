@@ -1492,6 +1492,25 @@
   color: var(--color-text-primary);
 }
 
+.bdj__stock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--color-primary);
+  }
+
+  &:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+}
+
 .bdj-cfg__ayuda {
   margin: 0 0 0.25rem;
   font-size: 0.75rem;

@@ -725,6 +725,45 @@
           </div>
         }
   
+        <h3 class="bdj-cfg__titulo">Inventario</h3>
+        <p class="bdj-cfg__ayuda">
+          Si el asistente deja de ofrecer lo que no tiene insumos. Es aparte del control de
+          inventario del restaurante.
+        </p>
+        <!-- Aparte del control de inventario de caja: cualquiera de las cuatro combinaciones vale. -->
+        @if (config(); as cfg) {
+          <div class="bdj__info" role="group" aria-label="Inventario">
+            <label class="bdj__stock" for="bdj-mira-stock">
+              <input
+                id="bdj-mira-stock"
+                type="checkbox"
+                [checked]="miraStock()"
+                [disabled]="!cfg.puede_editar || cambiandoStock()"
+                (change)="alternarMiraStock($any($event.target).checked)"
+              />
+              <span>Tener en cuenta el inventario para saber qué está agotado</span>
+            </label>
+            <p class="bdj__info-etq">
+              @if (miraStock()) {
+                El asistente dirá «hoy se agotó» de todo producto al que le falte algún insumo de
+                su receta.
+                @if (!cajaControlaInventario()) {
+                  Ojo: el restaurante tiene apagado el control de inventario, así que las
+                  existencias no bajan solas con las ventas; el asistente se guía por lo que esté
+                  escrito en Inventario.
+                }
+              } @else {
+                El asistente no mira las existencias. Lo que desactives en Productos lo sigue
+                dando por agotado.
+                @if (cajaControlaInventario()) {
+                  Ojo: el restaurante sí controla inventario, así que el asistente puede ofrecer
+                  algo que luego no se pueda tomar por falta de insumos.
+                }
+              }
+            </p>
+          </div>
+        }
+
         <h3 class="bdj-cfg__titulo">Información para el asistente</h3>
         @if (config(); as cfg) {
           <div class="bdj__info" role="group" aria-label="Información para el asistente">

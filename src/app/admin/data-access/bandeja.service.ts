@@ -253,6 +253,19 @@ export class BandejaService {
   }
 
   /**
+   * ¿El asistente deja de ofrecer lo que no tiene insumos? Aparte del control de inventario
+   * de caja. Exige ser administrador de ESE negocio.
+   */
+  guardarMiraStock(idNegocio: number, activo: boolean): Observable<ConfiguracionReactivacion | null> {
+    return this.http
+      .put<ApiResponse<ConfiguracionReactivacion>>(`${this.API}/intelligence/bandeja/configuracion`, {
+        id_negocio: idNegocio,
+        asistente_mira_stock: activo,
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
    * Información libre para el asistente (Nequi, valor del domicilio, formas de pago…).
    * `null` la borra. Exige ser administrador de ESE negocio.
    */

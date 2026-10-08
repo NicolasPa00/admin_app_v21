@@ -117,6 +117,10 @@ export interface ConfiguracionReactivacion {
   asistente_pausado?: boolean;
   /** Desde cuándo está en pausa (hora Bogotá). null si no lo está. */
   asistente_pausado_en?: string | null;
+  /** El asistente no ofrece lo que no tenga insumos. Decisión aparte del control de caja. */
+  asistente_mira_stock?: boolean;
+  /** El control de inventario de caja: solo para avisar en pantalla de cómo se combinan. */
+  controla_inventario?: boolean;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }
