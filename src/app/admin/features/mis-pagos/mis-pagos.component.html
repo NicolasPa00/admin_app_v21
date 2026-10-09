@@ -124,26 +124,28 @@
       </p>
 
       <!--
-        Dos pestañas, porque son dos momentos distintos y casi nunca coinciden: casi siempre se
-        entra a pagar, y de vez en cuando a cambiar de plan. Apilar las dos cosas obligaba a
-        recorrer toda la parrilla de planes y complementos para llegar al botón de pagar.
+        Tres pestañas, porque son tres momentos distintos y casi nunca coinciden: casi siempre se
+        entra a pagar, de vez en cuando a cambiar de plan, y alguna vez a buscar el comprobante de
+        un pago viejo. Apilarlo todo obligaba a recorrer la parrilla de planes para llegar al
+        botón de pagar.
       -->
-      @if (c.planes?.length) {
-        <nav class="mp__tabs" role="tablist" [attr.aria-label]="'Opciones de ' + c.negocio">
-          <button
-            type="button"
-            role="tab"
-            class="mp__tab"
-            [class.is-on]="tabDe(c) === 'pagar'"
-            [attr.aria-selected]="tabDe(c) === 'pagar'"
-            (click)="verTab(c, 'pagar')"
-          >
-            <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
-            Pagar mi plan
-            @if (c.facturas.length) {
-              <span class="mp__tab-num">{{ c.facturas.length }}</span>
-            }
-          </button>
+      <nav class="mp__tabs" role="tablist" [attr.aria-label]="'Opciones de ' + c.negocio">
+        <button
+          type="button"
+          role="tab"
+          class="mp__tab"
+          [class.is-on]="tabDe(c) === 'pagar'"
+          [attr.aria-selected]="tabDe(c) === 'pagar'"
+          (click)="verTab(c, 'pagar')"
+        >
+          <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
+          Pagar mi plan
+          @if (c.facturas.length) {
+            <span class="mp__tab-num">{{ c.facturas.length }}</span>
+          }
+        </button>
+        <!-- Sin catálogo de planes no hay nada que cambiar: la pestaña no se dibuja. -->
+        @if (c.planes?.length) {
           <button
             type="button"
             role="tab"
@@ -158,8 +160,23 @@
               <span class="mp__tab-punto" aria-label="Tienes un cambio pendiente"></span>
             }
           </button>
-        </nav>
-      }
+        }
+        <button
+          type="button"
+          role="tab"
+          class="mp__tab"
+          [class.is-on]="tabDe(c) === 'historial'"
+          [attr.aria-selected]="tabDe(c) === 'historial'"
+          (click)="verTab(c, 'historial')"
+        >
+          <!-- «Historial» y no «Mis pagos»: la pantalla entera ya se llama así. -->
+          <lucide-icon name="receipt" [size]="15" aria-hidden="true" />
+          Historial
+          @if (pagosDe(c).length) {
+            <span class="mp__tab-num mp__tab-num--suave">{{ pagosDe(c).length }}</span>
+          }
+        </button>
+      </nav>
 
       <!--
         Plan y complementos, en un solo panel y con una sola cuenta: cambiar de plan y añadir un
@@ -446,8 +463,258 @@
 
       </div>
       }
+
+      <!-- ═══ Pestaña «Mis pagos»: lo ya pagado ═══ -->
+      @if (tabDe(c) === 'historial') {
+      <div class="mp__panel" role="region" [attr.aria-label]="'Historial de pagos de ' + c.negocio">
+        @if (estadoPagos() === 'loading' && !pagosDe(c).length) {
+          <p class="mp__vacio">
+            <lucide-icon name="loader-2" [size]="18" class="mp__spin" aria-hidden="true" />
+            Cargando tus pagos…
+          </p>
+        } @else if (!pagosDe(c).length) {
+          <div class="mp__sin-cobro" role="status">
+            <lucide-icon name="receipt" [size]="18" aria-hidden="true" />
+            <span>
+              Aún no hay pagos registrados de este negocio. Cuando pagues tu mensualidad, su
+              comprobante aparece aquí.
+            </span>
+          </div>
+        } @else {
+          <div class="mp__tabla-wrap">
+            <table class="mp__tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Concepto</th>
+                  <th scope="col" class="mp__col-ref">Referencia</th>
+                  <th scope="col" class="mp__col-medio">Medio</th>
+                  <th scope="col" class="mp__col-num">Total</th>
+                  <th scope="col" class="mp__col-acc">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of pagosDe(c); track p.id_factura) {
+                  <tr>
+                    <td class="mp__nowrap">{{ fechaCorta(p.fecha_pago) }}</td>
+                    <td>
+                      <span class="mp__pago-concepto">{{ conceptoDePago(p) }}</span>
+                      @if (esFactura(p)) {
+                        <span class="mp__meta">Factura {{ p.numero_factura }}</span>
+                      }
+                    </td>
+                    <td class="mp__col-ref mp__mono">{{ p.referencia }}</td>
+                    <td class="mp__col-medio">{{ medioDePago(p) }}</td>
+                    <td class="mp__col-num mp__mono">
+                      <strong>{{ dinero(p.total, p.moneda) }}</strong>
+                    </td>
+                    <td>
+                      <!--
+                        Tres acciones y las tres con texto en `title` + `aria-label`: una fila de
+                        iconos sin nombre obliga a adivinar, y aquí una de ellas manda un correo.
+                      -->
+                      <div class="mp__acc">
+                        <button
+                          type="button"
+                          class="mp__icono-btn"
+                          (click)="detalle.set(p)"
+                          aria-label="Ver el detalle del pago"
+                          title="Ver detalle"
+                        >
+                          <lucide-icon name="eye" [size]="17" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          class="mp__icono-btn"
+                          [disabled]="ocupado() !== null"
+                          (click)="verComprobante(p)"
+                          aria-label="Ver el comprobante en PDF"
+                          title="Ver en PDF"
+                        >
+                          @if (ocupado() === p.id_factura) {
+                            <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
+                          } @else {
+                            <lucide-icon name="file-text" [size]="16" aria-hidden="true" />
+                          }
+                        </button>
+                        <button
+                          type="button"
+                          class="mp__icono-btn"
+                          [disabled]="ocupado() !== null"
+                          (click)="compartir(p)"
+                          aria-label="Compartir o enviar el comprobante"
+                          title="Compartir comprobante"
+                        >
+                          <lucide-icon name="share-2" [size]="16" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <p class="mp__legal mp__historial-nota">
+            El comprobante constata el pago. Si necesitas la factura electrónica para tu
+            contabilidad, escríbenos y te la enviamos.
+          </p>
+        }
+      </div>
+      }
       }
     </section>
+  }
+
+  <!--
+    Ficha del pago. Es solo lectura: lo que un dueño busca aquí es «qué pagué exactamente ese
+    día», así que repite las líneas del cobro y deja las dos acciones del documento a mano.
+  -->
+  @if (detalle(); as p) {
+    <div class="mp__overlay" (click)="detalle.set(null)">
+      <aside
+        class="mp__ficha"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mp-detalle-titulo"
+        (click)="$event.stopPropagation()"
+      >
+        <app-modal-cabecera
+          icono="receipt"
+          [titulo]="esFactura(p) ? 'Factura ' + p.numero_factura : 'Comprobante de pago'"
+          [subtitulo]="p.referencia"
+          tituloId="mp-detalle-titulo"
+          (cerrar)="detalle.set(null)"
+        />
+
+        <div class="mp__ficha-scroll">
+          <div class="mp__ficha-monto">
+            <span class="mp__meta">Total pagado</span>
+            <strong>{{ dinero(p.total, p.moneda) }}</strong>
+            <span class="mp__chip mp__chip--success">Pagado</span>
+          </div>
+
+          <dl class="mp__datos">
+            <div>
+              <dt>Negocio</dt>
+              <dd>{{ p.negocio }}</dd>
+            </div>
+            <div>
+              <dt>Fecha del pago</dt>
+              <dd>{{ fechaHora(p.fecha_pago) }}</dd>
+            </div>
+            <div>
+              <dt>Medio de pago</dt>
+              <dd>{{ medioDePago(p) }}</dd>
+            </div>
+            <div>
+              <dt>Concepto</dt>
+              <dd>{{ conceptoDePago(p) }}</dd>
+            </div>
+            <div>
+              <dt>Período del servicio</dt>
+              <dd>{{ periodoDe(p) }}</dd>
+            </div>
+            @if (p.cufe) {
+              <div>
+                <dt>CUFE</dt>
+                <dd class="mp__mono mp__romper">{{ p.cufe }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (p.lineas.length) {
+            <h3 class="mp__plan-titulo">Qué incluyó</h3>
+            <ul class="mp__lineas">
+              @for (l of p.lineas; track l.descripcion) {
+                <li>
+                  <span>
+                    {{ l.descripcion }}
+                    @if (l.cantidad > 1) { <span class="mp__meta">× {{ l.cantidad }}</span> }
+                  </span>
+                  <span>{{ dinero(l.subtotal, p.moneda) }}</span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+
+        <footer class="mp__ficha-pie">
+          <button type="button" class="btn btn--outline" [disabled]="ocupado() !== null"
+                  (click)="descargarComprobante(p)">
+            <lucide-icon name="download" [size]="16" aria-hidden="true" />
+            Descargar PDF
+          </button>
+          <button type="button" class="btn btn--primary" [disabled]="ocupado() !== null"
+                  (click)="compartir(p)">
+            <lucide-icon name="share-2" [size]="16" aria-hidden="true" />
+            Compartir
+          </button>
+        </footer>
+      </aside>
+    </div>
+  }
+
+  <!--
+    Enviar el comprobante por correo. Es a donde cae «Compartir» cuando el navegador no sabe
+    compartir archivos (el escritorio), y es la vía que de verdad se usa: mandárselo al contador.
+  -->
+  @if (envio(); as p) {
+    <div class="mp__overlay" (click)="cerrarEnvio()">
+      <aside
+        class="mp__ficha mp__ficha--angosta"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mp-envio-titulo"
+        (click)="$event.stopPropagation()"
+      >
+        <app-modal-cabecera
+          icono="mail"
+          titulo="Enviar comprobante"
+          [subtitulo]="p.referencia"
+          tituloId="mp-envio-titulo"
+          [bloqueado]="enviando()"
+          (cerrar)="cerrarEnvio()"
+        />
+
+        <!-- `submit` nativo (sin FormsModule): el Enter del teclado también manda el correo. -->
+        <form class="mp__ficha-scroll" (submit)="$event.preventDefault(); enviarComprobante()">
+          <label class="mp__campo">
+            <span>¿A qué correo?</span>
+            <input
+              class="input"
+              type="email"
+              name="email"
+              autocomplete="email"
+              placeholder="contador@ejemplo.com"
+              [value]="emailEnvio()"
+              [disabled]="enviando()"
+              (input)="escribirEmail($any($event.target).value)"
+            />
+          </label>
+          <p class="mp__meta">
+            Le llega el PDF adjunto. Si dejas el campo vacío, lo mandamos al correo del negocio.
+          </p>
+          <button type="submit" hidden [disabled]="enviando()"></button>
+        </form>
+
+        <footer class="mp__ficha-pie">
+          <button type="button" class="btn btn--ghost" [disabled]="enviando()"
+                  (click)="cerrarEnvio()">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn--primary" [disabled]="enviando()"
+                  (click)="enviarComprobante()">
+            @if (enviando()) {
+              <lucide-icon name="loader-2" [size]="16" class="mp__spin" aria-hidden="true" />
+            } @else {
+              <lucide-icon name="send" [size]="16" aria-hidden="true" />
+            }
+            Enviar
+          </button>
+        </footer>
+      </aside>
+    </div>
   }
 </div>
 

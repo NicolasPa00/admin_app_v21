@@ -36,26 +36,29 @@ export function esAdministrador(user: User | null | undefined): boolean {
   return roles.includes(SUPER_ADMIN_ROL) || roles.includes(ADMINISTRADOR_ROL);
 }
 
-/** Cajero: entra a WhatsApp si el plan de su negocio lo incluye (2026-10-04). */
+/** Rol de caja en un negocio. Ya no abre WhatsApp aquí; ver `veWhatsapp`. */
 export const CAJERO_ROL = 'CAJERO';
 /** La feature del plan que trae WhatsApp (ver `intelligence/core/features.js`). */
 export const FEATURE_WHATSAPP_PLAN = 'asistente_ia';
 
-/** ¿Es CAJERO en algún negocio cuyo plan incluye WhatsApp? */
-export function esCajeroConWhatsapp(user: User | null | undefined): boolean {
-  return (user?.negocios ?? []).some(
-    (n) =>
-      (n.roles ?? []).some((r) => normalizar(r.descripcion) === CAJERO_ROL) &&
-      (n.features ?? []).includes(FEATURE_WHATSAPP_PLAN),
-  );
-}
-
 /**
- * ¿Ve la vista de WhatsApp? El administrador siempre (es quien conecta el número); el cajero si el
- * plan de su negocio lo incluye. El backend aplica la misma regla en cada petición.
+ * ¿Ve la vista de WhatsApp de ESTE panel? **Solo el super administrador** (2026-10-08).
+ *
+ * Hasta esa fecha entraban también el ADMINISTRADOR del negocio y su CAJERO, porque la Bandeja
+ * del asistente vivía aquí y era el único sitio donde se podía contestar. Ya no: la Bandeja está
+ * en `negocio_app` (`/conversaciones`), que es donde vive la operación del inquilino, y allá
+ * los permisos salen de `gener_nivel` como los de cualquier otra vista.
+ *
+ * Lo que queda aquí es otra cosa con la misma pantalla: **seguimiento interno**. Un super admin
+ * mira a la vez todos los inquilinos —qué conversaciones escalan, cómo se está portando el
+ * asistente, qué negocios lo están usando— y eso es trabajo nuestro, no del cliente.
+ *
+ * El backend no cambió ni hacía falta: `/intelligence/bandeja/*` siempre acotó por
+ * `alcanceDeNegocios()`, que para un super admin es «todos» y para cualquier otro «los suyos».
+ * Este guard decide qué puerta se ofrece, no a qué datos se llega.
  */
 export function veWhatsapp(user: User | null | undefined): boolean {
-  return esAdministrador(user) || esCajeroConWhatsapp(user);
+  return esSuperAdmin(user);
 }
 
 /** Protege `/admin/whatsapp` con `veWhatsapp`. Misma forma que `adminGuard`. */

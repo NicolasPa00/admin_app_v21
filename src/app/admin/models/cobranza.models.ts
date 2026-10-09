@@ -152,6 +152,45 @@ export interface FacturaPendiente {
   lineas?: LineaFactura[];
 }
 
+/**
+ * Un pago YA HECHO: la fila del historial de «Mis pagos» (`GET /cobranza/mis-pagos`).
+ *
+ * No trae `comision_pasarela`, `retencion_declarada` ni `neto_recibido`: son nuestra conciliación,
+ * no un dato del cliente, y el backend no los manda a propósito.
+ *
+ * `numero_factura` y `cufe` vienen llenos solo cuando ese pago ya tiene factura electrónica
+ * nuestra (hoy se teclea a mano). Mientras estén vacíos, el documento es un **comprobante**.
+ */
+export interface PagoRealizado {
+  id_factura: number;
+  referencia: string;
+  id_negocio: number;
+  negocio: string;
+  tipo: 'renovacion' | 'ajuste';
+  /** El plan que cobró ESE pago, que puede no ser el que el negocio tiene hoy. */
+  plan: string | null;
+  periodo_inicio: string;
+  periodo_fin: string;
+  total: number;
+  moneda: string;
+  /** Instante del pago (timestamp de pared Bogotá). `null` en facturas antiguas sin registrar. */
+  fecha_pago: string | null;
+  pasarela: CodigoPasarela;
+  /** Lo que se teclea en un pago manual («Transferencia Bancolombia 9348»). Manda si existe. */
+  medio_pago_texto: string | null;
+  numero_factura: string | null;
+  cufe: string | null;
+  lineas: LineaFactura[];
+}
+
+/** Lo que responde mandar un comprobante por correo. */
+export interface EnvioComprobante {
+  /** `false` = entorno sin SMTP (desarrollo): no se mandó nada y la pantalla no debe decir que sí. */
+  enviado: boolean;
+  email: string;
+  filename: string;
+}
+
 /** Un plan que el cliente puede elegir y pagar. Los gratuitos no llegan aquí. */
 export interface PlanDisponible {
   id_plan: number;

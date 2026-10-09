@@ -11,9 +11,11 @@ import {
   ConciliacionPagos,
   CobroResultado,
   CodigoPasarela,
+  EnvioComprobante,
   EstadoSuscripcion,
   InicioPago,
   Factura,
+  PagoRealizado,
   FilaCartera,
   IngresoMes,
   PagoManual,
@@ -27,6 +29,9 @@ import {
  *   GET  /admin/cobranza/cartera
  *   GET  /admin/cobranza/ingresos
  *   GET  /admin/cobranza/mi-suscripcion?id_negocio=N
+ *   GET  /admin/cobranza/mis-pagos?id_negocio=N
+ *   GET  /admin/cobranza/facturas/:id/comprobante        (PDF)
+ *   POST /admin/cobranza/facturas/:id/comprobante/enviar
  *   POST /admin/cobranza/negocios/:id/facturas
  *   POST /admin/cobranza/facturas/:id/pago-manual
  *   POST /admin/cobranza/facturas/:id/anular
@@ -90,6 +95,37 @@ export class CobranzaService {
     return this.http
       .get<ApiResponse<CobroNegocio[]>>(`${this.API}/cobranza/mis-cobros`)
       .pipe(map((res) => res.data ?? []));
+  }
+
+  /**
+   * El historial: los pagos ya hechos. Sin `idNegocio` trae los de todos los negocios que
+   * administra; el backend cruza ese id con los suyos, así que uno ajeno devuelve vacío.
+   */
+  getMisPagos(idNegocio?: number | null): Observable<PagoRealizado[]> {
+    const params = idNegocio ? new HttpParams().set('id_negocio', idNegocio) : undefined;
+    return this.http
+      .get<ApiResponse<PagoRealizado[]>>(`${this.API}/cobranza/mis-pagos`, { params })
+      .pipe(map((res) => res.data ?? []));
+  }
+
+  /**
+   * El comprobante de un pago, en PDF. Pasa por `HttpClient` —y no por un `<a href>`— porque la
+   * ruta va con Bearer: el interceptor pone el token y el navegador nunca lo haría solo.
+   */
+  getComprobante(idFactura: number): Observable<Blob> {
+    return this.http.get(`${this.API}/cobranza/facturas/${idFactura}/comprobante`, {
+      responseType: 'blob',
+    });
+  }
+
+  /** Manda el comprobante por correo. Sin `email`, el backend elige el del negocio. */
+  enviarComprobante(idFactura: number, email?: string | null): Observable<EnvioComprobante | null> {
+    return this.http
+      .post<ApiResponse<EnvioComprobante>>(
+        `${this.API}/cobranza/facturas/${idFactura}/comprobante/enviar`,
+        email ? { email } : {},
+      )
+      .pipe(map((res) => res.data ?? null));
   }
 
   /**

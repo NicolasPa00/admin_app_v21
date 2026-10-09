@@ -189,6 +189,13 @@
     background: var(--color-primary);
     color: var(--color-on-primary);
     font-size: 0.7rem;
+
+    /* Cuántos pagos hay es contexto, no una tarea pendiente: no compite con el contador de
+       cobros por pagar, que sí reclama algo. */
+    &--suave {
+      background: color-mix(in srgb, var(--color-text-secondary) 15%, transparent);
+      color: var(--color-text-secondary);
+    }
   }
 
   /* Un punto y no un número: «tienes algo pendiente» sin decir cuánto, que aquí no suma. */
@@ -628,6 +635,195 @@
     font-size: 0.75rem;
     color: var(--color-text-secondary);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Historial de pagos ──
+     Una tabla, no tarjetas: lo que se hace aquí es buscar una fila entre doce y sacarle el
+     comprobante, y para eso las columnas alineadas ganan a cualquier maquetación bonita. */
+  &__tabla-wrap {
+    overflow-x: auto;
+    margin: 0 1.125rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+  }
+
+  &__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm, 0.875rem);
+
+    thead th {
+      padding: 0.75rem 0.875rem;
+      text-align: left;
+      font-size: var(--font-size-xs, 0.75rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted, var(--color-text-secondary));
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    tbody td {
+      /* Celdas en bloque y nunca `display:flex`: un `<td>` flex rompe los bordes de celda. */
+      padding: 0.75rem 0.875rem;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: middle;
+      color: var(--color-text-primary);
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--color-surface-hover); }
+  }
+
+  &__col-num { text-align: right; }
+  &__col-acc { width: 1%; white-space: nowrap; }
+  &__nowrap { white-space: nowrap; }
+  &__mono { font-variant-numeric: tabular-nums; }
+  &__romper { overflow-wrap: anywhere; }
+
+  &__pago-concepto {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  /* En pantallas estrechas sobran la referencia y el medio: la fecha, el total y las acciones
+     son lo que nadie puede perder. El detalle los sigue mostrando todos. */
+  @media (max-width: 720px) {
+    &__col-ref,
+    &__col-medio { display: none; }
+  }
+
+  &__acc {
+    display: flex;
+    gap: 0.375rem;
+    justify-content: flex-end;
+  }
+
+  &__icono-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 8px);
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast),
+      border-color var(--transition-fast);
+
+    &:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: var(--color-surface-hover);
+    }
+
+    &:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+  }
+
+  &__historial-nota { margin: 0.75rem 1.125rem 0; }
+
+  /* ── Ficha del pago y envío por correo ── */
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  &__ficha {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(560px, calc(100vw - 2rem));
+    max-height: 90vh;
+    /* El scroll va en `__ficha-scroll`: sobre la tarjeta redondeada la barra queda recortada
+       por el radio (mismo motivo que en Personas y Negocios). */
+    overflow: hidden;
+    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg, 0.75rem);
+    box-shadow: var(--shadow-xl, 0 8px 24px rgba(0, 0, 0, 0.12));
+
+    &--angosta { width: min(420px, calc(100vw - 2rem)); }
+  }
+
+  &__ficha-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.125rem;
+  }
+
+  &__ficha-monto {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    background: var(--color-bg-subtle, color-mix(in srgb, var(--color-primary) 5%, transparent));
+
+    strong {
+      font-size: 1.5rem;
+      line-height: 1.1;
+      color: var(--color-text-primary);
+    }
+  }
+
+  &__datos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    gap: 0.75rem 1rem;
+    margin: 0;
+
+    dt {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-secondary);
+    }
+
+    dd {
+      margin: 0.15rem 0 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+  }
+
+  &__ficha-pie {
+    display: flex;
+    flex: none;
+    justify-content: flex-end;
+    gap: 0.625rem;
+    padding: 0.875rem 1.125rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  &__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+
+    > span {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+    }
   }
 
   &__spin { animation: mp-spin 1s linear infinite; }
