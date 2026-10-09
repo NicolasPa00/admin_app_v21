@@ -66,7 +66,7 @@ interface NavItem {
    * tiene cualquier otro rol —cajero, mesero, domiciliario…— solo ve Inicio y Configuración.
    */
   soloAdministrador?: boolean;
-  /** Visible para quien `veWhatsapp`: administradores, y cajeros con el plan que incluye WhatsApp. */
+  /** Visible para quien `veWhatsapp`: desde el 2026-10-08, solo el super administrador. */
   whatsapp?: boolean;
 }
 
@@ -135,9 +135,11 @@ export class AdminLayoutComponent {
     // «Ficha 360» oculta del menú a pedido del usuario el 2026-09-23. La ruta y el componente
     // siguen como estaban: para reactivarla basta con descomentar esta línea.
     // { label: 'Ficha 360', icon: 'contact', route: '/admin/personas', superAdmin: true },
-    // Sin `superAdmin`: es la pantalla del dueño del negocio, no la del desarrollador. Una sola
-    // entrada: sin número conectado enseña cómo activarlo; con número, las conversaciones.
-    // El cajero también, si el plan de su negocio incluye WhatsApp (2026-10-04): ver `veWhatsapp`.
+    // **Solo super admin desde el 2026-10-08.** La Bandeja del inquilino se mudó a
+    // `negocio_app` (`/conversaciones`), que es donde vive su operación; lo que queda aquí es el
+    // seguimiento interno: mirar a la vez todos los inquilinos y cómo se porta el asistente.
+    // Se marca con `whatsapp` y no con `superAdmin` porque `veWhatsapp` es el único sitio donde
+    // está escrita esa regla, y el guard de la ruta usa el mismo.
     { label: 'WhatsApp', icon: 'message-circle', route: '/admin/whatsapp', whatsapp: true },
     // Tampoco lleva `superAdmin`: el que conoce su RUT es el dueño del negocio.
     { label: 'Facturación', icon: 'file-text', route: '/admin/facturacion', soloAdministrador: true },

@@ -201,3 +201,74 @@ describe('AuthService', () => {
     httpTesting.verify();
   });
 });
+
+/**
+ * El token y los datos guardados pueden ser de personas distintas, y en producción lo fueron.
+ *
+ * `negocio_app` se sirve del MISMO origen que esta app (escalapp.cloud/admin y /restaurante), así
+ * que comparten un solo `localStorage`, y guarda su token bajo esta misma clave `app_token`.
+ * Entrar a la app de restaurante y volver aquí dejaba el token de una persona junto a los datos
+ * guardados de otra: la consola arrancaba enseñando una identidad que no correspondía al token
+ * con el que iba a hablar con el backend.
+ *
+ * El caso simétrico —el de `negocio_app`— dejó 1.705 peticiones al negocio equivocado en la
+ * auditoría del backend (módulo `authz`, 2026-10-04).
+ */
+describe('AuthService — token y datos guardados de personas distintas', () => {
+  /** Un JWT con la forma que emite el backend: `{ id_usuario }` en el cuerpo. */
+  function jwtDe(idUsuario: number): string {
+    const b64 = (o: unknown) =>
+      btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ id_usuario: idUsuario })}.firma`;
+  }
+
+  const meta = (idUsuario: number): User => ({
+    id_usuario: idUsuario,
+    primer_nombre: 'Quien',
+    primer_apellido: 'Sea',
+    email: 'quien@demo.co',
+    negocios: [],
+    roles_globales: [],
+  });
+
+  function recargar() {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: Router, useValue: { navigate: vi.fn() } },
+      ],
+    });
+    return TestBed.inject(AuthService);
+  }
+
+  beforeEach(() => localStorage.clear());
+
+  it('descarta los datos ajenos en vez de arrancar con la identidad de otro', () => {
+    localStorage.setItem('app_token', jwtDe(36));
+    localStorage.setItem('app_user_meta', JSON.stringify(meta(19)));
+
+    const auth = recargar();
+
+    expect(auth.currentUser()).toBeNull();
+    expect(localStorage.getItem('app_user_meta')).toBeNull();
+  });
+
+  it('un token ilegible tampoco restaura: ante la duda, no se adivina', () => {
+    localStorage.setItem('app_token', 'esto-no-es-un-jwt');
+    localStorage.setItem('app_user_meta', JSON.stringify(meta(19)));
+
+    expect(recargar().currentUser()).toBeNull();
+  });
+
+  it('cuando sí corresponden, la sesión se restaura', () => {
+    localStorage.setItem('app_token', jwtDe(19));
+    localStorage.setItem('app_user_meta', JSON.stringify(meta(19)));
+
+    const auth = recargar();
+
+    expect(auth.currentUser()?.id_usuario).toBe(19);
+    expect(auth.isAuthenticated()).toBe(true);
+  });
+});

@@ -213,13 +213,25 @@ describe('adminGuard', () => {
   });
 });
 
-describe('veWhatsapp (2026-10-04)', () => {
+/**
+ * `veWhatsapp` (reescrito el 2026-10-08).
+ *
+ * La Bandeja se mudó a `negocio_app`; aquí la vista queda como seguimiento interno. Lo que
+ * estos casos fijan es justamente lo que cambió: el dueño y el cajero, que ANTES entraban, ya
+ * no. Si alguien los vuelve a dejar pasar, el inquilino acaba con dos puertas a lo mismo y una
+ * de ellas en la consola SaaS.
+ */
+describe('veWhatsapp (2026-10-08: solo super admin)', () => {
   const conRol = (rol: string, features?: string[]) =>
     buildUser({ negocios: [{ id_negocio: 6, nombre: 'Zona', roles: [{ id_rol: 1, descripcion: rol }], features }] });
+  const superAdmin = () =>
+    buildUser({ roles_globales: [{ id_rol: 99, descripcion: 'SUPER ADMINISTRADOR' }] });
 
-  it('el administrador siempre', () => expect(veWhatsapp(conRol('ADMINISTRADOR', []))).toBe(true));
-  it('el cajero con el plan de WhatsApp', () => expect(veWhatsapp(conRol('CAJERO', ['asistente_ia']))).toBe(true));
-  it('el cajero sin el plan, no', () => expect(veWhatsapp(conRol('CAJERO', []))).toBe(false));
-  it('el cajero con una sesión vieja (sin features), no', () => expect(veWhatsapp(conRol('CAJERO'))).toBe(false));
+  it('el super administrador, sí', () => expect(veWhatsapp(superAdmin())).toBe(true));
+  it('el administrador del negocio, ya NO (lo tiene en negocio_app)', () =>
+    expect(veWhatsapp(conRol('ADMINISTRADOR', ['asistente_ia']))).toBe(false));
+  it('el cajero con el plan, ya NO', () =>
+    expect(veWhatsapp(conRol('CAJERO', ['asistente_ia']))).toBe(false));
   it('el mesero, nunca', () => expect(veWhatsapp(conRol('MESERO', ['asistente_ia']))).toBe(false));
+  it('sin sesión, no', () => expect(veWhatsapp(null)).toBe(false));
 });

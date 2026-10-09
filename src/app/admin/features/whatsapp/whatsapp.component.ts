@@ -53,10 +53,27 @@ interface NegocioWhatsapp {
 }
 
 /**
- * WhatsappComponent — la única entrada «WhatsApp» del menú.
+ * WhatsappComponent — el asistente de los inquilinos, visto desde dentro.
  *
- * La decisión es **por negocio**, no por usuario: un administrador con varios negocios puede
- * tener unos con número conectado y otros sin él. Por eso:
+ * ## Para quién es esta pantalla desde el 2026-10-08
+ *
+ * **Solo para super admin** (`whatsappGuard` → `veWhatsapp`). Antes entraban también el dueño
+ * del negocio y su cajero, porque era el único sitio donde se podía contestar una conversación
+ * escalada. Eso se mudó a `negocio_app` (`/conversaciones`), que es donde el inquilino tiene
+ * su operación: hacerle saltar de app —y de origen— varias veces al día para responderle a un
+ * cliente era el gesto más caro de su jornada.
+ *
+ * Lo que queda aquí es **seguimiento interno**: mirar a la vez todos los inquilinos, ver qué
+ * conversaciones escalan y cómo se está portando el asistente. Por eso el selector de negocio
+ * sigue teniendo sentido aquí y no allá — allá solo hay uno.
+ *
+ * El backend no hizo falta tocarlo: `/intelligence/bandeja/*` siempre acotó por
+ * `alcanceDeNegocios()`, que para un super admin es «todos» y para cualquier otro «los suyos».
+ *
+ * ## Cómo elige qué enseñar
+ *
+ * La decisión es **por negocio**, no por usuario: un negocio puede tener el número conectado y
+ * el de al lado no. Por eso:
  *
  *   - **Un solo negocio** → sin selector. Conectado: sus conversaciones. Sin conectar: las
  *     opciones para activarlo.
