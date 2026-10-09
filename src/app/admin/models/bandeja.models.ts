@@ -105,6 +105,9 @@ export interface ConfiguracionReactivacion {
   tiempo_estimado_min?: number | null;
   /** Opcional: sin él el asistente dice «unos X minutos». */
   tiempo_estimado_max?: number | null;
+  /** Tiempo de un pedido PARA RECOGER, aparte del de entrega. null = vale el de entrega. */
+  tiempo_recoger_min?: number | null;
+  tiempo_recoger_max?: number | null;
   /** Notas libres para el asistente (Nequi, formas de pago…). null = nada. */
   info_asistente?: string | null;
   /** Valor del domicilio como rango, en pesos («entre $7.000 y $9.000»). null = sin configurar. */
@@ -117,6 +120,10 @@ export interface ConfiguracionReactivacion {
   asistente_pausado?: boolean;
   /** Desde cuándo está en pausa (hora Bogotá). null si no lo está. */
   asistente_pausado_en?: string | null;
+  /** El asistente no ofrece lo que no tenga insumos. Decisión aparte del control de caja. */
+  asistente_mira_stock?: boolean;
+  /** El control de inventario de caja: solo para avisar en pantalla de cómo se combinan. */
+  controla_inventario?: boolean;
   /** Solo un administrador de ESE negocio puede cambiarlo. */
   puede_editar?: boolean;
 }

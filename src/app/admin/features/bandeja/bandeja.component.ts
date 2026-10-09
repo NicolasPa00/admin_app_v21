@@ -231,6 +231,10 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly tiempoMin = signal<number | null>(null);
   readonly tiempoMax = signal<number | null>(null);
   readonly guardandoTiempo = signal(false);
+  // Tiempo de un pedido para recoger: aparte del de entrega, que incluye el camino.
+  readonly recogerMin = signal<number | null>(null);
+  readonly recogerMax = signal<number | null>(null);
+  readonly guardandoRecoger = signal(false);
 
   // ── Valor del domicilio ──
   // Un rango («entre $7.000 y $9.000») y una nota corta («Fuera de la ciudad, desde $10.000»).
@@ -368,6 +372,37 @@ export class BandejaComponent implements OnInit, OnDestroy {
     });
   }
 
+  // ── Inventario (2026-10-07) ─────────────────────────────────────────────────────────────
+  // Que el asistente mire las existencias es una decisión aparte de controlar inventario en
+  // caja: se puede tener una encendida y la otra no, en cualquier combinación.
+  readonly cambiandoStock = signal(false);
+  readonly miraStock = computed(() => this.config()?.asistente_mira_stock === true);
+  /** El control de caja, solo para avisar de cómo se combinan. */
+  readonly cajaControlaInventario = computed(() => this.config()?.controla_inventario === true);
+
+  alternarMiraStock(activo: boolean): void {
+    const c = this.config();
+    if (!c || !c.puede_editar || this.cambiandoStock()) return;
+    this.cambiandoStock.set(true);
+    this.service.guardarMiraStock(c.id_negocio, activo).subscribe({
+      next: (r) => {
+        this.cambiandoStock.set(false);
+        this.config.set({ ...c, asistente_mira_stock: r?.asistente_mira_stock ?? activo });
+        this.toast.exito(
+          activo
+            ? 'El asistente tendrá en cuenta el inventario.'
+            : 'El asistente ya no tendrá en cuenta el inventario.',
+        );
+      },
+      error: (err) => {
+        this.cambiandoStock.set(false);
+        // El interruptor vuelve a como estaba: se repinta desde la configuración.
+        this.config.set({ ...c });
+        this.toast.errorHttp(err, 'No se pudo cambiar el ajuste de inventario.');
+      },
+    });
+  }
+
   // ── Pausa de emergencia (2026-10-04: Zona Burger sin papas) ─────────────────────────────
   readonly cambiandoPausa = signal(false);
   readonly pausado = computed(() => this.config()?.asistente_pausado === true);
@@ -411,6 +446,22 @@ export class BandejaComponent implements OnInit, OnDestroy {
       this.tiempoMin() !== (c.tiempo_estimado_min ?? null) ||
       this.tiempoMax() !== (c.tiempo_estimado_max ?? null)
     );
+  });
+  readonly recogerSucio = computed(() => {
+    const c = this.config();
+    if (!c) return false;
+    return (
+      this.recogerMin() !== (c.tiempo_recoger_min ?? null) ||
+      this.recogerMax() !== (c.tiempo_recoger_max ?? null)
+    );
+  });
+  readonly recogerValido = computed(() => {
+    const min = this.recogerMin();
+    const max = this.recogerMax();
+    const entero = (n: number) => Number.isInteger(n) && n >= 1 && n <= 600;
+    if (min === null) return max === null;
+    if (!entero(min)) return false;
+    return max === null || (entero(max) && max >= min);
   });
   readonly tiempoValido = computed(() => {
     const min = this.tiempoMin();
@@ -549,6 +600,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
           this.autoMinutos.set(c.reactivar_asistente_min > 0 ? c.reactivar_asistente_min : 30);
           this.tiempoMin.set(c.tiempo_estimado_min ?? null);
           this.tiempoMax.set(c.tiempo_estimado_max ?? null);
+          this.recogerMin.set(c.tiempo_recoger_min ?? null);
+          this.recogerMax.set(c.tiempo_recoger_max ?? null);
           this.infoTexto.set(c.info_asistente ?? '');
           this.domicilioMin.set(c.domicilio_valor_min ?? null);
           this.domicilioMax.set(c.domicilio_valor_max ?? null);
@@ -650,6 +703,33 @@ export class BandejaComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.guardandoTiempo.set(false);
         this.toast.errorHttp(err, 'No se pudo guardar el tiempo estimado.');
+      },
+    });
+  }
+
+  guardarRecoger(): void {
+    const c = this.config();
+    if (!c || !this.recogerSucio() || !this.recogerValido() || this.guardandoRecoger()) return;
+
+    const min = this.recogerMin();
+    const max = min === null ? null : this.recogerMax();
+    this.guardandoRecoger.set(true);
+    this.service.guardarTiempoRecoger(c.id_negocio, min, max).subscribe({
+      next: () => {
+        this.guardandoRecoger.set(false);
+        this.config.set({ ...c, tiempo_recoger_min: min, tiempo_recoger_max: max });
+        this.recogerMax.set(max);
+        this.toast.exito(
+          min === null
+            ? 'Para recoger, el asistente dirá el mismo tiempo que para la entrega.'
+            : max !== null && max > min
+              ? `El asistente dirá que un pedido para recoger tarda de ${min} a ${max} minutos.`
+              : `El asistente dirá que un pedido para recoger tarda unos ${min} minutos.`,
+        );
+      },
+      error: (err) => {
+        this.guardandoRecoger.set(false);
+        this.toast.errorHttp(err, 'No se pudo guardar el tiempo para recoger.');
       },
     });
   }

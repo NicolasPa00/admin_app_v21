@@ -1,9 +1,9 @@
 /**
  * Contrato de `GET /admin/consumo-ia` (admin_ws: consumoIaController) — vista «Terceros».
  *
- * Lo de OpenAI va en USD y en días UTC (como los cuenta OpenAI). Lo de WhatsApp (`whatsapp`)
- * va en la moneda de cada cuenta de Meta (COP hoy) y en días de Colombia. `terceros` junta las
- * dos en pesos con la TRM del día.
+ * Lo de OpenAI va en USD. Lo de WhatsApp (`whatsapp`) va en la moneda de cada cuenta de Meta
+ * (COP hoy). Las dos en días de Colombia: OpenAI los entrega en UTC y el servidor los trae al
+ * día de aquí. `terceros` junta las dos en pesos con la TRM del día.
  */
 
 export type VentanaConsumo = 7 | 30 | 90;
@@ -59,6 +59,8 @@ export interface ConsumoIa {
   periodo: { dias: VentanaConsumo; desde: string; hasta: string };
   fuente_saldo: 'oficial' | 'interno';
   aviso_oficial: { code: string; mensaje: string } | null;
+  /** 'aproximado' = OpenAI no dio el uso por hora y sus días siguen cortados a las 7 p. m. */
+  reparto_dias?: 'por_hora' | 'aproximado' | null;
   consultado_en: string | null;
   saldo: SaldoIa | null;
   promedio_diario_7d: number;
