@@ -36,6 +36,7 @@ import {
   FileText,
   Wallet,
   Gauge,
+  Landmark,
   Sun,
   Moon,
   LogOut,
@@ -110,7 +111,7 @@ const ATAJOS_MOVIL = 4;
       multi: true,
       useValue: new LucideIconProvider({
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, ChartColumn, Bot, MessageSquare,
-        MessageCircle, FileText, Wallet, Gauge,
+        MessageCircle, FileText, Wallet, Gauge, Landmark,
         Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X,
       }),
@@ -148,6 +149,8 @@ export class AdminLayoutComponent {
     // Sin `superAdmin`: es la mensualidad vista por el dueño del negocio.
     { label: 'Mis pagos', icon: 'wallet', route: '/admin/mis-pagos', soloAdministrador: true },
     { label: 'Cobranza', icon: 'wallet', route: '/admin/cobranza', superAdmin: true },
+    // El libro de caja de EscalApp: ingresos, gastos, comisiones y 4x1000. Solo los dueños.
+    { label: 'Cartera', icon: 'landmark', route: '/admin/cartera', superAdmin: true },
     // «EscalApp en números»: la vista que se enseña a un interesado. Solo super admin — cruza
     // las cifras de todos los inquilinos a la vez.
     { label: 'Estadísticas', icon: 'chart-column', route: '/admin/estadisticas', superAdmin: true },
@@ -314,6 +317,7 @@ export class AdminLayoutComponent {
     if (url.includes('/personas')) return 'Ficha 360';
     if (url.includes('/mis-pagos')) return 'Mis pagos';
     if (url.includes('/cobranza')) return 'Cobranza';
+    if (url.includes('/cartera')) return 'Cartera';
     if (url.includes('/estadisticas')) return 'Estadísticas';
     if (url.includes('/auditoria')) return 'Auditoría';
     if (url.includes('/tipos-negocio')) return 'Roles del negocio';
