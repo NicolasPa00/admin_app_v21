@@ -318,9 +318,24 @@
         </label>
       </article>
 
-      <!-- 5. Estado -->
+      <!-- Qué se factura -->
       <article class="feo__card">
-        <h3 class="feo__card-title">5. Empezar a emitir</h3>
+        <h3 class="feo__card-title">5. Qué cobros se facturan</h3>
+        <p class="feo__ayuda">
+          Lo normal es facturar <strong>solo el cobro en el que el cajero lo pide</strong>: un negocio
+          con un paquete pequeño de documentos no puede gastarlo en cada venta. Enciéndelo para el
+          que quiera facturar todo lo que cobra.
+        </p>
+        <label class="feo__check">
+          <input type="checkbox" [ngModel]="v.config?.facturar_todo ?? false" name="feo-todo"
+            (ngModelChange)="guardarFacturarTodo($event)" [disabled]="ocupado() !== null" />
+          <span>Facturar todos los cobros (a consumidor final si no se dice otra cosa)</span>
+        </label>
+      </article>
+
+      <!-- 6. Estado -->
+      <article class="feo__card">
+        <h3 class="feo__card-title">6. Empezar a emitir</h3>
         @if (porConfirmar(); as e) {
           <div class="feo__alerta feo__alerta--aviso">
             <lucide-icon name="triangle-alert" [size]="18"></lucide-icon>

@@ -17,6 +17,7 @@ const vista = (extra: Partial<FeVista> = {}): FeVista => ({
     impuesto_domicilio_codigo: 'ZZ',
     impuesto_domicilio_tarifa: '0.00',
     enviar_correo: true,
+    facturar_todo: false,
     activado_en: null,
     tiene_credenciales: true,
   },

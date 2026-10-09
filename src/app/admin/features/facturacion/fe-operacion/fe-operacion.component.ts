@@ -336,6 +336,15 @@ export class FeOperacionComponent {
     });
   }
 
+  guardarFacturarTodo(todo: boolean): void {
+    this.ejecutar('facturar-todo', this.api.guardarEmision(this.idNegocio(), { facturar_todo: todo }), (v) => {
+      this.aplicar(v);
+      return todo
+        ? 'Este negocio facturará todos sus cobros.'
+        : 'Este negocio facturará solo los cobros en los que el cajero lo pida.';
+    });
+  }
+
   confirmarEstado(): void {
     const estado = this.porConfirmar();
     if (!estado) return;

@@ -125,6 +125,8 @@ export interface FeConfiguracion {
   impuesto_domicilio_codigo: string;
   impuesto_domicilio_tarifa: string | number;
   enviar_correo: boolean;
+  /** false (lo normal): se factura solo el cobro en el que el cajero lo pide. true: todos. */
+  facturar_todo: boolean;
   activado_en: string | null;
   tiene_credenciales: boolean;
 }
