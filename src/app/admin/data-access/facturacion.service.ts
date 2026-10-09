@@ -8,6 +8,14 @@ import {
   CatalogosFiscales,
   DatosFiscalesRespuesta,
   Declaracion,
+  EstadoFe,
+  FeConfiguracion,
+  FeCredenciales,
+  FeNuevoRango,
+  FePrueba,
+  FeRango,
+  FeRangoDian,
+  FeVista,
   FichaFiscal,
 } from '../models/facturacion.models';
 
@@ -77,5 +85,71 @@ export class FacturacionService {
         declaracion,
       )
       .pipe(map((res) => res.data as DatosFiscalesRespuesta));
+  }
+
+  // ── Emisión (FE-2) — solo super admin; el backend responde 403 a cualquier otro ──
+  //
+  //   GET    /admin/negocios/:id_negocio/facturacion-electronica
+  //   PUT    …                                  credenciales, ambiente, impuestos por defecto
+  //   POST   …/probar                           ¿las credenciales son de este negocio?
+  //   GET    …/rangos/dian                      lo que la DIAN tiene asociado
+  //   POST   …/rangos                           crear el rango en el proveedor (no lo toma solo)
+  //   POST   …/rangos/sincronizar
+  //   PUT    …/rangos/:id_resolucion/usar
+  //   PATCH  …/estado
+  //
+  // Las credenciales solo viajan de aquí hacia el servidor: ninguna respuesta las devuelve.
+
+  private fe(idNegocio: number): string {
+    return `${this.API}/negocios/${idNegocio}/facturacion-electronica`;
+  }
+
+  getEmision(idNegocio: number): Observable<FeVista> {
+    return this.http.get<ApiResponse<FeVista>>(this.fe(idNegocio)).pipe(map((r) => r.data as FeVista));
+  }
+
+  guardarEmision(
+    idNegocio: number,
+    campos: Partial<FeConfiguracion> & { credenciales?: FeCredenciales },
+  ): Observable<FeVista> {
+    return this.http
+      .put<ApiResponse<FeVista>>(this.fe(idNegocio), campos)
+      .pipe(map((r) => r.data as FeVista));
+  }
+
+  probarConexion(idNegocio: number): Observable<FePrueba> {
+    return this.http
+      .post<ApiResponse<FePrueba>>(`${this.fe(idNegocio)}/probar`, {})
+      .pipe(map((r) => r.data as FePrueba));
+  }
+
+  sincronizarRangos(idNegocio: number): Observable<FeRango[]> {
+    return this.http
+      .post<ApiResponse<{ rangos: FeRango[] }>>(`${this.fe(idNegocio)}/rangos/sincronizar`, {})
+      .pipe(map((r) => r.data?.rangos ?? []));
+  }
+
+  rangosDian(idNegocio: number): Observable<FeRangoDian[]> {
+    return this.http
+      .get<ApiResponse<{ rangos: FeRangoDian[] }>>(`${this.fe(idNegocio)}/rangos/dian`)
+      .pipe(map((r) => r.data?.rangos ?? []));
+  }
+
+  crearRango(idNegocio: number, rango: FeNuevoRango): Observable<FeRango[]> {
+    return this.http
+      .post<ApiResponse<{ rangos: FeRango[] }>>(`${this.fe(idNegocio)}/rangos`, rango)
+      .pipe(map((r) => r.data?.rangos ?? []));
+  }
+
+  usarRango(idNegocio: number, idResolucion: string): Observable<FeRango[]> {
+    return this.http
+      .put<ApiResponse<{ rangos: FeRango[] }>>(`${this.fe(idNegocio)}/rangos/${idResolucion}/usar`, {})
+      .pipe(map((r) => r.data?.rangos ?? []));
+  }
+
+  cambiarEstadoEmision(idNegocio: number, estado: EstadoFe): Observable<FeVista> {
+    return this.http
+      .patch<ApiResponse<FeVista>>(`${this.fe(idNegocio)}/estado`, { estado })
+      .pipe(map((r) => r.data as FeVista));
   }
 }

@@ -470,4 +470,11 @@
       </div>
     </article>
   }
+
+  <!-- Emisión (FE-2): solo super admin. Fuera del asistente, por lo mismo que el selector. -->
+  @if (esSuper() && !cargando() && !enAsistente()) {
+    @if (idNegocio(); as id) {
+      <app-fe-operacion [idNegocio]="id" [impuestos]="catalogos().impuestos" />
+    }
+  }
 </section>

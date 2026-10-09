@@ -24,6 +24,9 @@ import {
 } from 'lucide-angular';
 
 import { AdminService } from '../../data-access/admin.service';
+import { AuthService } from '../../../auth/data-access/auth.service';
+import { esSuperAdmin } from '../../guards/admin.guard';
+import { FeOperacionComponent } from './fe-operacion/fe-operacion.component';
 import { FacturacionService } from '../../data-access/facturacion.service';
 import { Negocio } from '../../models/admin.models';
 import { TelefonoPaisComponent } from '../../../shared/telefono-pais/telefono-pais.component';
@@ -86,7 +89,13 @@ import {
 @Component({
   selector: 'app-facturacion',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule, TelefonoPaisComponent, SelectorNegocioComponent],
+  imports: [
+    FormsModule,
+    LucideAngularModule,
+    TelefonoPaisComponent,
+    SelectorNegocioComponent,
+    FeOperacionComponent,
+  ],
   templateUrl: './facturacion.component.html',
   styleUrl: './facturacion.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -112,6 +121,14 @@ import {
 export class FacturacionComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly facturacion = inject(FacturacionService);
+  private readonly auth = inject(AuthService);
+
+  /**
+   * La emisión —credenciales del proveedor, rangos, activar— la configura EscalApp, no el
+   * inquilino: el bloque de abajo solo existe para el super admin. Ocultarlo aquí no es lo que
+   * lo protege; sus rutas responden 403 a cualquier otro.
+   */
+  readonly esSuper = computed(() => esSuperAdmin(this.auth.currentUser()));
 
   // ── Estado ────────────────────────────────────────────────────
   readonly cargando = signal(true);

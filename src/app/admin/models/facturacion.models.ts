@@ -107,3 +107,81 @@ export interface Declaracion {
   modo_facturacion?: ModoFacturacion;
   obligado_a_facturar?: boolean | null;
 }
+
+// ── Emisión (FE-2): lo que configura el super admin por negocio ──
+
+export type AmbienteFe = 'PRUEBAS' | 'PRODUCCION';
+export type EstadoFe = 'SIN_CONFIGURAR' | 'EN_PRUEBAS' | 'ACTIVO' | 'SUSPENDIDO';
+export type TipoRangoFe = 'FV' | 'NC';
+
+/** La configuración de emisión. **Nunca trae las credenciales**: solo si las hay. */
+export interface FeConfiguracion {
+  id_negocio: number;
+  proveedor: string;
+  ambiente: AmbienteFe;
+  estado: EstadoFe;
+  impuesto_defecto_codigo: string;
+  impuesto_defecto_tarifa: string | number;
+  impuesto_domicilio_codigo: string;
+  impuesto_domicilio_tarifa: string | number;
+  enviar_correo: boolean;
+  activado_en: string | null;
+  tiene_credenciales: boolean;
+}
+
+export interface FeRango {
+  id_resolucion: string;
+  id_rango_proveedor: number;
+  tipo_documento: TipoRangoFe;
+  prefijo: string | null;
+  numero_resolucion: string | null;
+  rango_desde: string | number | null;
+  rango_hasta: string | number | null;
+  consecutivo_actual: string | number | null;
+  vigencia_hasta: string | null;
+  vencida: boolean;
+  en_uso: boolean;
+}
+
+/** Por qué un negocio no factura todavía. `null` = factura. */
+export type MotivoNoFactura = 'SIN_FEATURE' | 'MODO_NINGUNO' | 'DATOS_INCOMPLETOS' | 'NO_ACTIVO' | null;
+
+export interface FeVista {
+  /** `null` mientras nadie haya guardado nada para este negocio. */
+  config: FeConfiguracion | null;
+  rangos: FeRango[];
+  puede_emitir: EstadoEmision;
+  debe_facturar: { facturar: boolean; motivo: MotivoNoFactura };
+  feature: boolean;
+  alertas: string[];
+}
+
+export interface FeCredenciales {
+  client_id: string;
+  client_secret: string;
+  username: string;
+  password: string;
+}
+
+export interface FePrueba {
+  empresa: { nit: string | null; dv: string | number | null; razon_social: string | null };
+  coincide_nit: boolean;
+  nit_del_negocio: string | null;
+}
+
+/** Un prefijo que la DIAN tiene asociado al software del negocio. */
+export interface FeRangoDian {
+  prefijo: string | null;
+  resolucion: string | null;
+  desde: string | number | null;
+  hasta: string | number | null;
+  vigenciaDesde: string | null;
+  vigenciaHasta: string | null;
+}
+
+export interface FeNuevoRango {
+  tipo_documento: TipoRangoFe;
+  prefijo: string;
+  actual: number;
+  resolucion?: string | null;
+}
