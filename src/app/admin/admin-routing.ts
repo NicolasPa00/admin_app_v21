@@ -165,6 +165,16 @@ export const adminRoutes: Routes = [
         title: 'Cobranza',
       },
       {
+        // Cartera: el libro de caja de EscalApp como empresa — lo que entra (las mensualidades
+        // llegan solas), lo que sale, las comisiones de las pasarelas y el 4x1000. Solo super
+        // admin: son las cuentas de los dueños, no de un inquilino.
+        path: 'cartera',
+        loadComponent: () =>
+          import('./features/cartera/cartera.component').then((m) => m.CarteraComponent),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Cartera',
+      },
+      {
         // Estadísticas: «EscalApp en números», el recorrido completo de la plataforma. Es la
         // vista que se abre delante de un interesado, y solo el super admin la ve: cruza las
         // cifras de todos los inquilinos.

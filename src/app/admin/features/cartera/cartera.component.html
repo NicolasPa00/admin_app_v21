@@ -1,0 +1,1036 @@
+<!--
+  Cartera (Super Admin): el libro de caja de EscalApp. Ver admin_ws/docs/cartera.md.
+  Mismo lenguaje visual que Terceros y Estadísticas: titular en degradado, tarjetas, gráfica
+  de barras con eje y tooltip, tablas y modales como los de Usuarios y Negocios.
+-->
+<div class="car">
+
+  <!-- ── Cabecera ── -->
+  <header class="car__head">
+    <div>
+      <h1 class="car__title">Cartera</h1>
+      <p class="car__subtitle">
+        Lo que entra, lo que sale y lo que se queda por el camino: comisiones, 4x1000 y retenciones.
+      </p>
+    </div>
+
+    <div class="car__head-actions">
+      <button type="button" class="btn btn--outline car__btn" (click)="recargar()"
+              [disabled]="estadoResumen() === 'loading'" aria-label="Actualizar la cartera">
+        <lucide-icon name="refresh-cw" [size]="16" [class.car__spin]="estadoResumen() === 'loading'"
+                     aria-hidden="true" />
+        Actualizar
+      </button>
+      <button type="button" class="btn btn--outline car__btn" (click)="exportar()" [disabled]="exportando()">
+        <lucide-icon [name]="exportando() ? 'loader-2' : 'download'" [size]="16"
+                     [class.car__spin]="exportando()" aria-hidden="true" />
+        Exportar CSV
+      </button>
+      <button type="button" class="btn btn--primary car__btn" (click)="nuevo('egreso')" [disabled]="!catalogos()">
+        <lucide-icon name="plus" [size]="16" aria-hidden="true" />
+        Nuevo movimiento
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Periodo: un solo control de filtro para toda la vista ── -->
+  <div class="car__toolbar">
+    <div class="car__seg" role="group" aria-label="Periodo">
+      @for (p of periodos; track p.v) {
+        <button type="button" class="car__seg-btn" [class.is-active]="periodo() === p.v"
+                [attr.aria-pressed]="periodo() === p.v" (click)="elegirPeriodo(p.v)">
+          {{ p.t }}
+        </button>
+      }
+    </div>
+    @if (periodo() === 'personalizado') {
+      <form class="car__rango" (submit)="$event.preventDefault(); aplicarRango()">
+        <input class="input" type="date" aria-label="Desde" [value]="desde()"
+               (input)="desde.set($any($event.target).value)" />
+        <span aria-hidden="true">–</span>
+        <input class="input" type="date" aria-label="Hasta" [value]="hasta()"
+               (input)="hasta.set($any($event.target).value)" />
+        <button type="submit" class="btn btn--primary btn--sm">Ver</button>
+      </form>
+    } @else {
+      <span class="car__rango-texto">Del {{ desde() }} al {{ hasta() }}</span>
+    }
+  </div>
+
+  <!-- ── Pestañas ── -->
+  <div class="car__tabs" role="tablist" aria-label="Secciones de la cartera">
+    <button type="button" role="tab" class="car__tab" [class.is-active]="pestana() === 'resumen'"
+            [attr.aria-selected]="pestana() === 'resumen'" (click)="irA('resumen')">
+      <lucide-icon name="chart-column" [size]="16" aria-hidden="true" /> Resumen
+    </button>
+    <button type="button" role="tab" class="car__tab" [class.is-active]="pestana() === 'movimientos'"
+            [attr.aria-selected]="pestana() === 'movimientos'" (click)="irA('movimientos')">
+      <lucide-icon name="arrow-left-right" [size]="16" aria-hidden="true" /> Movimientos
+    </button>
+    <button type="button" role="tab" class="car__tab" [class.is-active]="pestana() === 'ajustes'"
+            [attr.aria-selected]="pestana() === 'ajustes'" (click)="irA('ajustes')">
+      <lucide-icon name="settings" [size]="16" aria-hidden="true" /> Cuentas y tarifas
+    </button>
+  </div>
+
+  @if (error(); as texto) {
+    <div class="car__banner car__banner--critico" role="alert">
+      <lucide-icon name="circle-alert" [size]="18" aria-hidden="true" />
+      <span>{{ texto }}</span>
+    </div>
+  }
+
+  <!-- ═════════════ RESUMEN ═════════════ -->
+  @if (pestana() === 'resumen') {
+    @if (!resumen() && estadoResumen() !== 'error') {
+      <div class="car__skeleton" aria-busy="true" aria-label="Cargando la cartera">
+        <div class="car__sk car__sk--hero"></div>
+        <div class="car__sk car__sk--tiles"></div>
+        <div class="car__sk car__sk--chart"></div>
+      </div>
+    } @else if (!resumen()) {
+      <div class="car__state">
+        <lucide-icon name="circle-alert" [size]="36" aria-hidden="true" />
+        <p class="car__state-title">No se pudo cargar la cartera</p>
+        <p class="car__state-desc">Revisa la conexión con el servidor e intenta de nuevo.</p>
+        <button type="button" class="btn btn--primary" (click)="recargar()">Reintentar</button>
+      </div>
+    }
+
+    @if (resumen(); as r) {
+      @if (r.cifras.estimados > 0 || r.cifras.sin_tasa > 0) {
+        <div class="car__banner car__banner--aviso" role="status">
+          <lucide-icon name="info" [size]="18" aria-hidden="true" />
+          <span>
+            @if (r.cifras.estimados > 0) {
+              <strong>{{ r.cifras.estimados }} movimiento(s) con cifras estimadas</strong>
+              (comisión según la tarifa de la pasarela o TRM del día).
+            }
+            @if (r.cifras.sin_tasa > 0) {
+              <strong>{{ r.cifras.sin_tasa }} en otra moneda no suman</strong> porque les falta la tasa.
+            }
+            Cuádralos con el extracto en Movimientos.
+          </span>
+        </div>
+      }
+
+      <!-- Titular: las cuatro cifras que se leen de lejos -->
+      <section class="car__hero" aria-label="Cifras del periodo">
+        <article class="car__hero-item">
+          <p class="car__hero-label">Resultado</p>
+          <p class="car__hero-value">{{ dinero(r.cifras.resultado) }}</p>
+          <p class="car__hero-note">Margen {{ porcentaje(r.cifras.margen) }} · llegó a caja {{ dinero(r.cifras.caja_neta) }}</p>
+        </article>
+        <article class="car__hero-item">
+          <p class="car__hero-label">Ingresos</p>
+          <p class="car__hero-value">{{ dinero(r.cifras.ingresos) }}</p>
+          <p class="car__hero-note">{{ r.cifras.n_ingresos }} movimiento(s)</p>
+        </article>
+        <article class="car__hero-item">
+          <p class="car__hero-label">Egresos</p>
+          <p class="car__hero-value">{{ dinero(r.cifras.egresos) }}</p>
+          <p class="car__hero-note">+ {{ dinero(r.cifras.comisiones + r.cifras.gmf) }} en comisiones y 4x1000</p>
+        </article>
+        <article class="car__hero-item">
+          <p class="car__hero-label">Saldo en cuentas</p>
+          <p class="car__hero-value">{{ dinero(r.saldo_total) }}</p>
+          <p class="car__hero-note">Al {{ r.rango.hasta }}</p>
+        </article>
+      </section>
+
+      <!-- Lo que se queda por el camino -->
+      <section class="car__tiles" aria-label="Costos financieros y cartera">
+        <article class="car__tile">
+          <span class="car__tile-icon" aria-hidden="true"><lucide-icon name="credit-card" [size]="18" /></span>
+          <div>
+            <p class="car__tile-value">{{ dinero(r.cifras.comisiones) }}</p>
+            <p class="car__tile-label"
+               [attr.title]="'Pasarelas ' + dinero(r.cifras.comisiones_pasarela) + ' · banco ' + dinero(r.cifras.comisiones_bancarias)">
+              Comisiones de pasarelas y banco
+            </p>
+          </div>
+        </article>
+        <article class="car__tile">
+          <span class="car__tile-icon" aria-hidden="true"><lucide-icon name="landmark" [size]="18" /></span>
+          <div>
+            <p class="car__tile-value">{{ dinero(r.cifras.gmf) }}</p>
+            <p class="car__tile-label" title="La mitad del 4x1000 pagado se descuenta en la declaración de renta">
+              4x1000 · {{ dinero(r.cifras.gmf_deducible) }} deducible
+            </p>
+          </div>
+        </article>
+        <article class="car__tile">
+          <span class="car__tile-icon" aria-hidden="true"><lucide-icon name="receipt" [size]="18" /></span>
+          <div>
+            <p class="car__tile-value">{{ dinero(r.cifras.retenciones) }}</p>
+            <p class="car__tile-label" title="Lo que nos retienen los clientes empresa: se descuenta al declarar, no es gasto">
+              Retenciones (no es gasto)
+            </p>
+          </div>
+        </article>
+        <article class="car__tile" [class.car__tile--aviso]="r.por_cobrar.total > 0">
+          <span class="car__tile-icon" aria-hidden="true"><lucide-icon name="wallet" [size]="18" /></span>
+          <div>
+            <p class="car__tile-value">{{ dinero(r.por_cobrar.total) }}</p>
+            <p class="car__tile-label"
+               [attr.title]="r.por_cobrar.facturas + ' factura(s) pendientes de ' + r.por_cobrar.negocios + ' negocio(s), en Cobranza'">
+              Por cobrar · {{ r.por_cobrar.facturas }} factura(s)
+            </p>
+          </div>
+        </article>
+        @if (r.cifras.iva_compras > 0 || r.cifras.iva_comisiones > 0) {
+          <article class="car__tile">
+            <span class="car__tile-icon" aria-hidden="true"><lucide-icon name="receipt" [size]="18" /></span>
+            <div>
+              <p class="car__tile-value">{{ dinero(r.cifras.iva_compras + r.cifras.iva_comisiones) }}</p>
+              <p class="car__tile-label"
+                 [attr.title]="'Compras ' + dinero(r.cifras.iva_compras) + ' · comisiones ' + dinero(r.cifras.iva_comisiones)">
+                IVA pagado
+              </p>
+            </div>
+          </article>
+        }
+      </section>
+
+      <!-- Gráfica: últimos 12 meses -->
+      <article class="car__card">
+        <header class="car__card-head">
+          <div>
+            <h2 class="car__card-title">Ingresos y egresos por mes</h2>
+            <p class="car__card-desc">
+              Los últimos 12 meses. Los egresos incluyen las comisiones y el 4x1000.
+            </p>
+          </div>
+          <ul class="car__legend">
+            <li><span class="car__legend-dot car__legend-dot--in" aria-hidden="true"></span>Ingresos</li>
+            <li><span class="car__legend-dot car__legend-dot--out" aria-hidden="true"></span>Egresos</li>
+          </ul>
+        </header>
+
+        @if (hayMovimientosEnMeses()) {
+          <div class="car__chart" (mouseleave)="hoverMes.set(null)">
+            <div class="car__axis" aria-hidden="true">
+              @for (m of ejeMarcasMes(); track $index) {
+                <span>{{ compacto(m) }}</span>
+              }
+            </div>
+
+            <div class="car__plot">
+              <div class="car__grid" aria-hidden="true"><span></span><span></span><span></span></div>
+
+              <div class="car__bars" role="list" aria-label="Ingresos y egresos por mes">
+                @for (m of serieMeses(); track m.mes; let i = $index) {
+                  <div class="car__bar-slot" role="listitem" tabindex="0"
+                       [class.is-hover]="hoverMes() === i"
+                       [attr.aria-label]="etiquetaMes(m)"
+                       (mouseenter)="hoverMes.set(i)" (focus)="hoverMes.set(i)" (blur)="hoverMes.set(null)">
+                    <div class="car__bar car__bar--in" [style.height.%]="altura(m.ingresos)"></div>
+                    <div class="car__bar car__bar--out" [style.height.%]="altura(m.salidas)"></div>
+                  </div>
+                }
+              </div>
+
+              @if (mesHover(); as m) {
+                <div class="car__tooltip" role="status"
+                     [style.left.%]="((hoverMes()! + 0.5) / serieMeses().length) * 100"
+                     [class.car__tooltip--izq]="hoverMes()! > serieMeses().length / 2">
+                  <strong>{{ nombreMes(m.mes) }} {{ m.mes.slice(0, 4) }}</strong>
+                  <span><i class="car__tt-dot car__tt-dot--in"></i>Ingresos <b>{{ dinero(m.ingresos) }}</b></span>
+                  <span><i class="car__tt-dot car__tt-dot--out"></i>Egresos <b>{{ dinero(m.egresos) }}</b></span>
+                  <span class="car__tt-sub">Comisiones y 4x1000 <b>{{ dinero(m.costos_financieros) }}</b></span>
+                  <span class="car__tt-sub">Resultado <b [class.is-neg]="m.resultado < 0">{{ dinero(m.resultado) }}</b></span>
+                </div>
+              }
+            </div>
+
+            <div class="car__xlabels" aria-hidden="true">
+              @for (m of serieMeses(); track m.mes) {
+                <span>{{ nombreMes(m.mes) }}</span>
+              }
+            </div>
+          </div>
+        } @else {
+          <p class="car__empty">Todavía no hay movimientos en los últimos 12 meses.</p>
+        }
+      </article>
+
+      <div class="car__row">
+        <!-- Ingresos por categoría -->
+        <article class="car__card">
+          <header class="car__card-head">
+            <div>
+              <h2 class="car__card-title">Ingresos por categoría</h2>
+              <p class="car__card-desc">Toca una para ver sus movimientos.</p>
+            </div>
+          </header>
+          @if (r.ingresos_por_categoria.length === 0) {
+            <p class="car__empty">Sin ingresos en el periodo.</p>
+          } @else {
+            <ul class="car__rank">
+              @for (c of r.ingresos_por_categoria; track c.id_categoria) {
+                <li>
+                  <button type="button" class="car__rank-btn" (click)="verCategoria(c.id_categoria, 'ingreso')">
+                    <span class="car__rank-top">
+                      <span class="car__rank-name">{{ c.nombre }} <small>{{ c.movimientos }}</small></span>
+                      <span class="car__rank-value">{{ dinero(c.total) }}</span>
+                    </span>
+                    <span class="car__rank-track">
+                      <span class="car__rank-fill car__rank-fill--in"
+                            [style.width.%]="ancho(c.total, maxIngresoCategoria())"></span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+
+        <!-- Egresos por categoría -->
+        <article class="car__card">
+          <header class="car__card-head">
+            <div>
+              <h2 class="car__card-title">Egresos por categoría</h2>
+              <p class="car__card-desc">Sin comisiones ni 4x1000, que van aparte arriba.</p>
+            </div>
+          </header>
+          @if (r.egresos_por_categoria.length === 0) {
+            <p class="car__empty">Sin egresos registrados en el periodo.</p>
+          } @else {
+            <ul class="car__rank">
+              @for (c of r.egresos_por_categoria; track c.id_categoria) {
+                <li>
+                  <button type="button" class="car__rank-btn" (click)="verCategoria(c.id_categoria, 'egreso')">
+                    <span class="car__rank-top">
+                      <span class="car__rank-name">{{ c.nombre }} <small>{{ c.movimientos }}</small></span>
+                      <span class="car__rank-value">{{ dinero(c.total) }}</span>
+                    </span>
+                    <span class="car__rank-track">
+                      <span class="car__rank-fill car__rank-fill--out"
+                            [style.width.%]="ancho(c.total, maxEgresoCategoria())"></span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+
+        <!-- De dónde viene la plata -->
+        <article class="car__card">
+          <header class="car__card-head">
+            <div>
+              <h2 class="car__card-title">De dónde viene la plata</h2>
+              <p class="car__card-desc">Los clientes que más ingresos dejaron en el periodo.</p>
+            </div>
+          </header>
+          @if (r.ingresos_por_tercero.length === 0) {
+            <p class="car__empty">Sin ingresos en el periodo.</p>
+          } @else {
+            <ul class="car__rank">
+              @for (t of r.ingresos_por_tercero; track t.tercero) {
+                <li>
+                  <span class="car__rank-top">
+                    <span class="car__rank-name">{{ t.tercero }}</span>
+                    <span class="car__rank-value">{{ dinero(t.total) }}</span>
+                  </span>
+                  <span class="car__rank-track">
+                    <span class="car__rank-fill car__rank-fill--in" [style.width.%]="ancho(t.total, maxTercero())"></span>
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </article>
+
+        <!-- Saldo por cuenta -->
+        <article class="car__card">
+          <header class="car__card-head">
+            <div>
+              <h2 class="car__card-title">Saldo por cuenta</h2>
+              <p class="car__card-desc">Saldo inicial más los movimientos hasta el {{ r.rango.hasta }}.</p>
+            </div>
+          </header>
+          <ul class="car__cuentas">
+            @for (c of r.cuentas; track c.id_cuenta) {
+              @if (c.estado === 'A' || c.saldo !== 0) {
+                <li>
+                  <span class="car__cuenta-nombre">
+                    {{ c.nombre }}
+                    @if (c.aplica_gmf) { <span class="car__pill">4x1000</span> }
+                  </span>
+                  <b [class.is-neg]="c.saldo < 0">{{ dinero(c.saldo) }}</b>
+                </li>
+              }
+            }
+          </ul>
+          <p class="car__footnote">
+            <lucide-icon name="info" [size]="14" aria-hidden="true" />
+            <span>Fija el saldo inicial de cada cuenta en «Cuentas y tarifas» para que cuadre con el banco.</span>
+          </p>
+        </article>
+      </div>
+    }
+  }
+
+  <!-- ═════════════ MOVIMIENTOS ═════════════ -->
+  @if (pestana() === 'movimientos') {
+    <div class="car__filters">
+      <div class="car__search">
+        <lucide-icon name="search" [size]="18" class="car__search-icon" aria-hidden="true" />
+        <input class="input car__search-input" type="search" placeholder="Tercero, descripción, soporte…"
+               aria-label="Buscar movimiento" [value]="fBusqueda()"
+               (input)="fBusqueda.set($any($event.target).value)" (keydown.enter)="aplicarFiltros()" />
+      </div>
+      <select class="input car__select" aria-label="Tipo"
+              (change)="fTipo.set($any($event.target).value); fCategoria.set(null); aplicarFiltros()">
+        <option value="" [selected]="fTipo() === ''">Todos los tipos</option>
+        <option value="ingreso" [selected]="fTipo() === 'ingreso'">Ingresos</option>
+        <option value="egreso" [selected]="fTipo() === 'egreso'">Egresos</option>
+        <option value="transferencia" [selected]="fTipo() === 'transferencia'">Traslados</option>
+      </select>
+      <select class="input car__select" aria-label="Categoría"
+              (change)="fCategoria.set(+$any($event.target).value || null); aplicarFiltros()">
+        <option value="" [selected]="!fCategoria()">Todas las categorías</option>
+        @for (c of categoriasFiltro(); track c.id_categoria) {
+          <option [value]="c.id_categoria" [selected]="fCategoria() === c.id_categoria">{{ c.nombre }}</option>
+        }
+      </select>
+      <select class="input car__select" aria-label="Cuenta"
+              (change)="fCuenta.set(+$any($event.target).value || null); aplicarFiltros()">
+        <option value="" [selected]="!fCuenta()">Todas las cuentas</option>
+        @for (c of catalogos()?.cuentas ?? []; track c.id_cuenta) {
+          <option [value]="c.id_cuenta" [selected]="fCuenta() === c.id_cuenta">{{ c.nombre }}</option>
+        }
+      </select>
+      <select class="input car__select" aria-label="Origen"
+              (change)="fOrigen.set($any($event.target).value); aplicarFiltros()">
+        <option value="" [selected]="fOrigen() === ''">Cualquier origen</option>
+        <option value="manual" [selected]="fOrigen() === 'manual'">Anotados a mano</option>
+        <option value="cobranza" [selected]="fOrigen() === 'cobranza'">Mensualidades</option>
+        <option value="recarga_ia" [selected]="fOrigen() === 'recarga_ia'">Recargas de IA</option>
+      </select>
+      <label class="car__check">
+        <input type="checkbox" [checked]="fAnulados()"
+               (change)="fAnulados.set($any($event.target).checked); aplicarFiltros()" />
+        Ver anulados
+      </label>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="limpiarFiltros()">Limpiar</button>
+    </div>
+
+    @if (estadoMovs() === 'loading' && movimientos().length === 0) {
+      <div class="car__skeleton" aria-busy="true" aria-label="Cargando movimientos">
+        <div class="car__sk car__sk--chart"></div>
+      </div>
+    } @else if (estadoMovs() === 'error') {
+      <!-- El error ya se muestra arriba. -->
+    } @else if (movimientos().length === 0) {
+      <div class="car__state">
+        <lucide-icon name="arrow-left-right" [size]="36" aria-hidden="true" />
+        <p class="car__state-title">No hay movimientos</p>
+        <p class="car__state-desc">Nada con estos filtros en el periodo. Anota uno:</p>
+        <div class="car__state-actions">
+          <button type="button" class="btn btn--outline" (click)="nuevo('ingreso')">Anotar un ingreso</button>
+          <button type="button" class="btn btn--primary" (click)="nuevo('egreso')">Anotar un gasto</button>
+        </div>
+      </div>
+    } @else {
+      <div class="car__resumen-lista">
+        <span>{{ movimientos().length }} movimiento(s)</span>
+        <span>Entró <b class="is-in">{{ dinero(totalesLista().entradas) }}</b></span>
+        <span>Salió <b class="is-out">{{ dinero(totalesLista().salidas) }}</b></span>
+        <small>neto en cuenta, sin traslados</small>
+      </div>
+
+      <div class="car__table-wrap">
+        <table class="car__table">
+          <thead>
+            <tr>
+              <th scope="col">Fecha</th>
+              <th scope="col" class="car__col-concepto">Concepto</th>
+              <th scope="col">Cuenta</th>
+              <th scope="col" class="car__num">Monto</th>
+              <th scope="col" class="car__num">Comisión</th>
+              <th scope="col" class="car__num">Retención</th>
+              <th scope="col" class="car__num">4x1000</th>
+              <th scope="col" class="car__num">Neto</th>
+              <th scope="col" class="car__col-actions"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of filasPagina(); track m.id_movimiento) {
+              <tr [class.is-anulado]="m.estado === 'E'">
+                <td class="car__nowrap car__muted">{{ m.fecha }}</td>
+                <td>
+                  <div class="car__concepto">
+                    <span [class]="'car__tipo-icon car__tipo-icon--' + m.tipo" aria-hidden="true">
+                      <lucide-icon
+                        [name]="m.tipo === 'ingreso' ? 'arrow-down-left' : m.tipo === 'egreso' ? 'arrow-up-right' : 'arrow-left-right'"
+                        [size]="16" />
+                    </span>
+                    <div class="car__concepto-text">
+                      <span class="car__concepto-name">
+                        {{ m.negocio || m.tercero || (m.tipo === 'transferencia' ? 'Traslado' : '—') }}
+                      </span>
+                      <span class="car__concepto-meta"
+                            [attr.title]="m.descripcion">{{ TIPOS[m.tipo] }}@if (m.categoria) { · {{ m.categoria }} }@if (m.descripcion) { · {{ m.descripcion }} }</span>
+                      @if (m.origen !== 'manual' || m.estimado || m.monto_cop === null || m.estado === 'E' || m.soporte) {
+                        <span class="car__badges">
+                          @if (m.origen !== 'manual') { <span class="car__pill car__pill--info">{{ ORIGENES[m.origen] }}</span> }
+                          @if (m.estimado) { <span class="car__pill car__pill--aviso">Estimado</span> }
+                          @if (m.monto_cop === null) { <span class="car__pill car__pill--aviso">Falta la tasa</span> }
+                          @if (m.estado === 'E') {
+                            <span class="car__pill car__pill--error" [attr.title]="m.motivo_anulacion">Anulado</span>
+                          }
+                          @if (m.soporte) { <span class="car__soporte">{{ m.soporte }}</span> }
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td class="car__nowrap">
+                  {{ m.cuenta }}
+                  @if (m.cuenta_destino) { <span class="car__sub">→ {{ m.cuenta_destino }}</span> }
+                </td>
+                <td class="car__num">
+                  {{ dinero(m.monto, m.moneda) }}
+                  @if (m.moneda !== 'COP' && m.monto_cop !== null) { <span class="car__sub">{{ dinero(m.monto_cop) }}</span> }
+                </td>
+                <td class="car__num car__muted">{{ m.comision + m.iva_comision ? dinero(m.comision + m.iva_comision) : '—' }}</td>
+                <td class="car__num car__muted">{{ m.retencion ? dinero(m.retencion) : '—' }}</td>
+                <td class="car__num car__muted">{{ m.gmf ? dinero(m.gmf) : '—' }}</td>
+                <td class="car__num">
+                  <b [class.is-in]="neto(m) > 0" [class.is-out]="neto(m) < 0">{{ dinero(neto(m)) }}</b>
+                </td>
+                <td class="car__col-actions">
+                  @if (m.estado === 'A') {
+                    <div class="car__actions">
+                      <button type="button" class="car__icon-btn" (click)="editar(m)"
+                              [attr.aria-label]="'Editar movimiento del ' + m.fecha" title="Editar">
+                        <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
+                      </button>
+                      @if (m.origen === 'manual') {
+                        <button type="button" class="car__icon-btn" (click)="duplicar(m)"
+                                aria-label="Repetir este movimiento hoy" title="Repetir hoy">
+                          <lucide-icon name="copy" [size]="16" aria-hidden="true" />
+                        </button>
+                      }
+                      <button type="button" class="car__icon-btn car__icon-btn--danger" (click)="pedirAnular(m)"
+                              [attr.aria-label]="'Anular movimiento del ' + m.fecha" title="Anular">
+                        <lucide-icon name="ban" [size]="16" aria-hidden="true" />
+                      </button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <app-paginador [pagina]="pagina()" [total]="movimientos().length" [tamano]="tamano()"
+                       [tamanos]="[25, 50, 100]"
+                       (cambiarPagina)="irAPagina($event)" (cambiarTamano)="cambiarTamano($event)" />
+      </div>
+    }
+  }
+
+  <!-- ═════════════ CUENTAS Y TARIFAS ═════════════ -->
+  @if (pestana() === 'ajustes' && catalogos(); as cat) {
+    <article class="car__card">
+      <header class="car__card-head">
+        <div>
+          <h2 class="car__card-title">Cuentas</h2>
+          <p class="car__card-desc">
+            Dónde vive la plata. Las salidas de una cuenta con 4x1000 lo pagan solas (0,4 % del
+            débito). Si el banco tiene una cuenta marcada exenta, desmárcala.
+          </p>
+        </div>
+        <button type="button" class="btn btn--outline btn--sm" (click)="editarCuenta()">
+          <lucide-icon name="plus" [size]="16" aria-hidden="true" /> Nueva cuenta
+        </button>
+      </header>
+      <div class="car__table-wrap car__table-wrap--plano">
+        <table class="car__table car__table--compacta">
+          <thead>
+            <tr>
+              <th scope="col">Cuenta</th>
+              <th scope="col">Tipo</th>
+              <th scope="col">4x1000</th>
+              <th scope="col">Recibe</th>
+              <th scope="col" class="car__num">Saldo inicial</th>
+              <th scope="col" class="car__col-actions"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of cat.cuentas; track c.id_cuenta) {
+              <tr [class.is-anulado]="c.estado === 'I'">
+                <td>
+                  <span class="car__concepto-name">{{ c.nombre }}</span>
+                  @if (c.nota) { <span class="car__sub">{{ c.nota }}</span> }
+                </td>
+                <td class="car__muted">{{ TIPOS_CUENTA[c.tipo] }}</td>
+                <td>
+                  @if (c.aplica_gmf) { <span class="car__pill car__pill--info">Sí</span> }
+                  @else { <span class="car__muted">No</span> }
+                </td>
+                <td class="car__muted">
+                  {{ recibe(c.pasarela) }}
+                </td>
+                <td class="car__num">
+                  {{ dinero(c.saldo_inicial) }}
+                  @if (c.fecha_saldo) { <span class="car__sub">desde {{ c.fecha_saldo }}</span> }
+                </td>
+                <td class="car__col-actions">
+                  <button type="button" class="car__icon-btn" (click)="editarCuenta(c)"
+                          [attr.aria-label]="'Editar ' + c.nombre" title="Editar">
+                    <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="car__card">
+      <header class="car__card-head">
+        <div>
+          <h2 class="car__card-title">Tarifas de las pasarelas</h2>
+          <p class="car__card-desc">
+            Wompi no informa la comisión de cada pago: se estima con esta tarifa y el movimiento
+            queda «Estimado» hasta que lo cuadres con el extracto. Cambiarla solo afecta a los pagos
+            que entren de aquí en adelante.
+          </p>
+        </div>
+      </header>
+      <div class="car__table-wrap car__table-wrap--plano">
+        <table class="car__table car__table--compacta">
+          <thead>
+            <tr>
+              <th scope="col">Pasarela</th>
+              <th scope="col" class="car__num">Porcentaje</th>
+              <th scope="col" class="car__num">Fijo</th>
+              <th scope="col" class="car__num">IVA</th>
+              <th scope="col" class="car__num">Retención</th>
+              <th scope="col">Nota</th>
+              <th scope="col" class="car__col-actions"><span class="sr-only">Acciones</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of cat.tarifas; track t.pasarela) {
+              <tr>
+                <td><span class="car__concepto-name">{{ t.nombre }}</span></td>
+                <td class="car__num">{{ pct(t.porcentaje) }}</td>
+                <td class="car__num">{{ dinero(t.fijo, t.fijo_moneda) }}</td>
+                <td class="car__num">{{ pct(t.iva_pct) }}</td>
+                <td class="car__num">{{ pct(t.retencion_pct) }}</td>
+                <td class="car__muted car__nota-celda">{{ t.nota }}</td>
+                <td class="car__col-actions">
+                  <button type="button" class="car__icon-btn" (click)="editarTarifa(t)"
+                          [attr.aria-label]="'Editar tarifa de ' + t.nombre" title="Editar">
+                    <lucide-icon name="pencil" [size]="16" aria-hidden="true" />
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      @if (cat.trm) {
+        <p class="car__footnote">
+          <lucide-icon name="info" [size]="14" aria-hidden="true" />
+          <span>TRM del día: {{ dinero(cat.trm.valor) }} por dólar (vigente desde {{ cat.trm.vigente_desde }}).</span>
+        </p>
+      }
+    </article>
+
+    <article class="car__card">
+      <header class="car__card-head">
+        <div>
+          <h2 class="car__card-title">Categorías</h2>
+          <p class="car__card-desc">
+            Toca una para desactivarla o volver a activarla. Las marcadas «auto» las llena la plataforma.
+          </p>
+        </div>
+      </header>
+      <form class="car__nueva-cat" (submit)="$event.preventDefault(); crearCategoria()">
+        <input class="input" type="text" maxlength="80" placeholder="Nueva categoría"
+               aria-label="Nombre de la nueva categoría" [value]="nuevaCategoria()"
+               (input)="nuevaCategoria.set($any($event.target).value)" />
+        <select class="input car__select" aria-label="Tipo de la categoría"
+                (change)="nuevaCategoriaTipo.set($any($event.target).value)">
+          <option value="egreso" [selected]="nuevaCategoriaTipo() === 'egreso'">De egreso</option>
+          <option value="ingreso" [selected]="nuevaCategoriaTipo() === 'ingreso'">De ingreso</option>
+        </select>
+        <button type="submit" class="btn btn--primary btn--sm" [disabled]="nuevaCategoria().trim().length < 2">
+          <lucide-icon name="plus" [size]="16" aria-hidden="true" /> Añadir
+        </button>
+      </form>
+      <div class="car__cats-cols">
+        @for (tipo of ['ingreso', 'egreso']; track tipo) {
+          <div>
+            <h3 class="car__subtitulo">{{ tipo === 'ingreso' ? 'Ingresos' : 'Egresos' }}</h3>
+            <ul class="car__chips">
+              @for (c of cat.categorias; track c.id_categoria) {
+                @if (c.tipo === tipo) {
+                  <li>
+                    <button type="button" class="car__chip" [class.is-off]="c.estado === 'I'"
+                            [disabled]="c.sistema" [attr.aria-pressed]="c.estado === 'A'"
+                            [attr.title]="c.sistema ? 'La llena la plataforma sola' : (c.estado === 'A' ? 'Desactivar' : 'Activar')"
+                            (click)="alternarCategoria(c)">
+                      {{ c.nombre }}
+                      @if (c.sistema) { <small>auto</small> }
+                    </button>
+                  </li>
+                }
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </article>
+  }
+</div>
+
+<!-- ═════════════ Modal: movimiento ═════════════ -->
+@if (formAbierto()) {
+  <div class="car-modal" (click)="cerrarForm()" (keydown.escape)="cerrarForm()">
+    <div class="car-modal__card car-modal__card--ancha" role="dialog" aria-modal="true"
+         aria-labelledby="car-mov-title" (click)="$event.stopPropagation()">
+      <app-modal-cabecera [icono]="editando() ? 'pencil' : 'plus'"
+                          [titulo]="editando() ? 'Editar movimiento' : 'Nuevo movimiento'"
+                          [subtitulo]="automatico() ? 'Automático: el monto lo fija ' + ORIGENES[editando()!.origen].toLowerCase() : ''"
+                          tituloId="car-mov-title" [bloqueado]="guardando()" (cerrar)="cerrarForm()" />
+      <form class="car-modal__form" (submit)="$event.preventDefault(); guardar()">
+        <div class="car-modal__body">
+          <div class="car__seg car__seg--form" role="radiogroup" aria-label="Tipo de movimiento">
+            @for (t of tiposMovimiento; track t) {
+              <button type="button" role="radio" class="car__seg-btn" [class.is-active]="form().tipo === t"
+                      [attr.aria-checked]="form().tipo === t" [disabled]="automatico()"
+                      (click)="cambiarTipo(t)">
+                {{ TIPOS[t] }}
+              </button>
+            }
+          </div>
+
+          <div class="car-form__grid">
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-fecha">Fecha</label>
+              <input id="car-f-fecha" class="input" type="date" name="fecha" required
+                     [ngModel]="form().fecha" (ngModelChange)="campo('fecha', $event)" />
+            </div>
+
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-cuenta">{{ form().tipo === 'ingreso' ? 'Entró a' : 'Sale de' }}</label>
+              <select id="car-f-cuenta" class="input" name="cuenta" (change)="campo('id_cuenta', +$any($event.target).value)">
+                @for (c of cuentasActivas(); track c.id_cuenta) {
+                  <option [value]="c.id_cuenta" [selected]="form().id_cuenta === c.id_cuenta">
+                    {{ c.nombre }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            @if (form().tipo === 'transferencia') {
+              <div class="car-form__field">
+                <label class="car-form__label" for="car-f-destino">Llega a</label>
+                <select id="car-f-destino" class="input" name="destino"
+                        (change)="campo('id_cuenta_destino', +$any($event.target).value || null)">
+                  <option value="" [selected]="!form().id_cuenta_destino">Elige…</option>
+                  @for (c of cuentasActivas(); track c.id_cuenta) {
+                    @if (c.id_cuenta !== form().id_cuenta) {
+                      <option [value]="c.id_cuenta" [selected]="form().id_cuenta_destino === c.id_cuenta">{{ c.nombre }}</option>
+                    }
+                  }
+                </select>
+              </div>
+            } @else {
+              <div class="car-form__field">
+                <label class="car-form__label" for="car-f-cat">Categoría</label>
+                <select id="car-f-cat" class="input" name="categoria"
+                        (change)="campo('id_categoria', +$any($event.target).value || null)">
+                  <option value="" [selected]="!form().id_categoria">Elige…</option>
+                  @for (c of categoriasDelForm(); track c.id_categoria) {
+                    <option [value]="c.id_categoria" [selected]="form().id_categoria === c.id_categoria">{{ c.nombre }}</option>
+                  }
+                </select>
+              </div>
+            }
+
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-tercero">
+                {{ form().tipo === 'ingreso' ? 'Quién pagó' : form().tipo === 'egreso' ? 'A quién se le pagó' : 'Referencia' }}
+              </label>
+              <input id="car-f-tercero" class="input" type="text" name="tercero" maxlength="120"
+                     [placeholder]="form().tipo === 'ingreso' ? 'Ej. JDD Consultores' : 'Ej. Vultr'"
+                     [ngModel]="form().tercero" (ngModelChange)="campo('tercero', $event)" />
+            </div>
+
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-monto">Monto</label>
+              <div class="car-form__moneda">
+                <select class="car-form__moneda-sel" name="moneda" aria-label="Moneda" [disabled]="automatico()"
+                        (change)="cambiarMoneda($any($event.target).value)">
+                  @for (mo of ['COP', 'USD', 'CLP', 'EUR']; track mo) {
+                    <option [value]="mo" [selected]="form().moneda === mo">{{ mo }}</option>
+                  }
+                </select>
+                <input id="car-f-monto" type="number" name="monto" min="0" step="any" required
+                       [disabled]="automatico()"
+                       [ngModel]="form().monto" (ngModelChange)="numero('monto', $event)" />
+              </div>
+            </div>
+
+            @if (form().moneda !== 'COP') {
+              <div class="car-form__field">
+                <label class="car-form__label" for="car-f-tasa">Tasa (pesos por {{ form().moneda }})</label>
+                <input id="car-f-tasa" class="input" type="number" name="tasa" min="0" step="any"
+                       [ngModel]="form().tasa_cop" (ngModelChange)="numero('tasa_cop', $event)" />
+              </div>
+            }
+
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-com">
+                {{ form().tipo === 'ingreso' ? 'Comisión de la pasarela' : 'Comisión del banco' }}
+                <span class="car-form__opcional">(opcional)</span>
+              </label>
+              <input id="car-f-com" class="input" type="number" name="comision" min="0" step="1" placeholder="0"
+                     [ngModel]="form().comision" (ngModelChange)="numero('comision', $event)" />
+            </div>
+
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-ivacom">IVA de la comisión <span class="car-form__opcional">(opcional)</span></label>
+              <input id="car-f-ivacom" class="input" type="number" name="iva_comision" min="0" step="1" placeholder="0"
+                     [ngModel]="form().iva_comision" (ngModelChange)="numero('iva_comision', $event)" />
+            </div>
+
+            @if (form().tipo === 'ingreso') {
+              <div class="car-form__field">
+                <label class="car-form__label" for="car-f-ret">Retención que nos hicieron <span class="car-form__opcional">(opcional)</span></label>
+                <input id="car-f-ret" class="input" type="number" name="retencion" min="0" step="1" placeholder="0"
+                       [ngModel]="form().retencion" (ngModelChange)="numero('retencion', $event)" />
+              </div>
+            }
+
+            @if (form().tipo === 'egreso') {
+              <div class="car-form__field">
+                <label class="car-form__label" for="car-f-iva">IVA incluido en la factura <span class="car-form__opcional">(opcional)</span></label>
+                <input id="car-f-iva" class="input" type="number" name="iva" min="0" step="1" placeholder="0"
+                       [ngModel]="form().iva" (ngModelChange)="numero('iva', $event)" />
+              </div>
+            }
+
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-f-sop">N.º de factura o soporte <span class="car-form__opcional">(opcional)</span></label>
+              <input id="car-f-sop" class="input" type="text" name="soporte" maxlength="80"
+                     [ngModel]="form().soporte" (ngModelChange)="campo('soporte', $event)" />
+            </div>
+
+            <div class="car-form__field car-form__field--full">
+              <label class="car-form__label" for="car-f-desc">Descripción <span class="car-form__opcional">(opcional)</span></label>
+              <input id="car-f-desc" class="input" type="text" name="descripcion" maxlength="300"
+                     [ngModel]="form().descripcion" (ngModelChange)="campo('descripcion', $event)" />
+            </div>
+          </div>
+
+          @if (form().tipo !== 'ingreso') {
+            <div class="car-form__gmf">
+              <div class="car-form__gmf-fila">
+                <span class="car-form__gmf-label">4x1000</span>
+                @if (gmfManual()) {
+                  <input class="input car-form__gmf-input" type="number" name="gmf" min="0" step="1"
+                         aria-label="4x1000 del extracto"
+                         [ngModel]="form().gmf" (ngModelChange)="numero('gmf', $event)" />
+                  <button type="button" class="car-form__link" (click)="gmfManual.set(false)">Calcular solo</button>
+                } @else {
+                  <b>{{ dinero(gmfCalculado()) }}</b>
+                  @if (!cuentaFormPagaGmf()) { <span class="car__muted">esta cuenta no paga 4x1000</span> }
+                  <button type="button" class="car-form__link"
+                          (click)="campo('gmf', gmfCalculado()); gmfManual.set(true)">Ajustar al extracto</button>
+                }
+              </div>
+              @if (cuentaFormPagaGmf()) {
+                <label class="car__check">
+                  <input type="checkbox" name="exento" [checked]="form().exento_gmf"
+                         (change)="campo('exento_gmf', $any($event.target).checked)" />
+                  Exento (p. ej. traslado entre cuentas propias del mismo banco)
+                </label>
+              }
+            </div>
+          }
+
+          <div class="car-form__neto">
+            <span>{{ form().tipo === 'ingreso' ? 'Llega a la cuenta' : 'Sale de la cuenta' }}</span>
+            <b [class.is-in]="netoForm() > 0" [class.is-out]="netoForm() < 0">{{ dinero(netoForm()) }}</b>
+          </div>
+
+          @if (errorForm(); as e) {
+            <p class="car-form__error" role="alert">{{ e }}</p>
+          }
+        </div>
+
+        <footer class="car-modal__foot">
+          <button type="button" class="btn btn--ghost" (click)="cerrarForm()" [disabled]="guardando()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="guardando()">
+            @if (guardando()) { <lucide-icon name="loader-2" [size]="16" class="car__spin" aria-hidden="true" /> }
+            Guardar
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ═════════════ Modal: anular ═════════════ -->
+@if (anulando(); as m) {
+  <div class="car-modal" (click)="anulando.set(null)" (keydown.escape)="anulando.set(null)">
+    <div class="car-modal__card car-modal__card--sm" role="dialog" aria-modal="true" aria-labelledby="car-anu-title"
+         (click)="$event.stopPropagation()">
+      <app-modal-cabecera icono="circle-alert" titulo="Anular movimiento"
+                          [subtitulo]="m.fecha + ' · ' + dinero(m.monto, m.moneda)"
+                          tituloId="car-anu-title" [bloqueado]="guardando()" (cerrar)="anulando.set(null)" />
+      <div class="car-modal__body">
+        <p class="car-modal__lead">
+          Deja de sumar en la cartera pero no se borra: queda con su motivo.
+          @if (m.origen === 'cobranza') {
+            <strong>No anula el pago en Cobranza</strong>: el cliente sigue con su plan.
+          }
+        </p>
+        <div class="car-form__field">
+          <label class="car-form__label" for="car-anu-motivo">Motivo</label>
+          <input id="car-anu-motivo" class="input" type="text" maxlength="300" placeholder="Ej. registrado dos veces"
+                 [value]="motivo()" (input)="motivo.set($any($event.target).value)" />
+        </div>
+      </div>
+      <footer class="car-modal__foot">
+        <button type="button" class="btn btn--ghost" (click)="anulando.set(null)" [disabled]="guardando()">Cancelar</button>
+        <button type="button" class="btn car__btn-peligro" (click)="confirmarAnular()"
+                [disabled]="guardando() || motivo().trim().length < 3">
+          <lucide-icon name="ban" [size]="16" aria-hidden="true" /> Anular
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ═════════════ Modal: cuenta ═════════════ -->
+@if (cuentaEditada(); as c) {
+  <div class="car-modal" (click)="cuentaEditada.set(null)" (keydown.escape)="cuentaEditada.set(null)">
+    <div class="car-modal__card" role="dialog" aria-modal="true" aria-labelledby="car-cta-title"
+         (click)="$event.stopPropagation()">
+      <app-modal-cabecera [icono]="c.id_cuenta ? 'pencil' : 'plus'" [titulo]="c.id_cuenta ? 'Editar cuenta' : 'Nueva cuenta'"
+                          tituloId="car-cta-title" [bloqueado]="guardando()" (cerrar)="cuentaEditada.set(null)" />
+      <form class="car-modal__form" (submit)="$event.preventDefault(); guardarCuenta()">
+        <div class="car-modal__body">
+          <div class="car-form__grid">
+            <div class="car-form__field car-form__field--full">
+              <label class="car-form__label" for="car-c-nombre">Nombre *</label>
+              <input id="car-c-nombre" class="input" type="text" name="nombre" maxlength="80" required
+                     [ngModel]="c.nombre" (ngModelChange)="campoCuenta('nombre', $event)" />
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-c-tipo">Tipo</label>
+              <select id="car-c-tipo" class="input" name="tipo" (change)="campoCuenta('tipo', $any($event.target).value)">
+                @for (t of tiposCuenta; track t) {
+                  <option [value]="t" [selected]="c.tipo === t">{{ TIPOS_CUENTA[t] }}</option>
+                }
+              </select>
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-c-saldo">Saldo inicial</label>
+              <input id="car-c-saldo" class="input" type="number" name="saldo" step="any"
+                     [ngModel]="c.saldo_inicial" (ngModelChange)="campoCuenta('saldo_inicial', +$event)" />
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-c-fecha">Saldo a la fecha</label>
+              <input id="car-c-fecha" class="input" type="date" name="fecha_saldo"
+                     [ngModel]="c.fecha_saldo" (ngModelChange)="campoCuenta('fecha_saldo', $event || null)" />
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-c-nota">Nota <span class="car-form__opcional">(opcional)</span></label>
+              <input id="car-c-nota" class="input" type="text" name="nota" maxlength="300" placeholder="Ej. ahorros ···1234"
+                     [ngModel]="c.nota" (ngModelChange)="campoCuenta('nota', $event)" />
+            </div>
+          </div>
+          <label class="car__check">
+            <input type="checkbox" name="gmf" [checked]="c.aplica_gmf"
+                   (change)="campoCuenta('aplica_gmf', $any($event.target).checked)" />
+            Sus salidas pagan 4x1000
+          </label>
+          @if (c.id_cuenta) {
+            <label class="car__check">
+              <input type="checkbox" name="activa" [checked]="c.estado !== 'I'" [disabled]="!!c.pasarela"
+                     (change)="campoCuenta('estado', $any($event.target).checked ? 'A' : 'I')" />
+              Activa
+              @if (c.pasarela) { <span class="car__muted">(recibe pagos de una pasarela)</span> }
+            </label>
+          }
+          <p class="car-modal__hint">
+            El saldo inicial es lo que tenía la cuenta ese día según el extracto; lo anterior a esa
+            fecha no suma al saldo.
+          </p>
+        </div>
+        <footer class="car-modal__foot">
+          <button type="button" class="btn btn--ghost" (click)="cuentaEditada.set(null)" [disabled]="guardando()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="guardando() || !c.nombre?.trim()">Guardar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- ═════════════ Modal: tarifa ═════════════ -->
+@if (tarifaEditada(); as t) {
+  <div class="car-modal" (click)="tarifaEditada.set(null)" (keydown.escape)="tarifaEditada.set(null)">
+    <div class="car-modal__card" role="dialog" aria-modal="true" aria-labelledby="car-tar-title"
+         (click)="$event.stopPropagation()">
+      <app-modal-cabecera icono="settings" [titulo]="'Tarifa de ' + t.nombre"
+                          tituloId="car-tar-title" [bloqueado]="guardando()" (cerrar)="tarifaEditada.set(null)" />
+      <form class="car-modal__form" (submit)="$event.preventDefault(); guardarTarifa()">
+        <div class="car-modal__body">
+          <div class="car-form__grid">
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-t-pct">Porcentaje (%)</label>
+              <input id="car-t-pct" class="input" type="number" name="pct" min="0" step="0.01"
+                     [ngModel]="t.porcentaje" (ngModelChange)="campoTarifa('porcentaje', $event)" />
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-t-fijo">Valor fijo por pago</label>
+              <div class="car-form__moneda">
+                <select class="car-form__moneda-sel" name="fijo_moneda" aria-label="Moneda del fijo"
+                        (change)="campoTarifa('fijo_moneda', $any($event.target).value)">
+                  <option value="COP" [selected]="t.fijo_moneda === 'COP'">COP</option>
+                  <option value="USD" [selected]="t.fijo_moneda === 'USD'">USD</option>
+                </select>
+                <input id="car-t-fijo" type="number" name="fijo" min="0" step="any"
+                       [ngModel]="t.fijo" (ngModelChange)="campoTarifa('fijo', $event)" />
+              </div>
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-t-iva">IVA sobre la comisión (%)</label>
+              <input id="car-t-iva" class="input" type="number" name="iva" min="0" step="0.01"
+                     [ngModel]="t.iva_pct" (ngModelChange)="campoTarifa('iva_pct', $event)" />
+            </div>
+            <div class="car-form__field">
+              <label class="car-form__label" for="car-t-ret">Retenciones de la pasarela (%)</label>
+              <input id="car-t-ret" class="input" type="number" name="ret" min="0" step="0.01"
+                     [ngModel]="t.retencion_pct" (ngModelChange)="campoTarifa('retencion_pct', $event)" />
+            </div>
+            <div class="car-form__field car-form__field--full">
+              <label class="car-form__label" for="car-t-nota">Nota <span class="car-form__opcional">(opcional)</span></label>
+              <input id="car-t-nota" class="input" type="text" name="nota" maxlength="300"
+                     [ngModel]="t.nota" (ngModelChange)="campoTarifa('nota', $event)" />
+            </div>
+          </div>
+          <p class="car-modal__hint">
+            Las retenciones que practique la pasarela (renta, ICA, IVA) dependen de tu condición
+            tributaria: confírmalas con la contadora antes de ponerlas.
+          </p>
+        </div>
+        <footer class="car-modal__foot">
+          <button type="button" class="btn btn--ghost" (click)="tarifaEditada.set(null)" [disabled]="guardando()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="guardando()">Guardar</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}
