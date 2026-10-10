@@ -13,6 +13,7 @@ import { Subject, catchError, debounceTime, forkJoin, of, switchMap, tap } from 
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
   Check, UserRound, UserPlus, CalendarRange, TriangleAlert, Trash2, History,
+  MapPin, CornerDownRight,
 } from 'lucide-angular';
 
 import { AuthService } from '../../../auth/data-access/auth.service';
@@ -34,6 +35,7 @@ import {
 import {
   NegocioAdmin, TipoNegocio, Rubro, Plan, PlanInfo, LoadingState,
   RegistrarClienteRequest, UsuarioBusqueda, EliminacionNegocio, NegocioEventoHistorial,
+  SedesDeNegocio, CrearSedeRequest,
 } from '../../models/admin.models';
 import { ComplementoNegocio, LimitesNegocio, TotalMensual } from '../../models/cobranza.models';
 
@@ -98,6 +100,25 @@ const PAISES: ReadonlyArray<{ codigo: string; nombre: string }> = [
   { codigo: 'MX', nombre: 'México (+52)' },
 ];
 
+/** El formulario de «añadir sede». Lo heredado de la matriz no se pregunta. */
+interface SedeForm {
+  nombre: string;
+  direccion: string;
+  telefono: string;
+  email_contacto: string;
+  /** Vacío = prueba de 7 días, igual que un cliente nuevo. */
+  id_plan: string;
+  meses: string;
+  fecha_inicio: string;
+  /** Copiar la configuración de la matriz. Encendido: es la razón de ser de abrir una sede así. */
+  clonar: boolean;
+}
+
+const EMPTY_SEDE: SedeForm = {
+  nombre: '', direccion: '', telefono: '', email_contacto: '',
+  id_plan: '', meses: '1', fecha_inicio: '', clonar: true,
+};
+
 const EMPTY_CREATE: CreateForm = {
   nombre: '', id_rubro: '', nit: '', email_contacto: '', telefono: '', direccion: '', pais: 'CO',
   id_plan: '', meses: '1', fecha_inicio: '',
@@ -139,6 +160,7 @@ const PASOS_CREAR: readonly Paso[] = [
       useValue: new LucideIconProvider({
         Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
         Check, UserRound, UserPlus, CalendarRange, TriangleAlert, Trash2, History,
+        MapPin, CornerDownRight,
       }),
     },
   ],
@@ -428,10 +450,18 @@ export class NegociosComponent implements OnInit, OnDestroy {
   protected readonly confirmacionTexto = signal('');
   protected readonly eliminando = signal(false);
 
-  /** El botón rojo solo se habilita con el nombre exacto y con el resumen ya cargado. */
+  /**
+   * El botón rojo solo se habilita con el nombre exacto, con el resumen ya cargado y sin sedes
+   * pendientes.
+   *
+   * Lo de las sedes no es una cortesía: el backend lo rechaza igual con `SEDES_DEPENDIENTES`.
+   * Deshabilitar el botón evita que alguien escriba el nombre entero para llevarse un error.
+   */
   protected readonly confirmacionOk = computed(() => {
     const n = this.eliminarDe();
-    return !!n && this.eliminacion() !== null && this.confirmacionTexto().trim() === n.nombre.trim();
+    const e = this.eliminacion();
+    if (!n || e === null || e.bloqueado_por_sedes) return false;
+    return this.confirmacionTexto().trim() === n.nombre.trim();
   });
   protected readonly datosOperativos = computed(
     () => this.eliminacion()?.datos.filter((d) => d.tipo === 'operativo') ?? [],
@@ -439,6 +469,24 @@ export class NegociosComponent implements OnInit, OnDestroy {
   protected readonly datosConfig = computed(
     () => this.eliminacion()?.datos.filter((d) => d.tipo === 'configuracion') ?? [],
   );
+
+  /* ── Sedes de un negocio ──
+   *
+   * Una sede es un negocio con `id_negocio_padre`: tiene su propio id, su caja, su inventario y
+   * su PLAN —se cobra aparte—, y al crearla se copia la configuración de la matriz. De ahí que
+   * esto viva en Negocios y no en una vista nueva: abrir una sede es registrar un cliente más.
+   */
+  /** Matriz cuyas sedes se están viendo, o null. */
+  protected readonly sedesDe = signal<NegocioAdmin | null>(null);
+  protected readonly sedesInfo = signal<SedesDeNegocio | null>(null);
+  protected readonly sedesEstado = signal<LoadingState>('idle');
+  /** ¿Está abierto el formulario de «añadir sede» dentro del modal? */
+  protected readonly sedeFormAbierto = signal(false);
+  protected readonly sedeForm = signal<SedeForm>({ ...EMPTY_SEDE });
+  protected readonly sedeGuardando = signal(false);
+  protected readonly sedeError = signal<string | null>(null);
+
+  protected readonly sedeNombreOk = computed(() => this.sedeForm().nombre.trim().length > 0);
 
   // ── Historial (línea de tiempo) ─────────────────────────────
   protected readonly historial = signal<NegocioEventoHistorial[]>([]);
@@ -474,9 +522,40 @@ export class NegociosComponent implements OnInit, OnDestroy {
     });
   });
 
+  /**
+   * Lo filtrado, pero con cada sede justo detrás de su matriz.
+   *
+   * Sin esto una sede aparece donde le toque por fecha de registro y la lista no dice que las
+   * dos filas son la misma empresa. El orden dentro de cada grupo es el que ya traía la lista
+   * (fecha de registro descendente), así que la matriz manda y sus sedes la siguen.
+   *
+   * Las sedes cuya matriz NO está en la lista —porque el filtro la dejó fuera, o porque está
+   * inactiva y se mira la pestaña de activos— se quedan donde estaban: esconderlas sería peor.
+   */
+  protected readonly agrupados = computed<NegocioAdmin[]>(() => {
+    const lista = this.filtered();
+    const visibles = new Set(lista.map((n) => n.id_negocio));
+    const sedesDe = new Map<number, NegocioAdmin[]>();
+    for (const n of lista) {
+      if (n.id_negocio_padre === null || !visibles.has(n.id_negocio_padre)) continue;
+      const grupo = sedesDe.get(n.id_negocio_padre) ?? [];
+      grupo.push(n);
+      sedesDe.set(n.id_negocio_padre, grupo);
+    }
+
+    const salida: NegocioAdmin[] = [];
+    for (const n of lista) {
+      // Una sede ya colocada bajo su matriz no se repite.
+      if (n.id_negocio_padre !== null && visibles.has(n.id_negocio_padre)) continue;
+      salida.push(n);
+      for (const sede of sedesDe.get(n.id_negocio) ?? []) salida.push(sede);
+    }
+    return salida;
+  });
+
   /** Filas de la página actual. */
   protected readonly visibles = computed(() =>
-    paginar(this.filtered(), this.pagina(), this.tamano()),
+    paginar(this.agrupados(), this.pagina(), this.tamano()),
   );
 
   protected readonly totalActivos = computed(
@@ -1106,6 +1185,99 @@ export class NegociosComponent implements OnInit, OnDestroy {
     this.historialDe.set(null);
     this.historial.set([]);
     this.historialEstado.set('idle');
+  }
+
+  /** Los nombres de las sedes, en una frase. Para el aviso de «no se puede eliminar». */
+  protected nombresDeSedes(sedes: { nombre: string }[]): string {
+    return sedes.map((s) => s.nombre).join(', ');
+  }
+
+  // ── Sedes ───────────────────────────────────────────────────
+
+  protected abrirSedes(n: NegocioAdmin): void {
+    this.sedesDe.set(n);
+    this.sedeFormAbierto.set(false);
+    this.sedeForm.set({ ...EMPTY_SEDE });
+    this.sedeError.set(null);
+    this.cargarSedes(n.id_negocio);
+  }
+
+  protected cerrarSedes(): void {
+    this.sedesDe.set(null);
+    this.sedesInfo.set(null);
+    this.sedesEstado.set('idle');
+    this.sedeFormAbierto.set(false);
+    this.sedeError.set(null);
+  }
+
+  private cargarSedes(idNegocio: number): void {
+    this.sedesEstado.set('loading');
+    this.service.getSedes(idNegocio).subscribe({
+      next: (info) => {
+        this.sedesInfo.set(info);
+        this.sedesEstado.set('success');
+      },
+      error: () => this.sedesEstado.set('error'),
+    });
+  }
+
+  protected setSedeField<K extends keyof SedeForm>(field: K, value: SedeForm[K]): void {
+    this.sedeForm.update((f) => ({ ...f, [field]: value }));
+  }
+
+  protected abrirFormSede(): void {
+    this.sedeForm.set({ ...EMPTY_SEDE, fecha_inicio: hoyBogota() });
+    this.sedeError.set(null);
+    this.sedeFormAbierto.set(true);
+  }
+
+  /**
+   * Crea la sede.
+   *
+   * No se manda ni `admin` ni `id_usuario_existente`: el backend hereda los administradores de
+   * la matriz, que es lo que se quiere el 99% de las veces. Si la matriz no tuviera ninguno
+   * —pasa cuando la administra el super admin— el backend lo dice con `SEDE_SIN_ADMIN` y el
+   * mensaje aparece en el formulario.
+   */
+  protected submitSede(): void {
+    const matriz = this.sedesDe();
+    const f = this.sedeForm();
+    if (!matriz || !this.sedeNombreOk() || this.sedeGuardando()) return;
+
+    const payload: CrearSedeRequest = {
+      sede: {
+        nombre: f.nombre.trim(),
+        direccion: f.direccion.trim() || null,
+        telefono: f.telefono.trim() || null,
+        email_contacto: f.email_contacto.trim() || null,
+      },
+      plan: {
+        // Sin plan elegido: la prueba de 7 días, igual que un cliente nuevo.
+        id_plan: f.id_plan ? Number(f.id_plan) : null,
+        ...(f.id_plan ? { meses: Number(f.meses) || 1 } : {}),
+        fecha_inicio: f.fecha_inicio || null,
+      },
+      clonar: f.clonar,
+    };
+
+    this.sedeGuardando.set(true);
+    this.sedeError.set(null);
+    this.service.crearSede(matriz.id_negocio, payload)
+      .subscribe({
+        next: () => {
+          this.sedeGuardando.set(false);
+          this.sedeFormAbierto.set(false);
+          this.toast.exito(`Sede «${f.nombre.trim()}» creada.`);
+          this.cargarSedes(matriz.id_negocio);
+          // La lista de negocios cambia: la sede nueva es una fila más y la matriz pasa a
+          // contar una sede.
+          this.load();
+        },
+        error: (err: { error?: { message?: string } }) => {
+          this.sedeGuardando.set(false);
+          this.sedeError.set(err?.error?.message ?? 'No se pudo crear la sede.');
+        },
+      });
   }
 
   protected etiquetaEvento(e: NegocioEventoHistorial): string {

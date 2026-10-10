@@ -96,19 +96,40 @@
         </thead>
         <tbody>
           @for (n of visibles(); track n.id_negocio) {
-            <tr [class.neg__row--inactive]="n.estado === 'I'">
+            <tr [class.neg__row--inactive]="n.estado === 'I'"
+                [class.neg__row--sede]="n.id_negocio_padre !== null">
               <td>
                 <div class="neg__biz">
+                  <!-- Una sede va sangrada bajo su matriz: la lista las ordena así (ver
+                       `agrupados` en el componente) y esta flecha es lo que lo hace legible. -->
+                  @if (n.id_negocio_padre !== null) {
+                    <span class="neg__sede-guia" aria-hidden="true">
+                      <lucide-icon name="corner-down-right" [size]="16" />
+                    </span>
+                  }
                   <span
                     class="neg__biz-icon"
                     [style.background]="(n.tipo_color || '#6366F1') + '22'"
                     [style.color]="n.tipo_color || '#6366F1'"
                   >
-                    <lucide-icon name="building-2" [size]="20" aria-hidden="true" />
+                    <lucide-icon [name]="n.id_negocio_padre !== null ? 'map-pin' : 'building-2'"
+                                 [size]="20" aria-hidden="true" />
                   </span>
                   <div class="neg__biz-text">
-                    <span class="neg__biz-name">{{ n.nombre }}</span>
-                    <span class="neg__biz-type">{{ n.tipo_nombre ?? '—' }}@if (n.nit) { · NIT {{ n.nit }} }</span>
+                    <span class="neg__biz-name">
+                      {{ n.nombre }}
+                      @if (n.id_negocio_padre !== null) {
+                        <span class="neg__sede-tag">Sede</span>
+                      } @else if (n.total_sedes > 0) {
+                        <span class="neg__sede-tag neg__sede-tag--matriz">
+                          {{ n.total_sedes }} {{ n.total_sedes === 1 ? 'sede' : 'sedes' }}
+                        </span>
+                      }
+                    </span>
+                    <span class="neg__biz-type">
+                      @if (n.matriz_nombre) { Sede de {{ n.matriz_nombre }} · }
+                      {{ n.tipo_nombre ?? '—' }}@if (n.nit) { · NIT {{ n.nit }} }
+                    </span>
                   </div>
                 </div>
               </td>
@@ -177,6 +198,13 @@
                   >
                     <lucide-icon name="power" [size]="16" aria-hidden="true" />
                   </button>
+                  <!-- Sedes: solo en una matriz. Una sede no puede tener sedes (un solo nivel). -->
+                  @if (n.id_negocio_padre === null) {
+                    <button type="button" class="neg__icon-btn" (click)="abrirSedes(n)"
+                            title="Sedes del negocio" aria-label="Ver y añadir sedes">
+                      <lucide-icon name="map-pin" [size]="16" aria-hidden="true" />
+                    </button>
+                  }
                   <button type="button" class="neg__icon-btn" (click)="abrirHistorial(n)"
                           title="Historial" aria-label="Ver historial del negocio">
                     <lucide-icon name="history" [size]="16" aria-hidden="true" />
@@ -936,6 +964,20 @@
           }
           @default {
             @if (eliminacion(); as e) {
+              <!-- Una matriz con sedes no se elimina: habría que ocuparse de ellas primero
+                   (eliminarlas o desligarlas). El backend lo rechaza con SEDES_DEPENDIENTES. -->
+              @if (e.bloqueado_por_sedes) {
+                <div class="neg-del__sedes">
+                  <lucide-icon name="map-pin" [size]="16" aria-hidden="true" />
+                  <span>
+                    <strong>No se puede eliminar todavía.</strong>
+                    Este negocio es la matriz de
+                    {{ e.sedes.length }} {{ e.sedes.length === 1 ? 'sede' : 'sedes' }}:
+                    {{ nombresDeSedes(e.sedes) }}. Elimina o desliga esas sedes primero.
+                  </span>
+                </div>
+              }
+
               <h3 class="neg-modal__section neg-modal__section--first">
                 Personas ({{ e.totales.usuarios }})
               </h3>
@@ -1047,6 +1089,179 @@
       </div>
       <footer class="neg-modal__foot">
         <button type="button" class="btn btn--outline" (click)="cerrarHistorial()">Cerrar</button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ════════════ Sedes del negocio (modal desde la fila) ════════════
+     Una sede es un negocio aparte: su propio id, su caja, su inventario y su PLAN —se cobra
+     por separado—. Lo que comparte con la matriz es la configuración del día que se abrió. -->
+@if (sedesDe(); as matriz) {
+  <div class="neg-modal" (click)="cerrarSedes()">
+    <div
+      class="neg-modal__card neg-modal__card--md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="neg-sedes-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-modal-cabecera icono="map-pin" titulo="Sedes" tituloId="neg-sedes-title"
+                          [subtitulo]="matriz.nombre" (cerrar)="cerrarSedes()" />
+      <div class="neg-modal__body">
+        @switch (sedesEstado()) {
+          @case ('loading') { <p class="neg-comp__vacio">Cargando sedes…</p> }
+          @case ('error') { <p class="neg-comp__vacio">No se pudieron cargar las sedes.</p> }
+          @default {
+            @if (sedesInfo(); as info) {
+              @if (info.sedes.length === 0) {
+                <p class="neg-comp__vacio">
+                  Este negocio no tiene sedes todavía. Al abrir una se copia su configuración
+                  —carta, formas de pago y permisos— y empieza con su propio plan.
+                </p>
+              } @else {
+                <ul class="neg-sedes">
+                  @for (s of info.sedes; track s.id_negocio) {
+                    <li class="neg-sedes__item" [class.neg-sedes__item--inactive]="s.estado === 'I'">
+                      <div class="neg-sedes__texto">
+                        <span class="neg-sedes__nombre">{{ s.nombre }}</span>
+                        <span class="neg-sedes__meta">
+                          @if (s.direccion) { {{ s.direccion }} · }
+                          {{ s.plan_nombre ?? 'Sin plan' }}
+                          @if (s.plan_fecha_fin) { · hasta {{ formatearDia(s.plan_fecha_fin) }} }
+                        </span>
+                      </div>
+                      <span class="es-badge"
+                            [class.es-badge--success]="s.estado === 'A'"
+                            [class.es-badge--error]="s.estado === 'I'">
+                        {{ s.estado === 'A' ? 'Activa' : 'Inactiva' }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              }
+
+              <!-- Si el aplicativo no tiene pasos de clonado, la sede nacería vacía. Se dice
+                   ANTES de crearla, no después. -->
+              @if (!info.clona_configuracion) {
+                <p class="neg-sedes__aviso">
+                  <lucide-icon name="triangle-alert" [size]="16" aria-hidden="true" />
+                  El aplicativo «{{ info.aplicativo ?? 'desconocido' }}» no tiene copia de
+                  configuración: la sede nacería vacía y habría que configurarla a mano.
+                </p>
+              }
+
+              @if (!sedeFormAbierto()) {
+                <button type="button" class="btn btn--primary neg-sedes__add" (click)="abrirFormSede()">
+                  <lucide-icon name="plus" [size]="16" aria-hidden="true" />
+                  Añadir sede
+                </button>
+              } @else {
+                <form class="neg-sedes__form" (ngSubmit)="submitSede()">
+                  <p class="neg-sedes__nota">
+                    Hereda de la matriz el aplicativo, el país, los colores y los interruptores.
+                    La administran las mismas personas que la matriz.
+                  </p>
+
+                  <div class="neg-form__grid">
+                    <div class="neg-form__field neg-form__field--full">
+                      <label class="neg-form__label" for="sede-nombre">Nombre de la sede *</label>
+                      <input id="sede-nombre" class="input" [value]="sedeForm().nombre"
+                             (input)="setSedeField('nombre', $any($event.target).value)"
+                             placeholder="Ej. Sede Norte" autocomplete="off" />
+                    </div>
+
+                    <div class="neg-form__field neg-form__field--full">
+                      <label class="neg-form__label" for="sede-direccion">Dirección</label>
+                      <input id="sede-direccion" class="input" [value]="sedeForm().direccion"
+                             (input)="setSedeField('direccion', $any($event.target).value)"
+                             autocomplete="off" />
+                    </div>
+
+                    <div class="neg-form__field">
+                      <label class="neg-form__label" for="sede-telefono">Teléfono</label>
+                      <input id="sede-telefono" class="input" [value]="sedeForm().telefono"
+                             (input)="setSedeField('telefono', $any($event.target).value)"
+                             autocomplete="off" />
+                    </div>
+
+                    <div class="neg-form__field">
+                      <label class="neg-form__label" for="sede-email">Correo de contacto</label>
+                      <input id="sede-email" type="email" class="input" [value]="sedeForm().email_contacto"
+                             (input)="setSedeField('email_contacto', $any($event.target).value)"
+                             autocomplete="off" />
+                    </div>
+
+                    <!-- El plan es PROPIO de la sede: se cobra aparte y vence por su cuenta. -->
+                    <div class="neg-form__field">
+                      <label class="neg-form__label" for="sede-plan">Plan</label>
+                      <select id="sede-plan" class="input"
+                              (change)="setSedeField('id_plan', $any($event.target).value)">
+                        <option value="" [selected]="sedeForm().id_plan === ''">
+                          Sin plan — prueba de {{ diasPrueba }} días
+                        </option>
+                        @for (p of planes(); track p.id_plan) {
+                          <option [value]="p.id_plan" [selected]="sedeForm().id_plan === (p.id_plan + '')">
+                            {{ p.nombre }}
+                          </option>
+                        }
+                      </select>
+                      <small class="neg-form__hint neg-form__hint--block">
+                        La sede se cobra por separado: su vigencia es suya y no depende de la matriz.
+                      </small>
+                    </div>
+
+                    @if (sedeForm().id_plan) {
+                      <div class="neg-form__field">
+                        <label class="neg-form__label" for="sede-meses">Meses</label>
+                        <input id="sede-meses" type="number" min="1" max="60" class="input"
+                               [value]="sedeForm().meses"
+                               (input)="setSedeField('meses', $any($event.target).value)" />
+                      </div>
+                    }
+
+                    <div class="neg-form__field">
+                      <label class="neg-form__label" for="sede-inicio">Inicia</label>
+                      <input id="sede-inicio" type="date" class="input" [value]="sedeForm().fecha_inicio"
+                             (input)="setSedeField('fecha_inicio', $any($event.target).value)" />
+                    </div>
+                  </div>
+
+                  <label class="neg-sedes__check">
+                    <input type="checkbox" [checked]="sedeForm().clonar"
+                           (change)="setSedeField('clonar', $any($event.target).checked)" />
+                    <span>Copiar la configuración de la matriz</span>
+                  </label>
+
+                  @if (sedeError(); as e) {
+                    <p class="neg-sedes__error">
+                      <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+                      {{ e }}
+                    </p>
+                  }
+
+                  <div class="neg-sedes__acciones">
+                    <button type="button" class="btn btn--outline" (click)="sedeFormAbierto.set(false)">
+                      Cancelar
+                    </button>
+                    <button type="submit" class="btn btn--primary"
+                            [disabled]="!sedeNombreOk() || sedeGuardando()">
+                      @if (sedeGuardando()) {
+                        <lucide-icon name="loader-2" [size]="16" class="spin" aria-hidden="true" />
+                        Creando…
+                      } @else {
+                        Crear sede
+                      }
+                    </button>
+                  </div>
+                </form>
+              }
+            }
+          }
+        }
+      </div>
+      <footer class="neg-modal__foot">
+        <button type="button" class="btn btn--outline" (click)="cerrarSedes()">Cerrar</button>
       </footer>
     </div>
   </div>

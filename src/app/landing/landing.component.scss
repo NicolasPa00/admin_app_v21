@@ -3309,3 +3309,48 @@ lucide-icon {
     &__title { color: var(--es-text-on-dark); }
   }
 }
+
+/* ── Mensajes del asistente, en el detalle de los planes con IA ─────────────────────────────
+ *
+ * Tres piezas y un orden que no es casual: primero CUÁNTO da (en pedidos, que es lo que el
+ * dueño cuenta), después qué cuesta sumar más, y al final lo que le cobra Meta.
+ *
+ * Lo de Meta NO es letra pequeña y por eso no va en gris diminuto: le llega a su tarjeta lo
+ * pongamos aquí o no, y la única forma de que no parezca un truco es decirlo al mismo tamaño
+ * que el resto. Va con el fondo de aviso, no con el de error: es información, no un problema.
+ */
+.lp-msg__resumen {
+  margin: 0 0 10px;
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-secondary);
+
+  strong { color: var(--es-text-primary); }
+}
+
+.lp-msg__suma {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--es-text-secondary);
+}
+
+.lp-msg__meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--es-border);
+  border-radius: 10px;
+  background: var(--es-surface-subtle, rgba(139, 92, 246, 0.06));
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--es-text-secondary);
+
+  lucide-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--es-secondary-dark);
+  }
+
+  strong { color: var(--es-text-primary); }
+}

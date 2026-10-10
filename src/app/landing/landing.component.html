@@ -785,6 +785,66 @@
         </div>
 
         <!--
+          Los mensajes del asistente. Se enseña en PEDIDOS y no en mensajes porque el dueño de un
+          restaurante cuenta pedidos: «6.000 mensajes» no le dice si le alcanza, «unos 700 pedidos
+          al mes» sí. Y el cobro de Meta va en el mismo bloque, al mismo tamaño — le llega a su
+          tarjeta lo pongamos aquí o no, y enterarse por la factura es la peor forma de enterarse.
+        -->
+        @if (plan.conAsistente) {
+          <section class="lp-detalle__paquetes-wrap">
+            <h4 class="lp-detalle__bloque-title">¿Cuántos pedidos atenderá tu asistente?</h4>
+
+            <p class="lp-msg__resumen">
+              <strong>{{ formatNumero(plan.mensajesTotal) }} mensajes al mes</strong>
+              — unos <strong>{{ formatNumero(plan.pedidosAlMes) }} pedidos</strong>
+              @if (plan.paquetesMensajes === 0) { incluidos en el plan }
+            </p>
+
+            <div class="lp-detalle__paquetes" role="group" aria-label="Paquetes de mensajes">
+              @for (n of opcionesPaquetesMensajes; track n) {
+                <button
+                  type="button"
+                  class="lp-plan__paquete"
+                  [class.lp-plan__paquete--active]="plan.paquetesMensajes === n"
+                  (click)="elegirPaquetesMensajes(plan.id, n)"
+                  [attr.aria-pressed]="plan.paquetesMensajes === n"
+                  [attr.aria-label]="n === 0
+                    ? 'Solo los mensajes incluidos en el plan'
+                    : n + ' paquetes de ' + plan.mensajesPorPaquete + ' mensajes'"
+                >
+                  <span class="lp-plan__paquete-id">{{ n === 0 ? 'Incluido' : '+' + n }}</span>
+                  <span class="lp-plan__paquete-docs">
+                    <lucide-icon name="message-circle" [size]="12" aria-hidden="true" />
+                    {{ formatNumero(pedidosAproximados(6000 + n * plan.mensajesPorPaquete)) }} pedidos
+                  </span>
+                </button>
+              }
+            </div>
+
+            @if (plan.paquetesMensajes > 0) {
+              <p class="lp-msg__suma">
+                {{ plan.paquetesMensajes }}
+                {{ plan.paquetesMensajes === 1 ? 'paquete' : 'paquetes' }}
+                × {{ formatPrice(plan.precioPaqueteMensajes) }} al mes, ya sumados arriba.
+              </p>
+            }
+
+            <!-- Lo de Meta. No es letra pequeña: es la otra mitad de lo que va a pagar. -->
+            <p class="lp-msg__meta">
+              <lucide-icon name="info" [size]="14" aria-hidden="true" />
+              <span>
+                WhatsApp regala <strong>1.000 mensajes al mes</strong> por número y cobra los
+                siguientes <strong>directamente a tu cuenta de Meta</strong> (hoy unos $3 por
+                mensaje en Colombia). Si gastas los
+                {{ formatNumero(plan.mensajesTotal) }}, serían
+                <strong>~{{ formatPrice(plan.costoMeta) }} al mes</strong> aparte de este plan.
+                No lo cobramos nosotros y solo pagas lo que de verdad se envíe.
+              </span>
+            </p>
+          </section>
+        }
+
+        <!--
           El volumen de documentos: lo único elegible, y de esta tarjeta nada más — el precio que
           cambia es el de arriba. A lo ancho del detalle caben los cuatro paquetes en fila.
         -->

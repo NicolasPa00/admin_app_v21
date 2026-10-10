@@ -71,6 +71,7 @@ import {
   Instagram,
   Youtube,
   FileText,
+  Info,
   MessageCircle,
   Syringe,
   PenTool,
@@ -316,6 +317,45 @@ const PAQUETES_FACTURACION: PaqueteDocumentos[] = [
   { id: 'L',  documentos: '1.200 documentos', detalle: 'hasta 1.200 documentos al mes', precio: 79000 },
   { id: 'XL', documentos: '2.500 documentos', detalle: 'hasta 2.500 documentos al mes', precio: 99000 },
 ];
+
+/* ── Mensajes del asistente ──────────────────────────────────────────────────────────────────
+ *
+ * Hasta el 2026-10-10 el plan con asistente se vendía SIN techo. Con el modelo barato eso deja
+ * 83 % de margen con el cliente real, pero la cola larga sí duele: a 30.000 mensajes al mes la
+ * IA se lleva el 47 % del plan. Las cifras y cómo se midieron están en
+ * `admin_ws/docs/asistente-economia.md`.
+ *
+ * Lo que hay que enseñar aquí son DOS cosas, y confundirlas es el error fácil:
+ *
+ *   · **Lo que nos paga a nosotros** — el plan y, si hace falta, paquetes de más mensajes.
+ *   · **Lo que le cobra Meta a él** — somos Tech Provider, así que su WhatsApp va a su propia
+ *     cuenta y Meta le factura a SU tarjeta. No lo cobramos nosotros y no podemos revenderlo;
+ *     lo único que podemos hacer es decírselo antes de que lo vea en la factura.
+ */
+
+/** Mensajes del asistente que incluye un plan con IA. Debe coincidir con `gener_plan.mensajes_incluidos`. */
+const MENSAJES_INCLUIDOS = 6000;
+
+/** Cuántos trae cada paquete adicional, y lo que cuesta. Espejo de `MENSAJES_ASISTENTE`. */
+const MENSAJES_POR_PAQUETE = 6000;
+const PRECIO_PAQUETE_MENSAJES = 19999;
+
+/** Hasta cuántos paquetes se pueden sumar (igual que `cantidad_maxima` del complemento). */
+const MAX_PAQUETES_MENSAJES = 5;
+
+/**
+ * Mensajes que gasta de media un pedido tomado por el asistente, incluidas las conversaciones
+ * que no acaban en pedido. Medido en producción (5 al 9 de octubre de 2026): 905 mensajes para
+ * 105 pedidos.
+ *
+ * Se publica la equivalencia en PEDIDOS y no en mensajes porque el dueño de un restaurante
+ * cuenta pedidos. «6.000 mensajes» no le dice si le alcanza; «unos 700 pedidos al mes», sí.
+ */
+const MENSAJES_POR_PEDIDO = 8.6;
+
+/** Lo que Meta regala por número y mes, y lo que cobra por cada uno de más (COP, Colombia). */
+const META_GRATIS_AL_MES = 1000;
+const META_COP_POR_MENSAJE = 2.9455;
 
 /**
  * El precio publicado de los planes que traen facturación, por paquete.
@@ -687,7 +727,7 @@ type ModalStep = 'form' | 'otp' | 'success';
         Sun, Moon, Rocket, Shield, Users, BarChart3,
         ChevronRight, Check, Star, Zap, Store, Smartphone,
         ArrowRight, Menu, X, Clock, Loader2, CheckCheck,
-        Mail, Building2, Facebook, Instagram, Youtube, FileText, MessageCircle,
+        Mail, Building2, Facebook, Instagram, Youtube, FileText, MessageCircle, Info,
         UtensilsCrossed, Coffee, Sparkles, Beer, CakeSlice, Bike, HandHeart,
         Car, Scissors, ShoppingCart, ShoppingBag,
         Wrench, PiggyBank, Landmark, Dumbbell,
@@ -952,6 +992,42 @@ export class LandingComponent {
   }
 
   /**
+   * Cuántos paquetes de mensajes lleva elegidos cada tarjeta. Arrancan en 0: lo incluido tiene
+   * que bastarle a la mayoría, y abrir con un paquete puesto haría parecer que no.
+   */
+  private readonly paquetesMensajesPorTarjeta = signal<Record<string, number>>({});
+
+  protected paquetesMensajesDe(idTarjeta: string): number {
+    return this.paquetesMensajesPorTarjeta()[idTarjeta] ?? 0;
+  }
+
+  protected elegirPaquetesMensajes(idTarjeta: string, cuantos: number): void {
+    const acotado = Math.max(0, Math.min(MAX_PAQUETES_MENSAJES, cuantos));
+    this.paquetesMensajesPorTarjeta.update((actual) => ({ ...actual, [idTarjeta]: acotado }));
+  }
+
+  /** Las opciones del selector: lo incluido (0) y hasta cinco paquetes. */
+  protected readonly opcionesPaquetesMensajes = Array.from(
+    { length: MAX_PAQUETES_MENSAJES + 1 },
+    (_, i) => i,
+  );
+
+  /** «6.000» → «unos 700 pedidos al mes». Se redondea a la centena: es una estimación. */
+  protected pedidosAproximados(mensajes: number): number {
+    return Math.round(mensajes / MENSAJES_POR_PEDIDO / 100) * 100;
+  }
+
+  /**
+   * Lo que Meta le cobrará al cliente si gasta TODOS sus mensajes.
+   *
+   * Es un techo, no una factura: Meta cobra lo entregado, así que quien no agote el cupo paga
+   * menos. Se publica el peor caso porque la sorpresa cara es descubrirlo después.
+   */
+  protected costoMetaEstimado(mensajes: number): number {
+    return Math.round(Math.max(0, mensajes - META_GRATIS_AL_MES) * META_COP_POR_MENSAJE);
+  }
+
+  /**
    * La tarjeta desplegada, o `null` si están las cuatro plegadas.
    *
    * Plegadas enseñan lo que se compara de un vistazo —precio, límites, los módulos que trae— y
@@ -1118,6 +1194,11 @@ export class LandingComponent {
 
     return TARJETAS_PLAN.map((t) => {
       const paquete = this.paqueteDe(t.id);
+      const paquetesMsg = t.conAsistente ? this.paquetesMensajesDe(t.id) : 0;
+      const mensajesTotal = t.conAsistente
+        ? MENSAJES_INCLUIDOS + paquetesMsg * MENSAJES_POR_PAQUETE
+        : 0;
+      const costoPaquetesMsg = paquetesMsg * PRECIO_PAQUETE_MENSAJES;
       const precioPlan = (PRECIO_PLAN[modulo] ?? PRECIO_PLAN['RESTAURANTE'])[t.base];
       const precioConFactura =
         (PRECIO_CON_FACTURACION[modulo] ?? PRECIO_CON_FACTURACION['RESTAURANTE'])[t.base];
@@ -1162,8 +1243,25 @@ export class LandingComponent {
          * cambiar un número que él no tocó.
          */
         precio: t.conFacturacion ? precioConFactura[PAQUETES_FACTURACION[0].id] : precioPlan,
-        /** El del detalle sí: ahí es donde se elige el volumen y donde se ve su efecto. */
-        precioDetalle: t.conFacturacion ? precioConFactura[paquete.id] : precioPlan,
+        /**
+         * El del detalle sí: ahí es donde se elige el volumen y donde se ve su efecto. Suma los
+         * paquetes de mensajes por el mismo motivo que el volumen de documentos — lo que el
+         * visitante acaba de elegir tiene que verse en el número que va a pagar.
+         */
+        precioDetalle:
+          (t.conFacturacion ? precioConFactura[paquete.id] : precioPlan) + costoPaquetesMsg,
+
+        /* ── Mensajes del asistente ── */
+        /** Cuántos paquetes lleva elegidos (0 = solo lo incluido). */
+        paquetesMensajes: paquetesMsg,
+        /** El total al mes con lo elegido. 0 en los planes sin asistente. */
+        mensajesTotal,
+        /** La misma cifra en la unidad que el dueño sabe medir. */
+        pedidosAlMes: t.conAsistente ? this.pedidosAproximados(mensajesTotal) : 0,
+        /** Lo que Meta le cobrará aparte si los gasta todos. */
+        costoMeta: t.conAsistente ? this.costoMetaEstimado(mensajesTotal) : 0,
+        precioPaqueteMensajes: PRECIO_PAQUETE_MENSAJES,
+        mensajesPorPaquete: MENSAJES_POR_PAQUETE,
         /**
          * El año completo, solo para los planes con facturación —los únicos que se contratan
          * por doce meses—. `precioAnualComparado` es lo que costaría el mismo año comprando el
@@ -1338,6 +1436,11 @@ export class LandingComponent {
 
   protected scrollTo(id: string): void {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /** «6000» → «6.000». Para los mensajes y los pedidos del bloque del asistente. */
+  protected formatNumero(valor: number): string {
+    return new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(valor);
   }
 
   protected formatPrice(precio: number): string {

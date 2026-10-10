@@ -282,9 +282,77 @@ export interface NegocioAdmin {
   estado: 'A' | 'I';
   fecha_registro: string;
   plan: PlanInfo | null;
+  /**
+   * De qué matriz cuelga, cuando este negocio es una SEDE. `null` = es una matriz.
+   *
+   * Una sede es un negocio completo —su propio id, su caja, su inventario y su plan—; esto es
+   * solo el parentesco, para poder agruparlas en la lista. Ver `app_core/dao/sedeDao.js`.
+   */
+  id_negocio_padre: number | null;
+  /** Nombre de la matriz, para enseñar «Sede de X» sin otra petición. */
+  matriz_nombre: string | null;
+  /** Cuántas sedes activas tiene. Solo tiene sentido en una matriz: una sede no tiene sedes. */
+  total_sedes: number;
 }
 
 export type NegociosAdminResponse = ApiResponse<NegocioAdmin[]>;
+
+/** Una sede en la lista de sedes de una matriz (`GET /negocios/:id/sedes`). */
+export interface SedeDeNegocio {
+  id_negocio: number;
+  nombre: string;
+  direccion: string | null;
+  telefono: string | null;
+  email_contacto: string | null;
+  slug: string | null;
+  estado: 'A' | 'I';
+  fecha_registro: string;
+  id_plan: number | null;
+  plan_nombre: string | null;
+  plan_fecha_fin: string | null;
+}
+
+/** La respuesta de `GET /negocios/:id/sedes`. */
+export interface SedesDeNegocio {
+  /** Un negocio que ya es sede no puede tener sedes: el botón no se ofrece. */
+  es_sede: boolean;
+  id_negocio_padre: number | null;
+  /**
+   * ¿El aplicativo de la matriz tiene pasos de clonado escritos? Si no, la sede se puede abrir
+   * igual pero nacería vacía, y eso hay que decirlo ANTES de crearla.
+   */
+  clona_configuracion: boolean;
+  aplicativo: string | null;
+  sedes: SedeDeNegocio[];
+}
+
+/** Lo que se manda a `POST /negocios/:id/sedes`. */
+export interface CrearSedeRequest {
+  sede: {
+    nombre: string;
+    direccion?: string | null;
+    telefono?: string | null;
+    email_contacto?: string | null;
+    nit?: string | null;
+  };
+  /** Sin `id_plan` la sede arranca con la prueba de 7 días, igual que un cliente nuevo. */
+  plan?: { id_plan?: number | null; meses?: number; fecha_inicio?: string | null };
+  /** Quién la administra: un usuario que ya existe (lo normal, el dueño)… */
+  id_usuario_existente?: number | null;
+  /** …o uno nuevo. */
+  admin?: {
+    primer_nombre: string;
+    segundo_nombre?: string | null;
+    primer_apellido: string;
+    segundo_apellido?: string | null;
+    num_identificacion: string;
+    telefono?: string | null;
+    email?: string | null;
+    password: string;
+  };
+  /** `false` deja la sede vacía en vez de copiar la configuración de la matriz. */
+  clonar?: boolean;
+}
 
 /** Qué le pasaría a una persona al eliminar el negocio. */
 export interface UsuarioEliminacion {
@@ -310,6 +378,13 @@ export interface EliminacionNegocio {
   negocio: { id_negocio: number; nombre: string; nit: string | null; estado: 'A' | 'I' };
   usuarios: UsuarioEliminacion[];
   datos: DatoEliminacion[];
+  /**
+   * Las sedes que cuelgan de este negocio. Si hay alguna, la eliminación está BLOQUEADA: la FK
+   * `fk_gener_negocio_padre` es RESTRICT y el borrado fallaría igual, así que se dice antes de
+   * pedir la confirmación en vez de dejar que el botón falle.
+   */
+  sedes: { id_negocio: number; nombre: string; estado: 'A' | 'I' }[];
+  bloqueado_por_sedes: boolean;
   totales: {
     usuarios: number;
     usuarios_eliminados: number;

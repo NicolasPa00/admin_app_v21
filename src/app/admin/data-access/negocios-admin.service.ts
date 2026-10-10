@@ -19,6 +19,8 @@ import {
   NegocioEventoHistorial,
   EliminacionNegocio,
   CupoUsuarios,
+  SedesDeNegocio,
+  CrearSedeRequest,
 } from '../models/admin.models';
 import { ComplementosDeNegocio, TotalMensual } from '../models/cobranza.models';
 
@@ -33,6 +35,8 @@ import { ComplementosDeNegocio, TotalMensual } from '../models/cobranza.models';
  *   GET   /admin/negocios/:id/eliminacion   (previsualiza qué se borraría)
  *   DELETE /admin/negocios/:id              (elimina con todos sus datos; body { confirmacion })
  *   GET   /admin/negocios/:id/historial     (línea de tiempo)
+ *   GET   /admin/negocios/:id/sedes         (las sedes que cuelgan de esta matriz)
+ *   POST  /admin/negocios/:id/sedes         (abrir una sede; copia la configuración)
  *   GET   /admin/tipos-negocio · GET /admin/planes (catálogos)
  */
 @Injectable({ providedIn: 'root' })
@@ -68,6 +72,35 @@ export class NegociosAdminService {
         ...(motivo ? { motivo } : {}),
       })
       .pipe(map(() => undefined));
+  }
+
+  /**
+   * Las sedes de una matriz.
+   *
+   * Devuelve además si este negocio YA es una sede (y entonces no puede tener sedes) y si su
+   * aplicativo tiene pasos de clonado, para avisar antes de abrir una que nacería vacía.
+   */
+  getSedes(idNegocio: number): Observable<SedesDeNegocio> {
+    return this.http
+      .get<ApiResponse<SedesDeNegocio>>(`${this.API}/negocios/${idNegocio}/sedes`)
+      .pipe(map((res) => res.data as SedesDeNegocio));
+  }
+
+  /**
+   * Abre una sede de `idNegocio`.
+   *
+   * Transaccional en el backend: el negocio, su ficha fiscal, su caja, su plan, su administrador
+   * y la copia de la configuración de la matriz entran o no entran juntos.
+   */
+  crearSede(
+    idNegocio: number,
+    payload: CrearSedeRequest,
+  ): Observable<{ id_negocio: number; id_usuario: number }> {
+    return this.http
+      .post<ApiResponse<{ id_negocio: number; id_usuario: number }>>(
+        `${this.API}/negocios/${idNegocio}/sedes`, payload,
+      )
+      .pipe(map((res) => res.data as { id_negocio: number; id_usuario: number }));
   }
 
   /** Todo lo que se llevaría por delante eliminar el negocio. No modifica nada. */

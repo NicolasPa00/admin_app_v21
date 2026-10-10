@@ -1077,3 +1077,164 @@
 .neg-tl__accion { font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-primary); }
 .neg-tl__meta { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 .neg-tl__motivo { font-size: var(--font-size-xs); color: var(--color-text-secondary); font-style: italic; }
+
+// ── Sedes ────────────────────────────────────────────────────
+//
+// Una sede es un negocio aparte (`id_negocio_padre`), pero en la lista va sangrada bajo su
+// matriz porque leerlas como dos filas sueltas no dice que son la misma empresa. El orden lo
+// pone `agrupados` en el componente; aquí solo está lo visual.
+
+.neg__row--sede {
+  // Un fondo apenas distinto: suficiente para ver el grupo, no tanto como para parecer otra tabla.
+  background: color-mix(in srgb, var(--color-primary) 3%, transparent);
+}
+
+.neg__sede-guia {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.neg__sede-tag {
+  display: inline-block;
+  margin-left: var(--spacing-xs);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  vertical-align: middle;
+}
+
+.neg__sede-tag--matriz {
+  background: color-mix(in srgb, var(--color-text-secondary) 12%, transparent);
+  color: var(--color-text-secondary);
+}
+
+// ── Modal de sedes ───────────────────────────────────────────
+.neg-sedes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: 0 0 var(--spacing-md);
+  padding: 0;
+  list-style: none;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  &__item--inactive { opacity: 0.62; }
+
+  &__texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__nombre {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  &__meta {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  &__add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+  }
+
+  // Lo que la sede hereda sin preguntar. Está en el formulario y no en la ayuda de un icono
+  // porque es justo lo que alguien se pregunta antes de darle a «Crear».
+  &__nota {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+  }
+
+  &__aviso,
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin: 0 0 var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+  }
+
+  &__aviso {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  &__error {
+    margin-bottom: 0;
+    background: color-mix(in srgb, var(--color-error) 12%, transparent);
+    color: var(--color-error);
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  &__acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 520px) {
+  .neg-sedes__item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .neg-sedes__acciones { flex-direction: column-reverse; }
+  .neg-sedes__acciones .btn { width: 100%; }
+}
+
+// El aviso de «esta matriz tiene sedes, no se puede eliminar». Mismo tono de aviso que el resto
+// del modal de eliminación, pero no es un peligro: es un paso que falta.
+.neg-del__sedes {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+
+  lucide-icon { flex-shrink: 0; margin-top: 2px; }
+}
