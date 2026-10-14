@@ -123,6 +123,9 @@
     padding-top: 1rem;
 
     > .mp__factura:first-child { border-top: 0; padding-top: 0; }
+    /* Con la tarjeta de pago automático arriba, la primera factura sigue sin raya: la tarjeta ya
+       separa, y una línea a todo lo ancho debajo de una tarjeta con margen se ve descuadrada. */
+    > app-pago-automatico + .mp__factura { border-top: 0; padding-top: 0; }
   }
 
   /* ── Pestañas ──

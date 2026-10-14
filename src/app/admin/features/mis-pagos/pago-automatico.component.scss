@@ -4,8 +4,9 @@
 */
 :host {
   display: block;
-  /* Separada de las facturas que vienen debajo en «Pagar mi plan». */
-  margin-bottom: 1rem;
+  /* Mismo margen lateral que las pestañas y la factura de «Pagar mi plan» (1.125rem): sin él la
+     tarjeta tocaba el borde de la del negocio. Y aire debajo, antes de la factura. */
+  margin: 0 1.125rem 1rem;
 }
 
 .pa {
@@ -20,6 +21,12 @@
   &--activo {
     border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
     background: color-mix(in srgb, var(--color-success) 5%, var(--color-surface));
+  }
+
+  /* Activo pero con un cobro fallido: ámbar, no verde. Verde con un error debajo se contradecía. */
+  &--atencion {
+    border-color: color-mix(in srgb, var(--color-warning) 40%, var(--color-border));
+    background: color-mix(in srgb, var(--color-warning) 5%, var(--color-surface));
   }
 
   &__cab {
@@ -43,10 +50,17 @@
       color: var(--color-success);
       background: color-mix(in srgb, var(--color-success) 14%, transparent);
     }
+
+    .pa--atencion & {
+      color: var(--color-warning);
+      background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+    }
   }
 
+  /* Base 0 y no 18rem: con una base ancha, en el celular el texto no cabía junto al icono y el
+     icono se quedaba solo en una línea encima del título. Los botones sí bajan a su propia línea. */
   &__textos {
-    flex: 1 1 18rem;
+    flex: 1 1 0;
     min-width: 0;
   }
 
@@ -67,6 +81,11 @@
     font-weight: 700;
     color: var(--color-success);
     background: var(--color-success-bg);
+
+    &--atencion {
+      color: var(--color-warning);
+      background: var(--color-warning-bg);
+    }
   }
 
   &__texto {
@@ -77,6 +96,11 @@
 
     strong {
       color: var(--color-text-primary);
+    }
+
+    /* «Visa ···4242» y la fecha no se parten a mitad: se leían «Visa» / «···4242». */
+    .pa__nocorte {
+      white-space: nowrap;
     }
 
     &--suave {
@@ -100,8 +124,9 @@
     border-radius: 0.5rem;
     font-size: 0.8125rem;
     line-height: 1.5;
-    color: var(--color-error);
-    background: var(--color-error-bg);
+    /* Ámbar, como la tarjeta: es un reintento y el negocio sigue funcionando, no un corte. */
+    color: var(--color-warning);
+    background: var(--color-warning-bg);
 
     lucide-icon {
       flex: none;

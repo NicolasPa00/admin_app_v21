@@ -1,6 +1,11 @@
 @if (visible(); as _) {
   @let e = estado()!;
-  <section class="pa" [class.pa--activo]="e.activo" aria-labelledby="pa-titulo">
+  <section
+    class="pa"
+    [class.pa--activo]="e.activo && !cobroFallido()"
+    [class.pa--atencion]="cobroFallido()"
+    aria-labelledby="pa-titulo"
+  >
     <div class="pa__cab">
       <span class="pa__icono" aria-hidden="true">
         <lucide-icon [name]="e.activo ? 'refresh-cw' : 'credit-card'" [size]="18" />
@@ -8,14 +13,19 @@
       <div class="pa__textos">
         <h3 id="pa-titulo" class="pa__titulo">
           Pago automático
-          @if (e.activo) { <span class="pa__chip">Activo</span> }
+          @if (cobroFallido()) {
+            <span class="pa__chip pa__chip--atencion">Reintentando</span>
+          } @else if (e.activo) {
+            <span class="pa__chip">Activo</span>
+          }
         </h3>
 
         @if (e.activo) {
           <p class="pa__texto">
-            Tu mensualidad se cobra sola a tu <strong>{{ e.metodo?.descripcion }}</strong>.
-            @if (e.proximo_cobro) {
-              Próximo cobro: <strong>{{ fecha(e.proximo_cobro) }}</strong>.
+            Tu mensualidad se cobra sola a tu <strong class="pa__nocorte">{{ e.metodo?.descripcion }}</strong>.
+            <!-- Con un cobro fallido la fecha es la del reintento y la dice el aviso de abajo. -->
+            @if (e.proximo_cobro && !cobroFallido()) {
+              Próximo cobro: <strong class="pa__nocorte">{{ fecha(e.proximo_cobro) }}</strong>.
             }
           </p>
         } @else if (e.disponible) {
