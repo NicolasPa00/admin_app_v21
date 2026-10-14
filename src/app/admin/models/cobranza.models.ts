@@ -411,3 +411,41 @@ export interface ConciliacionPagos {
   aplicados: Array<{ id_negocio: number; referencia: string }>;
   pendientes: number;
 }
+
+/**
+ * Pago automático — el débito mensual OPCIONAL con tarjeta (o Nequi) guardada en Wompi.
+ * `GET /admin/cobranza/pago-automatico?id_negocio=N`.
+ */
+export interface PagoAutomatico {
+  /** Se puede activar en este negocio (Colombia, plan con vencimiento, no retenedor). */
+  disponible: boolean;
+  motivo_no_disponible: { code: string; texto: string } | null;
+  activo: boolean;
+  metodo: {
+    /** «Visa ···4242», listo para mostrar. */
+    descripcion: string;
+    tipo: 'CARD' | 'NEQUI' | string;
+    marca: string | null;
+    ultimos4: string | null;
+    mes_exp: number | null;
+    anio_exp: number | null;
+    autorizado_en: string | null;
+  } | null;
+  /** Día en que el cobro automático intentará cobrar (YYYY-MM-DD). */
+  proximo_cobro: string | null;
+  estado_suscripcion: EstadoSuscripcion | null;
+  /** Cobros automáticos fallidos seguidos (se reintenta cada 3 días). */
+  reintentos: number;
+  plan_vence: string | null;
+  /** Solo al activar: si debía, se intentó cobrar en el acto. */
+  cobro_inmediato?: { estado: 'aprobada' | 'rechazada' | 'pendiente' | 'error'; mensaje: string | null } | null;
+}
+
+/** Lo que el navegador necesita para abrir el widget de Wompi y pedir las dos aceptaciones. */
+export interface TerminosPagoAutomatico {
+  llave_publica: string;
+  acceptance_token: string;
+  permalink: string | null;
+  personal_auth_token: string;
+  personal_permalink: string | null;
+}

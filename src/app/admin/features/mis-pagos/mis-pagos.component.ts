@@ -23,6 +23,7 @@ import { CobranzaService } from '../../data-access/cobranza.service';
 import { ConciliacionPagosService } from '../../data-access/conciliacion-pagos.service';
 import { AuthService } from '../../../auth/data-access/auth.service';
 import { SelectorPlanesComponent } from './selector-planes.component';
+import { PagoAutomaticoComponent } from './pago-automatico.component';
 import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
 import {
   CobroNegocio,
@@ -109,6 +110,7 @@ type NavegadorQueComparte = Navigator & {
     SelectorNegocioComponent,
     SelectorPlanesComponent,
     ModalCabeceraComponent,
+    PagoAutomaticoComponent,
   ],
   providers: [
     {

@@ -20,6 +20,8 @@ import {
   IngresoMes,
   PagoManual,
   ResumenCobro,
+  PagoAutomatico,
+  TerminosPagoAutomatico,
 } from '../models/cobranza.models';
 
 /**
@@ -233,6 +235,48 @@ export class CobranzaService {
   anularFactura(idFactura: number, motivo: string): Observable<Factura | null> {
     return this.http
       .post<ApiResponse<Factura>>(`${this.API}/cobranza/facturas/${idFactura}/anular`, { motivo })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  // ── Pago automático (opcional): tarjeta o Nequi guardados en Wompi ──
+
+  getPagoAutomatico(idNegocio: number): Observable<PagoAutomatico | null> {
+    return this.http
+      .get<ApiResponse<PagoAutomatico>>(`${this.API}/cobranza/pago-automatico`, {
+        params: new HttpParams().set('id_negocio', idNegocio),
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  getTerminosPagoAutomatico(idNegocio: number): Observable<TerminosPagoAutomatico | null> {
+    return this.http
+      .get<ApiResponse<TerminosPagoAutomatico>>(`${this.API}/cobranza/pago-automatico/terminos`, {
+        params: new HttpParams().set('id_negocio', idNegocio),
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Guarda el medio de pago. `token` y `tipo` vienen del widget de Wompi: el número de la tarjeta
+   * nunca pasa por nuestra app ni por nuestro servidor.
+   */
+  activarPagoAutomatico(datos: {
+    id_negocio: number;
+    token: string;
+    tipo: string;
+    acceptance_token: string;
+    personal_auth_token: string;
+  }): Observable<PagoAutomatico | null> {
+    return this.http
+      .post<ApiResponse<PagoAutomatico>>(`${this.API}/cobranza/pago-automatico`, datos)
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  desactivarPagoAutomatico(idNegocio: number): Observable<PagoAutomatico | null> {
+    return this.http
+      .post<ApiResponse<PagoAutomatico>>(`${this.API}/cobranza/pago-automatico/desactivar`, {
+        id_negocio: idNegocio,
+      })
       .pipe(map((res) => res.data ?? null));
   }
 }

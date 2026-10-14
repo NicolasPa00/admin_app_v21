@@ -1,0 +1,193 @@
+/*
+  PagoAutomaticoComponent — la tarjeta del débito mensual opcional, arriba de «Pagar mi plan».
+  Mismos tokens --color-* que el resto de «Mis pagos» (colores de estado con color-mix, sin rgb).
+*/
+:host {
+  display: block;
+  /* Separada de las facturas que vienen debajo en «Pagar mi plan». */
+  margin-bottom: 1rem;
+}
+
+.pa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+
+  &--activo {
+    border-color: color-mix(in srgb, var(--color-success) 35%, var(--color-border));
+    background: color-mix(in srgb, var(--color-success) 5%, var(--color-surface));
+  }
+
+  &__cab {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    flex-wrap: wrap;
+  }
+
+  &__icono {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.625rem;
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+
+    .pa--activo & {
+      color: var(--color-success);
+      background: color-mix(in srgb, var(--color-success) 14%, transparent);
+    }
+  }
+
+  &__textos {
+    flex: 1 1 18rem;
+    min-width: 0;
+  }
+
+  &__titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__chip {
+    padding: 0.0625rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-success);
+    background: var(--color-success-bg);
+  }
+
+  &__texto {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+
+    strong {
+      color: var(--color-text-primary);
+    }
+
+    &--suave {
+      color: var(--color-text-muted);
+    }
+  }
+
+  &__acciones {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-self: center;
+  }
+
+  &__aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-error);
+    background: var(--color-error-bg);
+
+    lucide-icon {
+      flex: none;
+      margin-top: 0.125rem;
+    }
+  }
+
+  &__paso {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  &__seguro,
+  &__cargando {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+
+    lucide-icon {
+      flex: none;
+      margin-top: 0.125rem;
+      color: var(--color-success);
+    }
+  }
+
+  &__check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+    cursor: pointer;
+
+    input {
+      flex: none;
+      width: 1.0625rem;
+      height: 1.0625rem;
+      margin-top: 0.1875rem;
+      accent-color: var(--color-primary);
+      cursor: pointer;
+    }
+
+    a {
+      color: var(--color-primary);
+      font-weight: 600;
+    }
+  }
+
+  &__pie {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  &__btn-peligro {
+    color: var(--color-error);
+    border-color: color-mix(in srgb, var(--color-error) 45%, var(--color-border));
+  }
+
+  &__giro {
+    animation: pa-giro 0.9s linear infinite;
+  }
+}
+
+@keyframes pa-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .pa__acciones,
+  .pa__pie {
+    width: 100%;
+
+    .btn {
+      flex: 1 1 auto;
+    }
+  }
+}

@@ -1,0 +1,130 @@
+@if (visible(); as _) {
+  @let e = estado()!;
+  <section class="pa" [class.pa--activo]="e.activo" aria-labelledby="pa-titulo">
+    <div class="pa__cab">
+      <span class="pa__icono" aria-hidden="true">
+        <lucide-icon [name]="e.activo ? 'refresh-cw' : 'credit-card'" [size]="18" />
+      </span>
+      <div class="pa__textos">
+        <h3 id="pa-titulo" class="pa__titulo">
+          Pago automático
+          @if (e.activo) { <span class="pa__chip">Activo</span> }
+        </h3>
+
+        @if (e.activo) {
+          <p class="pa__texto">
+            Tu mensualidad se cobra sola a tu <strong>{{ e.metodo?.descripcion }}</strong>.
+            @if (e.proximo_cobro) {
+              Próximo cobro: <strong>{{ fecha(e.proximo_cobro) }}</strong>.
+            }
+          </p>
+        } @else if (e.disponible) {
+          <p class="pa__texto">
+            Registra tu tarjeta o Nequi una sola vez y cada mes cobraremos tu mensualidad
+            automáticamente, sin enlaces ni recordatorios. Puedes desactivarlo cuando quieras.
+          </p>
+        } @else {
+          <p class="pa__texto pa__texto--suave">{{ e.motivo_no_disponible?.texto }}</p>
+        }
+      </div>
+
+      @if (paso() === null) {
+        <div class="pa__acciones">
+          @if (e.activo) {
+            <button type="button" class="btn btn--outline" (click)="empezarAutorizacion()">
+              Cambiar tarjeta
+            </button>
+            <button type="button" class="btn btn--ghost" (click)="pedirDesactivar()">Desactivar</button>
+          } @else if (e.disponible) {
+            <button type="button" class="btn btn--primary" (click)="empezarAutorizacion()">
+              Activar pago automático
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (cobroFallido()) {
+      <p class="pa__aviso" role="alert">
+        <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+        El último cobro a tu {{ e.metodo?.descripcion }} no pasó.
+        @if (e.proximo_cobro) { Lo reintentaremos el {{ fecha(e.proximo_cobro) }}. }
+        Si tu tarjeta cambió, regístrala de nuevo o paga abajo con PSE o Nequi.
+      </p>
+    }
+
+    <!-- ── Paso: las tres autorizaciones antes de abrir el formulario de Wompi ── -->
+    @if (paso() === 'autorizar') {
+      <div class="pa__paso">
+        @if (!terminos()) {
+          <p class="pa__cargando">
+            <lucide-icon name="loader-2" [size]="16" class="pa__giro" aria-hidden="true" />
+            Preparando el registro seguro…
+          </p>
+        } @else {
+          <p class="pa__seguro">
+            <lucide-icon name="shield-check" [size]="16" aria-hidden="true" />
+            Escribirás tu tarjeta en el formulario seguro de Wompi (Bancolombia). EscalApp nunca ve
+            ni guarda su número.
+          </p>
+
+          <label class="pa__check">
+            <input type="checkbox" [checked]="aceptaReglamento()" (change)="aceptaReglamento.set($any($event.target).checked)" />
+            <span>
+              Acepto el
+              @if (terminos()!.permalink; as url) {
+                <a [href]="url" target="_blank" rel="noopener">reglamento de uso de Wompi</a>
+              } @else { reglamento de uso de Wompi }.
+            </span>
+          </label>
+          <label class="pa__check">
+            <input type="checkbox" [checked]="aceptaDatos()" (change)="aceptaDatos.set($any($event.target).checked)" />
+            <span>
+              Autorizo el
+              @if (terminos()!.personal_permalink; as url) {
+                <a [href]="url" target="_blank" rel="noopener">tratamiento de mis datos personales</a>
+              } @else { tratamiento de mis datos personales } por parte de Wompi.
+            </span>
+          </label>
+          <label class="pa__check">
+            <input type="checkbox" [checked]="autorizaDebito()" (change)="autorizaDebito.set($any($event.target).checked)" />
+            <span>
+              Autorizo a EscalApp a cobrar cada mes la mensualidad de
+              <strong>{{ nombreNegocio() || 'mi negocio' }}</strong> a este medio de pago, hasta que lo
+              desactive en esta pantalla.
+            </span>
+          </label>
+
+          <div class="pa__pie">
+            <button type="button" class="btn btn--ghost" (click)="cancelar()" [disabled]="ocupado()">Cancelar</button>
+            <button type="button" class="btn btn--primary" (click)="registrarTarjeta()" [disabled]="!puedeRegistrar()">
+              @if (ocupado()) {
+                <lucide-icon name="loader-2" [size]="16" class="pa__giro" aria-hidden="true" />
+              }
+              Registrar medio de pago
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Paso: confirmar la desactivación ── -->
+    @if (paso() === 'desactivar') {
+      <div class="pa__paso">
+        <p class="pa__texto">
+          ¿Desactivar el pago automático? Tu {{ e.metodo?.descripcion }} dejará de cobrarse cada mes y
+          te enviaremos el enlace para pagar antes de cada vencimiento.
+        </p>
+        <div class="pa__pie">
+          <button type="button" class="btn btn--ghost" (click)="cancelar()" [disabled]="ocupado()">No, mantenerlo</button>
+          <button type="button" class="btn btn--outline pa__btn-peligro" (click)="desactivar()" [disabled]="ocupado()">
+            @if (ocupado()) {
+              <lucide-icon name="loader-2" [size]="16" class="pa__giro" aria-hidden="true" />
+            }
+            Sí, desactivar
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+}

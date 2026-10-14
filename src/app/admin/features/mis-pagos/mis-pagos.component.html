@@ -332,6 +332,15 @@
       @if (tabDe(c) === 'pagar') {
       <div class="mp__panel">
 
+      <!-- Débito mensual OPCIONAL: quien lo activa no vuelve a pagar con el enlace de abajo. -->
+      @if (!c.sin_plan) {
+        <app-pago-automatico
+          [idNegocio]="idDe(c)"
+          [nombreNegocio]="c.negocio"
+          (actualizado)="cargar()"
+        />
+      }
+
       @if (c.facturas.length === 0) {
         @if (estaAlDia(c.vencimiento)) {
           <div class="mp__ok" role="status">
