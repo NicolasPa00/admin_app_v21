@@ -411,6 +411,23 @@ export class CobranzaComponent implements OnInit {
     }).format(numero);
   }
 
+  /**
+   * Lo que dice la columna «Estado». La suscripción sigue `activa` aunque el plan haya vencido y se
+   * deba la mensualidad: con solo `ESTADOS[fila.estado]` La Esquina del Barril salía «Al día» con
+   * casi 50 días de deuda (auditoría 2026-10-14). Si la suscripción está activa, manda lo que ve
+   * el cliente: el vencimiento del plan y la deuda.
+   */
+  protected estadoVisible(fila: FilaCartera): { clase: string; texto: string } {
+    if (fila.estado === 'activa' && Number(fila.deuda) > 0) {
+      const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+      const vencido = !!fila.plan_hasta && fila.plan_hasta.slice(0, 10) < hoy;
+      return vencido
+        ? { clase: 'suspendida', texto: 'Vencido' }
+        : { clase: 'en_gracia', texto: 'Por pagar' };
+    }
+    return { clase: fila.estado, texto: ESTADOS[fila.estado] };
+  }
+
   protected fecha(valor: string | null | undefined): string {
     if (!valor) return '—';
     return String(valor).slice(0, 10);

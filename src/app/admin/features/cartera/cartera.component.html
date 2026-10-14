@@ -35,9 +35,9 @@
 
   <!-- ── Periodo: un solo control de filtro para toda la vista ── -->
   <div class="car__toolbar">
-    <div class="car__seg" role="group" aria-label="Periodo">
+    <div class="ui-filtros" role="group" aria-label="Periodo">
       @for (p of periodos; track p.v) {
-        <button type="button" class="car__seg-btn" [class.is-active]="periodo() === p.v"
+        <button type="button" class="ui-filtro" [class.ui-filtro--on]="periodo() === p.v"
                 [attr.aria-pressed]="periodo() === p.v" (click)="elegirPeriodo(p.v)">
           {{ p.t }}
         </button>
@@ -58,16 +58,16 @@
   </div>
 
   <!-- ── Pestañas ── -->
-  <div class="car__tabs" role="tablist" aria-label="Secciones de la cartera">
-    <button type="button" role="tab" class="car__tab" [class.is-active]="pestana() === 'resumen'"
+  <div class="ui-pestanas" role="tablist" aria-label="Secciones de la cartera">
+    <button type="button" role="tab" class="ui-pestana" [class.ui-pestana--on]="pestana() === 'resumen'"
             [attr.aria-selected]="pestana() === 'resumen'" (click)="irA('resumen')">
       <lucide-icon name="chart-column" [size]="16" aria-hidden="true" /> Resumen
     </button>
-    <button type="button" role="tab" class="car__tab" [class.is-active]="pestana() === 'movimientos'"
+    <button type="button" role="tab" class="ui-pestana" [class.ui-pestana--on]="pestana() === 'movimientos'"
             [attr.aria-selected]="pestana() === 'movimientos'" (click)="irA('movimientos')">
       <lucide-icon name="arrow-left-right" [size]="16" aria-hidden="true" /> Movimientos
     </button>
-    <button type="button" role="tab" class="car__tab" [class.is-active]="pestana() === 'ajustes'"
+    <button type="button" role="tab" class="ui-pestana" [class.ui-pestana--on]="pestana() === 'ajustes'"
             [attr.aria-selected]="pestana() === 'ajustes'" (click)="irA('ajustes')">
       <lucide-icon name="settings" [size]="16" aria-hidden="true" /> Cuentas y tarifas
     </button>

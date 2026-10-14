@@ -1,2 +1,4 @@
 /* Importar sistema de temas (design tokens + helpers globales) */
 @use './styles/theme';
+/* Pestañas (secciones) y filtros: el mismo estándar que restaurante_app */
+@use './styles/pestanas';

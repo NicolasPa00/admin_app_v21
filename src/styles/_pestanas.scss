@@ -1,0 +1,197 @@
+/*
+ * Pestañas y filtros — el estándar de la consola de admin (2026-10-14).
+ *
+ * Es el MISMO estándar que `restaurante_app/src/styles/_pestanas.scss`: las dos apps usan el
+ * sistema de color `--color-*` y deben verse como una sola familia. Si se cambia uno, se cambia el
+ * otro.
+ *
+ *   · `.ui-pestanas` (raya debajo) → cambia DE SECCIÓN (Activos / Inactivos, Resumen / Movimientos).
+ *   · `.ui-filtros` (botoncitos, el activo relleno) → FILTRA lo que ya se ve (7 / 30 / 90 días).
+ *
+ * Las elecciones dentro de un formulario (Ingreso / Egreso, Saldo / Recarga) y el selector de
+ * negocio no son pestañas ni filtros: se quedan con su estilo.
+ *
+ * Solo tokens `--color-*` y `color-mix()`.
+ */
+
+// ── Pestañas de sección ──────────────────────────────────────────────────────
+
+.ui-pestanas {
+  /* Contiene a sus hijos posicionados: el texto `.sr-only` (absoluto) de una pestaña con aviso se
+     escapaba de la barra desplazable y ensanchaba la página en el celular (Terceros, 2026-10-14). */
+  position: relative;
+  display: flex;
+  flex: none;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// Alto fijo de 2,75 rem: la Bandeja de Conversaciones lo descuenta de su altura (`--bdj-extra`).
+.ui-pestana {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.75rem;
+  padding: 0 0.875rem;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+
+  &:hover:not(:disabled) {
+    color: var(--color-text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-md);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  lucide-icon {
+    flex: none;
+  }
+}
+
+.ui-pestana--on,
+.ui-pestana--on:hover:not(:disabled) {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+// El número al lado del nombre (Clientes 10, Terraza 4).
+.ui-pestana__n {
+  min-width: 1.375rem;
+  padding: 0.0625rem 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-pestana--on .ui-pestana__n {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+// ── Filtros ──────────────────────────────────────────────────────────────────
+
+.ui-filtros {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  max-width: 100%;
+}
+
+.ui-filtro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover:not(.ui-filtro--on):not(:disabled) {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+}
+
+.ui-filtro--on {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.ui-filtro__n {
+  min-width: 1.375rem;
+  padding: 0.0625rem 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-filtro--on .ui-filtro__n {
+  background: color-mix(in srgb, var(--color-on-primary) 22%, transparent);
+  color: var(--color-on-primary);
+}
+
+// ── Celular ──────────────────────────────────────────────────────────────────
+// Los filtros ocupan el ancho y, si no caben, se desplazan de lado en vez de partirse en dos
+// filas: lo que hacían Clientes y Proveedores cada uno por su cuenta.
+@media (max-width: 767px) {
+  .ui-filtros {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .ui-filtro {
+    flex: 1 0 auto;
+    min-height: 2.5rem;
+  }
+}

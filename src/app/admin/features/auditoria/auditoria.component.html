@@ -15,10 +15,10 @@
   </header>
 
   <!-- Pestañas -->
-  <div class="aud__tabs" role="tablist">
+  <div class="aud__tabs ui-pestanas" role="tablist">
     <button
-      type="button" role="tab" class="aud__tab"
-      [class.is-active]="pestania() === 'datos'"
+      type="button" role="tab" class="ui-pestana"
+      [class.ui-pestana--on]="pestania() === 'datos'"
       [attr.aria-selected]="pestania() === 'datos'"
       (click)="cambiarPestania('datos')"
     >
@@ -26,8 +26,8 @@
       Cambios de datos
     </button>
     <button
-      type="button" role="tab" class="aud__tab"
-      [class.is-active]="pestania() === 'eventos'"
+      type="button" role="tab" class="ui-pestana"
+      [class.ui-pestana--on]="pestania() === 'eventos'"
       [attr.aria-selected]="pestania() === 'eventos'"
       (click)="cambiarPestania('eventos')"
     >

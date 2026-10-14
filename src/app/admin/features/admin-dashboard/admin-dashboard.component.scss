@@ -5,8 +5,8 @@
 
 // ── Contenedor ──────────────────────────────────────────────
 .dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
+  /* Ancho completo, como el resto de la consola y del restaurante: el margen lo pone el layout. */
+  width: 100%;
 }
 
 // ── KPIs (fila de métricas, solo Super Admin) ───────────────

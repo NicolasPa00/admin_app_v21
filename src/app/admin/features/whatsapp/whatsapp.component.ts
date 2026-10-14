@@ -121,7 +121,6 @@ interface NegocioWhatsapp {
         <header class="wa__ancho-canal wa__cabecera">
           <div>
             <h1 class="wa__titulo">
-              <lucide-icon name="message-circle" [size]="20" aria-hidden="true" />
               {{ habilitado() && actual()?.administra !== false ? 'Conectar WhatsApp' : 'WhatsApp' }}
             </h1>
             <p class="wa__sub">
@@ -231,10 +230,8 @@ interface NegocioWhatsapp {
     .wa__spin { animation: wa-giro 0.9s linear infinite; }
     @keyframes wa-giro { to { transform: rotate(360deg); } }
 
-    /* El mismo ancho y centrado que .cw (canal-whatsapp): si uno cambia, cambia el otro. */
+    /* Ancho completo, como .cw (canal-whatsapp) y el resto de la consola. */
     .wa__ancho-canal {
-      max-width: 1100px;
-      margin-inline: auto;
       width: 100%;
     }
 
@@ -261,19 +258,17 @@ interface NegocioWhatsapp {
       flex-wrap: wrap;
       margin-bottom: 0.75rem;
     }
+    /* El título de página de toda la consola (estándar 2026-10-14). */
     .wa__titulo {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
       margin: 0;
-      font-size: 1.375rem;
-      font-weight: 600;
+      font-size: var(--font-size-xl);
+      font-weight: 700;
       color: var(--color-text-primary);
     }
     .wa__sub {
       margin: 0.25rem 0 0;
       font-size: 0.875rem;
-      color: var(--color-text-muted);
+      color: var(--color-text-secondary);
     }
     /* Chips en la vista de conexión: separados del contenido como las tarjetas entre sí. */
     .wa__barra.wa__ancho-canal { margin-bottom: 1.25rem; }

@@ -3,8 +3,26 @@
 // ============================================================
 
 .cfg {
-  max-width: 1100px;
-  margin: 0 auto;
+  /* Ancho completo, como el resto de la consola y del restaurante: el margen lo pone el layout. */
+  width: 100%;
+}
+
+// ── Título de página (el mismo de las demás pantallas) ──────────
+.cfg__head {
+  margin-bottom: var(--spacing-lg);
+}
+
+.cfg__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.cfg__subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }
 
 // ── Dos columnas ──────────────────────────────────────────────
@@ -12,9 +30,7 @@
   display: grid;
   grid-template-columns: 220px 1fr;
   gap: var(--spacing-xl);
-  max-width: 960px;
   width: 100%;
-  margin: 0 auto;
   flex: 1;
 
   @media (max-width: 768px) {
@@ -82,7 +98,7 @@
 }
 
 .cfg__section-title {
-  font-size: var(--font-size-lg);
+  font-size: 1rem;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0 0 var(--spacing-xs);
@@ -120,7 +136,7 @@
 }
 
 .cfg__label {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-primary);
 }

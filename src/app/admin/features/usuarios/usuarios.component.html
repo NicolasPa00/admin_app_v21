@@ -17,26 +17,26 @@
   </header>
 
   <!-- Pestañas: Activos / Inactivos -->
-  <div class="usr__tabs" role="tablist" aria-label="Estado del usuario">
+  <div class="usr__tabs ui-pestanas" role="tablist" aria-label="Estado del usuario">
     <button
       type="button"
       role="tab"
-      class="usr__tab"
-      [class.usr__tab--on]="tab() === 'A'"
+      class="ui-pestana"
+      [class.ui-pestana--on]="tab() === 'A'"
       [attr.aria-selected]="tab() === 'A'"
       (click)="onTab('A')"
     >
-      Activos <span class="usr__tab-count">{{ totalActivos() }}</span>
+      Activos <span class="ui-pestana__n">{{ totalActivos() }}</span>
     </button>
     <button
       type="button"
       role="tab"
-      class="usr__tab"
-      [class.usr__tab--on]="tab() === 'I'"
+      class="ui-pestana"
+      [class.ui-pestana--on]="tab() === 'I'"
       [attr.aria-selected]="tab() === 'I'"
       (click)="onTab('I')"
     >
-      Inactivos <span class="usr__tab-count">{{ totalInactivos() }}</span>
+      Inactivos <span class="ui-pestana__n">{{ totalInactivos() }}</span>
     </button>
   </div>
 

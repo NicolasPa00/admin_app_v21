@@ -6,8 +6,8 @@
 // contenido si no le alcanza. El descuento es el de la cabecera + el padding del contenido (mismo
 // criterio que la bandeja). En pantallas angostas las tarjetas se apilan y la página scrollea.
 .reg {
-  max-width: 1440px;
-  margin: 0 auto;
+  /* Ancho completo, como el resto de la consola y del restaurante: el margen lo pone el layout. */
+  width: 100%;
 
   @media (min-width: 1101px) {
     display: flex;
@@ -127,7 +127,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   font-weight: 600;
   color: var(--color-text-primary);
   margin-bottom: var(--spacing-xs);

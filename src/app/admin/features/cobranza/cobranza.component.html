@@ -173,9 +173,8 @@
               </td>
 
               <td>
-                <span class="cob__chip" [class]="'cob__chip--' + fila.estado">
-                  {{ ESTADOS[fila.estado] }}
-                </span>
+                @let est = estadoVisible(fila);
+                <span class="cob__chip" [class]="'cob__chip--' + est.clase">{{ est.texto }}</span>
               </td>
 
               <td>{{ fecha(fila.plan_hasta) }}</td>

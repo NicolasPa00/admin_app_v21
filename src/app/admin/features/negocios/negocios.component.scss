@@ -3,8 +3,8 @@
 // ============================================================
 
 .neg {
-  max-width: 1400px;
-  margin: 0 auto;
+  /* Ancho completo, como el resto de la consola y del restaurante: el margen lo pone el layout. */
+  width: 100%;
 }
 
 // ── Encabezado ──────────────────────────────────────────────
@@ -831,43 +831,7 @@
 
 // ════════════ Pestañas Activos / Inactivos ════════════
 .neg__tabs {
-  display: flex;
-  gap: var(--spacing-xs);
   margin-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.neg__tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  margin-bottom: -1px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-
-  &:hover { color: var(--color-text-primary); }
-  &:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm, 6px); }
-
-  &--on {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-  }
-}
-
-.neg__tab-count {
-  min-width: 1.5rem;
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-hover, var(--color-bg));
-  font-size: var(--font-size-xs);
-  text-align: center;
 }
 
 // ════════════ Anchos de los modales ════════════
@@ -878,32 +842,7 @@
 
 // ════════════ Pestañas del modal de editar ════════════
 .neg-tabs {
-  display: flex;
-  gap: var(--spacing-xs);
   margin-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.neg-tabs__tab {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-sm) var(--spacing-md);
-  margin-bottom: -1px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-
-  &:hover { color: var(--color-text-primary); }
-  &:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm, 6px); }
-
-  &--on { color: var(--color-primary); border-bottom-color: var(--color-primary); }
 }
 
 .neg-tabs__punto {

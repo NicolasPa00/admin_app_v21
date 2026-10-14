@@ -16,12 +16,12 @@
     </div>
 
     <div class="cia__head-actions">
-      <div class="cia__seg" role="group" aria-label="Periodo">
+      <div class="ui-filtros" role="group" aria-label="Periodo">
         @for (v of ventanas; track v) {
           <button
             type="button"
-            class="cia__seg-btn"
-            [class.is-active]="ventana() === v"
+            class="ui-filtro"
+            [class.ui-filtro--on]="ventana() === v"
             [attr.aria-pressed]="ventana() === v"
             (click)="cambiarVentana(v)"
           >
@@ -112,13 +112,13 @@
     </section>
 
     <!-- ── Pestañas ── -->
-    <div class="cia__tabs" role="tablist" aria-label="Proveedor">
+    <div class="ui-pestanas" role="tablist" aria-label="Proveedor">
       <button
         type="button"
         role="tab"
         id="tab-openai"
-        class="cia__tab"
-        [class.is-active]="pestana() === 'openai'"
+        class="ui-pestana"
+        [class.ui-pestana--on]="pestana() === 'openai'"
         [attr.aria-selected]="pestana() === 'openai'"
         aria-controls="panel-openai"
         (click)="cambiarPestana('openai')"
@@ -137,8 +137,8 @@
         type="button"
         role="tab"
         id="tab-meta"
-        class="cia__tab"
-        [class.is-active]="pestana() === 'meta'"
+        class="ui-pestana"
+        [class.ui-pestana--on]="pestana() === 'meta'"
         [attr.aria-selected]="pestana() === 'meta'"
         aria-controls="panel-meta"
         (click)="cambiarPestana('meta')"

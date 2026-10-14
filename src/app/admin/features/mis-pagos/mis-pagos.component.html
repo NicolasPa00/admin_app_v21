@@ -129,19 +129,19 @@
         un pago viejo. Apilarlo todo obligaba a recorrer la parrilla de planes para llegar al
         botón de pagar.
       -->
-      <nav class="mp__tabs" role="tablist" [attr.aria-label]="'Opciones de ' + c.negocio">
+      <nav class="mp__tabs ui-pestanas" role="tablist" [attr.aria-label]="'Opciones de ' + c.negocio">
         <button
           type="button"
           role="tab"
-          class="mp__tab"
-          [class.is-on]="tabDe(c) === 'pagar'"
+          class="ui-pestana"
+          [class.ui-pestana--on]="tabDe(c) === 'pagar'"
           [attr.aria-selected]="tabDe(c) === 'pagar'"
           (click)="verTab(c, 'pagar')"
         >
           <lucide-icon name="credit-card" [size]="15" aria-hidden="true" />
           Pagar mi plan
           @if (c.facturas.length) {
-            <span class="mp__tab-num">{{ c.facturas.length }}</span>
+            <span class="ui-pestana__n">{{ c.facturas.length }}</span>
           }
         </button>
         <!-- Sin catálogo de planes no hay nada que cambiar: la pestaña no se dibuja. -->
@@ -149,8 +149,8 @@
           <button
             type="button"
             role="tab"
-            class="mp__tab"
-            [class.is-on]="tabDe(c) === 'plan'"
+            class="ui-pestana"
+            [class.ui-pestana--on]="tabDe(c) === 'plan'"
             [attr.aria-selected]="tabDe(c) === 'plan'"
             (click)="verTab(c, 'plan')"
           >
@@ -164,8 +164,8 @@
         <button
           type="button"
           role="tab"
-          class="mp__tab"
-          [class.is-on]="tabDe(c) === 'historial'"
+          class="ui-pestana"
+          [class.ui-pestana--on]="tabDe(c) === 'historial'"
           [attr.aria-selected]="tabDe(c) === 'historial'"
           (click)="verTab(c, 'historial')"
         >
@@ -173,7 +173,7 @@
           <lucide-icon name="receipt" [size]="15" aria-hidden="true" />
           Historial
           @if (pagosDe(c).length) {
-            <span class="mp__tab-num mp__tab-num--suave">{{ pagosDe(c).length }}</span>
+            <span class="ui-pestana__n">{{ pagosDe(c).length }}</span>
           }
         </button>
       </nav>

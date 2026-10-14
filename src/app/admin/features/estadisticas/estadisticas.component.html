@@ -16,12 +16,12 @@
     </div>
 
     <div class="est__head-actions">
-      <div class="est__rangos" role="group" aria-label="Rango de tiempo">
+      <div class="ui-filtros" role="group" aria-label="Rango de tiempo">
         @for (r of rangos; track r.valor) {
           <button
             type="button"
-            class="est__rango"
-            [class.is-active]="rango() === r.valor"
+            class="ui-filtro"
+            [class.ui-filtro--on]="rango() === r.valor"
             [attr.aria-pressed]="rango() === r.valor"
             (click)="cambiarRango(r.valor)"
           >
@@ -125,16 +125,16 @@
               : 'Operaciones gestionadas cada mes, sumando todos los negocios.' }}
           </p>
         </div>
-        <div class="est__seg" role="group" aria-label="Métrica de la gráfica">
+        <div class="ui-filtros" role="group" aria-label="Métrica de la gráfica">
           <button
-            type="button" class="est__seg-btn"
-            [class.is-active]="metrica() === 'transacciones'"
+            type="button" class="ui-filtro"
+            [class.ui-filtro--on]="metrica() === 'transacciones'"
             [attr.aria-pressed]="metrica() === 'transacciones'"
             (click)="cambiarMetrica('transacciones')"
           >Operaciones</button>
           <button
-            type="button" class="est__seg-btn"
-            [class.is-active]="metrica() === 'monto'"
+            type="button" class="ui-filtro"
+            [class.ui-filtro--on]="metrica() === 'monto'"
             [attr.aria-pressed]="metrica() === 'monto'"
             (click)="cambiarMetrica('monto')"
           >Ventas</button>

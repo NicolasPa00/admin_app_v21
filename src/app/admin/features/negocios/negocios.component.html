@@ -16,14 +16,14 @@
   </header>
 
   <!-- Pestañas: un negocio inactivo no desaparece, pasa a «Inactivos» y desde ahí se reactiva -->
-  <div class="neg__tabs" role="tablist" aria-label="Estado del negocio">
-    <button type="button" role="tab" class="neg__tab" [class.neg__tab--on]="tab() === 'A'"
+  <div class="neg__tabs ui-pestanas" role="tablist" aria-label="Estado del negocio">
+    <button type="button" role="tab" class="ui-pestana" [class.ui-pestana--on]="tab() === 'A'"
             [attr.aria-selected]="tab() === 'A'" (click)="setTab('A')">
-      Activos <span class="neg__tab-count">{{ totalActivos() }}</span>
+      Activos <span class="ui-pestana__n">{{ totalActivos() }}</span>
     </button>
-    <button type="button" role="tab" class="neg__tab" [class.neg__tab--on]="tab() === 'I'"
+    <button type="button" role="tab" class="ui-pestana" [class.ui-pestana--on]="tab() === 'I'"
             [attr.aria-selected]="tab() === 'I'" (click)="setTab('I')">
-      Inactivos <span class="neg__tab-count">{{ totalInactivos() }}</span>
+      Inactivos <span class="ui-pestana__n">{{ totalInactivos() }}</span>
     </button>
   </div>
 
@@ -565,14 +565,14 @@
 
         <!-- ─── EDITAR: dos pestañas ─── -->
         @if (mode === 'edit' && editForm(); as f) {
-          <div class="neg-tabs" role="tablist" aria-label="Secciones del negocio">
-            <button type="button" role="tab" class="neg-tabs__tab"
-                    [class.neg-tabs__tab--on]="editTab() === 'datos'"
+          <div class="neg-tabs ui-pestanas" role="tablist" aria-label="Secciones del negocio">
+            <button type="button" role="tab" class="ui-pestana"
+                    [class.ui-pestana--on]="editTab() === 'datos'"
                     [attr.aria-selected]="editTab() === 'datos'" (click)="editTab.set('datos')">
               Datos generales
             </button>
-            <button type="button" role="tab" class="neg-tabs__tab"
-                    [class.neg-tabs__tab--on]="editTab() === 'plan'"
+            <button type="button" role="tab" class="ui-pestana"
+                    [class.ui-pestana--on]="editTab() === 'plan'"
                     [attr.aria-selected]="editTab() === 'plan'" (click)="editTab.set('plan')">
               Plan y vigencia
               @if (planModificado() || complementosModificados()) {
