@@ -72,9 +72,9 @@ function cargarWidget(): Promise<ConstructorWidget> {
  * Wompi y a nosotros llega un token de un solo uso, que el servidor cambia por una «fuente de pago»
  * con la llave privada. Ni esta app ni nuestro servidor ven nunca el número.
  *
- * Antes de abrir el widget, el cliente marca tres cosas, y las tres son obligatorias: el reglamento
- * de Wompi y la autorización de datos (las dos que Wompi exige, con su enlace) y la autorización del
- * débito recurrente a EscalApp — que queda registrada en el servidor con quién, cuándo y desde dónde.
+ * Antes de abrir el widget, el cliente autoriza el débito recurrente a EscalApp, que queda
+ * registrado en el servidor con quién, cuándo y desde dónde. El reglamento y la autorización de datos
+ * de Wompi los acepta dentro del propio widget.
  */
 @Component({
   selector: 'app-pago-automatico',
@@ -110,15 +110,16 @@ export class PagoAutomaticoComponent {
   protected readonly terminos = signal<TerminosPagoAutomatico | null>(null);
   protected readonly ocupado = signal(false);
 
-  protected readonly aceptaReglamento = signal(false);
-  protected readonly aceptaDatos = signal(false);
+  /**
+   * La autorización del débito recurrente a EscalApp. El reglamento y la autorización de datos de
+   * Wompi los acepta el cliente DENTRO del widget (sus dos casillas); repetirlas aquí era pedir lo
+   * mismo dos veces. El servidor sigue mandando a Wompi los dos tokens de aceptación.
+   */
   protected readonly autorizaDebito = signal(false);
 
   protected readonly puedeRegistrar = computed(
     () =>
       !!this.terminos() &&
-      this.aceptaReglamento() &&
-      this.aceptaDatos() &&
       this.autorizaDebito() &&
       !this.ocupado(),
   );
@@ -162,8 +163,6 @@ export class PagoAutomaticoComponent {
   }
 
   protected empezarAutorizacion(): void {
-    this.aceptaReglamento.set(false);
-    this.aceptaDatos.set(false);
     this.autorizaDebito.set(false);
     this.terminos.set(null);
     this.paso.set('autorizar');

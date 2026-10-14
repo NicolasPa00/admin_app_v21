@@ -64,28 +64,11 @@
         } @else {
           <p class="pa__seguro">
             <lucide-icon name="shield-check" [size]="16" aria-hidden="true" />
-            Escribirás tu tarjeta en el formulario seguro de Wompi (Bancolombia). EscalApp nunca ve
-            ni guarda su número.
+            Escribirás tu tarjeta o tu Nequi en el formulario seguro de Wompi (Bancolombia), que te
+            pedirá aceptar su reglamento y la autorización de datos. EscalApp nunca ve ni guarda el
+            número.
           </p>
 
-          <label class="pa__check">
-            <input type="checkbox" [checked]="aceptaReglamento()" (change)="aceptaReglamento.set($any($event.target).checked)" />
-            <span>
-              Acepto el
-              @if (terminos()!.permalink; as url) {
-                <a [href]="url" target="_blank" rel="noopener">reglamento de uso de Wompi</a>
-              } @else { reglamento de uso de Wompi }.
-            </span>
-          </label>
-          <label class="pa__check">
-            <input type="checkbox" [checked]="aceptaDatos()" (change)="aceptaDatos.set($any($event.target).checked)" />
-            <span>
-              Autorizo el
-              @if (terminos()!.personal_permalink; as url) {
-                <a [href]="url" target="_blank" rel="noopener">tratamiento de mis datos personales</a>
-              } @else { tratamiento de mis datos personales } por parte de Wompi.
-            </span>
-          </label>
           <label class="pa__check">
             <input type="checkbox" [checked]="autorizaDebito()" (change)="autorizaDebito.set($any($event.target).checked)" />
             <span>
