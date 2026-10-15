@@ -829,7 +829,7 @@ export class LandingComponent {
 
   /* ── Typewriter CTA ── */
   private readonly ctaPhrases = [
-    'Prueba gratis 7 días',
+    'Prueba gratis 30 días',
     'Empieza ya',
     'Sin compromisos',
     'Crece tu negocio',

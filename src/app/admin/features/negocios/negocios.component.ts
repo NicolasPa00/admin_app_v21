@@ -106,7 +106,7 @@ interface SedeForm {
   direccion: string;
   telefono: string;
   email_contacto: string;
-  /** Vacío = prueba de 7 días, igual que un cliente nuevo. */
+  /** Vacío = prueba de 30 días, igual que un cliente nuevo. */
   id_plan: string;
   meses: string;
   fecha_inicio: string;
@@ -1252,7 +1252,7 @@ export class NegociosComponent implements OnInit, OnDestroy {
         email_contacto: f.email_contacto.trim() || null,
       },
       plan: {
-        // Sin plan elegido: la prueba de 7 días, igual que un cliente nuevo.
+        // Sin plan elegido: la prueba de 30 días, igual que un cliente nuevo.
         id_plan: f.id_plan ? Number(f.id_plan) : null,
         ...(f.id_plan ? { meses: Number(f.meses) || 1 } : {}),
         fecha_inicio: f.fecha_inicio || null,

@@ -154,7 +154,7 @@ export class NegociosAdminService {
   /**
    * Asigna o cambia el plan de un negocio: cierra la vigencia actual y abre una nueva.
    *
-   * `prueba: true` asigna la prueba de 7 días (Plan Básico) y no lleva `id_plan`. Con plan
+   * `prueba: true` asigna la prueba de 30 días (Plan Básico) y no lleva `id_plan`. Con plan
    * pagado, la vigencia va de `fecha_inicio` a esa fecha + `meses`.
    */
   cambiarPlan(

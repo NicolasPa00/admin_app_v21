@@ -130,6 +130,10 @@
         <lucide-icon name="pause" [size]="16" aria-hidden="true" />
         <span>
           <strong>El asistente está en pausa</strong>@if (config()?.asistente_pausado_en; as desde) { desde las {{ desde | date: 'h:mm a' }}}. No le contesta a nadie. Los mensajes nuevos te llegan aquí, en «Esperan respuesta».
+          @if ((preparacion()?.pendientes ?? 0) > 0) {
+            Antes de reanudarlo, revisa «Al asistente le faltan datos»: con la carta o la
+            configuración a medias, ofrece lo que no hay.
+          }
         </span>
         @if (config()?.puede_editar) {
           <button type="button" class="bdj__pausa-boton" [disabled]="cambiandoPausa()" (click)="alternarPausa()">

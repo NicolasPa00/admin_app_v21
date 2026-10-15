@@ -335,7 +335,7 @@ export interface CrearSedeRequest {
     email_contacto?: string | null;
     nit?: string | null;
   };
-  /** Sin `id_plan` la sede arranca con la prueba de 7 días, igual que un cliente nuevo. */
+  /** Sin `id_plan` la sede arranca con la prueba de 30 días, igual que un cliente nuevo. */
   plan?: { id_plan?: number | null; meses?: number; fecha_inicio?: string | null };
   /** Quién la administra: un usuario que ya existe (lo normal, el dueño)… */
   id_usuario_existente?: number | null;
@@ -463,7 +463,7 @@ export interface RegistrarClienteRequest {
   };
   /**
    * Vigencia del negocio. Con `id_plan`: `meses` desde `fecha_inicio`. Con `id_plan: null` y
-   * `fecha_inicio`: prueba de 7 días (Plan Básico) desde ese día.
+   * `fecha_inicio`: prueba de 30 días (Plan Básico) desde ese día.
    */
   plan?: { id_plan: number | null; meses?: number; fecha_inicio?: string } | null;
   /** Modo A: vincular usuario existente (se excluye mutuamente con admin). */

@@ -11,7 +11,7 @@
  */
 
 /** Días que dura la prueba de un negocio sin plan pagado. */
-export const DIAS_PRUEBA = 7;
+export const DIAS_PRUEBA = 30;
 
 /** Hoy en Bogotá, `'YYYY-MM-DD'`. */
 export function hoyBogota(): string {
