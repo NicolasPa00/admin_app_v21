@@ -119,9 +119,15 @@
 // ── Grid responsive ─────────────────────────────────────────
 .dashboard__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* min(300px, 100%): en un teléfono más angosto que 300 px + margen la columna no desborda. */
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: var(--spacing-lg);
   align-items: stretch;
+
+  /* Un correo largo en la tarjeta no puede ensanchar la columna. */
+  > * {
+    min-width: 0;
+  }
 }
 
 // ── Tarjeta de negocio ──────────────────────────────────────

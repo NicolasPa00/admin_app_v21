@@ -81,6 +81,9 @@ export interface NegocioSelector {
 
     /* Una fila que se desplaza en horizontal si hay muchos negocios. */
     .sn {
+      /* Contiene el texto oculto (.sn__sr, absoluto) de cada ficha: sin esto se escapaba de la
+         barra desplazable y ensanchaba la página en el celular (Mis pagos, WhatsApp, 2026-10-14). */
+      position: relative;
       display: flex;
       gap: 0.5rem;
       overflow-x: auto;

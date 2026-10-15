@@ -30,6 +30,9 @@
     gap: 0.5rem;
     align-items: center;
     flex-wrap: wrap;
+    /* Puede encogerse con la cabecera en el celular (medía 378 px en 373). */
+    min-width: 0;
+    max-width: 100%;
   }
 
   &__verificar {
@@ -37,7 +40,11 @@
     gap: 0.5rem;
     align-items: center;
 
-    .input { width: 15rem; }
+    min-width: 0;
+    max-width: 100%;
+
+    /* 15 rem en escritorio; en el celular se encoge con la barra en vez de desbordarla. */
+    .input { width: 15rem; min-width: 0; flex: 0 1 15rem; }
   }
 
   /* ── Indicadores ── */

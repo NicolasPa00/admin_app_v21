@@ -183,6 +183,10 @@
     display: flex;
     flex-wrap: nowrap;
     overflow-x: auto;
+    /* Dentro de una fila flexible (la cabecera de Estadísticas) un elemento no baja de su
+       contenido salvo que se le diga: medía 551 px en un teléfono de 373. */
+    min-width: 0;
+    width: 100%;
     scrollbar-width: none;
 
     &::-webkit-scrollbar {

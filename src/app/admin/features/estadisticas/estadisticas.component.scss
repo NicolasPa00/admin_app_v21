@@ -46,6 +46,9 @@
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+    /* Se encoge con la cabecera en el celular: medía 551 px en un teléfono de 373. */
+    min-width: 0;
+    max-width: 100%;
   }
 
   /* Los cuatro rangos. Un solo control de filtro en toda la vista, a propósito. */
