@@ -291,6 +291,28 @@ export class AuthService {
   }
 
   /**
+   * El backend contestó 401 a la sesión actual.
+   *
+   * Entrando como otro usuario, lo que vence es esa sesión (8 h; antes 1 h) y no la del super
+   * admin, que sigue guardada y vigente: se vuelve a ella. Antes se cerraba todo —también la
+   * cuenta propia— y había que escribir la contraseña cada hora vigilando a un cliente (Zona
+   * Burger, 2026-10-16). Devuelve qué pasó, para que quien llama avise.
+   */
+  sesionVencida(): 'volvio' | 'cerro' {
+    if (
+      isPlatformBrowser(this.platformId) &&
+      this._impersonating() &&
+      localStorage.getItem('admin_token') &&
+      localStorage.getItem('admin_user_meta')
+    ) {
+      this.stopImpersonation();
+      return 'volvio';
+    }
+    this.logout();
+    return 'cerro';
+  }
+
+  /**
    * Termina la impersonación y restaura la sesión de super admin guardada.
    */
   stopImpersonation(): void {

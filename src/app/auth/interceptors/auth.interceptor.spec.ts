@@ -94,4 +94,56 @@ describe('authInterceptor', () => {
     // Sin refresh: no debe quedar ninguna otra petición pendiente.
     httpTesting.verify();
   });
+
+  // Zona Burger, 2026-10-16: vigilando a un cliente con «entrar como», cada hora la sesión
+  // vencía y el 401 cerraba TODO, también la cuenta propia del super admin.
+  describe('entrando como otro usuario', () => {
+    const cliente = { ...mockUser, id_usuario: 2, primer_nombre: 'Cliente' };
+    const no401 = { status: 401, statusText: 'Unauthorized' };
+
+    function entrarComoCliente(): void {
+      localStorage.clear();
+      authService.login({ num_identificacion: '1', password: '12345678' }).subscribe();
+      httpTesting.expectOne(`${API}/auth/login`).flush(mockLoginResponse);
+      authService.impersonate(2).subscribe();
+      httpTesting
+        .expectOne(`${API}/auth/impersonar`)
+        .flush({ success: true, message: 'ok', data: { token: 'tok-cliente', usuario: cliente } });
+      expect(authService.isImpersonating()).toBe(true);
+      routerSpy.navigate.mockClear();
+    }
+
+    it('EL CASO: si vence esa sesión, vuelve a la cuenta propia en vez de cerrarlo todo', () => {
+      entrarComoCliente();
+      httpClient.get(`${API}/negocios`).subscribe({ error: () => undefined });
+      httpTesting.expectOne(`${API}/negocios`).flush(null, no401);
+
+      expect(authService.getAccessToken()).toBe('my-token');
+      expect(authService.isImpersonating()).toBe(false);
+      expect(authService.currentUser()?.id_usuario).toBe(1);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin/dashboard']);
+      expect(routerSpy.navigate).not.toHaveBeenCalledWith(['/auth/login']);
+    });
+
+    it('las respuestas que iban en vuelo con la sesión vieja no cierran la cuenta recuperada', () => {
+      entrarComoCliente();
+      httpClient.get(`${API}/a`).subscribe({ error: () => undefined });
+      httpClient.get(`${API}/b`).subscribe({ error: () => undefined });
+      httpTesting.expectOne(`${API}/a`).flush(null, no401);
+      httpTesting.expectOne(`${API}/b`).flush(null, no401);
+
+      expect(authService.getAccessToken()).toBe('my-token');
+      expect(routerSpy.navigate).not.toHaveBeenCalledWith(['/auth/login']);
+    });
+
+    it('sin la cuenta propia guardada, cierra la sesión como siempre', () => {
+      entrarComoCliente();
+      localStorage.removeItem('admin_token');
+      httpClient.get(`${API}/negocios`).subscribe({ error: () => undefined });
+      httpTesting.expectOne(`${API}/negocios`).flush(null, no401);
+
+      expect(authService.getAccessToken()).toBeNull();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+    });
+  });
 });

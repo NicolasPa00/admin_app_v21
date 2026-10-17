@@ -4,12 +4,14 @@ import { isPlatformBrowser } from '@angular/common';
 import { EMPTY, catchError, throwError } from 'rxjs';
 
 import { AuthService } from '../data-access/auth.service';
+import { ToastService } from '../../shared/toast/toast.service';
 
 /**
  * Interceptor funcional de autenticación.
  *
  * 1. Adjunta `Authorization: Bearer <token>` a peticiones protegidas.
- * 2. En 401 llama a logout() y propaga el error (sin refresh — el JWT dura 24h).
+ * 2. En 401 cierra la sesión —o, entrando como otro usuario, vuelve a la propia— y propaga el
+ *    error (sin refresh — el JWT dura 24h; la impersonación, 8h).
  */
 
 const PUBLIC_URLS = [
@@ -30,6 +32,7 @@ function isPublicUrl(url: string): boolean {
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const toast = inject(ToastService);
   const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   if (isPublicUrl(req.url)) {
@@ -60,8 +63,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       // navegador tiene o no una sesión real. Cerrar sesión aquí sería el mismo bug del guard:
       // expulsar a un usuario autenticado en cada recarga. Se deja el cierre de sesión para
       // cuando el 401 llega de una petición real del navegador, ya hidratado.
-      if (error.status === 401 && isBrowser) {
-        authService.logout();
+      //
+      // Y solo si el 401 es de la sesión ACTUAL: al volver de una impersonación vencida, las
+      // peticiones que ya iban en vuelo con el token viejo también contestan 401, y sin esta
+      // comprobación la segunda cerraba la sesión de super admin recién recuperada.
+      if (error.status === 401 && isBrowser && token === authService.getAccessToken()) {
+        if (authService.sesionVencida() === 'volvio') {
+          toast.aviso('Tu sesión como ese usuario venció. Volviste a tu cuenta.');
+        }
       }
       return throwError(() => error);
     }),
