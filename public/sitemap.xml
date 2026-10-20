@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  EscalApp — mapa del sitio.
+
+  Solo las rutas PÚBLICAS, PRERENDERIZADAS y que se quieren indexar. Tres filtros, y los tres
+  importan:
+
+    · Pública        — nada que exija sesión.
+    · Prerenderizada — una ruta `RenderMode.Client` le llega vacía al rastreador, y anunciarla en
+                       el sitemap es pedirle a Google que indexe una página en blanco.
+    · Que se quiera  — `/ayuda` está prerenderizada y es pública de diseño, pero hoy está cerrada
+                       a super admin hasta que tenga videos, así que no entra.
+
+  Las URLs cuelgan de la raíz desde el 2026-10-20, cuando la app dejó de servirse bajo `/admin/`.
+  Si vuelve a moverse, hay que cambiarlas aquí y en `SeoService.BASE`.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://escalapp.cloud/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://escalapp.cloud/adquirir</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://escalapp.cloud/terminos</loc>
+    <lastmod>2026-09-10</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://escalapp.cloud/privacidad</loc>
+    <lastmod>2026-09-10</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://escalapp.cloud/eliminacion-datos</loc>
+    <lastmod>2026-09-10</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

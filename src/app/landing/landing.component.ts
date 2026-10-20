@@ -83,6 +83,8 @@ import {
 } from 'lucide-angular';
 
 import { AssetService } from '../core/services/asset.service';
+import { SeoService } from '../core/services/seo.service';
+import { AnaliticaService } from '../core/services/analitica.service';
 import { AuthService } from '../auth/data-access/auth.service';
 import { environment } from '../../environments/environment';
 
@@ -266,8 +268,11 @@ const PROXIMAMENTE: TipoNegocio[] = [
    Lo único que sigue siendo elegible es el paquete de documentos, y está dentro de las dos
    tarjetas que lo llevan — compartido, así que elegir «L» mueve el precio de las dos a la vez.
 
-   Los precios NO son libres: salen de `general.gener_plan` (Básico $27.999 / Avanzado $59.999) y
-   de `admin_ws/docs/precios-y-planes.md` §3. Los nombres de la landing sí son de marketing —
+   Los precios NO son libres: salen de `cobranza.cob_precio_plan` (Básico $41.999 / Avanzado
+   $91.999 en Restaurante) y de `admin_ws/docs/precios-y-planes.md` §3. La tarifa subió el
+   2026-10-20 (`migrate_cobranza_tarifa_2026_10`); los clientes de antes conservan su precio vía
+   `cob_suscripcion.precio_fidelidad`, así que lo que se publica aquí es lo que paga quien llega
+   hoy, no lo que paga todo el mundo. Los nombres de la landing sí son de marketing —
    «Plan Emprendedor» es el Básico de la base de datos, y la consola sigue llamándolo Básico.
 */
 
@@ -288,8 +293,8 @@ type PlanBaseId = 'BASICO' | 'AVANZADO';
  * (o crear un plan por motor) antes de publicar precios distintos.
  */
 const PRECIO_PLAN: Record<string, Record<PlanBaseId, number>> = {
-  RESTAURANTE: { BASICO: 27999, AVANZADO: 59999 },
-  RESERVA:     { BASICO: 37999, AVANZADO: 69999 },
+  RESTAURANTE: { BASICO: 41999, AVANZADO: 91999 },
+  RESERVA:     { BASICO: 51999, AVANZADO: 101999 },
 };
 
 /**
@@ -312,10 +317,10 @@ interface PaqueteDocumentos {
 }
 
 const PAQUETES_FACTURACION: PaqueteDocumentos[] = [
-  { id: 'S',  documentos: '100 documentos',   detalle: 'hasta 100 documentos al mes',   precio: 39000 },
-  { id: 'M',  documentos: '500 documentos',   detalle: 'hasta 500 documentos al mes',   precio: 59000 },
-  { id: 'L',  documentos: '1.200 documentos', detalle: 'hasta 1.200 documentos al mes', precio: 79000 },
-  { id: 'XL', documentos: '2.500 documentos', detalle: 'hasta 2.500 documentos al mes', precio: 99000 },
+  { id: 'S',  documentos: '100 documentos',   detalle: 'hasta 100 documentos al mes',   precio: 40000 },
+  { id: 'M',  documentos: '500 documentos',   detalle: 'hasta 500 documentos al mes',   precio: 60000 },
+  { id: 'L',  documentos: '1.200 documentos', detalle: 'hasta 1.200 documentos al mes', precio: 80000 },
+  { id: 'XL', documentos: '2.500 documentos', detalle: 'hasta 2.500 documentos al mes', precio: 100000 },
 ];
 
 /* ── Mensajes del asistente ──────────────────────────────────────────────────────────────────
@@ -338,7 +343,7 @@ const MENSAJES_INCLUIDOS = 6000;
 
 /** Cuántos trae cada paquete adicional, y lo que cuesta. Espejo de `MENSAJES_ASISTENTE`. */
 const MENSAJES_POR_PAQUETE = 6000;
-const PRECIO_PAQUETE_MENSAJES = 19999;
+const PRECIO_PAQUETE_MENSAJES = 21999;
 
 /** Hasta cuántos paquetes se pueden sumar (igual que `cantidad_maxima` del complemento). */
 const MAX_PAQUETES_MENSAJES = 5;
@@ -371,12 +376,12 @@ const META_COP_POR_MENSAJE = 2.9455;
  */
 const PRECIO_CON_FACTURACION: Record<string, Record<PlanBaseId, Record<string, number>>> = {
   RESTAURANTE: {
-    BASICO:   { S: 66999,  M: 86999,  L: 106999, XL: 126999 },
-    AVANZADO: { S: 98999,  M: 118999, L: 138999, XL: 158999 },
+    BASICO:   { S: 81999,  M: 101999, L: 121999, XL: 141999 },
+    AVANZADO: { S: 131999, M: 151999, L: 171999, XL: 191999 },
   },
   RESERVA: {
-    BASICO:   { S: 76999,  M: 96999,  L: 116999, XL: 136999 },
-    AVANZADO: { S: 108999, M: 128999, L: 148999, XL: 168999 },
+    BASICO:   { S: 91999,  M: 111999, L: 131999, XL: 151999 },
+    AVANZADO: { S: 141999, M: 161999, L: 181999, XL: 201999 },
   },
 };
 
@@ -412,14 +417,14 @@ const COMPLEMENTOS: Complemento[] = [
     icon: 'user-plus',
     titulo: 'Usuario adicional',
     descripcion: 'Una persona más en tu equipo, con su propio acceso y sus propios permisos.',
-    precio: 3999,
+    precio: 5999,
     periodo: '/mes',
   },
   {
     icon: 'monitor',
     titulo: 'Caja adicional',
     descripcion: 'Otro punto de cobro abierto a la vez — una segunda barra, un segundo mostrador.',
-    precio: 9999,
+    precio: 14999,
     periodo: '/mes',
   },
   {
@@ -753,6 +758,8 @@ type ModalStep = 'form' | 'otp' | 'success';
 export class LandingComponent {
   protected readonly assetService   = inject(AssetService);
   private   readonly authService    = inject(AuthService);
+  private   readonly seo            = inject(SeoService);
+  private   readonly analitica      = inject(AnaliticaService);
 
   /**
    * Los oficios ofrecibles. Arranca con el respaldo (para el prerender) y se reemplaza con lo
@@ -827,6 +834,17 @@ export class LandingComponent {
   protected readonly waUrl               =
     `${environment.whatsappUrl}?text=${encodeURIComponent('Hola!, quiero adquirir Escalapp')}`;
 
+  /**
+   * El del pie, con un mensaje más tibio.
+   *
+   * No reusa `waUrl` porque quien baja hasta el pie sin haber pulsado ningún botón todavía no
+   * está comprando: llegar con «quiero adquirir Escalapp» ya escrito le pone en la boca una
+   * decisión que no ha tomado, y lo más probable es que cierre la ventana en vez de corregir el
+   * texto. Sale de `environment.whatsappUrl` igual que los demás: el número vive en un solo sitio.
+   */
+  protected readonly whatsappContacto    =
+    `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, quiero saber más de EscalApp')}`;
+
   /* ── Typewriter CTA ── */
   private readonly ctaPhrases = [
     'Prueba gratis 30 días',
@@ -841,8 +859,59 @@ export class LandingComponent {
   private isDeleting   = false;
   private typewriterPaused = false;
 
+  /**
+   * Lo que ven Google y, sobre todo, el que pega el enlace en un grupo de WhatsApp.
+   *
+   * Se llama desde el constructor y no desde `afterNextRender` **a propósito**: esta ruta es
+   * `RenderMode.Prerender`, así que el constructor corre durante el build y las etiquetas quedan
+   * escritas en el HTML. Los rastreadores de WhatsApp y Facebook no ejecutan JavaScript — lo que
+   * se pusiera solo en el navegador no lo leería ninguno.
+   *
+   * El titular **no** es «la plataforma para gestionar tu negocio»: eso lo dice cualquiera de los
+   * ocho competidores. Lo que solo decimos nosotros es que el WhatsApp atiende solo y que el
+   * pedido acaba en la caja, así que es lo que va en el título y en la descripción.
+   */
+  private aplicarSeo(): void {
+    const titulo = 'EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas';
+    const descripcion =
+      'El asistente de IA contesta, toma el pedido y lo deja en tu sistema: caja, cocina, '
+      + 'inventario y facturación DIAN en un solo lugar. Prueba 30 días gratis, sin tarjeta.';
+
+    this.seo.aplicar({ titulo, descripcion, ruta: '/', tipo: 'website' });
+
+    // El precio que se declara es el del plan de entrada de Restaurante, que es el que se anuncia
+    // y el que sale primero en la tarjeta. Sale de PRECIO_PLAN para que no haya dos verdades: si
+    // la tarifa se mueve, se mueve también aquí.
+    this.seo.datosEstructurados('producto', {
+      '@context': 'https://schema.org',
+      '@type': 'SoftwareApplication',
+      name: 'EscalApp',
+      applicationCategory: 'BusinessApplication',
+      operatingSystem: 'Web',
+      description: descripcion,
+      url: this.seo.urlAbsoluta('/'),
+      inLanguage: 'es-CO',
+      offers: {
+        '@type': 'Offer',
+        price: PRECIO_PLAN['RESTAURANTE'].BASICO,
+        priceCurrency: 'COP',
+        availability: 'https://schema.org/InStock',
+        url: this.seo.urlAbsoluta('/adquirir'),
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'EscalApp',
+        url: this.seo.urlAbsoluta('/'),
+        logo: this.seo.urlAbsoluta('/images/icono-escalapp.png'),
+        areaServed: 'CO',
+      },
+    });
+  }
+
   constructor() {
     const destroyRef = inject(DestroyRef);
+
+    this.aplicarSeo();
 
     // Los chips reales, en cuanto el navegador puede pedirlos.
     //
@@ -1096,6 +1165,14 @@ export class LandingComponent {
   protected alternarDetalle(idTarjeta: string): void {
     this.planExpandido.update((actual) => (actual === idTarjeta ? null : idTarjeta));
     this.congelarFondo(this.planExpandido() !== null);
+    // Solo al abrir. Un evento al cerrar contaría dos veces el mismo interés y dejaría la tasa
+    // de «miró el detalle → compró» a la mitad de lo que de verdad es.
+    if (this.planExpandido() === idTarjeta) {
+      this.analitica.evento('abrio_detalle_plan', {
+        plan: idTarjeta,
+        modulo: this.selectedCategoria().modulo,
+      });
+    }
   }
 
   /**
@@ -1415,6 +1492,9 @@ export class LandingComponent {
     this.modalStep.set('form');
     this.trialError.set(null);
     this.congelarFondo(true);
+    // El primer paso del embudo que depende de una decisión del visitante: hasta aquí solo había
+    // leído. Es la base contra la que se mide todo lo demás.
+    this.analitica.evento('abrio_modal_prueba');
   }
 
   protected closeModal(): void {
@@ -1479,6 +1559,9 @@ export class LandingComponent {
       this.trialOtp.set('');
       this.trialOtpTouched.set(false);
       this.modalStep.set('otp');
+      // El oficio viaja porque es la única segmentación útil aquí: saber que las pizzerías
+      // completan el registro y las cafeterías no cambia a quién se le habla.
+      this.analitica.evento('pidio_codigo', { tipo_negocio: this.trialTipoNeg() });
     } catch (err: unknown) {
       const msg = (err as { error?: { message?: string } })?.error?.message;
       this.trialError.set(msg ?? 'Error al enviar el código. Inténtalo de nuevo.');
@@ -1533,6 +1616,11 @@ export class LandingComponent {
       this.trialSuccessNombre.set(res.data?.nombre ?? this.trialNombre().split(' ')[0]);
       this.trialSuccessCedula.set(res.data?.numIdentificacion ?? this.trialCedula().trim());
       this.modalStep.set('success');
+      // La conversión del embudo público: aquí ya existe el negocio con su prueba de 30 días.
+      // Es la que se le declara a Meta como `CompleteRegistration` y contra la que se optimiza
+      // cualquier campaña. No viaja ni el correo ni la cédula, solo el oficio.
+      this.analitica.evento('verifico_codigo', { tipo_negocio: this.trialTipoNeg() });
+      this.analitica.evento('creo_negocio', { tipo_negocio: this.trialTipoNeg() });
     } catch (err: unknown) {
       const msg = (err as { error?: { message?: string } })?.error?.message;
       this.trialError.set(msg ?? 'Código incorrecto o expirado. Verifica e intenta de nuevo.');

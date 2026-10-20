@@ -28,7 +28,7 @@ export const environment = {
   /** Ruta base de assets (imágenes, etc.) */
   assetPath: '/images',
   /** WhatsApp de soporte (wa.me URL) */
-  whatsappUrl: 'https://wa.me/573114682492',
+  whatsappUrl: 'https://wa.me/573180332988',
   /**
    * App ID de Meta y config ID de Embedded Signup — para el SDK de JS de la pantalla
    * "Conectar WhatsApp" del panel. El config ID sale del checklist manual de
@@ -44,4 +44,19 @@ export const environment = {
    * usan esa versión; no vale la pena arriesgar el flujo con una anterior.
    */
   metaSdkVersion: 'v23.0',
+
+  /**
+   * Analítica del embudo público. **Vacía en desarrollo a propósito**: medir las pruebas de uno
+   * mismo ensucia justo los números que se van a usar para decidir dónde invertir.
+   *
+   * Para probar la instrumentación en local, pon aquí tus propios identificadores de prueba.
+   */
+  analitica: {
+    /** GA4, formato `G-XXXXXXXXXX`. */
+    ga4: '',
+    /** Píxel de Meta, solo dígitos. */
+    metaPixel: '',
+    /** Microsoft Clarity, el id del proyecto. */
+    clarity: '',
+  },
 };

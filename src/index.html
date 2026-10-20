@@ -2,9 +2,30 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>EscalApp</title>
+  <title>EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Metadatos de respaldo.
+       Las rutas prerenderizadas los sobrescriben en el build con los suyos (`SeoService`); estos
+       son los que quedan en las que se renderizan en el navegador. Hasta el 2026-10-20 no había
+       ninguno: pegar el enlace en WhatsApp daba una URL pelada, sin título ni imagen, que es la
+       peor forma de que te recomienden. -->
+  <meta name="description" content="El asistente de IA contesta tu WhatsApp, toma el pedido y lo deja en tu sistema: caja, cocina, inventario y facturación DIAN en un solo lugar. Prueba 30 días gratis.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="EscalApp">
+  <meta property="og:locale" content="es_CO">
+  <meta property="og:title" content="EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas">
+  <meta property="og:description" content="El asistente de IA contesta, toma el pedido y lo deja en tu sistema. Caja, cocina, inventario y facturación DIAN en un solo lugar.">
+  <meta property="og:url" content="https://escalapp.cloud/">
+  <meta property="og:image" content="https://escalapp.cloud/images/og-escalapp.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas">
+  <meta name="twitter:description" content="El asistente de IA contesta, toma el pedido y lo deja en tu sistema. Caja, cocina, inventario y facturación DIAN en un solo lugar.">
+  <meta name="twitter:image" content="https://escalapp.cloud/images/og-escalapp.png">
   <!-- Inter.
        Los DOS sistemas de tokens la declaran primera —`--es-font-sans` en tokens.css y
        `--font-family` en _theme.scss— pero no se cargaba en ninguna parte, así que todo

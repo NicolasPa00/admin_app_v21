@@ -1,0 +1,33 @@
+# EscalApp — https://escalapp.cloud
+#
+# La app se sirve desde la RAÍZ del dominio, así que este archivo queda en
+# https://escalapp.cloud/robots.txt, que es el único sitio donde Google lo busca.
+# (Hasta el 2026-10-20 la app vivía en /admin/ y el archivo quedaba fuera de alcance.)
+
+User-agent: *
+
+# Lo que no tiene por qué estar en un buscador: todo lo que exige sesión.
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /pagar
+Disallow: /dashboard
+Disallow: /restaurante/
+Disallow: /reserva/
+
+# El centro de ayuda está cerrado a super admin hasta que tenga videos (decisión del 2026-10-19).
+# Indexar una portada vacía enseñaría que no hay ayuda, que es lo contrario de lo que vende.
+# Cuando se abra: quitar esta línea y pasar /ayuda/** a Prerender, o Google seguirá viendo nada.
+Disallow: /ayuda
+
+# Los rastreadores de enlaces tienen que poder entrar a la portada: son los que arman la tarjeta
+# cuando alguien comparte el enlace en un chat.
+User-agent: WhatsApp
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+Sitemap: https://escalapp.cloud/sitemap.xml

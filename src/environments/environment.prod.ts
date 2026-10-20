@@ -21,7 +21,7 @@ export const environment = {
   reservaAppUrl: 'https://escalapp.cloud/reserva',
   assetPath: 'images',
   /** WhatsApp de soporte (wa.me URL) */
-  whatsappUrl: 'https://wa.me/573114682492',
+  whatsappUrl: 'https://wa.me/573180332988',
   /**
    * App ID de Meta y config ID de Embedded Signup (ver environment.ts para el porqué).
    * "EscalApp — Registro insertado", creada el 2026-09-19.
@@ -33,4 +33,23 @@ export const environment = {
   metaConfigId: '3007420636275811',
   /** Ver environment.ts: v23.0 por la coexistencia. */
   metaSdkVersion: 'v23.0',
+
+  /**
+   * Analítica del embudo público.
+   *
+   * Mientras estén vacíos no se carga ningún script: el código se puede desplegar hoy y encender
+   * el día que existan las cuentas, sin volver a tocar nada más que estas tres líneas.
+   *
+   * ⚠️ El píxel de Meta conviene encenderlo ANTES de pensar en pautar. La audiencia de
+   * retargeting se construye con el tiempo; instalarlo el día que se decide pautar es empezar
+   * con una audiencia vacía y pagar de más por el mismo clic.
+   */
+  analitica: {
+    /** GA4, formato `G-XXXXXXXXXX`. */
+    ga4: '',
+    /** Píxel de Meta, solo dígitos. */
+    metaPixel: '',
+    /** Microsoft Clarity, el id del proyecto. */
+    clarity: '',
+  },
 };

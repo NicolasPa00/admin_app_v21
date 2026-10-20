@@ -11,7 +11,11 @@ export const routes: Routes = [
     path: '',
     loadComponent: () => import('./landing/landing.component').then((m) => m.LandingComponent),
     pathMatch: 'full',
-    title: 'EscalApp — Centraliza y escala tu negocio',
+    // SIN `title` a propósito: lo pone `SeoService` desde el componente, junto al resto de los
+    // metadatos. El `title` de la ruta lo aplica el router DESPUÉS de que el componente se
+    // construya, así que tenerlo en los dos sitios no es redundancia — es el de la ruta pisando
+    // al del servicio, que es justo lo que pasaba: la página salía con el titular viejo y con la
+    // descripción nueva. `DefaultTitleStrategy` no toca el título cuando la ruta no lo declara.
   },
 
   // Documentos legales públicos — SIN guardia a propósito: quien quiere ejercer sus derechos
