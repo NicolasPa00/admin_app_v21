@@ -1,0 +1,660 @@
+<div class="aa-cabecera">
+  <div>
+    <h1>Centro de ayuda</h1>
+    <p>Los tutoriales que ven los clientes en <code>/ayuda</code>, para todos los aplicativos.</p>
+  </div>
+  <a class="aa-boton aa-boton--suave" href="/ayuda" target="_blank" rel="noopener">
+    <lucide-icon name="external-link" [size]="16" />
+    Ver el centro público
+  </a>
+</div>
+
+<nav class="aa-pestanas" role="tablist">
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'contenido'"
+    [class.aa-pestanas__activa]="pestania() === 'contenido'"
+    (click)="verPestania('contenido')"
+  >
+    <lucide-icon name="book-open" [size]="16" /> Contenido
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestania() === 'pendientes'"
+    [class.aa-pestanas__activa]="pestania() === 'pendientes'"
+    (click)="verPestania('pendientes')"
+  >
+    <lucide-icon name="bar-chart-3" [size]="16" /> Qué grabar
+  </button>
+</nav>
+
+@if (aviso(); as a) {
+  <div class="aa-aviso" [class.aa-aviso--error]="a.tipo === 'error'" role="status">
+    <lucide-icon [name]="a.tipo === 'error' ? 'alert-circle' : 'check'" [size]="16" />
+    <span>{{ a.texto }}</span>
+    <button type="button" (click)="cerrarAviso()" aria-label="Cerrar">
+      <lucide-icon name="x" [size]="14" />
+    </button>
+  </div>
+}
+
+@if (cargando()) {
+  <p class="aa-estado">Cargando el catálogo…</p>
+} @else if (pestania() === 'contenido') {
+  <div class="aa-columnas">
+    <!-- ── Árbol: aplicativo → módulo ──────────────────────────────────────────────────────── -->
+    <aside class="aa-arbol">
+      <h2>Aplicativos</h2>
+      <ul class="aa-lista">
+        @for (app of aplicativos(); track app.id_aplicativo) {
+          <li>
+            <button
+              type="button"
+              [class.aa-lista__activo]="app.id_aplicativo === idAplicativo()"
+              (click)="elegirAplicativo(app.id_aplicativo)"
+            >
+              <lucide-icon [name]="icono(app.icono)" [size]="16" />
+              <span class="aa-lista__nombre">{{ app.nombre }}</span>
+              <span class="aa-lista__cuenta">{{ app.total_modulos }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+
+      @if (idAplicativo()) {
+        <div class="aa-arbol__titulo">
+          <h2>Módulos</h2>
+          <button type="button" class="aa-mini" (click)="nuevoModulo()">
+            <lucide-icon name="plus" [size]="14" /> Nuevo
+          </button>
+        </div>
+        <ul class="aa-lista">
+          @for (mod of modulosDelAplicativo(); track mod.id_modulo) {
+            <li>
+              <button
+                type="button"
+                [class.aa-lista__activo]="mod.id_modulo === idModulo()"
+                [class.aa-lista__inactivo]="mod.estado !== 'A'"
+                (click)="elegirModulo(mod.id_modulo)"
+              >
+                <lucide-icon [name]="icono(mod.icono)" [size]="16" />
+                <span class="aa-lista__nombre">{{ mod.nombre }}</span>
+                <!-- Un módulo sin tutoriales no se esconde aquí: es justo lo que hay que ver
+                     para saber qué falta. En el centro público sí se omite. -->
+                <span class="aa-lista__cuenta" [class.aa-lista__cuenta--cero]="!mod.total_temas">
+                  {{ mod.total_temas }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="aa-lapiz"
+                [attr.aria-label]="'Editar ' + mod.nombre"
+                (click)="editarModulo(mod)"
+              >
+                <lucide-icon name="pencil" [size]="13" />
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </aside>
+
+    <!-- ── Panel derecho ───────────────────────────────────────────────────────────────────── -->
+    <section class="aa-panel">
+      @if (editandoModulo(); as mod) {
+        <article class="aa-ficha">
+          <h2>{{ mod.id_modulo ? 'Editar módulo' : 'Nuevo módulo' }}</h2>
+          <div class="aa-campos">
+            <label>
+              <span>Nombre</span>
+              <input
+                type="text"
+                [ngModel]="mod.nombre"
+                (ngModelChange)="editandoModulo.set({ ...mod, nombre: $event })"
+                placeholder="Menú"
+              />
+            </label>
+            <label>
+              <span>Clave <small>(va en la URL)</small></span>
+              <input
+                type="text"
+                [ngModel]="mod.clave"
+                (ngModelChange)="editandoModulo.set({ ...mod, clave: $event })"
+                placeholder="menu"
+                [disabled]="!!mod.id_modulo"
+              />
+              @if (mod.id_modulo) {
+                <!-- La clave es parte del enlace que soporte ya pegó en conversaciones; cambiarla
+                     rompería esos enlaces en silencio. -->
+                <small class="aa-pista">No se cambia: los enlaces compartidos dejarían de servir.</small>
+              }
+            </label>
+            <label class="aa-campos__ancho">
+              <span>Descripción</span>
+              <input
+                type="text"
+                [ngModel]="mod.descripcion"
+                (ngModelChange)="editandoModulo.set({ ...mod, descripcion: $event })"
+                placeholder="Categorías, productos, precios y la carta virtual."
+              />
+            </label>
+            <label>
+              <span>Icono</span>
+              <select
+                [ngModel]="mod.icono"
+                (ngModelChange)="editandoModulo.set({ ...mod, icono: $event })"
+              >
+                @for (ic of iconosDisponibles; track ic) {
+                  <!-- [selected] por opción, no [value] en el select: el [value] se aplica antes
+                       de que existan las opciones y no selecciona nada (gotcha de CLAUDE.md). -->
+                  <option [value]="ic" [selected]="ic === mod.icono">{{ ic }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              <span>Orden</span>
+              <input
+                type="number"
+                min="0"
+                [ngModel]="mod.orden"
+                (ngModelChange)="editandoModulo.set({ ...mod, orden: +$event })"
+              />
+            </label>
+            <label class="aa-campos__ancho">
+              <span>
+                Rutas del aplicativo <small>(una por línea)</small>
+              </span>
+              <textarea
+                rows="3"
+                [ngModel]="rutasTexto()"
+                (ngModelChange)="rutasTexto.set($event)"
+                placeholder="/menu"
+              ></textarea>
+              <!-- Esto es lo que hace funcionar el botón «?» de los verticales: sin rutas, el
+                   módulo existe pero la ayuda contextual no lo encuentra. -->
+              <small class="aa-pista">
+                Con esto el botón «?» de la app sabe traer este módulo. Basta la ruta base
+                (<code>/menu</code>): las subrutas caen aquí solas.
+              </small>
+            </label>
+          </div>
+          <div class="aa-acciones">
+            <button type="button" class="aa-boton" [disabled]="guardando()" (click)="guardarModulo()">
+              <lucide-icon name="save" [size]="16" /> Guardar módulo
+            </button>
+            <button type="button" class="aa-boton aa-boton--suave" (click)="editandoModulo.set(null)">
+              Cancelar
+            </button>
+          </div>
+        </article>
+      } @else if (editando(); as t) {
+        <article class="aa-ficha">
+          <div class="aa-ficha__cabecera">
+            <h2>{{ t.id_tema ? 'Editar tutorial' : 'Nuevo tutorial' }}</h2>
+            <button type="button" class="aa-mini" (click)="cerrarEditor()">
+              <lucide-icon name="x" [size]="14" /> Cerrar
+            </button>
+          </div>
+
+          <div class="aa-editor">
+            <div class="aa-editor__datos">
+              <div class="aa-campos">
+                <label class="aa-campos__ancho">
+                  <span>Título</span>
+                  <input
+                    type="text"
+                    [ngModel]="t.titulo"
+                    (ngModelChange)="campo('titulo', $event)"
+                    placeholder="Crear un producto"
+                  />
+                </label>
+                <label>
+                  <span>Clave <small>(va en la URL)</small></span>
+                  <input
+                    type="text"
+                    [ngModel]="t.clave"
+                    (ngModelChange)="campo('clave', $event)"
+                    placeholder="crear-producto"
+                    [disabled]="!!t.id_tema"
+                  />
+                </label>
+                <label>
+                  <span>Nivel</span>
+                  <select [ngModel]="t.nivel" (ngModelChange)="campo('nivel', $event)">
+                    @for (n of ['basico', 'intermedio', 'avanzado']; track n) {
+                      <option [value]="n" [selected]="n === t.nivel">{{ n }}</option>
+                    }
+                  </select>
+                </label>
+                <label class="aa-campos__ancho">
+                  <span>Resumen <small>(la línea que se lee en la lista)</small></span>
+                  <input
+                    type="text"
+                    [ngModel]="t.resumen"
+                    (ngModelChange)="campo('resumen', $event)"
+                    placeholder="Dar de alta un plato: datos, precio, insumos e imagen."
+                  />
+                </label>
+
+                <label>
+                  <span>Dónde está el video</span>
+                  <select [ngModel]="t.proveedor ?? ''" (ngModelChange)="campo('proveedor', $event || null)">
+                    <option value="" [selected]="!t.proveedor">Sin video (solo guía escrita)</option>
+                    <option value="youtube" [selected]="t.proveedor === 'youtube'">YouTube (no listado)</option>
+                    <option value="bunny" [selected]="t.proveedor === 'bunny'">Bunny Stream</option>
+                    <option value="archivo" [selected]="t.proveedor === 'archivo'">Archivo en el servidor</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Referencia del video</span>
+                  <input
+                    type="text"
+                    [ngModel]="t.video_ref"
+                    (ngModelChange)="campo('video_ref', $event)"
+                    [disabled]="!t.proveedor"
+                    placeholder="Pega la URL de YouTube"
+                  />
+                  <!-- Pegar la URL completa es lo que se hace siempre; el backend extrae el id. -->
+                  <small class="aa-pista">Puedes pegar la URL completa: se queda solo con el id.</small>
+                </label>
+                <label>
+                  <span>Duración <small>(segundos)</small></span>
+                  <input
+                    type="number"
+                    min="0"
+                    [ngModel]="t.duracion_seg"
+                    (ngModelChange)="campo('duracion_seg', $event === '' ? null : +$event)"
+                  />
+                </label>
+                <label>
+                  <span>Revisado el</span>
+                  <input
+                    type="date"
+                    [ngModel]="t.fecha_revision"
+                    (ngModelChange)="campo('fecha_revision', $event)"
+                  />
+                  <!-- Un tutorial que enseña una pantalla que ya no existe es peor que no tener
+                       tutorial: esta fecha es lo que permite encontrarlos. -->
+                  <small class="aa-pista">Ponla al día cuando confirmes que sigue siendo verdad.</small>
+                </label>
+
+                <label class="aa-campos__ancho">
+                  <span>
+                    Palabras que diría el usuario <small>(separadas por comas)</small>
+                  </span>
+                  <input
+                    type="text"
+                    [ngModel]="palabrasTexto()"
+                    (ngModelChange)="setPalabras($event)"
+                    placeholder="plato, comida, item, agregar producto"
+                  />
+                  <small class="aa-pista">
+                    Entran al buscador con peso alto. Aquí van los sinónimos que NO están en el
+                    título: si el cliente dice «plato» y tú escribiste «producto», esto lo salva.
+                  </small>
+                </label>
+
+                <label>
+                  <span>Requiere plan</span>
+                  <input
+                    type="text"
+                    [ngModel]="t.plan_minimo"
+                    (ngModelChange)="campo('plan_minimo', $event)"
+                    placeholder="Avanzado"
+                  />
+                  <small class="aa-pista">Solo se MARCA, no se esconde.</small>
+                </label>
+                <label>
+                  <span>Requiere interruptor</span>
+                  <input
+                    type="text"
+                    [ngModel]="t.requiere_flag"
+                    (ngModelChange)="campo('requiere_flag', $event)"
+                    placeholder="permite_promociones"
+                  />
+                </label>
+              </div>
+
+              <label class="aa-markdown">
+                <span>Guía escrita <small>(markdown)</small></span>
+                <textarea
+                  rows="8"
+                  [ngModel]="t.cuerpo"
+                  (ngModelChange)="campo('cuerpo', $event)"
+                  placeholder="Un **producto** es cada cosa que puedes vender…"
+                ></textarea>
+                <!-- El texto es lo que permite publicar un tema ÚTIL antes de grabar el video, y
+                     lo que sigue sirviendo cuando el video se queda viejo. -->
+                <small class="aa-pista">
+                  Esto se puede publicar sin video. Admite <code>**negrita**</code>, listas con
+                  <code>-</code>, títulos con <code>##</code> y citas con <code>&gt;</code>.
+                </small>
+              </label>
+
+              @if (t.cuerpo) {
+                <details class="aa-previa">
+                  <summary>Ver cómo queda</summary>
+                  <div class="aa-prosa" [innerHTML]="t.cuerpo | markdown"></div>
+                </details>
+              }
+            </div>
+
+            <!-- ── El reproductor y los pasos ─────────────────────────────────────────────── -->
+            <div class="aa-editor__pasos">
+              @if (videoPrevio(); as v) {
+                <app-video-player [video]="v" [apiBase]="apiBase" />
+              } @else {
+                <div class="aa-sin-video">
+                  <lucide-icon name="clapperboard" [size]="22" />
+                  <span>Sin video. Los pasos funcionan igual como guía escrita.</span>
+                </div>
+              }
+
+              <div class="aa-pasos__barra">
+                <strong>Pasos del tutorial</strong>
+                <div>
+                  <!-- EL botón. Captura el segundo del reproductor de al lado: pausa donde empieza
+                       el paso y pulsa. Teclear 02:15 cuarenta veces es cómo se abandona esto. -->
+                  <button
+                    type="button"
+                    class="aa-boton aa-boton--marcar"
+                    [disabled]="!videoPrevio()"
+                    (click)="marcarAqui()"
+                  >
+                    <lucide-icon name="timer" [size]="15" /> Marcar aquí
+                  </button>
+                  <button type="button" class="aa-mini" (click)="anadirPaso()">
+                    <lucide-icon name="plus" [size]="13" /> Paso
+                  </button>
+                  @if (capitulos().length > 1) {
+                    <button type="button" class="aa-mini" (click)="ordenarPorTiempo()">
+                      <lucide-icon name="list-ordered" [size]="13" /> Ordenar
+                    </button>
+                  }
+                </div>
+              </div>
+
+              @if (capitulos().length) {
+                <ol class="aa-pasos">
+                  @for (cap of capitulos(); track $index) {
+                    <li>
+                      <div class="aa-pasos__fila">
+                        <input
+                          class="aa-pasos__tiempo"
+                          type="text"
+                          [ngModel]="marca(cap.t_inicio_seg)"
+                          (ngModelChange)="setTiempo($index, $event)"
+                          [attr.aria-label]="'Marca de tiempo del paso ' + ($index + 1)"
+                        />
+                        <input
+                          class="aa-pasos__titulo"
+                          type="text"
+                          [ngModel]="cap.titulo"
+                          (ngModelChange)="editarPaso($index, { titulo: $event })"
+                          placeholder="Ingresar datos principales"
+                        />
+                        <button
+                          type="button"
+                          class="aa-lapiz"
+                          [disabled]="!videoPrevio()"
+                          aria-label="Comprobar en el video"
+                          (click)="probarPaso(cap.t_inicio_seg)"
+                        >
+                          <lucide-icon name="circle-play" [size]="14" />
+                        </button>
+                        <button
+                          type="button"
+                          class="aa-lapiz"
+                          [disabled]="$index === 0"
+                          aria-label="Subir"
+                          (click)="moverPaso($index, -1)"
+                        >
+                          <lucide-icon name="chevron-up" [size]="14" />
+                        </button>
+                        <button
+                          type="button"
+                          class="aa-lapiz"
+                          [disabled]="$index === capitulos().length - 1"
+                          aria-label="Bajar"
+                          (click)="moverPaso($index, 1)"
+                        >
+                          <lucide-icon name="chevron-down" [size]="14" />
+                        </button>
+                        <button
+                          type="button"
+                          class="aa-lapiz aa-lapiz--borrar"
+                          aria-label="Quitar paso"
+                          (click)="quitarPaso($index)"
+                        >
+                          <lucide-icon name="trash-2" [size]="14" />
+                        </button>
+                      </div>
+                      <textarea
+                        rows="2"
+                        [ngModel]="cap.cuerpo"
+                        (ngModelChange)="editarPaso($index, { cuerpo: $event })"
+                        placeholder="Explica el paso por escrito (markdown). Sobrevive al rediseño de la pantalla mucho mejor que el video."
+                      ></textarea>
+                    </li>
+                  }
+                </ol>
+              } @else {
+                <p class="aa-pista aa-pista--centro">
+                  Sin pasos todavía. Si hay video, dale play, pausa donde empieza cada parte y
+                  pulsa «Marcar aquí».
+                </p>
+              }
+            </div>
+          </div>
+
+          <div class="aa-acciones">
+            <button type="button" class="aa-boton" [disabled]="guardando()" (click)="guardarTema()">
+              <lucide-icon name="save" [size]="16" />
+              {{ guardando() ? 'Guardando…' : 'Guardar tutorial' }}
+            </button>
+            <button type="button" class="aa-boton aa-boton--suave" (click)="cerrarEditor()">
+              Cancelar
+            </button>
+          </div>
+        </article>
+      } @else if (idModulo()) {
+        <div class="aa-ficha__cabecera">
+          <h2>{{ moduloActual()?.nombre }}</h2>
+          <button type="button" class="aa-boton" (click)="nuevoTema()">
+            <lucide-icon name="plus" [size]="16" /> Nuevo tutorial
+          </button>
+        </div>
+
+        @if (temas().length) {
+          <table class="aa-tabla">
+            <thead>
+              <tr>
+                <th>Tutorial</th>
+                <th>Video</th>
+                <th>Pasos</th>
+                <th>Revisado</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (tema of temas(); track tema.id_tema) {
+                <tr [class.aa-tabla__inactiva]="tema.estado !== 'A'">
+                  <td>
+                    <!-- Celdas con spans en bloque y NO display:flex en el <td>: un td flex rompe
+                         los bordes de celda (gotcha de CLAUDE.md). -->
+                    <span class="aa-celda">
+                      <strong>{{ tema.titulo }}</strong>
+                      <small>{{ tema.clave }}</small>
+                    </span>
+                  </td>
+                  <td>
+                    @if (tema.proveedor) {
+                      <span class="aa-chip aa-chip--ok">{{ tema.proveedor }}</span>
+                    } @else {
+                      <span class="aa-chip">solo texto</span>
+                    }
+                  </td>
+                  <td>{{ tema.total_capitulos }}</td>
+                  <td>
+                    @if (tema.fecha_revision) {
+                      {{ tema.fecha_revision }}
+                    } @else {
+                      <span class="aa-chip aa-chip--aviso">nunca</span>
+                    }
+                  </td>
+                  <td>
+                    @if (tema.estado === 'A') {
+                      <span class="aa-chip aa-chip--ok">público</span>
+                    } @else {
+                      <span class="aa-chip">retirado</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="aa-celda aa-celda--acciones">
+                      <button type="button" class="aa-lapiz" aria-label="Editar" (click)="abrirTema(tema.id_tema)">
+                        <lucide-icon name="pencil" [size]="14" />
+                      </button>
+                      <a
+                        class="aa-lapiz"
+                        [href]="enlacePublico(tema)"
+                        target="_blank"
+                        rel="noopener"
+                        aria-label="Ver como lo ve el cliente"
+                      >
+                        <lucide-icon name="external-link" [size]="14" />
+                      </a>
+                      <button
+                        type="button"
+                        class="aa-lapiz"
+                        [attr.aria-label]="tema.estado === 'A' ? 'Retirar' : 'Publicar'"
+                        (click)="cambiarEstadoTema(tema)"
+                      >
+                        <lucide-icon [name]="tema.estado === 'A' ? 'eye-off' : 'eye'" [size]="14" />
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="aa-pista aa-pista--centro">
+            Este módulo no tiene tutoriales. Mientras esté vacío no aparece en el centro público.
+          </p>
+        }
+      } @else {
+        <p class="aa-pista aa-pista--centro">
+          Elige un aplicativo y un módulo a la izquierda.
+        </p>
+      }
+    </section>
+  </div>
+} @else {
+  <!-- ── Qué grabar ────────────────────────────────────────────────────────────────────────── -->
+  @if (metricas(); as m) {
+    <div class="aa-kpis">
+      <div class="aa-kpi">
+        <strong>{{ m.resumen.temas_activos ?? 0 }}</strong>
+        <span>tutoriales públicos</span>
+      </div>
+      <div class="aa-kpi">
+        <strong>{{ m.resumen.temas_sin_video ?? 0 }}</strong>
+        <span>sin video (solo texto)</span>
+      </div>
+      <div class="aa-kpi aa-kpi--aviso">
+        <strong>{{ m.resumen.temas_sin_revisar ?? 0 }}</strong>
+        <span>sin revisar en 6 meses</span>
+      </div>
+      <div class="aa-kpi">
+        <strong>{{ m.resumen.modulos_vacios ?? 0 }}</strong>
+        <span>módulos sin ningún tutorial</span>
+      </div>
+    </div>
+
+    <section class="aa-ficha">
+      <h2>
+        <lucide-icon name="search" [size]="16" />
+        Lo que buscaron y no encontraron
+      </h2>
+      <!-- La tabla más valiosa del módulo: son peticiones de ayuda textuales, de clientes reales,
+           con sus propias palabras. El backlog de contenido no hay que adivinarlo. -->
+      <p class="aa-pista">
+        Últimos {{ m.dias }} días. Cada línea es un cliente que no encontró lo que necesitaba:
+        esta es la lista de lo próximo que conviene grabar o escribir.
+      </p>
+      @if (m.sin_resultado.length) {
+        <table class="aa-tabla">
+          <thead>
+            <tr><th>Buscaron</th><th>Veces</th><th>Última vez</th></tr>
+          </thead>
+          <tbody>
+            @for (fila of m.sin_resultado; track fila.termino) {
+              <tr>
+                <td><strong>{{ fila.termino }}</strong></td>
+                <td>{{ fila.veces }}</td>
+                <td>{{ fila.ultima }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <p class="aa-pista aa-pista--centro">
+          Nadie se ha quedado sin respuesta en este periodo.
+        </p>
+      }
+    </section>
+
+    @if (m.votos_negativos.length) {
+      <section class="aa-ficha">
+        <h2>
+          <lucide-icon name="thumbs-down" [size]="16" />
+          Tutoriales que no sirvieron
+        </h2>
+        <p class="aa-pista">
+          Un «no me sirvió» repetido suele decir menos del tutorial y más de la pantalla que
+          explica: es el mejor aviso de dónde confunde el producto.
+        </p>
+        <table class="aa-tabla">
+          <thead>
+            <tr><th>Tutorial</th><th>Módulo</th><th>No sirvió</th><th>Sí sirvió</th></tr>
+          </thead>
+          <tbody>
+            @for (fila of m.votos_negativos; track fila.id_tema) {
+              <tr>
+                <td><strong>{{ fila.titulo }}</strong></td>
+                <td>{{ fila.app_clave }} · {{ fila.modulo_nombre }}</td>
+                <td>{{ fila.no_sirvio }}</td>
+                <td>{{ fila.sirvio }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+
+    @if (m.mas_visto.length) {
+      <section class="aa-ficha">
+        <h2><lucide-icon name="eye" [size]="16" /> Los más vistos</h2>
+        <table class="aa-tabla">
+          <thead>
+            <tr><th>Tutorial</th><th>Módulo</th><th>Vistas</th></tr>
+          </thead>
+          <tbody>
+            @for (fila of m.mas_visto; track fila.id_tema) {
+              <tr>
+                <td><strong>{{ fila.titulo }}</strong></td>
+                <td>{{ fila.app_clave }} · {{ fila.modulo_nombre }}</td>
+                <td>{{ fila.vistas }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  } @else {
+    <p class="aa-estado">Cargando métricas…</p>
+  }
+}

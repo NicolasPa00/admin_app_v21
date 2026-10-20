@@ -9,6 +9,12 @@ export const environment = {
   production: false,
   /** URL base del API — coincide con app.use('/admin', adminRoutes) del backend. */
   apiUrl: 'http://localhost:3000/admin',
+  /**
+   * API del Centro de ayuda. Es un API propio (`app.use('/ayuda', ...)`) y no un bloque bajo
+   * `/admin`, porque sus rutas de lectura son públicas a propósito: quien olvidó la contraseña
+   * o se le venció la prueba también necesita los tutoriales. Ver `app_ayuda_api/routes/index.js`.
+   */
+  ayudaApiUrl: 'http://localhost:3000/ayuda',
   /** URL de la app de negocio (restaurante, etc.) */
   negocioAppUrl: 'http://localhost:6002',
   /** URL de la app de parqueadero */

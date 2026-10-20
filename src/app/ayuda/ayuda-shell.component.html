@@ -1,0 +1,176 @@
+<header class="ay-cabecera" [class.ay-cabecera--oscura]="inmersivo()">
+  <div class="ay-cabecera__interior">
+    <a routerLink="/ayuda" class="ay-marca" aria-label="Centro de ayuda de EscalApp">
+      <span class="ay-marca__icono"><lucide-icon name="circle-help" [size]="20" /></span>
+      <span class="ay-marca__texto">
+        <strong>Centro de ayuda</strong>
+        <small>EscalApp</small>
+      </span>
+    </a>
+
+    <!-- El buscador y su panel de coincidencias van en el MISMO contenedor, y el `focusout` se
+         escucha aquí y no en el campo: así pasar de la caja a una sugerencia con el tabulador no
+         cierra el panel, y salir del conjunto sí. -->
+    <div class="ay-buscador" (focusout)="alSalirDelFoco($event)">
+      <form class="ay-buscador__caja" (ngSubmit)="buscar()" role="search">
+        <lucide-icon name="search" [size]="18" class="ay-buscador__lupa" aria-hidden="true" />
+        <input
+          type="search"
+          name="q"
+          autocomplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="ay-sugerencias"
+          [attr.aria-expanded]="visible()"
+          [attr.aria-activedescendant]="activo() >= 0 ? 'ay-sug-' + activo() : null"
+          placeholder="¿Qué necesitas hacer? Ej: crear un producto, cerrar la caja…"
+          aria-label="Buscar en el centro de ayuda"
+          [ngModel]="termino()"
+          (ngModelChange)="alEscribir($event)"
+          (keydown)="alTeclear($event)"
+          (focus)="abierto.set(true)"
+        />
+        <button type="submit" [disabled]="!puedeBuscar()">Buscar</button>
+      </form>
+
+      <!-- El adelanto de resultados. Existe para contestar antes de pulsar nada la pregunta de
+           quien no sabe si esto tiene lo que busca: si aparece «Crear producto» mientras teclea,
+           ya sabe que sí. Y cada fila es el destino final, no un filtro — incluido el minuto
+           exacto cuando la coincidencia es un paso dentro de un video. -->
+      @if (visible()) {
+        <div class="ay-sugerencias">
+          @if (sugerencias(); as s) {
+            @if (s.total) {
+              <!-- El `listbox` envuelve SOLO las opciones: el botón de «ver todos» no es una
+                   opción de la lista y meterlo dentro rompería la semántica para un lector de
+                   pantalla. -->
+              <div id="ay-sugerencias" role="listbox" aria-label="Coincidencias de la búsqueda">
+              @for (r of s.resultados; track r.clase + '-' + (r.id_capitulo ?? r.id_tema); let i = $index) {
+                <a
+                  class="ay-sugerencia"
+                  [class.ay-sugerencia--activa]="i === activo()"
+                  role="option"
+                  [id]="'ay-sug-' + i"
+                  [attr.aria-selected]="i === activo()"
+                  [routerLink]="['/ayuda', r.app_clave, r.modulo_clave, r.tema_clave]"
+                  [queryParams]="r.t_inicio_seg != null ? { t: r.t_inicio_seg } : {}"
+                  (mouseenter)="activo.set(i)"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="cerrar()"
+                >
+                  <span
+                    class="ay-sugerencia__icono"
+                    [class.ay-sugerencia__icono--capitulo]="r.clase === 'capitulo'"
+                  >
+                    <lucide-icon
+                      [name]="r.clase === 'capitulo' ? 'circle-play' : (r.proveedor ? 'video' : 'file-text')"
+                      [size]="16"
+                    />
+                  </span>
+
+                  <span class="ay-sugerencia__cuerpo">
+                    <span class="ay-sugerencia__titulo">{{ r.titulo }}</span>
+                    <span class="ay-sugerencia__ruta">
+                      {{ r.app_nombre }}
+                      <lucide-icon name="chevron-right" [size]="11" aria-hidden="true" />
+                      {{ r.modulo_nombre }}
+                      @if (r.clase === 'capitulo') {
+                        <lucide-icon name="chevron-right" [size]="11" aria-hidden="true" />
+                        {{ r.tema_titulo }}
+                      }
+                    </span>
+                    @if (r.extracto) {
+                      <!-- `ts_headline` de Postgres resalta lo que coincidió con <mark>; el pipe
+                           escapa todo lo demás. -->
+                      <span class="ay-sugerencia__extracto" [innerHTML]="r.extracto | resaltado"></span>
+                    }
+                  </span>
+
+                  @if (r.clase === 'capitulo' && r.t_inicio_seg != null) {
+                    <span class="ay-sugerencia__tiempo">{{ marca(r.t_inicio_seg) }}</span>
+                  }
+                </a>
+              }
+              </div>
+
+              <!-- La salida a la pantalla completa de resultados. Aquí no se promete un número:
+                   el autocompletado pide solo las primeras coincidencias, así que decir «ver los
+                   6» sería mentir cuando hay veinte. -->
+              <button
+                type="button"
+                class="ay-sugerencias__pie"
+                (mousedown)="$event.preventDefault()"
+                (click)="buscar()"
+              >
+                <lucide-icon name="search" [size]="14" />
+                Ver todos los resultados de «{{ consulta() }}»
+              </button>
+            } @else {
+              <!-- Sin coincidencias: se dice ya, sin obligar a pulsar Buscar para enterarse. El
+                   término queda anotado igual (ver la cabecera del componente), así que la
+                   promesa de abajo no es de cortesía. -->
+              <div class="ay-sugerencias__vacio">
+                <strong>Nada sobre «{{ consulta() }}» todavía</strong>
+                <span>
+                  Queda anotado: las búsquedas sin resultado son las que nos dicen qué grabar
+                  después.
+                </span>
+                <a
+                  class="ay-sugerencias__soporte"
+                  [href]="whatsappSoporte"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <lucide-icon name="message-circle" [size]="14" />
+                  Preguntarle a soporte
+                </a>
+              </div>
+            }
+          } @else {
+            <div class="ay-sugerencias__cargando" aria-live="polite">
+              <lucide-icon name="loader-2" [size]="16" class="ay-girando" />
+              Buscando…
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Vuelta al panel. Sin sesión lleva al login, que es el destino correcto para quien está
+         leyendo la ayuda antes de entrar. -->
+    <a routerLink="/admin/dashboard" class="ay-volver">
+      <lucide-icon name="layout-dashboard" [size]="16" />
+      <span>Ir al panel</span>
+    </a>
+  </div>
+</header>
+
+<!-- Sin ancho propio: cada vista decide el suyo. El tutorial necesita la pantalla entera para el
+     video y la lista de tarjetas aprovecha un monitor grande, pero la prosa se sigue limitando
+     en `ch` donde toca. Un contenedor único aquí obligaba a las tres a lo mismo. -->
+<main class="ay-contenido">
+  <router-outlet />
+</main>
+
+<footer class="ay-pie">
+  <div class="ay-pie__interior">
+    <p class="ay-pie__texto">
+      <strong>¿No encontraste lo que buscabas?</strong>
+      Escríbenos y te ayudamos — y de paso nos dices qué tutorial nos falta.
+    </p>
+    <!-- La salida a soporte humano va en el PIE de cada página y no escondida en un contacto:
+         el momento en que alguien se rinde con la ayuda es el momento en que hay que ofrecerle
+         una persona, no obligarle a buscar cómo. -->
+    <a class="ay-pie__accion" [href]="whatsappSoporte" target="_blank" rel="noopener noreferrer">
+      <lucide-icon name="message-circle" [size]="16" />
+      <span>Escribir a soporte</span>
+    </a>
+  </div>
+  <div class="ay-pie__legal">
+    <a routerLink="/terminos">Términos</a>
+    <span aria-hidden="true">·</span>
+    <a routerLink="/privacidad">Privacidad</a>
+    <span aria-hidden="true">·</span>
+    <a routerLink="/">EscalApp</a>
+  </div>
+</footer>

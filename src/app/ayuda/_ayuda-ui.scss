@@ -1,0 +1,195 @@
+// Piezas compartidas de la interfaz del Centro de ayuda.
+//
+// El centro de ayuda es una página PÚBLICA de escalapp.cloud, así que usa la identidad violeta de
+// la landing (`--es-*` de `src/styles/tokens.css`) y NO el índigo corporativo del panel
+// (`--color-*`). Los dos sistemas no se puentean nunca — está en CLAUDE.md. Que la ayuda se abra
+// desde un vertical no cambia eso: es la ayuda de EscalApp, no una pantalla del inquilino, y la
+// paleta dinámica por negocio (`PaletteService`) vive en `negocio_app`, no aquí.
+//
+// Se reparte por mixins y no por clases globales porque cada componente tiene encapsulado propio:
+// un `.tarjeta` suelto en la hoja del shell no alcanzaría a los hijos.
+
+// El ancho crece por tramos en vez de quedarse en un número fijo, porque un monitor de 27" con
+// el contenido encajonado a 1120px no se lee mejor: se lee igual con medio escritorio en blanco,
+// y eso hace que una página llena de tarjetas parezca vacía. Lo que NO crece es la prosa: los
+// párrafos siguen limitados en `ch` donde se leen, porque ahí el ancho sí estorba.
+@mixin contenedor($ancho: 1180px, $ancho-xl: 1420px, $ancho-xxl: 1660px) {
+  width: 100%;
+  max-width: $ancho;
+  margin-inline: auto;
+  // 16px de aire a los lados: el centro de ayuda se abre mucho desde el móvil, que es donde está
+  // la persona que no sabe hacer algo.
+  padding-inline: 16px;
+
+  @media (min-width: 1500px) {
+    max-width: $ancho-xl;
+    padding-inline: 24px;
+  }
+  @media (min-width: 1860px) {
+    max-width: $ancho-xxl;
+  }
+}
+
+/// El ancho del escenario del tutorial: el video manda y tiene que aprovechar la pantalla.
+@mixin contenedor-escenario {
+  @include contenedor(1360px, 1680px, 1960px);
+}
+
+@mixin tarjeta {
+  background: var(--es-bg-card);
+  border: 1px solid var(--es-border);
+  border-radius: var(--es-radius-lg);
+  box-shadow: var(--es-shadow-sm);
+  transition: border-color var(--es-transition), box-shadow var(--es-transition),
+    transform var(--es-transition);
+}
+
+@mixin tarjeta-interactiva {
+  @include tarjeta;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--es-primary);
+    box-shadow: var(--es-shadow-md);
+    transform: translateY(-2px);
+  }
+}
+
+// La rejilla de tarjetas. `auto-fill` y no `auto-fit` a propósito: con dos aplicativos, `auto-fit`
+// los estiraría a media pantalla cada uno y se verían como dos pancartas.
+@mixin rejilla($min: 260px) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax($min, 1fr));
+  gap: 16px;
+}
+
+@mixin icono-redondo($tamano: 44px) {
+  width: $tamano;
+  height: $tamano;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--es-radius-md);
+  // `color-mix` y no `rgba(var(--es-primary-rgb))`: así sigue funcionando si un día el token
+  // cambia de forma, y es la regla que ya se sigue en los verticales.
+  background: color-mix(in srgb, var(--es-primary) 12%, transparent);
+  color: var(--es-primary);
+}
+
+@mixin etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--es-radius-full);
+  font-size: var(--es-font-size-xs);
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+// Lo que el usuario no tiene todavía: plan o interruptor. Ámbar y no rojo — no es un error, es
+// una invitación.
+@mixin etiqueta-requisito {
+  @include etiqueta;
+  background: var(--es-warning-subtle);
+  color: var(--es-warning);
+}
+
+@mixin etiqueta-neutra {
+  @include etiqueta;
+  background: var(--es-surface-alt);
+  color: var(--es-text-secondary);
+}
+
+@mixin boton-primario {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 0;
+  border-radius: var(--es-radius-md);
+  background: var(--es-primary);
+  color: var(--es-on-primary);
+  font-size: var(--es-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--es-transition);
+
+  &:hover { background: var(--es-primary-hover); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+@mixin boton-suave {
+  @include boton-primario;
+  background: var(--es-bg-card);
+  color: var(--es-text-primary);
+  border: 1px solid var(--es-border);
+
+  &:hover { background: var(--es-surface-alt); border-color: var(--es-primary); }
+}
+
+// El cuerpo de una guía escrita (lo que sale del pipe `markdown`). Va con `::ng-deep` en quien lo
+// use: el HTML lo inyecta el pipe y Angular no le pone el atributo del encapsulado.
+@mixin prosa {
+  color: var(--es-text-primary);
+  font-size: var(--es-font-size-base);
+  line-height: 1.7;
+
+  h3, h4, h5 {
+    margin: 1.5em 0 0.5em;
+    line-height: 1.3;
+    font-weight: 700;
+  }
+  h3 { font-size: var(--es-font-size-lg); }
+  h4 { font-size: var(--es-font-size-base); }
+  h5 { font-size: var(--es-font-size-sm); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  p { margin: 0 0 0.85em; }
+  ul, ol { margin: 0 0 0.85em; padding-left: 1.4em; }
+  li { margin-bottom: 0.35em; }
+  strong { font-weight: 700; }
+
+  a {
+    color: var(--es-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  code {
+    background: var(--es-surface-alt);
+    border: 1px solid var(--es-border-light);
+    border-radius: var(--es-radius-sm);
+    padding: 1px 5px;
+    font-family: var(--es-font-mono);
+    font-size: 0.9em;
+  }
+
+  // La cita es donde van los avisos de las guías («esto no hace falta para empezar»), así que
+  // tiene que leerse como un aparte y no como un bloque de código.
+  blockquote {
+    margin: 1em 0;
+    padding: 12px 16px;
+    border-left: 3px solid var(--es-primary);
+    background: var(--es-surface-alt);
+    border-radius: 0 var(--es-radius-md) var(--es-radius-md) 0;
+
+    p:last-child { margin-bottom: 0; }
+  }
+
+  hr { margin: 1.5em 0; border: 0; border-top: 1px solid var(--es-border); }
+}
+
+@mixin vacio {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--es-text-secondary);
+  background: var(--es-surface-alt);
+  border: 1px dashed var(--es-border);
+  border-radius: var(--es-radius-lg);
+}

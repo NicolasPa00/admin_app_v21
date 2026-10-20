@@ -187,6 +187,18 @@ export const adminRoutes: Routes = [
         title: 'Estadísticas de la plataforma',
       },
       {
+        // El CRUD del Centro de ayuda. Solo super admin: el contenido es de la plataforma —el
+        // mismo para los cinco restaurantes—, así que lo que un inquilino editara lo verían los
+        // otros cuatro. Por eso NO entra en la matriz de permisos por negocio; el candado es
+        // `requireSuperAdmin` en el backend y este guard aquí.
+        // La vista pública que alimenta es `/ayuda`, sin sesión.
+        path: 'ayuda',
+        loadComponent: () =>
+          import('./features/ayuda/ayuda-admin.component').then((m) => m.AyudaAdminComponent),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Centro de ayuda',
+      },
+      {
         path: 'auditoria',
         loadComponent: () =>
           import('./features/auditoria/auditoria.component').then(

@@ -33,6 +33,35 @@ export const serverRoutes: ServerRoute[] = [
     path: 'admin/**',
     renderMode: RenderMode.Client,
   },
+  // ── Centro de ayuda ───────────────────────────────────────────────────────────────────────
+  //
+  // `Client`, y conviene dejar escrito por qué, porque la tentación es `Prerender`: la página es
+  // pública y se querría indexada.
+  //
+  // El problema es cómo se despliega esta app. Solo se sube `dist/.../browser` a Caddy como
+  // estático; el `server/` que genera el build NO se despliega, así que `Server` no existe como
+  // opción —no hay Node delante— y `Prerender` **hornea el contenido en el momento del build**.
+  // Con un catálogo que el super admin edita desde `/admin/ayuda`, eso significaría que publicar
+  // un tutorial exige recompilar y volver a subir el frontend. Justamente lo que el panel existe
+  // para evitar.
+  //
+  // Además `:app/:modulo/:tema` son rutas con parámetros: prerenderizarlas pediría un
+  // `getPrerenderParams` que consulte el API durante el build, atando la compilación a que la
+  // base de datos esté accesible.
+  //
+  // Así que el SEO queda pendiente y es una decisión consciente, no un olvido. Lo que sí se gana
+  // ya —y es el motivo de fondo para que esto sea público— es que se lee SIN sesión: con la
+  // contraseña olvidada, la prueba vencida o el plan caducado, que es cuando más falta hace.
+  // Cuando el contenido se estabilice se puede prerenderizar la portada y los temas más vistos
+  // con `getPrerenderParams`, sin mover nada de lo demás.
+  {
+    path: 'ayuda',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'ayuda/**',
+    renderMode: RenderMode.Client,
+  },
   // Resto de rutas → prerenderizar estáticamente
   {
     path: '**',

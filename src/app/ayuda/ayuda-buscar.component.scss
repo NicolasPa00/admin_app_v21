@@ -1,0 +1,163 @@
+@use './ayuda-ui' as ui;
+
+:host {
+  // Más estrecho que el explorador a propósito: una lista de resultados con extracto de texto
+  // se lee peor cuanto más ancha, y aquí no hay rejilla que llenar.
+  @include ui.contenedor(1120px, 1320px, 1420px);
+  display: block;
+  padding-block: 32px 56px;
+}
+
+.ay-miga {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-muted);
+
+  a {
+    color: var(--es-text-secondary);
+    text-decoration: none;
+    &:hover { color: var(--es-primary); text-decoration: underline; }
+  }
+  span[aria-current] { color: var(--es-text-primary); font-weight: 600; }
+}
+
+.ay-busqueda__cabecera {
+  margin-bottom: 20px;
+
+  h1 {
+    margin: 0;
+    font-size: var(--es-font-size-xl);
+    font-weight: 750;
+    letter-spacing: -0.01em;
+  }
+}
+
+.ay-resultados {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ay-resultado {
+  @include ui.tarjeta-interactiva;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+
+  &:hover { transform: none; }
+
+  &__icono {
+    @include ui.icono-redondo(38px);
+    background: var(--es-surface-alt);
+    color: var(--es-text-muted);
+
+    // Un resultado de capítulo se ve distinto porque promete algo distinto: no un tutorial, un
+    // minuto concreto dentro de uno.
+    &--capitulo {
+      background: color-mix(in srgb, var(--es-primary) 12%, transparent);
+      color: var(--es-primary);
+    }
+  }
+
+  &__cuerpo {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__ruta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-muted);
+  }
+
+  &__titulo { font-size: var(--es-font-size-base); font-weight: 650; }
+
+  &__extracto {
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+    line-height: 1.5;
+
+    // `::ng-deep` porque el <mark> lo inyecta `[innerHTML]` y Angular no le pone el atributo del
+    // encapsulado.
+    ::ng-deep mark {
+      background: color-mix(in srgb, var(--es-primary) 20%, transparent);
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 3px;
+      font-weight: 650;
+    }
+  }
+
+  &__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+
+  &__salto {
+    @include ui.etiqueta;
+    background: color-mix(in srgb, var(--es-primary) 12%, transparent);
+    color: var(--es-primary);
+    font-family: var(--es-font-mono);
+  }
+
+  &__flecha { color: var(--es-text-muted); flex: 0 0 auto; align-self: center; }
+  &:hover &__flecha { color: var(--es-primary); }
+}
+
+.ay-etiqueta-requisito { @include ui.etiqueta-requisito; }
+
+.ay-vacio {
+  @include ui.vacio;
+
+  h2 {
+    margin: 12px 0 6px;
+    font-size: var(--es-font-size-lg);
+    font-weight: 700;
+    color: var(--es-text-primary);
+  }
+  p { margin: 0 auto; max-width: 56ch; font-size: var(--es-font-size-sm); line-height: 1.6; }
+
+  &__acciones {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  &__principal { @include ui.boton-primario; }
+  &__suave { @include ui.boton-suave; }
+}
+
+.ay-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 56px 24px;
+  color: var(--es-text-secondary);
+  text-align: center;
+
+  p { margin: 0; }
+  &--error { color: var(--es-error); }
+}
+
+.ay-girando { animation: ay-girar 900ms linear infinite; }
+
+@keyframes ay-girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-girando { animation: none; }
+}

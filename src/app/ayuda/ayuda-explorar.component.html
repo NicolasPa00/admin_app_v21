@@ -1,0 +1,186 @@
+<!-- Miga de pan: siempre visible desde el segundo nivel. Es lo que evita que alguien que llegó
+     por un enlace profundo no sepa dónde está ni cómo subir. -->
+@if (nivel() !== 'aplicativos') {
+  <nav class="ay-miga" aria-label="Dónde estás">
+    <a routerLink="/ayuda">Centro de ayuda</a>
+    @if (aplicativo(); as app) {
+      <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+      @if (nivel() === 'temas') {
+        <a [routerLink]="['/ayuda', app.clave]">{{ app.nombre }}</a>
+      } @else {
+        <span aria-current="page">{{ app.nombre }}</span>
+      }
+    }
+    @if (modulo(); as mod) {
+      <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+      <span aria-current="page">{{ mod.nombre }}</span>
+    }
+  </nav>
+}
+
+@if (cargando()) {
+  <div class="ay-estado" aria-live="polite">
+    <lucide-icon name="loader-2" [size]="24" class="ay-girando" />
+    <p>Cargando los tutoriales…</p>
+  </div>
+} @else if (error()) {
+  <div class="ay-estado ay-estado--error" role="alert">
+    <lucide-icon name="alert-circle" [size]="24" />
+    <p>{{ error() }}</p>
+  </div>
+} @else if (noEncontrado()) {
+  <div class="ay-estado">
+    <lucide-icon name="circle-help" [size]="28" />
+    <p>Ese apartado ya no existe o cambió de nombre.</p>
+    <a routerLink="/ayuda" class="ay-estado__accion">Volver al inicio de la ayuda</a>
+  </div>
+} @else if (nivel() === 'aplicativos') {
+  <!-- Nivel 1: los aplicativos. -->
+  <section class="ay-portada">
+    <h1>¿Con qué necesitas ayuda?</h1>
+    <p>
+      Elige el módulo de tu negocio y encuentra el tutorial del paso exacto que necesitas.
+      También puedes buscar directamente arriba.
+    </p>
+  </section>
+
+  @if (aplicativos().length) {
+    <div class="ay-rejilla">
+      @for (app of aplicativos(); track app.id_aplicativo) {
+        <a class="ay-tarjeta ay-tarjeta--app" [routerLink]="['/ayuda', app.clave]">
+          <span class="ay-tarjeta__icono">
+            <lucide-icon [name]="icono(app.icono)" [size]="22" />
+          </span>
+          <span class="ay-tarjeta__cuerpo">
+            <strong class="ay-tarjeta__titulo">{{ app.nombre }}</strong>
+            @if (app.descripcion) {
+              <span class="ay-tarjeta__texto">{{ app.descripcion }}</span>
+            }
+            <span class="ay-tarjeta__meta">
+              <span class="ay-etiqueta-neutra">
+                {{ app.total_temas }} {{ app.total_temas === 1 ? 'tutorial' : 'tutoriales' }}
+              </span>
+              @if (app.total_videos > 0) {
+                <span class="ay-etiqueta-neutra">
+                  <lucide-icon name="video" [size]="12" />
+                  {{ app.total_videos }} en video
+                </span>
+              }
+            </span>
+          </span>
+          <lucide-icon name="chevron-right" [size]="18" class="ay-tarjeta__flecha" />
+        </a>
+      }
+    </div>
+  } @else {
+    <!-- El día 1 esto es lo que se ve, y tiene que leerse como «viene en camino», no como roto. -->
+    <div class="ay-vacio">
+      <lucide-icon name="clapperboard" [size]="32" />
+      <h2>Estamos grabando</h2>
+      <p>
+        Los primeros tutoriales están en producción. Mientras tanto, escríbenos por WhatsApp y
+        te guiamos paso a paso.
+      </p>
+    </div>
+  }
+} @else if (nivel() === 'modulos') {
+  <!-- Nivel 2: los módulos de un aplicativo. -->
+  @if (aplicativo(); as app) {
+    <header class="ay-encabezado">
+      <span class="ay-encabezado__icono">
+        <lucide-icon [name]="icono(app.icono)" [size]="26" />
+      </span>
+      <div>
+        <h1>{{ app.nombre }}</h1>
+        @if (app.descripcion) { <p>{{ app.descripcion }}</p> }
+      </div>
+    </header>
+
+    @if (app.modulos.length) {
+      <div class="ay-rejilla">
+        @for (mod of app.modulos; track mod.id_modulo) {
+          <a class="ay-tarjeta" [routerLink]="['/ayuda', app.clave, mod.clave]">
+            <span class="ay-tarjeta__icono">
+              <lucide-icon [name]="icono(mod.icono)" [size]="20" />
+            </span>
+            <span class="ay-tarjeta__cuerpo">
+              <strong class="ay-tarjeta__titulo">{{ mod.nombre }}</strong>
+              @if (mod.descripcion) {
+                <span class="ay-tarjeta__texto">{{ mod.descripcion }}</span>
+              }
+              <span class="ay-tarjeta__meta">
+                <span class="ay-etiqueta-neutra">
+                  {{ mod.total_temas }} {{ mod.total_temas === 1 ? 'tutorial' : 'tutoriales' }}
+                </span>
+              </span>
+            </span>
+            <lucide-icon name="chevron-right" [size]="18" class="ay-tarjeta__flecha" />
+          </a>
+        }
+      </div>
+    } @else {
+      <div class="ay-vacio">
+        <lucide-icon name="clapperboard" [size]="32" />
+        <h2>Todavía no hay tutoriales de {{ app.nombre }}</h2>
+        <p>Los estamos preparando. Si necesitas algo ya, escríbenos y te ayudamos.</p>
+      </div>
+    }
+  }
+} @else {
+  <!-- Nivel 3: los temas de un módulo. -->
+  @if (modulo(); as mod) {
+    <header class="ay-encabezado">
+      <span class="ay-encabezado__icono">
+        <lucide-icon [name]="icono(mod.icono)" [size]="26" />
+      </span>
+      <div>
+        <h1>{{ mod.nombre }}</h1>
+        @if (mod.descripcion) { <p>{{ mod.descripcion }}</p> }
+      </div>
+    </header>
+
+    @if (mod.temas.length) {
+      <ul class="ay-temas">
+        @for (tema of mod.temas; track tema.id_tema) {
+          <li>
+            <a class="ay-tema" [routerLink]="['/ayuda', aplicativo()!.clave, mod.clave, tema.clave]">
+              <!-- El icono dice de un vistazo si hay video o es guía escrita. Es la primera
+                   pregunta de quien está en una cocina sin audio o con mala conexión. -->
+              <span class="ay-tema__icono" [class.ay-tema__icono--video]="tema.proveedor">
+                <lucide-icon [name]="tema.proveedor ? 'circle-play' : 'file-text'" [size]="20" />
+              </span>
+              <span class="ay-tema__cuerpo">
+                <strong>{{ tema.titulo }}</strong>
+                @if (tema.resumen) { <span class="ay-tema__texto">{{ tema.resumen }}</span> }
+              </span>
+              <span class="ay-tema__meta">
+                @if (duracion(tema.duracion_seg); as dur) {
+                  <span class="ay-etiqueta-neutra">
+                    <lucide-icon name="timer" [size]="12" />{{ dur }}
+                  </span>
+                }
+                @if (!tema.proveedor) {
+                  <span class="ay-etiqueta-neutra">Guía escrita</span>
+                }
+                <!-- Lo que el negocio quizá no tenga se MARCA, no se esconde: esconderlo pierde
+                     la única oportunidad de que alguien descubra que la función existe. -->
+                @if (tema.requisito; as req) {
+                  <span class="ay-etiqueta-requisito">
+                    <lucide-icon name="sparkles" [size]="12" />{{ req }}
+                  </span>
+                }
+              </span>
+              <lucide-icon name="chevron-right" [size]="18" class="ay-tema__flecha" />
+            </a>
+          </li>
+        }
+      </ul>
+    } @else {
+      <div class="ay-vacio">
+        <lucide-icon name="clapperboard" [size]="32" />
+        <h2>Aún no hay tutoriales de {{ mod.nombre }}</h2>
+        <p>Está en la lista. Escríbenos y te explicamos mientras lo grabamos.</p>
+      </div>
+    }
+  }
+}

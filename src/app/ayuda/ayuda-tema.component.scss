@@ -1,0 +1,626 @@
+@use './ayuda-ui' as ui;
+
+:host {
+  display: block;
+  // El alto de la cabecera pegajosa del shell. Está aquí y no repetido en cada `calc` porque de
+  // él dependen tres cosas: el alto del escenario, el del lateral de pasos y el ancho máximo del
+  // video (que se deduce del alto disponible, no del ancho de la columna).
+  --ay-cabecera: 69px;
+}
+
+// ── El escenario ────────────────────────────────────────────────────────────────────────────
+//
+// Ocupa la ventana entera menos la cabecera, así que al llegar no se ve nada más: pasos a la
+// izquierda, video a la derecha. El fondo oscuro usa los tokens de superficie oscura que la
+// landing ya tiene (`--es-ink`, `--es-text-on-dark`) — no es modo oscuro ni toca `data-theme`,
+// igual que las plantillas oscuras de la carta virtual.
+
+.ay-escena {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 20px 26px;
+  min-height: calc(100vh - var(--ay-cabecera));
+  min-height: calc(100dvh - var(--ay-cabecera));
+  background:
+    radial-gradient(
+      900px 420px at 15% 0%,
+      color-mix(in srgb, var(--es-primary) 30%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, var(--es-secondary-darker), var(--es-ink));
+  color: var(--es-text-on-dark);
+
+  &__interior {
+    @include ui.contenedor-escenario;
+  }
+
+  &__miga {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-on-dark-secondary);
+
+    a {
+      color: var(--es-text-on-dark-secondary);
+      text-decoration: none;
+      &:hover { color: var(--es-text-on-dark); text-decoration: underline; }
+    }
+    lucide-icon { opacity: 0.5; }
+  }
+
+  // Lateral fijo y video elástico. El lateral es ancho a propósito: son tarjetas con el título
+  // del paso y un adelanto de lo que explica, no una lista de minutos.
+  //
+  // El lateral ocupa SOLO la primera fila, no las dos: así su alto es exactamente el del video y
+  // el pie («Paso 3: …» / «Ver la guía escrita») queda por debajo de los dos, no empujando la
+  // tarjeta de pasos hacia abajo. Esa simetría es la que hace que se lea como un panel y no como
+  // dos bloques sueltos.
+  &__rejilla {
+    display: grid;
+    grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
+    grid-template-areas:
+      'lateral video'
+      '.       pie';
+    gap: 12px 20px;
+    align-items: start;
+
+    &--sin-pasos {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'video' 'pie';
+    }
+  }
+
+  // La celda del lateral. La tarjeta de pasos va posicionada DENTRO de ella (ver `.ay-pasos-lat`)
+  // y por eso esta celda no aporta alto: el alto de la fila lo decide el video, y la tarjeta se
+  // estira hasta ahí. Si la tarjeta estuviera en flujo normal pasaría al revés — una lista de
+  // doce pasos haría crecer la fila y el video se quedaría corto dentro de su propia columna.
+  &__lateral {
+    grid-area: lateral;
+    position: relative;
+    min-width: 0;
+    // El alto de la fila lo pone el video; esto solo evita que una celda vacía la encoja.
+    align-self: stretch;
+  }
+
+  // El título, arriba de la rejilla, para que el lateral y el video empiecen a la misma altura.
+  &__titulo {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+
+    h1 {
+      margin: 0;
+      font-size: var(--es-font-size-xl);
+      font-weight: 750;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+  }
+
+  &__marcas { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  // El ancho del video lo decide el ALTO que queda libre, no la columna: si no, en una pantalla
+  // apaisada el reproductor se come la ventana y empuja fuera el rótulo del paso y el aviso de
+  // que debajo hay una guía escrita. Los 290px son la cabecera, el título y el pie del escenario.
+  &__video {
+    grid-area: video;
+    width: 100%;
+    max-width: calc((100vh - 290px) * 16 / 9);
+    max-width: calc((100dvh - 290px) * 16 / 9);
+    border-radius: var(--es-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--es-shadow-xl);
+  }
+
+  &__pie {
+    grid-area: pie;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    max-width: calc((100vh - 290px) * 16 / 9);
+    max-width: calc((100dvh - 290px) * 16 / 9);
+  }
+
+  &__ahora {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    font-size: var(--es-font-size-sm);
+    font-weight: 600;
+    color: var(--es-text-on-dark);
+
+    lucide-icon { color: var(--es-primary-light); flex: 0 0 auto; }
+    &--tenue { color: var(--es-text-on-dark-secondary); font-weight: 400; }
+  }
+
+  &__bajar {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    border: 1px solid var(--es-border-on-dark-strong);
+    border-radius: var(--es-radius-full);
+    background: color-mix(in srgb, var(--es-text-on-dark) 8%, transparent);
+    color: var(--es-text-on-dark);
+    font-family: inherit;
+    font-size: var(--es-font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--es-transition), border-color var(--es-transition);
+
+    &:hover {
+      background: color-mix(in srgb, var(--es-text-on-dark) 16%, transparent);
+      border-color: var(--es-text-on-dark);
+    }
+  }
+}
+
+.ay-marca-oscura {
+  @include ui.etiqueta;
+  background: color-mix(in srgb, var(--es-text-on-dark) 12%, transparent);
+  color: var(--es-text-on-dark);
+}
+
+// ── Lateral de pasos ────────────────────────────────────────────────────────────────────────
+
+.ay-pasos-lat {
+  // Posicionada dentro de su celda, no en flujo: así mide exactamente lo que mide el video
+  // (la celda se estira con la fila) y, con pocos pasos, la tarjeta sigue llegando abajo en vez
+  // de quedarse a media altura. Con doce pasos no crece: rueda por dentro.
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--es-border-on-dark);
+  border-radius: var(--es-radius-lg);
+  background: color-mix(in srgb, var(--es-text-on-dark) 6%, transparent);
+
+  &__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--es-border-on-dark);
+
+    strong {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: var(--es-font-size-sm);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    span { font-size: var(--es-font-size-xs); color: var(--es-text-on-dark-secondary); }
+    lucide-icon { color: var(--es-primary-light); }
+  }
+
+  &__lista {
+    list-style: none;
+    margin: 0;
+    padding: 0 4px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    // `min-height: 0` es lo que permite que la lista se encoja dentro del flex y aparezca la
+    // barra: sin él, un hijo flexible se niega a bajar de su alto de contenido y desborda.
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    // La barra fina y a tono: la del sistema sobre fondo oscuro se ve como una grieta blanca.
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--es-text-on-dark) 28%, transparent) transparent;
+  }
+
+  &__revision {
+    margin: 12px 0 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--es-border-on-dark);
+    font-size: var(--es-font-size-xs);
+    color: var(--es-text-on-dark-secondary);
+  }
+}
+
+.ay-paso {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 11px 12px;
+  border: 1px solid var(--es-border-on-dark);
+  border-radius: var(--es-radius-md);
+  background: color-mix(in srgb, var(--es-text-on-dark) 5%, transparent);
+  color: var(--es-text-on-dark);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--es-transition), border-color var(--es-transition);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--es-text-on-dark) 12%, transparent);
+    border-color: var(--es-border-on-dark-strong);
+  }
+
+  &:disabled { cursor: default; }
+
+  // El paso en curso. El borde violeta y el fondo marcado son el único hilo entre el video y la
+  // lista: sin él, la lista es un menú y no un índice de lo que está pasando.
+  &--activo {
+    background: color-mix(in srgb, var(--es-primary) 26%, transparent);
+    border-color: var(--es-primary-light);
+
+    .ay-paso__num {
+      background: var(--es-primary);
+      color: var(--es-on-primary);
+    }
+  }
+
+  &__num {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--es-radius-full);
+    background: color-mix(in srgb, var(--es-text-on-dark) 14%, transparent);
+    color: var(--es-text-on-dark);
+    font-size: var(--es-font-size-xs);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__cuerpo {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__titulo { font-size: var(--es-font-size-sm); font-weight: 650; line-height: 1.35; }
+
+  &__texto {
+    font-size: var(--es-font-size-xs);
+    line-height: 1.45;
+    color: var(--es-text-on-dark-secondary);
+    // Dos líneas de adelanto: lo justo para saber si el paso es el que se busca.
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__tiempo {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+    font-family: var(--es-font-mono);
+    font-size: var(--es-font-size-xs);
+    font-variant-numeric: tabular-nums;
+    color: var(--es-primary-light);
+  }
+}
+
+// ── La zona de lectura ──────────────────────────────────────────────────────────────────────
+
+.ay-lectura {
+  // `scroll-margin-top` por la cabecera pegajosa: sin esto, «Ver la guía escrita» deja el primer
+  // párrafo escondido debajo del buscador.
+  scroll-margin-top: var(--ay-cabecera);
+  padding-block: 40px 56px;
+
+  &--cabecera { padding-bottom: 0; }
+
+  // Más estrecho que el escenario y a propósito: el video quiere pantalla, un párrafo no. Pasado
+  // cierto ancho el ojo pierde el renglón al volver, y eso no se arregla con más monitor.
+  &__interior {
+    @include ui.contenedor(940px, 1040px, 1100px);
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  &__titulo {
+    margin: 0;
+    font-size: var(--es-font-size-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  &__resumen {
+    margin: 0;
+    color: var(--es-text-secondary);
+    font-size: var(--es-font-size-lg);
+    line-height: 1.6;
+  }
+
+  &__marcas { display: flex; flex-wrap: wrap; gap: 6px; }
+}
+
+// En la variante sin video la cabecera va en flujo normal y no en una rejilla, así que los
+// huecos los pone el propio bloque.
+.ay-lectura--cabecera .ay-lectura__interior { gap: 14px; }
+
+.ay-miga {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: var(--es-font-size-sm);
+  color: var(--es-text-muted);
+
+  a {
+    color: var(--es-text-secondary);
+    text-decoration: none;
+    &:hover { color: var(--es-primary); text-decoration: underline; }
+  }
+}
+
+.ay-sin-video {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 18px 20px;
+  border: 1px dashed var(--es-border);
+  border-radius: var(--es-radius-lg);
+  background: var(--es-surface-alt);
+  color: var(--es-text-secondary);
+
+  lucide-icon { color: var(--es-primary); flex: 0 0 auto; }
+  div { display: flex; flex-direction: column; gap: 2px; }
+  strong { color: var(--es-text-primary); font-size: var(--es-font-size-base); }
+  span { font-size: var(--es-font-size-sm); }
+}
+
+// ── Prosa (lo que sale del pipe `markdown`) ─────────────────────────────────────────────────
+//
+// `::ng-deep` porque el HTML lo inyecta `[innerHTML]` y Angular no le pone el atributo del
+// encapsulado: sin esto, ninguna de estas reglas alcanzaría al contenido.
+
+.ay-prosa {
+  @include ui.prosa;
+
+  &--compacta { font-size: var(--es-font-size-sm); }
+
+  ::ng-deep { @include ui.prosa; }
+  &--compacta ::ng-deep { font-size: var(--es-font-size-sm); }
+}
+
+// ── Paso a paso escrito ─────────────────────────────────────────────────────────────────────
+
+.ay-pasos {
+  h2 {
+    margin: 0 0 14px;
+    font-size: var(--es-font-size-lg);
+    font-weight: 750;
+  }
+
+  ol {
+    list-style: none;
+    counter-reset: paso;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  li {
+    counter-increment: paso;
+    position: relative;
+    padding: 14px 16px 14px 52px;
+    border: 1px solid var(--es-border);
+    border-radius: var(--es-radius-lg);
+    background: var(--es-bg-card);
+    scroll-margin-top: calc(var(--ay-cabecera) + 20px);
+    transition: border-color var(--es-transition), background var(--es-transition);
+
+    &::before {
+      content: counter(paso);
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 26px;
+      height: 26px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--es-radius-full);
+      background: color-mix(in srgb, var(--es-primary) 12%, transparent);
+      color: var(--es-primary);
+      font-size: var(--es-font-size-xs);
+      font-weight: 700;
+    }
+  }
+
+  &__activo {
+    border-color: var(--es-primary);
+    background: var(--es-surface-alt);
+  }
+
+  &__titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+
+    strong { font-size: var(--es-font-size-base); font-weight: 650; }
+  }
+
+  &__salto {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    border: 1px solid var(--es-border);
+    border-radius: var(--es-radius-full);
+    background: var(--es-bg);
+    color: var(--es-primary);
+    font-family: var(--es-font-mono);
+    font-size: var(--es-font-size-xs);
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--es-primary);
+      color: var(--es-on-primary);
+      border-color: var(--es-primary);
+    }
+  }
+}
+
+// ── Voto ────────────────────────────────────────────────────────────────────────────────────
+
+.ay-voto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border: 1px solid var(--es-border);
+  border-radius: var(--es-radius-lg);
+  background: var(--es-surface-alt);
+
+  &__pregunta { font-size: var(--es-font-size-sm); font-weight: 650; }
+  &__botones { display: flex; gap: 8px; }
+
+  button {
+    @include ui.boton-suave;
+    padding: 8px 16px;
+  }
+
+  &__gracias {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+
+    lucide-icon { color: var(--es-success); }
+    a { color: var(--es-primary); font-weight: 600; }
+  }
+}
+
+// ── Anterior / siguiente ────────────────────────────────────────────────────────────────────
+
+.ay-vecinos {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  &__enlace {
+    @include ui.tarjeta-interactiva;
+    flex: 1 1 220px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+
+    &:hover { transform: none; }
+    &--der { justify-content: flex-end; text-align: right; }
+
+    lucide-icon { color: var(--es-text-muted); flex: 0 0 auto; }
+    &:hover lucide-icon { color: var(--es-primary); }
+
+    span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    small { font-size: var(--es-font-size-xs); color: var(--es-text-muted); }
+    strong { font-size: var(--es-font-size-sm); font-weight: 650; }
+  }
+}
+
+.ay-etiqueta-neutra { @include ui.etiqueta-neutra; }
+.ay-etiqueta-requisito { @include ui.etiqueta-requisito; }
+
+.ay-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 80px 24px;
+  color: var(--es-text-secondary);
+  text-align: center;
+
+  p { margin: 0; }
+  &--error { color: var(--es-error); }
+  &__accion { @include ui.boton-suave; margin-top: 6px; }
+}
+
+.ay-girando { animation: ay-girar 900ms linear infinite; }
+
+@keyframes ay-girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-girando { animation: none; }
+}
+
+// ── Pantallas grandes ───────────────────────────────────────────────────────────────────────
+//
+// En un monitor de 27" el lateral puede permitirse más ancho sin robarle nada al video, porque el
+// límite del video lo marca el alto de la ventana y no el de la columna.
+
+@media (min-width: 1500px) {
+  .ay-escena__rejilla { grid-template-columns: minmax(330px, 390px) minmax(0, 1fr); gap: 26px; }
+  .ay-escena__titulo h1 { font-size: var(--es-font-size-2xl); }
+  .ay-paso { padding: 13px 14px; }
+}
+
+// ── Pantallas medianas y móvil ──────────────────────────────────────────────────────────────
+//
+// Por debajo de 1100px el lateral ya no cabe al lado, y entonces el escenario deja de tener
+// sentido como pantalla completa: se vuelve una columna —video, pasos— que fluye hacia la guía.
+// El video va PRIMERO, que es el orden que importa cuando no hay espacio para las dos cosas.
+
+@media (max-width: 1100px) {
+  .ay-escena {
+    min-height: 0;
+    padding-block: 18px 24px;
+  }
+
+  .ay-escena__rejilla {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'video' 'pie' 'lateral';
+    gap: 18px;
+  }
+
+  // La tarjeta vuelve al flujo normal: aquí la página ya rueda entera, y una lista con su propia
+  // barra dentro de otra que también rueda es la peor combinación posible en una pantalla táctil.
+  .ay-escena__lateral { position: static; }
+  .ay-pasos-lat { position: static; inset: auto; }
+  .ay-pasos-lat__lista { overflow-y: visible; flex: 0 0 auto; }
+
+  .ay-escena__video,
+  .ay-escena__pie {
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ay-escena__pie { flex-direction: column; align-items: stretch; }
+  .ay-escena__bajar { justify-content: center; }
+  .ay-voto { flex-direction: column; align-items: stretch; }
+  .ay-voto__botones button { flex: 1 1 auto; justify-content: center; }
+  .ay-vecinos__enlace--der { justify-content: flex-start; text-align: left; }
+}

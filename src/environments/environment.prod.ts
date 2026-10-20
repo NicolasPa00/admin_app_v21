@@ -12,6 +12,8 @@
 export const environment = {
   production: true,
   apiUrl: 'https://api.escalapp.cloud/admin',
+  /** Ver el comentario de `environment.ts`: el API del Centro de ayuda es propio y público. */
+  ayudaApiUrl: 'https://api.escalapp.cloud/ayuda',
   negocioAppUrl: 'https://escalapp.cloud/restaurante',
   parqueaderoAppUrl: 'https://escalapp.cloud/parqueadero',
   gymAppUrl: 'https://escalapp.cloud/gym',

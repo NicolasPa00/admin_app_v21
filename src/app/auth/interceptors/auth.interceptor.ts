@@ -24,6 +24,16 @@ const PUBLIC_URLS = [
   // Portal de pagos sin sesión (/pagar). Declararlo aquí evita que un visitante con una sesión
   // vieja en el navegador reciba un logout forzado por consultar lo que debe.
   '/publico/',
+  // ⚠️ El Centro de ayuda (/ayuda) ESTUVO aquí y volverá cuando se abra al público.
+  //
+  // Hoy no: se estrena cerrado al equipo de EscalApp mientras el catálogo esté a medio grabar
+  // (`AYUDA_PUBLICA` en el servidor + el guard de `/ayuda`), así que sus lecturas necesitan el
+  // token como cualquier otra ruta protegida. Declararlas públicas aquí las dejaría salir SIN
+  // `Authorization` y el backend contestaría 401 a un super admin con sesión válida.
+  //
+  // Al devolverlas, va una por una y NUNCA el prefijo '/ayuda/' suelto: `isPublicUrl` usa
+  // `includes` y taparía también `/ayuda/admin/*`, que es el CRUD y SÍ necesita token.
+  //   '/ayuda/catalogo', '/ayuda/buscar', '/ayuda/contexto', '/ayuda/evento', '/ayuda/tema/'
 ];
 
 function isPublicUrl(url: string): boolean {

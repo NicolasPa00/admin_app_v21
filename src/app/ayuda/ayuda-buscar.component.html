@@ -1,0 +1,111 @@
+<nav class="ay-miga" aria-label="Dónde estás">
+  <a routerLink="/ayuda">Centro de ayuda</a>
+  <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+  <span aria-current="page">Búsqueda</span>
+</nav>
+
+@if (cargando()) {
+  <div class="ay-estado" aria-live="polite">
+    <lucide-icon name="loader-2" [size]="24" class="ay-girando" />
+    <p>Buscando…</p>
+  </div>
+} @else if (error()) {
+  <div class="ay-estado ay-estado--error" role="alert">
+    <lucide-icon name="alert-circle" [size]="26" />
+    <p>{{ error() }}</p>
+  </div>
+} @else if (resultado(); as res) {
+  <header class="ay-busqueda__cabecera">
+    <h1>
+      @if (res.total) {
+        {{ res.total }} {{ res.total === 1 ? 'resultado' : 'resultados' }} para
+        «{{ res.termino }}»
+      } @else {
+        Sin resultados para «{{ res.termino }}»
+      }
+    </h1>
+  </header>
+
+  @if (res.total) {
+    <ul class="ay-resultados">
+      @for (r of res.resultados; track r.clase + '-' + (r.id_capitulo ?? r.id_tema)) {
+        <li>
+          <!-- `[routerLink]` con la URL que armó el backend, partida en ruta y query: así el
+               segundo del capítulo viaja en `?t=` y el reproductor arranca ahí. -->
+          <a
+            class="ay-resultado"
+            [routerLink]="['/ayuda', r.app_clave, r.modulo_clave, r.tema_clave]"
+            [queryParams]="r.t_inicio_seg != null ? { t: r.t_inicio_seg } : {}"
+          >
+            <span
+              class="ay-resultado__icono"
+              [class.ay-resultado__icono--capitulo]="r.clase === 'capitulo'"
+            >
+              <lucide-icon
+                [name]="r.clase === 'capitulo' ? 'circle-play' : (r.proveedor ? 'video' : 'file-text')"
+                [size]="18"
+              />
+            </span>
+
+            <span class="ay-resultado__cuerpo">
+              <span class="ay-resultado__ruta">
+                <lucide-icon [name]="icono(r.app_icono)" [size]="12" />
+                {{ r.app_nombre }}
+                <lucide-icon name="chevron-right" [size]="11" aria-hidden="true" />
+                {{ r.modulo_nombre }}
+                @if (r.clase === 'capitulo') {
+                  <lucide-icon name="chevron-right" [size]="11" aria-hidden="true" />
+                  {{ r.tema_titulo }}
+                }
+              </span>
+
+              <strong class="ay-resultado__titulo">{{ r.titulo }}</strong>
+
+              <!-- `ts_headline` de Postgres resalta lo que coincidió con <mark>. El pipe escapa
+                   todo y devuelve solo esa etiqueta: no se confía en el contenido de la base. -->
+              @if (r.extracto) {
+                <span class="ay-resultado__extracto" [innerHTML]="r.extracto | resaltado"></span>
+              }
+
+              <span class="ay-resultado__meta">
+                @if (r.clase === 'capitulo' && r.t_inicio_seg != null) {
+                  <!-- La promesa del resultado, visible antes de hacer clic: el video empieza ahí. -->
+                  <span class="ay-resultado__salto">
+                    <lucide-icon name="circle-play" [size]="12" />
+                    Empieza en {{ marca(r.t_inicio_seg) }}
+                  </span>
+                }
+                @if (r.requisito; as req) {
+                  <span class="ay-etiqueta-requisito">
+                    <lucide-icon name="sparkles" [size]="12" />{{ req }}
+                  </span>
+                }
+              </span>
+            </span>
+
+            <lucide-icon name="chevron-right" [size]="18" class="ay-resultado__flecha" />
+          </a>
+        </li>
+      }
+    </ul>
+  } @else {
+    <!-- Esta pantalla también HACE algo: el backend ya anotó la búsqueda fallida, así que lo que
+         esta persona escribió acaba de entrar en la lista de tutoriales por grabar. Por eso el
+         texto puede prometerlo sin mentir. -->
+    <div class="ay-vacio">
+      <lucide-icon name="search" [size]="32" />
+      <h2>Todavía no tenemos nada sobre eso</h2>
+      <p>
+        Ya quedó anotado: las búsquedas sin resultado son justamente las que nos dicen qué
+        tutorial grabar después. Mientras tanto, escríbenos y te lo resolvemos de una.
+      </p>
+      <div class="ay-vacio__acciones">
+        <a class="ay-vacio__principal" [href]="whatsappSoporte" target="_blank" rel="noopener noreferrer">
+          <lucide-icon name="message-circle" [size]="16" />
+          Preguntarle a soporte
+        </a>
+        <a class="ay-vacio__suave" routerLink="/ayuda">Ver todos los temas</a>
+      </div>
+    </div>
+  }
+}

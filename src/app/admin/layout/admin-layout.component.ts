@@ -46,6 +46,7 @@ import {
   PanelLeftClose,
   TriangleAlert,
   X,
+  CircleHelp,
 } from 'lucide-angular';
 
 import { AuthService } from '../../auth/data-access/auth.service';
@@ -113,7 +114,7 @@ const ATAJOS_MOVIL = 4;
         LayoutGrid, Settings, Users, Store, Building2, Contact, History, ChartColumn, Bot, MessageSquare,
         MessageCircle, FileText, Wallet, Gauge, Landmark,
         Sun, Moon, LogOut,
-        ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X,
+        ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X, CircleHelp,
       }),
     },
   ],
@@ -155,6 +156,9 @@ export class AdminLayoutComponent {
     // las cifras de todos los inquilinos a la vez.
     { label: 'Estadísticas', icon: 'chart-column', route: '/admin/estadisticas', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
+    // Los tutoriales que ven todos los clientes en `/ayuda`. Solo super admin: el contenido es
+    // de la plataforma, no de un inquilino — lo que uno editara lo verían los demás.
+    { label: 'Centro de ayuda', icon: 'circle-help', route: '/admin/ayuda', superAdmin: true },
     { label: 'Configuración', icon: 'settings', route: '/admin/configuracion' },
   ];
 
@@ -320,6 +324,7 @@ export class AdminLayoutComponent {
     if (url.includes('/cartera')) return 'Cartera';
     if (url.includes('/estadisticas')) return 'Estadísticas';
     if (url.includes('/auditoria')) return 'Auditoría';
+    if (url.includes('/ayuda')) return 'Centro de ayuda';
     if (url.includes('/tipos-negocio')) return 'Roles del negocio';
     return 'Inicio';
   });

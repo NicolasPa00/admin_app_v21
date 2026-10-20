@@ -1,0 +1,274 @@
+@if (cargando()) {
+  <div class="ay-estado" aria-live="polite">
+    <lucide-icon name="loader-2" [size]="24" class="ay-girando" />
+    <p>Cargando el tutorial…</p>
+  </div>
+} @else if (error()) {
+  <div class="ay-estado ay-estado--error" role="alert">
+    <lucide-icon name="alert-circle" [size]="26" />
+    <p>{{ error() }}</p>
+    <a routerLink="/ayuda" class="ay-estado__accion">Volver al centro de ayuda</a>
+  </div>
+} @else if (tema(); as t) {
+  @if (t.video) {
+    <!-- EL ESCENARIO. Ocupa la ventana menos la cabecera, así que es lo único que se ve al
+         llegar: pasos en tarjetas a la izquierda, video grande a la derecha. Fondo oscuro a
+         propósito — el video ya es negro, y el contraste saca la pantalla del molde de «artículo
+         con un reproductor dentro», que es lo que esto no quiere ser. -->
+    <section class="ay-escena" #escenario>
+      <div class="ay-escena__interior">
+        <nav class="ay-escena__miga" aria-label="Dónde estás">
+          <a routerLink="/ayuda">Centro de ayuda</a>
+          <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+          <a [routerLink]="['/ayuda', t.app_clave]">{{ t.app_nombre }}</a>
+          <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+          <a [routerLink]="['/ayuda', t.app_clave, t.modulo_clave]">{{ t.modulo_nombre }}</a>
+        </nav>
+
+        <!-- El título va ARRIBA de la rejilla y no dentro de la columna del video: así el lateral
+             de pasos y el reproductor arrancan exactamente a la misma altura. Con el título
+             dentro, el video bajaba su altura y las dos columnas quedaban descuadradas. -->
+        <header class="ay-escena__titulo">
+          <h1>{{ t.titulo }}</h1>
+          <div class="ay-escena__marcas">
+            @if (duracion(t.duracion_seg); as dur) {
+              <span class="ay-marca-oscura">
+                <lucide-icon name="timer" [size]="12" />{{ dur }}
+              </span>
+            }
+            @if (t.requisito; as req) {
+              <span class="ay-etiqueta-requisito">
+                <lucide-icon name="sparkles" [size]="12" />{{ req }}
+              </span>
+            }
+          </div>
+        </header>
+
+        <div class="ay-escena__rejilla" [class.ay-escena__rejilla--sin-pasos]="!t.capitulos.length">
+          @if (t.capitulos.length) {
+            <!-- Esta celda existe para que la tarjeta de pasos pueda medir exactamente lo que
+                 mide el video: la tarjeta va posicionada dentro de ella, así no aporta alto a la
+                 fila y la fila la define el reproductor. Está explicado en la hoja de estilos. -->
+            <div class="ay-escena__lateral">
+              <!-- Tarjetas y no una lista de enlaces: cada paso trae su número, su título, el
+                   adelanto de lo que explica y su minuto. Es el índice del video, pero también
+                   contesta «¿cuál de estos pasos es el mío?» sin tener que abrir ninguno. -->
+              <aside class="ay-pasos-lat" aria-label="Pasos del video">
+                <header class="ay-pasos-lat__cabecera">
+                  <strong>
+                    <lucide-icon name="list-ordered" [size]="15" />
+                    En este video
+                  </strong>
+                  <span>
+                    {{ t.capitulos.length }} {{ t.capitulos.length === 1 ? 'paso' : 'pasos' }}
+                  </span>
+                </header>
+
+                <ol class="ay-pasos-lat__lista">
+                  @for (cap of t.capitulos; track cap.id_capitulo; let i = $index) {
+                    <li>
+                      <!-- Deshabilitado cuando los capítulos todavía no tienen marca de tiempo
+                           (todos en el segundo 0): sin tiempos, hacer clic rebobinaría el video
+                           al principio y parecería que está roto. La tarjeta sigue informando. -->
+                      <button
+                        type="button"
+                        class="ay-paso"
+                        [class.ay-paso--activo]="cap.id_capitulo === capituloActivo()"
+                        [disabled]="!capitulosSonTiempos()"
+                        (click)="irA(cap)"
+                      >
+                        <span class="ay-paso__num">{{ i + 1 }}</span>
+                        <span class="ay-paso__cuerpo">
+                          <span class="ay-paso__titulo">{{ cap.titulo }}</span>
+                          @if (adelanto(cap.cuerpo); as texto) {
+                            <span class="ay-paso__texto">{{ texto }}</span>
+                          }
+                          @if (capitulosSonTiempos()) {
+                            <span class="ay-paso__tiempo">
+                              <lucide-icon name="circle-play" [size]="12" />
+                              {{ marca(cap.t_inicio_seg) }}
+                            </span>
+                          }
+                        </span>
+                      </button>
+                    </li>
+                  }
+                </ol>
+
+                @if (t.fecha_revision) {
+                  <!-- La fecha de revisión en letra pequeña, pero visible: es lo que le dice al
+                       lector si lo que está viendo sigue pareciéndose a su pantalla. -->
+                  <p class="ay-pasos-lat__revision">Revisado el {{ t.fecha_revision }}</p>
+                }
+              </aside>
+            </div>
+          }
+
+          <div class="ay-escena__video">
+            <app-video-player
+              [video]="t.video"
+              [inicioSeg]="inicioSeg()"
+              [apiBase]="apiBase"
+              (tiempo)="alTiempo($event)"
+            />
+          </div>
+
+          <div class="ay-escena__pie">
+            @if (pasoActual(); as paso) {
+              <span class="ay-escena__ahora">
+                <lucide-icon name="circle-play" [size]="14" />
+                Paso {{ paso.numero }}: {{ paso.titulo }}
+              </span>
+            } @else {
+              <span class="ay-escena__ahora ay-escena__ahora--tenue">
+                Toca un paso de la izquierda para saltar a ese momento
+              </span>
+            }
+
+            <!-- El aviso de que debajo hay más. Sin esto, una pantalla llena de video parece
+                 toda la página y la guía escrita no existe para quien no hace scroll. -->
+            <button type="button" class="ay-escena__bajar" (click)="irAGuia()">
+              Ver la guía escrita
+              <lucide-icon name="chevron-down" [size]="16" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  } @else {
+    <!-- Sin video no hay escenario: un recuadro negro enorme no ayuda a nadie. La página vuelve a
+         ser lo que es, una guía escrita, con su ancho de lectura. -->
+    <div class="ay-lectura ay-lectura--cabecera">
+      <div class="ay-lectura__interior">
+        <nav class="ay-miga" aria-label="Dónde estás">
+          <a routerLink="/ayuda">Centro de ayuda</a>
+          <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+          <a [routerLink]="['/ayuda', t.app_clave]">{{ t.app_nombre }}</a>
+          <lucide-icon name="chevron-right" [size]="14" aria-hidden="true" />
+          <a [routerLink]="['/ayuda', t.app_clave, t.modulo_clave]">{{ t.modulo_nombre }}</a>
+        </nav>
+
+        <h1 class="ay-lectura__titulo">{{ t.titulo }}</h1>
+        @if (t.resumen) { <p class="ay-lectura__resumen">{{ t.resumen }}</p> }
+
+        <div class="ay-lectura__marcas">
+          <span class="ay-etiqueta-neutra">Guía escrita</span>
+          @if (t.requisito; as req) {
+            <span class="ay-etiqueta-requisito">
+              <lucide-icon name="sparkles" [size]="12" />{{ req }}
+            </span>
+          }
+          @if (t.fecha_revision) {
+            <span class="ay-etiqueta-neutra">Revisado el {{ t.fecha_revision }}</span>
+          }
+        </div>
+
+        <div class="ay-sin-video">
+          <lucide-icon name="file-text" [size]="24" />
+          <div>
+            <strong>Todavía no hay video de este tema</strong>
+            <span>El paso a paso está escrito aquí abajo, completo.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- LA LECTURA. Aparece al bajar: el resumen, la guía escrita, los pasos desarrollados, el voto
+       y los vecinos. Quien no puede ver el video —cocina ruidosa, 3G, celular prestado— lo tiene
+       todo aquí. -->
+  <div class="ay-lectura" #guia id="guia">
+    <div class="ay-lectura__interior">
+      @if (t.video && t.resumen) {
+        <p class="ay-lectura__resumen">{{ t.resumen }}</p>
+      }
+
+      @if (t.cuerpo) {
+        <section class="ay-prosa" [innerHTML]="t.cuerpo | markdown"></section>
+      }
+
+      @if (t.capitulos.length) {
+        <section class="ay-pasos">
+          <h2>Paso a paso</h2>
+          <ol>
+            @for (cap of t.capitulos; track cap.id_capitulo) {
+              <li
+                [id]="'paso-' + cap.id_capitulo"
+                [class.ay-pasos__activo]="cap.id_capitulo === capituloActivo()"
+              >
+                <div class="ay-pasos__titulo">
+                  <strong>{{ cap.titulo }}</strong>
+                  @if (capitulosSonTiempos()) {
+                    <!-- Sube al video y salta: el reproductor quedó arriba, fuera de la pantalla. -->
+                    <button type="button" class="ay-pasos__salto" (click)="irA(cap, true)">
+                      <lucide-icon name="circle-play" [size]="13" />
+                      Ver en {{ marca(cap.t_inicio_seg) }}
+                    </button>
+                  }
+                </div>
+                @if (cap.cuerpo) {
+                  <div class="ay-prosa ay-prosa--compacta" [innerHTML]="cap.cuerpo | markdown"></div>
+                }
+              </li>
+            }
+          </ol>
+        </section>
+      }
+
+      <!-- ¿Te sirvió? Un clic, sin formulario: pedir un comentario obligatorio garantiza que
+           nadie vote, y el conteo por tema ya dice dónde confunde el producto. -->
+      <section class="ay-voto">
+        @if (voto() === null) {
+          <span class="ay-voto__pregunta">¿Te sirvió este tutorial?</span>
+          <div class="ay-voto__botones">
+            <button type="button" (click)="votar(true)">
+              <lucide-icon name="thumbs-up" [size]="16" /> Sí
+            </button>
+            <button type="button" (click)="votar(false)">
+              <lucide-icon name="thumbs-down" [size]="16" /> No
+            </button>
+          </div>
+        } @else if (voto()) {
+          <span class="ay-voto__gracias">
+            <lucide-icon name="check" [size]="16" /> ¡Gracias! Nos ayuda a saber qué funciona.
+          </span>
+        } @else {
+          <!-- Un «no» no se queda en un conteo: ahí mismo se ofrece una persona. Es el momento
+               exacto en el que alguien se está rindiendo. -->
+          <span class="ay-voto__gracias">
+            Gracias por decirlo. Lo vamos a mejorar — y si necesitas resolverlo ya,
+            <a [href]="whatsappSoporte" target="_blank" rel="noopener noreferrer">
+              escríbenos por WhatsApp</a>.
+          </span>
+        }
+      </section>
+
+      <!-- Siguiente y anterior: sin esto, el final de un video es un callejón sin salida. -->
+      @if (t.anterior || t.siguiente) {
+        <nav class="ay-vecinos" aria-label="Más tutoriales de este módulo">
+          @if (t.anterior; as prev) {
+            <a class="ay-vecinos__enlace" [routerLink]="['/ayuda', t.app_clave, t.modulo_clave, prev.clave]">
+              <lucide-icon name="arrow-left" [size]="16" />
+              <span>
+                <small>Anterior</small>
+                <strong>{{ prev.titulo }}</strong>
+              </span>
+            </a>
+          }
+          @if (t.siguiente; as next) {
+            <a
+              class="ay-vecinos__enlace ay-vecinos__enlace--der"
+              [routerLink]="['/ayuda', t.app_clave, t.modulo_clave, next.clave]"
+            >
+              <span>
+                <small>Siguiente</small>
+                <strong>{{ next.titulo }}</strong>
+              </span>
+              <lucide-icon name="arrow-right" [size]="16" />
+            </a>
+          }
+        </nav>
+      }
+    </div>
+  </div>
+}
