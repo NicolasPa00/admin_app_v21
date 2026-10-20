@@ -25,9 +25,10 @@ export const environment = {
   /**
    * App ID de Meta y config ID de Embedded Signup (ver environment.ts para el porqué).
    * "EscalApp — Registro insertado", creada el 2026-09-19.
-   * ⚠️ El config ID por sí solo no basta: falta autorizar `escalapp.cloud` en "Administrar
-   * dominios" (checklist de developers.facebook.com) antes de que el SDK funcione de verdad
-   * desde producción — sin eso, Meta rechaza el origen aunque el config ID sea correcto.
+   *
+   * El config ID por sí solo no basta: `escalapp.cloud` tiene que estar autorizado en
+   * "Administrar dominios" o Meta rechaza el origen aunque el config ID sea correcto.
+   * ✅ Verificado el 2026-10-20 en la cuenta «Escalapp» (dominio 27803591939268578).
    */
   metaAppId: '1552342763052863',
   metaConfigId: '3007420636275811',
@@ -45,11 +46,18 @@ export const environment = {
    * con una audiencia vacía y pagar de más por el mismo clic.
    */
   analitica: {
-    /** GA4, formato `G-XXXXXXXXXX`. */
-    ga4: '',
-    /** Píxel de Meta, solo dígitos. */
-    metaPixel: '',
-    /** Microsoft Clarity, el id del proyecto. */
-    clarity: '',
+    /** GA4 — propiedad «EscalApp», flujo «EscalApp Web», creado el 2026-10-20. */
+    ga4: 'G-09HEBGVL5Q',
+    /**
+     * Conjunto de datos «EscalApp Web» de Meta, creado el 2026-10-20.
+     *
+     * Vive en la MISMA cuenta de negocio que la app de WhatsApp (`metaAppId`) y que el conjunto
+     * de WhatsApp Marketing. No es casualidad ni comodidad: una audiencia de retargeting solo se
+     * puede usar desde la cuenta que la posee, así que un píxel en otra cuenta sería una
+     * audiencia que no se puede gastar.
+     */
+    metaPixel: '1659925482479960',
+    /** Microsoft Clarity, proyecto «EscalApp», creado el 2026-10-20. */
+    clarity: 'z0qcdmwbof',
   },
 };
