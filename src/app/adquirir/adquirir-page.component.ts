@@ -440,9 +440,23 @@ export class AdquirirPageComponent {
     this.cantidades.update((actual) => ({ ...actual, [c.codigo]: nueva }));
   }
 
+  /**
+   * Los complementos que tienen sentido con el plan elegido: si el plan ya trae ilimitado lo que
+   * uno amplía (el Empresarial de Restaurante, en usuarios), ese no se ofrece — y el backend lo
+   * rechaza con `COMPLEMENTO_NO_APLICA` si llegara.
+   */
+  protected readonly complementosDelPlan = computed(() => {
+    const p = this.plan();
+    return this.complementos().filter((c) => {
+      if (c.amplia === 'usuarios') return p?.usuarios_incluidos != null;
+      if (c.amplia === 'cajas') return p?.cajas_incluidas != null;
+      return true;
+    });
+  });
+
   /** Lo elegido, con su subtotal — para el resumen y para mandar al backend. */
   protected readonly lineasComplemento = computed(() =>
-    this.complementos()
+    this.complementosDelPlan()
       .map((c) => {
         const cantidad = this.cantidadDe(c.codigo);
         return { ...c, cantidad, subtotal: cantidad * c.precio };
@@ -466,6 +480,8 @@ export class AdquirirPageComponent {
     const partes: string[] = [];
     if (p.usuarios_incluidos != null) {
       partes.push(`${p.usuarios_incluidos} usuario${p.usuarios_incluidos === 1 ? '' : 's'}`);
+    } else {
+      partes.push('usuarios ilimitados');
     }
     if (p.cajas_incluidas != null) {
       partes.push(`${p.cajas_incluidas} caja${p.cajas_incluidas === 1 ? '' : 's'}`);

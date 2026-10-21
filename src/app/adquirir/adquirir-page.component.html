@@ -95,17 +95,17 @@
 
             <!--
               El tamaño del equipo, dentro de «Tu negocio» y no como paso aparte. Los contadores
-              arrancan en lo que el plan ya incluye (4 usuarios, 1 caja) y no bajan de ahí: lo
+              arrancan en lo que el plan ya incluye (p. ej. 8 usuarios, 1 caja) y no bajan de ahí: lo
               que se ve es el total del negocio, y cada unidad por encima es un complemento que
               suma a la mensualidad. Preguntar «¿cuántos serán?» se entiende; preguntar
               «¿cuántos adicionales?» obliga a restar.
             -->
-            @if (plan() && complementos().length) {
+            @if (plan() && complementosDelPlan().length) {
               <div class="cp-campo">
                 <span class="cp-campo__label">¿Cuántos van a usar el sistema?</span>
 
                 <ul class="cp-complementos">
-                  @for (c of complementos(); track c.codigo) {
+                  @for (c of complementosDelPlan(); track c.codigo) {
                     <li
                       class="cp-complemento"
                       [class.cp-complemento--activo]="cantidadDe(c.codigo) > 0"
