@@ -1157,7 +1157,10 @@
                   Añadir sede
                 </button>
               } @else {
-                <form class="neg-sedes__form" (ngSubmit)="submitSede()">
+                <!-- `submit` nativo (sin FormsModule), igual que en `mis-pagos`: con `(ngSubmit)`
+                     y sin FormsModule importado ese evento no existe, el navegador mandaba el
+                     formulario de verdad y la recarga de página se llevaba el modal por delante. -->
+                <form class="neg-sedes__form" (submit)="$event.preventDefault(); submitSede()">
                   <p class="neg-sedes__nota">
                     Hereda de la matriz el aplicativo, el país, los colores y los interruptores.
                     La administran las mismas personas que la matriz.
