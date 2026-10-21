@@ -120,7 +120,7 @@
       <!-- Una sola fecha, la que importa: cuándo vence o venció el plan. -->
       <p class="mp__vigencia" [class.mp__vigencia--alerta]="!estaAlDia(c.vencimiento)">
         <lucide-icon name="clock" [size]="14" aria-hidden="true" />
-        {{ detalleVigencia(c.vencimiento) }}
+        {{ detalleVigencia(c.vencimiento, !!c.es_prueba) }}
       </p>
 
       <!--

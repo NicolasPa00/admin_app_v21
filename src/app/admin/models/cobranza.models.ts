@@ -282,6 +282,11 @@ export interface CobroNegocio {
    * «Mis pagos» ofrece elegir un PRIMER plan en vez de cambiar el que ya tiene.
    */
   sin_plan?: boolean;
+  /**
+   * El negocio está en su prueba gratuita de 30 días: `plan` dice «Prueba gratuita» y la vigencia
+   * es la de la prueba, no la de un plan pagado.
+   */
+  es_prueba?: boolean;
   /** Plan que está pagando hoy. */
   id_plan?: number;
   ciclo?: CicloCobro;

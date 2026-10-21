@@ -552,6 +552,10 @@ export class MisPagosComponent implements OnInit {
     if (f.tipo === 'ajuste') {
       return 'Al pagar, el cambio queda activo de inmediato y tu fecha de vencimiento no se mueve.';
     }
+    // Durante la prueba el mes pagado empieza cuando ella termina (`calcularRenovacion`).
+    if (c.es_prueba && this.estaAlDia(c.vencimiento)) {
+      return 'Al pagar, tu plan queda activo por un mes desde que termine la prueba.';
+    }
     return this.efectoDelPago(c.vencimiento);
   }
 
@@ -869,7 +873,20 @@ export class MisPagosComponent implements OnInit {
   }
 
   /** La única fecha que le importa al dueño: cuándo vence (o venció) su plan. */
-  protected detalleVigencia(v: Vencimiento): string {
+  protected detalleVigencia(v: Vencimiento, esPrueba = false): string {
+    // La prueba no «vence» ni «se renueva»: termina, y lo que sigue es elegir y pagar un plan.
+    if (esPrueba) {
+      switch (v.clave) {
+        case 'AL_DIA':
+          return `Tu prueba gratuita está activa hasta el ${this.diaLargo(v.fin)}`;
+        case 'POR_VENCER':
+          return `Tu prueba gratuita termina el ${this.diaLargo(v.fin)}. Paga tu plan para seguir sin interrupciones`;
+        case 'GRACIA':
+          return `Tu prueba gratuita terminó el ${this.diaLargo(v.fin)}. Puedes seguir usando EscalApp hasta el ${this.diaLargo(v.limiteGracia)}`;
+        case 'VENCIDO':
+          return `Tu prueba gratuita terminó el ${this.diaLargo(v.fin)}`;
+      }
+    }
     switch (v.clave) {
       case 'AL_DIA':
         return v.fin

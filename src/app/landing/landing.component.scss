@@ -2896,6 +2896,23 @@ lucide-icon {
     margin-top: var(--es-spacing-4);
   }
 
+  /* Corregir el correo desde el paso del código, sin cerrar el modal. */
+  &__cambiar-correo {
+    background: none;
+    border: none;
+    margin-top: var(--es-spacing-2);
+    padding: var(--es-spacing-1) var(--es-spacing-2);
+    border-radius: var(--es-radius-md);
+    color: var(--es-primary);
+    font-size: var(--es-font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:hover { background: var(--es-primary-subtle-bg); }
+  }
+
   &__resend-btn {
     background: none;
     border: none;
@@ -2923,6 +2940,28 @@ lucide-icon {
   display: flex;
   flex-direction: column;
   gap: var(--es-spacing-4);
+
+  /* «Revisa Spam»: ámbar como el aviso de seguridad del paso final, para que se lea antes que
+     el campo del código. */
+  &__spam {
+    display: flex;
+    gap: var(--es-spacing-2);
+    align-items: flex-start;
+    background: var(--es-warning-subtle);
+    border-left: 3px solid var(--es-accent-amber);
+    border-radius: var(--es-radius-md);
+    padding: var(--es-spacing-2) var(--es-spacing-4);
+    margin-bottom: var(--es-spacing-4);
+
+    lucide-icon { color: var(--es-accent-orange); flex-shrink: 0; margin-top: 2px; }
+
+    p {
+      font-size: var(--es-font-size-sm);
+      color: var(--es-text-primary);
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
 
   &__server-error {
     background: var(--es-form-error-bg);

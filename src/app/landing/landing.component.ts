@@ -151,6 +151,26 @@ const RUBROS_RESPALDO: TipoNegocio[] = [
 ];
 
 /**
+ * Los oficios que ofrece el desplegable del registro de prueba (2026-10-20).
+ *
+ * El catálogo tiene más de quince y ofrecerlos todos en el registro prometía cosas que el producto
+ * aún no atiende igual de bien (spa, tatuajes, mascotas, consultorio, hospedaje) y repetía el mismo
+ * restaurante con otro nombre (panadería, heladería, pizzería). Aquí van solo los que están
+ * completos y en producción: el motor de restaurante y el de agenda para barberías y salones.
+ *
+ * No se borran del catálogo: el backend los sigue aceptando —hay negocios dados de alta con ellos
+ * y páginas viejas en caché— y la tira de «también gestionan…» sigue enseñando la amplitud.
+ */
+const RUBROS_REGISTRO = [
+  'RESTAURANTE',
+  'COMIDAS RAPIDAS',
+  'CAFETERIA',
+  'BAR',
+  'BARBERIA',
+  'SALON DE BELLEZA',
+];
+
+/**
  * Una familia de oficios: lo que el selector de planes enseña como botón.
  *
  * Es la capa de marketing sobre los motores del producto — hay exactamente una por `modulo`, así
@@ -459,12 +479,12 @@ interface TarjetaPlan {
   /**
    * Cuántas personas y cuántos puntos de cobro entran en el precio.
    *
-   * Son cifras de la landing, no un límite que el backend haga cumplir hoy (`gener_plan` solo
-   * guarda nombre y precio). Si algún día se cobra por encima del límite, el número tiene que
-   * salir de la base y no de aquí — mientras tanto, esto es la promesa comercial y por eso sube
-   * con el precio: lo que sostiene el escalón es el tamaño del negocio, no el software.
+   * Los usuarios son POR MOTOR (`null` = ilimitado): desde 2026-10-19 Restaurante trae más que
+   * Reserva para diferenciarse de la competencia. Es copia de lo que hace cumplir el backend
+   * (`gener_plan.usuarios_incluidos` + `gener_plan_limite_modulo`, ver
+   * `migrate_planes_usuarios_modulo.js`): si se cambia una, se cambia la otra.
    */
-  usuarios: number;
+  usuarios: Record<'RESTAURANTE' | 'RESERVA', number | null>;
   cajas: number;
   /**
    * Solo el Emprendedor se prueba gratis. En los demás hay un costo externo real desde el primer
@@ -486,7 +506,7 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     base: 'BASICO',
     conAsistente: false,
     conFacturacion: false,
-    usuarios: 4,
+    usuarios: { RESTAURANTE: 8, RESERVA: 4 },
     cajas: 1,
     conTrial: true,
     destacado: false,
@@ -498,7 +518,7 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     base: 'AVANZADO',
     conAsistente: true,
     conFacturacion: false,
-    usuarios: 8,
+    usuarios: { RESTAURANTE: 10, RESERVA: 8 },
     cajas: 2,
     conTrial: false,
     destacado: true,
@@ -510,7 +530,7 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     base: 'BASICO',
     conAsistente: false,
     conFacturacion: true,
-    usuarios: 8,
+    usuarios: { RESTAURANTE: 15, RESERVA: 8 },
     cajas: 2,
     conTrial: false,
     destacado: false,
@@ -522,7 +542,7 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     base: 'AVANZADO',
     conAsistente: true,
     conFacturacion: true,
-    usuarios: 15,
+    usuarios: { RESTAURANTE: null, RESERVA: 15 },
     cajas: 3,
     conTrial: false,
     destacado: false,
@@ -797,8 +817,19 @@ export class LandingComponent {
     );
   });
 
-  /** El desplegable del registro sí ofrece los 14: aquí no sobra ninguno. */
-  protected readonly tiposNegocioRegistro = computed(() => this.rubros());
+  /**
+   * El desplegable del registro: solo los oficios que el producto ya atiende bien, en el orden de
+   * `RUBROS_REGISTRO`. Se cruza con el catálogo de la API para no ofrecer uno que la base ya no
+   * acepte; si el cruce saliera vacío, se ofrece el catálogo entero antes que un desplegable sin
+   * opciones.
+   */
+  protected readonly tiposNegocioRegistro = computed(() => {
+    const rubros = this.rubros();
+    const elegidos = RUBROS_REGISTRO.map((nombre) => rubros.find((r) => r.nombre === nombre)).filter(
+      (r): r is TipoNegocio => !!r,
+    );
+    return elegidos.length > 0 ? elegidos : rubros;
+  });
 
   /**
    * Los oficios que cubre la familia elegida — la tira de «nuestros clientes también gestionan…».
@@ -1305,8 +1336,12 @@ export class LandingComponent {
         });
       }
 
+      // Un motor sin cifra propia toma la de Restaurante, como el resto de tablas por motor.
+      const usuarios = modulo in t.usuarios
+        ? t.usuarios[modulo as keyof TarjetaPlan['usuarios']]
+        : t.usuarios.RESTAURANTE;
       const incluidos = [
-        `${t.usuarios} usuarios incluidos`,
+        usuarios == null ? 'Usuarios ilimitados' : `${usuarios} usuarios incluidos`,
         t.cajas === 1 ? '1 caja incluida' : `${t.cajas} cajas incluidas`,
       ];
 
@@ -1424,6 +1459,9 @@ export class LandingComponent {
   protected readonly trialOtp          = signal('');
   protected readonly trialOtpTouched   = signal(false);
   protected readonly trialResendCount  = signal(0);
+  /** El paso del código con el correo abierto para corregirlo. */
+  protected readonly editandoCorreo    = signal(false);
+  private correoAntesDeCambiar = '';
   protected readonly trialMaxResends   = 3;
 
   // Estado compartido
@@ -1491,6 +1529,7 @@ export class LandingComponent {
     this.modalOpen.set(true);
     this.modalStep.set('form');
     this.trialError.set(null);
+    this.editandoCorreo.set(false);
     this.congelarFondo(true);
     // El primer paso del embudo que depende de una decisión del visitante: hasta aquí solo había
     // leído. Es la base contra la que se mide todo lo demás.
@@ -1592,6 +1631,60 @@ export class LandingComponent {
     } catch (err: unknown) {
       const msg = (err as { error?: { message?: string } })?.error?.message;
       this.trialError.set(msg ?? 'Error al reenviar el código.');
+    } finally {
+      this.trialLoading.set(false);
+    }
+  }
+
+  /**
+   * Paso 2: corregir el correo sin salir del paso.
+   *
+   * Antes la única salida a un correo mal escrito era cerrar el modal y volver a llenar todo. El
+   * resto de datos se conserva; solo cambia el correo y se manda un código nuevo a él.
+   */
+  protected cambiarCorreo(): void {
+    this.correoAntesDeCambiar = this.trialEmail();
+    this.trialEmailTouched.set(false);
+    this.trialError.set(null);
+    this.editandoCorreo.set(true);
+  }
+
+  protected cancelarCambioCorreo(): void {
+    this.trialEmail.set(this.correoAntesDeCambiar);
+    this.trialError.set(null);
+    this.editandoCorreo.set(false);
+  }
+
+  protected async confirmarCambioCorreo(): Promise<void> {
+    this.trialEmailTouched.set(true);
+    if (this.trialEmailError() || this.trialLoading()) return;
+
+    const nuevo = this.trialEmail().trim();
+    if (nuevo.toLowerCase() === this.correoAntesDeCambiar.trim().toLowerCase()) {
+      this.editandoCorreo.set(false);
+      return;
+    }
+
+    this.trialLoading.set(true);
+    this.trialError.set(null);
+    try {
+      await firstValueFrom(
+        this.authService.enviarCodigoTrial({
+          email:              nuevo,
+          nombre_completo:    this.trialNombre().trim(),
+          num_identificacion: this.trialCedula().trim(),
+          tipo_negocio:       this.trialTipoNeg(),
+          nombre_negocio:     this.trialNombreNegocio().trim(),
+        }),
+      );
+      // Correo nuevo, cuenta nueva de reenvíos: los gastados eran para la dirección equivocada.
+      this.trialResendCount.set(0);
+      this.trialOtp.set('');
+      this.trialOtpTouched.set(false);
+      this.editandoCorreo.set(false);
+    } catch (err: unknown) {
+      const msg = (err as { error?: { message?: string } })?.error?.message;
+      this.trialError.set(msg ?? 'No pudimos enviar el código a ese correo. Inténtalo de nuevo.');
     } finally {
       this.trialLoading.set(false);
     }

@@ -1094,11 +1094,19 @@
           <div class="lp-modal__icon lp-modal__icon--green">
             <lucide-icon name="mail" [size]="28" aria-hidden="true" />
           </div>
-          <h2 class="lp-modal__title">Revisa tu correo</h2>
-          <p class="lp-modal__subtitle">
-            Enviamos un código de 6 dígitos a<br />
-            <strong>{{ trialEmail() }}</strong>
-          </p>
+          @if (editandoCorreo()) {
+            <h2 class="lp-modal__title">Corrige tu correo</h2>
+            <p class="lp-modal__subtitle">Te enviaremos un código nuevo. El resto de tus datos se conserva.</p>
+          } @else {
+            <h2 class="lp-modal__title">Revisa tu correo</h2>
+            <p class="lp-modal__subtitle">
+              Enviamos un código de 6 dígitos a<br />
+              <strong>{{ trialEmail() }}</strong>
+            </p>
+            <button type="button" class="lp-modal__cambiar-correo" (click)="cambiarCorreo()">
+              ¿Escribiste mal tu correo? Corrígelo aquí
+            </button>
+          }
         </div>
       }
       @if (modalStep() === 'success') {
@@ -1246,8 +1254,54 @@
           </p>
         }
 
+        <!-- ── PASO 2b: Corregir el correo sin volver a llenar todo ── -->
+        @if (modalStep() === 'otp' && editandoCorreo()) {
+          <form
+            id="lp-trial-correo"
+            class="lp-trial-form"
+            (submit)="$event.preventDefault(); confirmarCambioCorreo()"
+            novalidate
+          >
+            <div
+              class="lp-form-field"
+              [class.lp-form-field--error]="trialEmailTouched() && trialEmailError()"
+            >
+              <label class="lp-form-field__label" for="trial-email-corregir"
+                >Correo electrónico</label
+              >
+              <input
+                id="trial-email-corregir"
+                type="email"
+                class="lp-form-field__input"
+                placeholder="tu@correo.com"
+                autocomplete="email"
+                [value]="trialEmail()"
+                (input)="trialEmail.set($any($event.target).value)"
+                (blur)="trialEmailTouched.set(true)"
+              />
+              @if (trialEmailTouched() && trialEmailError()) {
+                <span class="lp-form-field__error">{{ trialEmailError() }}</span>
+              }
+            </div>
+
+            @if (trialError()) {
+              <div class="lp-trial-form__server-error">{{ trialError() }}</div>
+            }
+          </form>
+        }
+
         <!-- ── PASO 2: Verificar OTP ── -->
-        @if (modalStep() === 'otp') {
+        @if (modalStep() === 'otp' && !editandoCorreo()) {
+          <!-- Arriba y a la vista: el correo de verificación cae a menudo en Spam o Promociones,
+               y quien no lo encuentra en la bandeja principal abandona el registro ahí. -->
+          <div class="lp-trial-form__spam" role="note">
+            <lucide-icon name="info" [size]="18" aria-hidden="true" />
+            <p>
+              <strong>¿No lo ves? Revisa tu carpeta de Spam o Correo no deseado</strong> (en Gmail,
+              también Promociones). Puede tardar un par de minutos en llegar.
+            </p>
+          </div>
+
           <form
             id="lp-trial-otp"
             class="lp-trial-form"
@@ -1345,7 +1399,35 @@
           </p>
         }
 
-        @if (modalStep() === 'otp') {
+        @if (modalStep() === 'otp' && editandoCorreo()) {
+          <button
+            type="submit"
+            form="lp-trial-correo"
+            class="es-btn es-btn--primary es-btn--block"
+            [disabled]="trialLoading()"
+          >
+            @if (trialLoading()) {
+              <lucide-icon name="loader-2" [size]="18" class="spin" aria-hidden="true" />
+              Enviando código...
+            } @else {
+              Enviar código a este correo
+              <lucide-icon name="arrow-right" [size]="18" aria-hidden="true" />
+            }
+          </button>
+
+          <div class="lp-modal__resend">
+            <button
+              type="button"
+              class="lp-modal__resend-btn"
+              [disabled]="trialLoading()"
+              (click)="cancelarCambioCorreo()"
+            >
+              Cancelar
+            </button>
+          </div>
+        }
+
+        @if (modalStep() === 'otp' && !editandoCorreo()) {
           <button
             type="submit"
             form="lp-trial-otp"
