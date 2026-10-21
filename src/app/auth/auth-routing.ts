@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authGuard } from './guards/auth.guard';
+
 /**
  * Rutas del módulo de autenticación.
  *
@@ -39,6 +41,16 @@ export const authRoutes: Routes = [
         (m) => m.CallbackComponent,
       ),
     title: 'Volviendo al panel',
+  },
+  {
+    // Cambio obligatorio de la contraseña temporal (la cédula). Ver CambiarPasswordComponent.
+    path: 'cambiar-password',
+    canActivate: [authGuard()],
+    loadComponent: () =>
+      import('./features/cambiar-password/cambiar-password.component').then(
+        (m) => m.CambiarPasswordComponent,
+      ),
+    title: 'Crea tu contraseña',
   },
   {
     path: 'forgot-password',

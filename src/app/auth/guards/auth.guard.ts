@@ -20,7 +20,7 @@ import { AuthService } from '../data-access/auth.service';
  *                        cualquier usuario autenticado tiene acceso.
  */
 export function authGuard(allowedRoles?: string[]): CanActivateFn {
-  return () => {
+  return (_route, state) => {
     const authService = inject(AuthService);
     const router = inject(Router);
 
@@ -36,6 +36,14 @@ export function authGuard(allowedRoles?: string[]): CanActivateFn {
     // ¿Está autenticado?
     if (!authService.isAuthenticated()) {
       router.navigate(['/auth/login']);
+      return false;
+    }
+
+    // Con la contraseña temporal (la cédula) solo se puede ir a cambiarla: el backend tampoco
+    // deja hacer nada más (403 DEBE_CAMBIAR_PASSWORD).
+    const esPantallaDeCambio = state.url.startsWith('/auth/cambiar-password');
+    if (authService.currentUser()?.debe_cambiar_password && !esPantallaDeCambio) {
+      router.navigate(['/auth/cambiar-password']);
       return false;
     }
 

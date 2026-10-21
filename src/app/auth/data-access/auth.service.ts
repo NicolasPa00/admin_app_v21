@@ -200,7 +200,10 @@ export class AuthService {
               localStorage.setItem('app_token', res.data.token);
             }
             this.persistUserMeta(res.data.usuario);
-            this.router.navigate(['/admin/dashboard']);
+            // Con la contraseña temporal (la cédula) lo primero es cambiarla.
+            this.router.navigate([
+              res.data.usuario.debe_cambiar_password ? '/auth/cambiar-password' : '/admin/dashboard',
+            ]);
           }
         }),
       );
@@ -448,6 +451,32 @@ export class AuthService {
   }
 
   /**
+   * Cambio obligatorio de la contraseña temporal. El backend devuelve un token nuevo (sin la marca
+   * de «debe cambiar»): se guarda, se apaga la marca del usuario y se sigue al panel.
+   * POST /admin/auth/change-password
+   */
+  cambiarPasswordTemporal(data: ChangePasswordRequest): Observable<ApiOkResponse & { data?: { token?: string } }> {
+    return this.http
+      .post<ApiOkResponse & { data?: { token?: string } }>(`${this.API}/auth/change-password`, data)
+      .pipe(
+        tap((res) => {
+          const token = res.data?.token;
+          if (token) {
+            this._accessToken.set(token);
+            if (isPlatformBrowser(this.platformId)) localStorage.setItem('app_token', token);
+          }
+          const user = this.currentUser();
+          if (user) {
+            const actualizado = { ...user, debe_cambiar_password: false };
+            this.currentUser.set(actualizado);
+            this.persistUserMeta(actualizado);
+          }
+          this.router.navigate(['/admin/dashboard']);
+        }),
+      );
+  }
+
+  /**
    * Los oficios que se pueden contratar hoy, con el motor que los atiende.
    * GET /admin/rubros — pública, la landing la llama sin sesión.
    *
@@ -510,6 +539,8 @@ export class AuthService {
           segundo_apellido: user.segundo_apellido,
           email:           user.email,
           num_identificacion: user.num_identificacion,
+          // Para que una recarga no saque de la pantalla de cambio a quien aún tiene la temporal.
+          debe_cambiar_password: user.debe_cambiar_password,
           negocios:        user.negocios,
           roles_globales:  user.roles_globales,
         }),

@@ -1,6 +1,7 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router';
 import { EMPTY, catchError, throwError } from 'rxjs';
 
 import { AuthService } from '../data-access/auth.service';
@@ -43,6 +44,7 @@ function isPublicUrl(url: string): boolean {
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const toast = inject(ToastService);
+  const router = inject(Router);
   const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   if (isPublicUrl(req.url)) {
@@ -77,6 +79,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       // Y solo si el 401 es de la sesión ACTUAL: al volver de una impersonación vencida, las
       // peticiones que ya iban en vuelo con el token viejo también contestan 401, y sin esta
       // comprobación la segunda cerraba la sesión de super admin recién recuperada.
+      // Contraseña temporal sin cambiar: el backend no deja hacer nada más hasta cambiarla.
+      if (error.status === 403 && isBrowser && error.error?.code === 'DEBE_CAMBIAR_PASSWORD') {
+        router.navigate(['/auth/cambiar-password']);
+      }
       if (error.status === 401 && isBrowser && token === authService.getAccessToken()) {
         if (authService.sesionVencida() === 'volvio') {
           toast.aviso('Tu sesión como ese usuario venció. Volviste a tu cuenta.');
