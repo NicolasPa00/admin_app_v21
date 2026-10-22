@@ -215,7 +215,7 @@ const CATEGORIAS: CategoriaNegocio[] = [
     modulo: 'RESERVA',
     label: 'Agenda y Reservas',
     icon: 'calendar-check',
-    tagline: 'Agenda de citas, profesionales, servicios y recordatorios automáticos.',
+    tagline: 'Agenda de citas, profesionales, servicios y tu página para agendar.',
     representante: 'BARBERIA',
     implicitos: [],
   },
@@ -558,7 +558,7 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
     base: 'BASICO',
     conAsistente: false,
     conFacturacion: true,
-    usuarios: { RESTAURANTE: 15, RESERVA: 8 },
+    usuarios: { RESTAURANTE: 10, RESERVA: 8 },
     cajas: 2,
     conTrial: false,
     destacado: false,
@@ -595,25 +595,44 @@ const TARJETAS_PLAN: TarjetaPlan[] = [
  * El acceso tiene respaldo (`?? RESTAURANTE`), así que un motor nuevo sin lista degrada a la de
  * restaurante en vez de romper la página.
  */
+/*
+ * Revisado contra el producto el 2026-10-22. Lo único que separa los planes es el asistente
+ * (`asistente_ia`) y la facturación: inventario, reportes y todo lo demás vienen desde el
+ * Emprendedor. Antes `avanzado` prometía «Inventario y sucursales» y «Reportes avanzados»: el
+ * inventario y los reportes ya estaban en el plan de entrada y las sucursales no existen en
+ * ninguna de las dos apps. Por eso `avanzado` va vacío: lo que suma ese plan es el módulo del
+ * asistente (`ASISTENTE_POR_MODULO`), que se enseña aparte.
+ *
+ * Restaurante: «Carta digital» a secas. Que el cliente pida DESDE la carta y el pedido le llegue
+ * al asistente es del plan con asistente, y se dice allí.
+ * Reserva: los recordatorios salen por WhatsApp, así que también son del asistente.
+ */
 const FEATURES_POR_MODULO: Record<string, { base: string[]; avanzado: string[] }> = {
   RESTAURANTE: {
     base: [
-      'Carta digital con pedidos',
-      'Comandas a cocina',
-      'Mesas y domicilios',
-      'Caja y reportes de ventas',
+      'Carta digital',
+      'Carga tu carta con IA desde un PDF o fotos',
+      'Mesas, comandas y pantalla de cocina',
+      'Domicilios con precio por barrio',
+      'Caja con varios medios de pago',
+      'Inventario con recetas y proveedores',
+      'Costo y ganancia de cada producto',
+      'Tiqueteras y fiado de clientes',
+      'Reportes de ventas, impuestos y domicilios',
     ],
-    avanzado: ['Inventario y sucursales', 'Reportes avanzados'],
+    avanzado: [],
   },
   RESERVA: {
     base: [
       'Agenda de citas',
-      'Gestión de profesionales',
-      'Control de servicios',
-      'Recordatorios automáticos',
-      'Reportes de ingresos',
+      'Página propia para que tus clientes agenden solos',
+      'Abono para asegurar la cita',
+      'Profesionales con sus horarios',
+      'Servicios, cabinas y venta de productos',
+      'Caja e informes: ingresos, cancelaciones e inasistencias',
+      'Hospedaje sincronizado con Airbnb y Booking',
     ],
-    avanzado: ['Sucursales adicionales', 'Reportes avanzados'],
+    avanzado: [],
   },
 };
 
@@ -629,10 +648,16 @@ const FEATURES_POR_MODULO: Record<string, { base: string[]; avanzado: string[] }
 const ASISTENTE_POR_MODULO: Record<string, string[]> = {
   RESTAURANTE: [
     'Responde, toma pedidos y agenda domicilios 24/7',
+    'Tus clientes piden desde la carta digital y el pedido llega directo al asistente',
+    'Le avisa al cliente por WhatsApp cuando su pedido está listo',
+    'Ves y contestas todas las conversaciones desde el sistema',
+    'Pregúntale cómo va tu negocio: «¿cuánto vendí hoy?»',
     'Conecta el WhatsApp de tu negocio. ¿No puedes conectarlo? Escríbenos y te ayudamos',
   ],
   RESERVA: [
     'Responde, agenda y confirma citas 24/7',
+    'Recordatorio automático por WhatsApp un día antes de la cita',
+    'Ves y contestas todas las conversaciones desde el sistema',
     'Conecta el WhatsApp de tu negocio. ¿No puedes conectarlo? Escríbenos y te ayudamos',
   ],
 };
