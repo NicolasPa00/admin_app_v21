@@ -289,7 +289,7 @@ const PROXIMAMENTE: TipoNegocio[] = [
    Lo único que sigue siendo elegible es el paquete de documentos, y está dentro de las dos
    tarjetas que lo llevan — compartido, así que elegir «L» mueve el precio de las dos a la vez.
 
-   Los precios NO son libres: salen de `cobranza.cob_precio_plan` (Básico $41.999 / Avanzado
+   Los precios NO son libres: salen de `cobranza.cob_precio_plan` (Básico $37.999 / Avanzado
    $77.999 en Restaurante) y de `admin_ws/docs/precios-y-planes.md` §3. La tarifa subió el
    2026-10-20 (`migrate_cobranza_tarifa_2026_10`) y el plan con asistente bajó el 2026-10-22
    (`migrate_cobranza_tarifa_asistente_2026_10`); los clientes de antes conservan su precio vía
@@ -315,8 +315,8 @@ type PlanBaseId = 'BASICO' | 'AVANZADO';
  * (o crear un plan por motor) antes de publicar precios distintos.
  */
 const PRECIO_PLAN: Record<string, Record<PlanBaseId, number>> = {
-  RESTAURANTE: { BASICO: 41999, AVANZADO: 77999 },
-  RESERVA:     { BASICO: 51999, AVANZADO: 87999 },
+  RESTAURANTE: { BASICO: 37999, AVANZADO: 77999 },
+  RESERVA:     { BASICO: 37999, AVANZADO: 87999 },
 };
 
 /**
@@ -416,7 +416,9 @@ const MENSAJES_USO_PASO = 250;
  * plan + $39.000 de facturación» invitaba justo a eso — a restar, a comparar sumandos y a
  * preguntarse por qué el módulo suelto cuesta distinto que dentro del paquete.
  *
- * En «Emprendedor + Facturación» los saltos son los de `PAQUETES_FACTURACION` ($20.000). En el
+ * «Emprendedor + Facturación» se quedó en la tarifa del 2026-10-20 cuando el Emprendedor bajó a
+ * $37.999 (2026-10-22): ya no es «base + paquete», son precios propios. Sus saltos siguen siendo
+ * los de `PAQUETES_FACTURACION` ($20.000). En el
  * Plan Empresarial son de $15.000 desde el 2026-10-22: con $20.000 su XL quedaba por encima de
  * Loggro (~$167.000, sin asistente). Ver `migrate_cobranza_tarifa_asistente_2026_10.js`.
  */
