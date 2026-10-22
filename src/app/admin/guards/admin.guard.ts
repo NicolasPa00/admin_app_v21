@@ -61,6 +61,17 @@ export function veWhatsapp(user: User | null | undefined): boolean {
   return esSuperAdmin(user);
 }
 
+/**
+ * Cambiar la contraseña temporal y aceptar los Términos vigentes van antes que cualquier pantalla
+ * del panel, también para un super admin (ver AuthService.destinoTrasEntrar y authGuard).
+ */
+function pasoPendiente(authService: AuthService, router: Router): boolean {
+  const destino = authService.destinoTrasEntrar();
+  if (destino === '/admin/dashboard') return false;
+  router.navigate([destino]);
+  return true;
+}
+
 /** Protege `/admin/whatsapp` con `veWhatsapp`. Misma forma que `adminGuard`. */
 export function whatsappGuard(): CanActivateFn {
   return () => {
@@ -71,6 +82,7 @@ export function whatsappGuard(): CanActivateFn {
       router.navigate(['/auth/login']);
       return false;
     }
+    if (pasoPendiente(authService, router)) return false;
     if (veWhatsapp(authService.currentUser())) return true;
     router.navigate(['/admin/dashboard']);
     return false;
@@ -117,6 +129,7 @@ export function adminGuard(allowedRoles: string[] = []): CanActivateFn {
       router.navigate(['/auth/login']);
       return false;
     }
+    if (pasoPendiente(authService, router)) return false;
 
     // 2. Recopilar todos los roles del usuario (sin importar mayúsculas ni espacios)
     const userRoles = rolesDeUsuario(user);
