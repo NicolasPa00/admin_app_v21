@@ -596,6 +596,18 @@
             <span class="lp-plan__periodo">COP /mes</span>
           </div>
 
+          <!--
+            Lo de Meta, al lado del precio y desde el primer vistazo: es la otra mitad de lo que
+            va a pagar. Dicho como lo que es —según uso, a su tarjeta— y no como letra pequeña.
+          -->
+          <!-- Sin asistente se reserva el renglón: así la lista arranca a la misma altura en las cuatro. -->
+          <p class="lp-plan__meta" [class.lp-plan__meta--vacio]="!plan.conAsistente"
+             [attr.aria-hidden]="plan.conAsistente ? null : 'true'">
+            <span class="lp-plan__meta-mas">+</span>
+            WhatsApp de Meta según uso · gratis los primeros
+            {{ formatNumero(metaGratisAlMes) }} mensajes
+          </p>
+
           <p class="lp-plan__garantia">
             <lucide-icon [name]="plan.garantia.icon" [size]="14" aria-hidden="true" />
             {{ plan.garantia.texto }}
@@ -719,6 +731,11 @@
               }
               <span class="lp-detalle__monto">{{ formatPrice(plan.precioDetalle) }}</span>
               <span class="lp-detalle__periodo">COP /mes</span>
+              @if (plan.conAsistente) {
+                <span class="lp-detalle__meta-suma">
+                  + {{ formatPrice(plan.costoMeta) }} de Meta, según uso
+                </span>
+              }
               <span class="lp-detalle__garantia">
                 <lucide-icon [name]="plan.garantia.icon" [size]="14" aria-hidden="true" />
                 {{ plan.garantia.texto }}
@@ -785,61 +802,102 @@
         </div>
 
         <!--
-          Los mensajes del asistente. Se enseña en PEDIDOS y no en mensajes porque el dueño de un
-          restaurante cuenta pedidos: «6.000 mensajes» no le dice si le alcanza, «unos 700 pedidos
-          al mes» sí. Y el cobro de Meta va en el mismo bloque, al mismo tamaño — le llega a su
-          tarjeta lo pongamos aquí o no, y enterarse por la factura es la peor forma de enterarse.
+          Los mensajes del asistente (2026-10-22). El visitante mueve cuánto va a usar y ve dos
+          cosas separadas: lo nuestro, fijo, y lo de Meta, que empieza a subir en el mensaje
+          1.001. La idea es que no se sienta atacado —lo que sube no lo cobramos nosotros— y que
+          lo tenga claro antes de que le llegue a la tarjeta. Se cuenta en PEDIDOS porque es lo
+          que el dueño sabe medir; los mensajes van al lado.
         -->
         @if (plan.conAsistente) {
-          <section class="lp-detalle__paquetes-wrap">
-            <h4 class="lp-detalle__bloque-title">¿Cuántos pedidos atenderá tu asistente?</h4>
+          <section class="lp-detalle__paquetes-wrap lp-msg">
+            <h4 class="lp-detalle__bloque-title">¿Cuántos pedidos atiendes por WhatsApp al mes?</h4>
 
-            <p class="lp-msg__resumen">
-              <strong>{{ formatNumero(plan.mensajesTotal) }} mensajes al mes</strong>
-              — unos <strong>{{ formatNumero(plan.pedidosAlMes) }} pedidos</strong>
-              @if (plan.paquetesMensajes === 0) { incluidos en el plan }
-            </p>
-
-            <div class="lp-detalle__paquetes" role="group" aria-label="Paquetes de mensajes">
-              @for (n of opcionesPaquetesMensajes; track n) {
-                <button
-                  type="button"
-                  class="lp-plan__paquete"
-                  [class.lp-plan__paquete--active]="plan.paquetesMensajes === n"
-                  (click)="elegirPaquetesMensajes(plan.id, n)"
-                  [attr.aria-pressed]="plan.paquetesMensajes === n"
-                  [attr.aria-label]="n === 0
-                    ? 'Solo los mensajes incluidos en el plan'
-                    : n + ' paquetes de ' + plan.mensajesPorPaquete + ' mensajes'"
-                >
-                  <span class="lp-plan__paquete-id">{{ n === 0 ? 'Incluido' : '+' + n }}</span>
-                  <span class="lp-plan__paquete-docs">
-                    <lucide-icon name="message-circle" [size]="12" aria-hidden="true" />
-                    {{ formatNumero(pedidosAproximados(6000 + n * plan.mensajesPorPaquete)) }} pedidos
-                  </span>
-                </button>
-              }
+            <div class="lp-msg__control">
+              <label class="lp-msg__etiqueta" [for]="'uso-' + plan.id">
+                <strong>≈ {{ formatNumero(plan.pedidosUso) }} pedidos</strong>
+                <span>{{ formatNumero(plan.mensajesUso) }} mensajes del asistente</span>
+              </label>
+              <input
+                type="range"
+                class="lp-msg__rango"
+                [id]="'uso-' + plan.id"
+                min="0"
+                [max]="mensajesUsoMax"
+                [step]="mensajesUsoPaso"
+                [value]="plan.mensajesUso"
+                (input)="elegirMensajesUso(plan.id, $any($event.target).value)"
+                [attr.aria-valuetext]="'Unos ' + plan.pedidosUso + ' pedidos, '
+                  + plan.mensajesUso + ' mensajes al mes'"
+              />
             </div>
 
-            @if (plan.paquetesMensajes > 0) {
-              <p class="lp-msg__suma">
-                {{ plan.paquetesMensajes }}
-                {{ plan.paquetesMensajes === 1 ? 'paquete' : 'paquetes' }}
-                × {{ formatPrice(plan.precioPaqueteMensajes) }} al mes, ya sumados arriba.
-              </p>
-            }
-
-            <!-- Lo de Meta. No es letra pequeña: es la otra mitad de lo que va a pagar. -->
-            <p class="lp-msg__meta">
-              <lucide-icon name="info" [size]="14" aria-hidden="true" />
-              <span>
-                WhatsApp regala <strong>1.000 mensajes al mes</strong> por número y cobra los
-                siguientes <strong>directamente a tu cuenta de Meta</strong> (hoy unos $3 por
-                mensaje en Colombia). Si gastas los
-                {{ formatNumero(plan.mensajesTotal) }}, serían
-                <strong>~{{ formatPrice(plan.costoMeta) }} al mes</strong> aparte de este plan.
-                No lo cobramos nosotros y solo pagas lo que de verdad se envíe.
+            <div class="lp-msg__barra" aria-hidden="true">
+              <span class="lp-msg__seg lp-msg__seg--gratis" [style.width.%]="plan.barra.gratis"></span>
+              <span class="lp-msg__seg lp-msg__seg--meta" [style.width.%]="plan.barra.meta"></span>
+              <span class="lp-msg__seg lp-msg__seg--fuera" [style.width.%]="plan.barra.fuera"></span>
+              <span class="lp-msg__cupo" [style.left.%]="plan.barra.marcaCupo"></span>
+            </div>
+            <div class="lp-msg__escala" aria-hidden="true">
+              <span [style.left.%]="plan.barra.marcaGratis">{{ formatNumero(metaGratisAlMes) }}</span>
+              <span [style.left.%]="plan.barra.marcaCupo">
+                {{ formatNumero(plan.mensajesIncluidos) }} incluidos
               </span>
+            </div>
+
+            <ul class="lp-msg__leyenda">
+              <li>
+                <span class="lp-msg__muestra lp-msg__seg--gratis"></span>
+                Los primeros {{ formatNumero(metaGratisAlMes) }} mensajes del mes: Meta no cobra
+              </li>
+              <li>
+                <span class="lp-msg__muestra lp-msg__seg--meta"></span>
+                Desde el {{ formatNumero(metaGratisAlMes + 1) }}: Meta cobra
+                {{ formatPrecioMensaje(metaCopPorMensaje()) }} por mensaje, directo a tu tarjeta
+              </li>
+              <li>
+                <span class="lp-msg__muestra lp-msg__seg--fuera"></span>
+                El plan incluye {{ formatNumero(plan.mensajesIncluidos) }} (≈
+                {{ formatNumero(plan.pedidosIncluidos) }} pedidos). Si pasas de ahí, se suma un
+                paquete de {{ formatNumero(plan.mensajesPorPaquete) }} por
+                {{ formatPrice(plan.precioPaqueteMensajes) }}
+              </li>
+            </ul>
+
+            <dl class="lp-msg__cuentas">
+              <div>
+                <dt>
+                  <span class="lp-msg__quien lp-msg__quien--nuestro">EscalApp</span>
+                  Plan, fijo
+                </dt>
+                <dd>{{ formatPrice(plan.precioDetalle - plan.costoPaquetesMensajes) }}</dd>
+              </div>
+              @if (plan.paquetesMensajes > 0) {
+                <div>
+                  <dt>
+                    <span class="lp-msg__quien lp-msg__quien--nuestro">EscalApp</span>
+                    {{ plan.paquetesMensajes }}
+                    {{ plan.paquetesMensajes === 1 ? 'paquete' : 'paquetes' }} de mensajes
+                  </dt>
+                  <dd>{{ formatPrice(plan.costoPaquetesMensajes) }}</dd>
+                </div>
+              }
+              <div>
+                <dt>
+                  <span class="lp-msg__quien lp-msg__quien--meta">Meta</span>
+                  WhatsApp, según uso
+                </dt>
+                <dd>{{ formatPrice(plan.costoMeta) }}</dd>
+              </div>
+              <div class="lp-msg__total">
+                <dt>Lo que pagarías en total al mes</dt>
+                <dd>{{ formatPrice(plan.precioDetalle + plan.costoMeta) }}</dd>
+              </div>
+            </dl>
+
+            <p class="lp-msg__nota">
+              Lo de Meta no lo cobramos nosotros: le llega a la tarjeta de tu cuenta de WhatsApp
+              Business y solo pagas lo que de verdad se envíe, incluidos los mensajes que escribas
+              tú. Precio de Meta a hoy en Colombia; cambia con el dólar.
             </p>
           </section>
         }

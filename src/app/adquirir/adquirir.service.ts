@@ -20,6 +20,16 @@ export interface PlanVendible {
   cajas_incluidas: number | null;
 }
 
+/** Lo que Meta cobra por mensaje de WhatsApp, al dólar del día (`GET /publico/precio-whatsapp`). */
+export interface PrecioWhatsapp {
+  cop_por_mensaje: number;
+  gratis_al_mes: number;
+  trm: number;
+  trm_vigente_desde: string;
+  /** `true` si la TRM del día no contestó y se usó la de referencia (más alta). */
+  trm_es_referencia: boolean;
+}
+
 /** Algo que se puede añadir al plan, con su precio real de `cob_precio_complemento`. */
 export interface ComplementoVendible {
   codigo: string;
@@ -137,6 +147,13 @@ export class AdquirirService {
         params: rubro ? { rubro } : {},
       })
       .pipe(map((res) => res.data ?? { planes: [], complementos: [], pasarelas: [] }));
+  }
+
+  /** Lo que cobra Meta por mensaje hoy. `null` si no contesta: la landing se queda con su respaldo. */
+  precioWhatsapp(): Observable<PrecioWhatsapp | null> {
+    return this.http
+      .get<ApiResponse<PrecioWhatsapp>>(`${this.API}/publico/precio-whatsapp`)
+      .pipe(map((res) => res.data ?? null));
   }
 
   /**

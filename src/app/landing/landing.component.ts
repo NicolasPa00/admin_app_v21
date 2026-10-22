@@ -86,6 +86,7 @@ import { AssetService } from '../core/services/asset.service';
 import { SeoService } from '../core/services/seo.service';
 import { AnaliticaService } from '../core/services/analitica.service';
 import { AuthService } from '../auth/data-access/auth.service';
+import { AdquirirService } from '../adquirir/adquirir.service';
 import { environment } from '../../environments/environment';
 
 /* ──────────────────────────────────────────────────────────
@@ -289,8 +290,9 @@ const PROXIMAMENTE: TipoNegocio[] = [
    tarjetas que lo llevan — compartido, así que elegir «L» mueve el precio de las dos a la vez.
 
    Los precios NO son libres: salen de `cobranza.cob_precio_plan` (Básico $41.999 / Avanzado
-   $91.999 en Restaurante) y de `admin_ws/docs/precios-y-planes.md` §3. La tarifa subió el
-   2026-10-20 (`migrate_cobranza_tarifa_2026_10`); los clientes de antes conservan su precio vía
+   $77.999 en Restaurante) y de `admin_ws/docs/precios-y-planes.md` §3. La tarifa subió el
+   2026-10-20 (`migrate_cobranza_tarifa_2026_10`) y el plan con asistente bajó el 2026-10-22
+   (`migrate_cobranza_tarifa_asistente_2026_10`); los clientes de antes conservan su precio vía
    `cob_suscripcion.precio_fidelidad`, así que lo que se publica aquí es lo que paga quien llega
    hoy, no lo que paga todo el mundo. Los nombres de la landing sí son de marketing —
    «Plan Emprendedor» es el Básico de la base de datos, y la consola sigue llamándolo Básico.
@@ -313,8 +315,8 @@ type PlanBaseId = 'BASICO' | 'AVANZADO';
  * (o crear un plan por motor) antes de publicar precios distintos.
  */
 const PRECIO_PLAN: Record<string, Record<PlanBaseId, number>> = {
-  RESTAURANTE: { BASICO: 41999, AVANZADO: 91999 },
-  RESERVA:     { BASICO: 51999, AVANZADO: 101999 },
+  RESTAURANTE: { BASICO: 41999, AVANZADO: 77999 },
+  RESERVA:     { BASICO: 51999, AVANZADO: 87999 },
 };
 
 /**
@@ -358,12 +360,17 @@ const PAQUETES_FACTURACION: PaqueteDocumentos[] = [
  *     lo único que podemos hacer es decírselo antes de que lo vea en la factura.
  */
 
-/** Mensajes del asistente que incluye un plan con IA. Debe coincidir con `gener_plan.mensajes_incluidos`. */
-const MENSAJES_INCLUIDOS = 6000;
+/**
+ * Mensajes del asistente que incluye un plan con IA. Debe coincidir con `gener_plan.mensajes_incluidos`.
+ *
+ * Subió de 6.000 a 9.000 el 2026-10-22, junto con la barra de Meta: la tarjeta promete que lo que
+ * pasa de los 1.000 gratis lo cobra Meta, no nosotros, y eso solo es verdad dentro del cupo.
+ */
+const MENSAJES_INCLUIDOS = 9000;
 
 /** Cuántos trae cada paquete adicional, y lo que cuesta. Espejo de `MENSAJES_ASISTENTE`. */
 const MENSAJES_POR_PAQUETE = 6000;
-const PRECIO_PAQUETE_MENSAJES = 21999;
+const PRECIO_PAQUETE_MENSAJES = 12999;
 
 /** Hasta cuántos paquetes se pueden sumar (igual que `cantidad_maxima` del complemento). */
 const MAX_PAQUETES_MENSAJES = 5;
@@ -378,9 +385,25 @@ const MAX_PAQUETES_MENSAJES = 5;
  */
 const MENSAJES_POR_PEDIDO = 8.6;
 
-/** Lo que Meta regala por número y mes, y lo que cobra por cada uno de más (COP, Colombia). */
+/** Lo que Meta regala por número y mes. */
 const META_GRATIS_AL_MES = 1000;
-const META_COP_POR_MENSAJE = 2.9455;
+
+/**
+ * Lo que cobra Meta por cada mensaje de más, en COP. Es solo el RESPALDO del prerender: en el
+ * navegador se reemplaza por el del día (`GET /admin/publico/precio-whatsapp`, US$0,0008 × TRM).
+ * Va con la TRM de referencia del backend (3.900), más alta que la real a propósito: si la API no
+ * contesta, pasarse un poco es mejor que publicar un costo menor del que llegará.
+ */
+const META_COP_POR_MENSAJE_RESPALDO = 3.12;
+
+/**
+ * La barra de mensajes. Arranca en un uso normal (~350 pedidos) y no en el cupo: lo primero que
+ * ve el visitante no debe ser el peor caso. Llega hasta dos paquetes por encima del cupo, que es
+ * de sobra para enseñar cómo entra el paquete sin volver la barra inmanejable.
+ */
+const MENSAJES_USO_INICIAL = 3000;
+const MENSAJES_USO_MAX = MENSAJES_INCLUIDOS + 2 * 6000;
+const MENSAJES_USO_PASO = 250;
 
 /**
  * El precio publicado de los planes que traen facturación, por paquete.
@@ -390,18 +413,18 @@ const META_COP_POR_MENSAJE = 2.9455;
  * plan + $39.000 de facturación» invitaba justo a eso — a restar, a comparar sumandos y a
  * preguntarse por qué el módulo suelto cuesta distinto que dentro del paquete.
  *
- * Los saltos entre paquetes son los mismos de `PAQUETES_FACTURACION` ($20.000 entre uno y el
- * siguiente), y los dos precios de Avanzado coinciden con los de `precios-y-planes.md` §3
- * (Avanzado + Facturación S = $98.999, XL = $158.999).
+ * En «Emprendedor + Facturación» los saltos son los de `PAQUETES_FACTURACION` ($20.000). En el
+ * Plan Empresarial son de $15.000 desde el 2026-10-22: con $20.000 su XL quedaba por encima de
+ * Loggro (~$167.000, sin asistente). Ver `migrate_cobranza_tarifa_asistente_2026_10.js`.
  */
 const PRECIO_CON_FACTURACION: Record<string, Record<PlanBaseId, Record<string, number>>> = {
   RESTAURANTE: {
     BASICO:   { S: 81999,  M: 101999, L: 121999, XL: 141999 },
-    AVANZADO: { S: 131999, M: 151999, L: 171999, XL: 191999 },
+    AVANZADO: { S: 117999, M: 132999, L: 147999, XL: 162999 },
   },
   RESERVA: {
     BASICO:   { S: 91999,  M: 111999, L: 131999, XL: 151999 },
-    AVANZADO: { S: 141999, M: 161999, L: 181999, XL: 201999 },
+    AVANZADO: { S: 127999, M: 142999, L: 157999, XL: 172999 },
   },
 };
 
@@ -778,6 +801,7 @@ type ModalStep = 'form' | 'otp' | 'success';
 export class LandingComponent {
   protected readonly assetService   = inject(AssetService);
   private   readonly authService    = inject(AuthService);
+  private   readonly adquirirService = inject(AdquirirService);
   private   readonly seo            = inject(SeoService);
   private   readonly analitica      = inject(AnaliticaService);
 
@@ -975,6 +999,19 @@ export class LandingComponent {
         });
     });
 
+    // El precio de Meta del día, por el mismo motivo: en el prerender no hay API. Si no contesta,
+    // se queda el respaldo, que es más alto que el real.
+    afterNextRender(() => {
+      this.adquirirService.precioWhatsapp()
+        .pipe(takeUntilDestroyed(destroyRef))
+        .subscribe({
+          next: (precio) => {
+            if (precio && precio.cop_por_mensaje > 0) this.metaCopPorMensaje.set(precio.cop_por_mensaje);
+          },
+          error: () => { /* se conserva META_COP_POR_MENSAJE_RESPALDO */ },
+        });
+    });
+
     afterNextRender(() => {
       this.ctaBtnText.set(this.ctaPhrases[0]);
       this.charIndex   = this.ctaPhrases[0].length;
@@ -1092,39 +1129,49 @@ export class LandingComponent {
   }
 
   /**
-   * Cuántos paquetes de mensajes lleva elegidos cada tarjeta. Arrancan en 0: lo incluido tiene
-   * que bastarle a la mayoría, y abrir con un paquete puesto haría parecer que no.
+   * Cuántos mensajes al mes calcula gastar el visitante, por tarjeta (la barra del detalle).
+   *
+   * Hasta el 2026-10-22 se elegían paquetes con botones y Meta salía como un techo: «si gastas los
+   * 6.000, ~$15.000 aparte». Ahora el visitante mueve su uso y ve las dos partes por separado —lo
+   * nuestro, fijo, y lo de Meta, que crece desde el mensaje 1.001—. Los paquetes ya no se eligen:
+   * salen solos cuando el uso pasa del cupo.
    */
-  private readonly paquetesMensajesPorTarjeta = signal<Record<string, number>>({});
+  private readonly mensajesUsoPorTarjeta = signal<Record<string, number>>({});
 
-  protected paquetesMensajesDe(idTarjeta: string): number {
-    return this.paquetesMensajesPorTarjeta()[idTarjeta] ?? 0;
+  protected mensajesUsoDe(idTarjeta: string): number {
+    return this.mensajesUsoPorTarjeta()[idTarjeta] ?? MENSAJES_USO_INICIAL;
   }
 
-  protected elegirPaquetesMensajes(idTarjeta: string, cuantos: number): void {
-    const acotado = Math.max(0, Math.min(MAX_PAQUETES_MENSAJES, cuantos));
-    this.paquetesMensajesPorTarjeta.update((actual) => ({ ...actual, [idTarjeta]: acotado }));
+  protected elegirMensajesUso(idTarjeta: string, mensajes: number | string): void {
+    const acotado = Math.max(0, Math.min(MENSAJES_USO_MAX, Math.round(Number(mensajes) || 0)));
+    this.mensajesUsoPorTarjeta.update((actual) => ({ ...actual, [idTarjeta]: acotado }));
   }
 
-  /** Las opciones del selector: lo incluido (0) y hasta cinco paquetes. */
-  protected readonly opcionesPaquetesMensajes = Array.from(
-    { length: MAX_PAQUETES_MENSAJES + 1 },
-    (_, i) => i,
-  );
-
-  /** «6.000» → «unos 700 pedidos al mes». Se redondea a la centena: es una estimación. */
-  protected pedidosAproximados(mensajes: number): number {
-    return Math.round(mensajes / MENSAJES_POR_PEDIDO / 100) * 100;
-  }
+  protected readonly mensajesUsoMax = MENSAJES_USO_MAX;
+  protected readonly mensajesUsoPaso = MENSAJES_USO_PASO;
+  protected readonly metaGratisAlMes = META_GRATIS_AL_MES;
 
   /**
-   * Lo que Meta le cobrará al cliente si gasta TODOS sus mensajes.
-   *
-   * Es un techo, no una factura: Meta cobra lo entregado, así que quien no agote el cupo paga
-   * menos. Se publica el peor caso porque la sorpresa cara es descubrirlo después.
+   * Lo que cobra Meta por mensaje: el respaldo durante el prerender y el del día en el navegador.
+   * Ver `META_COP_POR_MENSAJE_RESPALDO`.
    */
+  protected readonly metaCopPorMensaje = signal(META_COP_POR_MENSAJE_RESPALDO);
+
+  /** «6.000» → «unos 700 pedidos al mes». Es una estimación, así que se redondea. */
+  protected pedidosAproximados(mensajes: number): number {
+    const pedidos = mensajes / MENSAJES_POR_PEDIDO;
+    const paso = pedidos < 200 ? 10 : pedidos < 1000 ? 50 : 100;
+    return Math.round(pedidos / paso) * paso;
+  }
+
+  /** Lo que Meta le cobrará al cliente por `mensajes` en un mes: los primeros 1.000 no cuestan. */
   protected costoMetaEstimado(mensajes: number): number {
-    return Math.round(Math.max(0, mensajes - META_GRATIS_AL_MES) * META_COP_POR_MENSAJE);
+    return Math.round(Math.max(0, mensajes - META_GRATIS_AL_MES) * this.metaCopPorMensaje());
+  }
+
+  /** 2.55 → «$2,55», el precio por mensaje tal como se lee en la leyenda de la barra. */
+  protected formatPrecioMensaje(cop: number): string {
+    return '$' + cop.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   /**
@@ -1302,7 +1349,11 @@ export class LandingComponent {
 
     return TARJETAS_PLAN.map((t) => {
       const paquete = this.paqueteDe(t.id);
-      const paquetesMsg = t.conAsistente ? this.paquetesMensajesDe(t.id) : 0;
+      const mensajesUso = t.conAsistente ? this.mensajesUsoDe(t.id) : 0;
+      const paquetesMsg = Math.min(
+        MAX_PAQUETES_MENSAJES,
+        Math.ceil(Math.max(0, mensajesUso - MENSAJES_INCLUIDOS) / MENSAJES_POR_PAQUETE),
+      );
       const mensajesTotal = t.conAsistente
         ? MENSAJES_INCLUIDOS + paquetesMsg * MENSAJES_POR_PAQUETE
         : 0;
@@ -1364,14 +1415,31 @@ export class LandingComponent {
           (t.conFacturacion ? precioConFactura[paquete.id] : precioPlan) + costoPaquetesMsg,
 
         /* ── Mensajes del asistente ── */
-        /** Cuántos paquetes lleva elegidos (0 = solo lo incluido). */
+        /** Lo que el visitante dice que va a gastar (la barra). */
+        mensajesUso,
+        pedidosUso: t.conAsistente ? this.pedidosAproximados(mensajesUso) : 0,
+        /** Los paquetes que ese uso necesita por encima del cupo (0 = cabe en el plan). */
         paquetesMensajes: paquetesMsg,
-        /** El total al mes con lo elegido. 0 en los planes sin asistente. */
+        costoPaquetesMensajes: costoPaquetesMsg,
+        mensajesIncluidos: MENSAJES_INCLUIDOS,
+        pedidosIncluidos: t.conAsistente ? this.pedidosAproximados(MENSAJES_INCLUIDOS) : 0,
+        /** El cupo con los paquetes. 0 en los planes sin asistente. */
         mensajesTotal,
-        /** La misma cifra en la unidad que el dueño sabe medir. */
-        pedidosAlMes: t.conAsistente ? this.pedidosAproximados(mensajesTotal) : 0,
-        /** Lo que Meta le cobrará aparte si los gasta todos. */
-        costoMeta: t.conAsistente ? this.costoMetaEstimado(mensajesTotal) : 0,
+        /** Lo que Meta le cobrará aparte por ese uso. No lo cobramos nosotros. */
+        costoMeta: t.conAsistente ? this.costoMetaEstimado(mensajesUso) : 0,
+        /**
+         * La barra, en % del recorrido: gratis (hasta 1.000), lo que cobra Meta dentro del cupo y
+         * lo que pasa del cupo (Meta + nuestro paquete). Y dónde cae cada marca de la escala.
+         */
+        barra: {
+          gratis: (Math.min(mensajesUso, META_GRATIS_AL_MES) / MENSAJES_USO_MAX) * 100,
+          meta:
+            (Math.max(0, Math.min(mensajesUso, MENSAJES_INCLUIDOS) - META_GRATIS_AL_MES) /
+              MENSAJES_USO_MAX) * 100,
+          fuera: (Math.max(0, mensajesUso - MENSAJES_INCLUIDOS) / MENSAJES_USO_MAX) * 100,
+          marcaGratis: (META_GRATIS_AL_MES / MENSAJES_USO_MAX) * 100,
+          marcaCupo: (MENSAJES_INCLUIDOS / MENSAJES_USO_MAX) * 100,
+        },
         precioPaqueteMensajes: PRECIO_PAQUETE_MENSAJES,
         mensajesPorPaquete: MENSAJES_POR_PAQUETE,
         /**

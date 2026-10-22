@@ -3349,47 +3349,213 @@ lucide-icon {
   }
 }
 
-/* ── Mensajes del asistente, en el detalle de los planes con IA ─────────────────────────────
+/* ── Mensajes del asistente, en el detalle de los planes con IA (2026-10-22) ─────────────────
  *
- * Tres piezas y un orden que no es casual: primero CUÁNTO da (en pedidos, que es lo que el
- * dueño cuenta), después qué cuesta sumar más, y al final lo que le cobra Meta.
+ * Dos dueños de la plata y cada uno con su color: lo NUESTRO en el azul de la marca y lo de
+ * META en verde (el de WhatsApp). El tramo gratis va rayado: se ve que existe y que no cuesta.
+ * Lo que pasa del cupo va en ámbar porque ahí vuelve a cobrar EscalApp (el paquete).
  *
- * Lo de Meta NO es letra pequeña y por eso no va en gris diminuto: le llega a su tarjeta lo
- * pongamos aquí o no, y la única forma de que no parezca un truco es decirlo al mismo tamaño
- * que el resto. Va con el fondo de aviso, no con el de error: es información, no un problema.
+ * Nada de esto es letra pequeña: le llega a su tarjeta lo pongamos aquí o no, y la única forma
+ * de que no parezca un truco es decirlo al mismo tamaño que el resto.
  */
-.lp-msg__resumen {
-  margin: 0 0 10px;
+.lp-msg {
+  --lp-msg-nuestro: var(--lp-blue);
+  --lp-msg-meta: var(--es-accent-green);
+  --lp-msg-fuera: var(--es-accent-amber);
+  --lp-msg-pista: color-mix(in srgb, var(--es-text-secondary) 14%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lp-msg__control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp-msg__etiqueta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
   font-size: var(--es-font-size-sm);
   color: var(--es-text-secondary);
+  font-variant-numeric: tabular-nums;
 
-  strong { color: var(--es-text-primary); }
+  strong { font-size: var(--es-font-size-md, 1rem); color: var(--es-text-primary); }
 }
 
-.lp-msg__suma {
-  margin: 10px 0 0;
-  font-size: 12px;
-  color: var(--es-text-secondary);
+.lp-msg__rango {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--lp-msg-nuestro);
+  cursor: pointer;
+
+  &:focus-visible { outline: 2px solid var(--lp-msg-nuestro); outline-offset: 4px; }
 }
 
-.lp-msg__meta {
+.lp-msg__barra {
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 12px 0 0;
-  padding: 10px 12px;
-  border: 1px solid var(--es-border);
-  border-radius: 10px;
-  background: var(--es-surface-subtle, rgba(139, 92, 246, 0.06));
-  font-size: 12px;
-  line-height: 1.5;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--lp-msg-pista);
+}
+
+.lp-msg__seg {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  transition: width 0.2s ease;
+
+  @media (prefers-reduced-motion: reduce) { transition: none; }
+
+  &--gratis {
+    background: repeating-linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--lp-msg-meta) 45%, transparent) 0 4px,
+      transparent 4px 8px
+    );
+  }
+  &--meta { background: var(--lp-msg-meta); }
+  &--fuera { background: var(--lp-msg-fuera); }
+}
+
+/* La raya del cupo: hasta ahí, lo que sube es solo de Meta. */
+.lp-msg__cupo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--es-text-primary);
+  opacity: 0.55;
+}
+
+.lp-msg__escala {
+  position: relative;
+  height: 16px;
+  font-size: 11px;
+  color: var(--es-text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  span {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+}
+
+.lp-msg__leyenda {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--es-font-size-sm);
+  line-height: 1.45;
   color: var(--es-text-secondary);
 
-  lucide-icon {
-    flex-shrink: 0;
-    margin-top: 1px;
-    color: var(--es-secondary-dark);
+  li { display: flex; gap: 8px; align-items: flex-start; }
+}
+
+.lp-msg__muestra {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--lp-msg-meta) 35%, transparent);
+}
+
+.lp-msg__cuentas {
+  margin: 0;
+  border-top: 1px solid var(--es-border);
+
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--es-border);
   }
 
-  strong { color: var(--es-text-primary); }
+  dt {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: var(--es-font-size-sm);
+    color: var(--es-text-secondary);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--es-text-primary);
+  }
+}
+
+.lp-msg__total {
+  dt { font-weight: 700; color: var(--es-text-primary); }
+  dd { font-size: var(--es-font-size-md, 1rem); }
+}
+
+.lp-msg__quien {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+
+  &--nuestro {
+    color: var(--lp-msg-nuestro);
+    background: color-mix(in srgb, var(--lp-msg-nuestro) 12%, transparent);
+  }
+  &--meta {
+    color: color-mix(in srgb, var(--lp-msg-meta) 80%, var(--es-text-primary));
+    background: color-mix(in srgb, var(--lp-msg-meta) 14%, transparent);
+  }
+}
+
+.lp-msg__nota {
+  margin: 0;
+  font-size: var(--es-font-size-sm);
+  line-height: 1.5;
+  color: var(--es-text-secondary);
+}
+
+/* El «+ Meta» de la tarjeta plegada y de la cabecera del detalle. */
+.lp-plan__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: var(--es-spacing-1) 0 0;
+  min-height: calc(2 * 1.4em);
+  font-size: var(--es-font-size-xs);
+  line-height: 1.4;
+  color: var(--es-text-secondary);
+
+  &--vacio { visibility: hidden; }
+}
+
+.lp-plan__meta-mas {
+  font-weight: 800;
+  color: var(--es-accent-green);
+}
+
+.lp-detalle__meta-suma {
+  margin-top: 2px;
+  font-size: var(--es-font-size-sm);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--es-accent-green) 80%, var(--es-text-primary));
+  font-variant-numeric: tabular-nums;
 }
