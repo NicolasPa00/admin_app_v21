@@ -80,6 +80,8 @@ export interface User {
   num_identificacion?: string | null;
   /** Si el usuario debe cambiar su contraseña en el primer inicio de sesión. */
   debe_cambiar_password?: boolean;
+  /** Si no ha aceptado la versión vigente de los Términos y la Política (lo manda el login). */
+  aceptacion_legal_pendiente?: boolean;
   /** Negocios a los que pertenece el usuario con sus roles por negocio. */
   negocios: UserNegocio[];
   /** Roles sin negocio (ej. Super Admin). */

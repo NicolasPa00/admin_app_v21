@@ -200,10 +200,7 @@ export class AuthService {
               localStorage.setItem('app_token', res.data.token);
             }
             this.persistUserMeta(res.data.usuario);
-            // Con la contraseña temporal (la cédula) lo primero es cambiarla.
-            this.router.navigate([
-              res.data.usuario.debe_cambiar_password ? '/auth/cambiar-password' : '/admin/dashboard',
-            ]);
+            this.router.navigate([this.destinoTrasEntrar()]);
           }
         }),
       );
@@ -471,9 +468,39 @@ export class AuthService {
             this.currentUser.set(actualizado);
             this.persistUserMeta(actualizado);
           }
-          this.router.navigate(['/admin/dashboard']);
+          this.router.navigate([this.destinoTrasEntrar()]);
         }),
       );
+  }
+
+  /**
+   * Adónde va quien acaba de entrar, en orden: primero cambiar la contraseña temporal (el backend
+   * no deja hacer otra cosa), después aceptar los Términos vigentes, y luego el panel. El guard usa
+   * lo mismo para que una URL escrita a mano no se salte ninguno de los dos pasos.
+   */
+  destinoTrasEntrar(): string {
+    const user = this.currentUser();
+    if (user?.debe_cambiar_password) return '/auth/cambiar-password';
+    if (user?.aceptacion_legal_pendiente && !this.isImpersonating()) return '/auth/aceptar-terminos';
+    return '/admin/dashboard';
+  }
+
+  /**
+   * Acepta la versión vigente de los Términos y la Política; el backend guarda la constancia.
+   * POST /admin/auth/aceptar-legales
+   */
+  aceptarLegales(): Observable<ApiOkResponse> {
+    return this.http.post<ApiOkResponse>(`${this.API}/auth/aceptar-legales`, {}).pipe(
+      tap(() => {
+        const user = this.currentUser();
+        if (user) {
+          const actualizado = { ...user, aceptacion_legal_pendiente: false };
+          this.currentUser.set(actualizado);
+          this.persistUserMeta(actualizado);
+        }
+        this.router.navigate([this.destinoTrasEntrar()]);
+      }),
+    );
   }
 
   /**
@@ -541,6 +568,7 @@ export class AuthService {
           num_identificacion: user.num_identificacion,
           // Para que una recarga no saque de la pantalla de cambio a quien aún tiene la temporal.
           debe_cambiar_password: user.debe_cambiar_password,
+          aceptacion_legal_pendiente: user.aceptacion_legal_pendiente,
           negocios:        user.negocios,
           roles_globales:  user.roles_globales,
         }),

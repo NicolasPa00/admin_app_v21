@@ -53,6 +53,16 @@ export const authRoutes: Routes = [
     title: 'Crea tu contraseña',
   },
   {
+    // Aceptación de la versión vigente de los Términos y la Política. Ver AceptarTerminosComponent.
+    path: 'aceptar-terminos',
+    canActivate: [authGuard()],
+    loadComponent: () =>
+      import('./features/aceptar-terminos/aceptar-terminos.component').then(
+        (m) => m.AceptarTerminosComponent,
+      ),
+    title: 'Términos y tratamiento de datos',
+  },
+  {
     path: 'forgot-password',
     loadComponent: () =>
       import('./features/forgot-password/forgot-password.component').then(

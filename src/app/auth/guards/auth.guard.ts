@@ -41,9 +41,11 @@ export function authGuard(allowedRoles?: string[]): CanActivateFn {
 
     // Con la contraseña temporal (la cédula) solo se puede ir a cambiarla: el backend tampoco
     // deja hacer nada más (403 DEBE_CAMBIAR_PASSWORD).
-    const esPantallaDeCambio = state.url.startsWith('/auth/cambiar-password');
-    if (authService.currentUser()?.debe_cambiar_password && !esPantallaDeCambio) {
-      router.navigate(['/auth/cambiar-password']);
+    // Después, aceptar la versión vigente de los Términos y la Política (salvo entrando como otro
+    // usuario: un super admin no acepta por nadie). AuthService.destinoTrasEntrar ordena las dos.
+    const destino = authService.destinoTrasEntrar();
+    if (destino !== '/admin/dashboard' && !state.url.startsWith(destino)) {
+      router.navigate([destino]);
       return false;
     }
 

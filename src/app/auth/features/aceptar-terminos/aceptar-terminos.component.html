@@ -1,0 +1,48 @@
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-card__header">
+      <h1 class="auth-card__title">Términos y tratamiento de datos</h1>
+    </div>
+
+    <p class="auth-card__description">
+      @if (nombre()) { {{ nombre() }}, antes }@else { Antes } de seguir necesitamos que leas y aceptes
+      los documentos que rigen el uso de EscalApp (versión {{ version }}, vigente desde el
+      {{ vigenteDesde }}).
+    </p>
+
+    <ul class="legal-docs">
+      <li><a href="/terminos" target="_blank" rel="noopener">Términos y condiciones</a></li>
+      <li><a href="/privacidad" target="_blank" rel="noopener">Política de tratamiento de datos</a></li>
+    </ul>
+
+    @if (serverError()) {
+      <div class="auth-card__alert auth-card__alert--error" role="alert">{{ serverError() }}</div>
+    }
+
+    <label class="legal-check">
+      <input type="checkbox" [checked]="acepto()" (change)="acepto.set($any($event.target).checked)" />
+      <span>
+        He leído y acepto los Términos y condiciones y la Política de tratamiento de datos, incluida
+        la transferencia de mis datos a servidores ubicados fuera de Colombia.
+      </span>
+    </label>
+
+    <button
+      type="button"
+      class="btn btn--primary auth-card__submit"
+      [disabled]="!acepto() || loading()"
+      (click)="aceptar()">
+      @if (loading()) {
+        <lucide-icon name="loader-2" [size]="16" class="spinner-icon" aria-hidden="true" />
+        Guardando…
+      } @else {
+        Aceptar y continuar
+      }
+    </button>
+
+    <nav class="auth-card__links" aria-label="Navegación de autenticación">
+      <button type="button" class="btn--back" (click)="salir()">Cerrar sesión</button>
+    </nav>
+  </div>
+</div>

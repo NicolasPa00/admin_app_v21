@@ -27,7 +27,7 @@ import { AuthService } from '../../data-access/auth.service';
   ],
   templateUrl: './cambiar-password.component.html',
   // Mismas tarjetas que el resto de pantallas de acceso.
-  styleUrl: '../reset-password/reset-password.component.scss',
+  styleUrls: ['../reset-password/reset-password.component.scss', './cambiar-password.component.scss'],
 })
 export class CambiarPasswordComponent {
   private readonly authService = inject(AuthService);
