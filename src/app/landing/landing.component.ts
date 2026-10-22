@@ -383,7 +383,7 @@ interface PaqueteMensajes {
 const PAQUETES_MENSAJES: PaqueteMensajes[] = [
   { mensajes: 2000, precio: 4999 },
   { mensajes: 5000, precio: 9999 },
-  { mensajes: 10000, precio: 17999 },
+  { mensajes: 10000, precio: 19999 },
 ];
 
 /**
@@ -524,7 +524,7 @@ const COMPLEMENTOS: Complemento[] = [
     icon: 'message-circle',
     titulo: 'Mensajes del asistente',
     descripcion:
-      'Si pasas de los 6.000 al mes: 2.000 por $4.999, 5.000 por $9.999 o 10.000 por $17.999. Lo de Meta va aparte.',
+      'Si pasas de los 6.000 al mes: 2.000 por $4.999, 5.000 por $9.999 o 10.000 por $19.999. Lo de Meta va aparte.',
     precio: 4999,
     periodo: '/mes',
   },
