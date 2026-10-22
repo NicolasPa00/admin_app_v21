@@ -858,9 +858,9 @@
               <li>
                 <span class="lp-msg__muestra lp-msg__seg--fuera"></span>
                 <span>El asistente responde hasta {{ formatNumero(plan.mensajesTope) }} mensajes al
-                mes sin costo extra de EscalApp. Si pasas de ahí, suma un paquete de
-                {{ formatNumero(plan.mensajesPorPaquete) }} por
-                {{ formatPrice(plan.precioPaqueteMensajes) }}.</span>
+                mes sin costo extra de EscalApp. Si pasas de ahí, suma paquetes desde
+                {{ formatNumero(plan.paqueteMinimo.mensajes) }} mensajes por
+                {{ formatPrice(plan.paqueteMinimo.precio) }}.</span>
               </li>
             </ul>
 
@@ -872,14 +872,13 @@
                 </dt>
                 <dd>{{ formatPrice(plan.precioDetalle - plan.costoPaquetesMensajes) }}</dd>
               </div>
-              @if (plan.paquetesMensajes > 0) {
+              @for (x of plan.paquetesElegidos; track x.paquete.mensajes) {
                 <div>
                   <dt>
                     <span class="lp-msg__quien lp-msg__quien--nuestro">EscalApp</span>
-                    {{ plan.paquetesMensajes }}
-                    {{ plan.paquetesMensajes === 1 ? 'paquete' : 'paquetes' }} de mensajes
+                    {{ x.cantidad }} × paquete de {{ formatNumero(x.paquete.mensajes) }} mensajes
                   </dt>
-                  <dd>{{ formatPrice(plan.costoPaquetesMensajes) }}</dd>
+                  <dd>{{ formatPrice(x.cantidad * x.paquete.precio) }}</dd>
                 </div>
               }
               <div>

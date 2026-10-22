@@ -369,13 +369,58 @@ const PAQUETES_FACTURACION: PaqueteDocumentos[] = [
  *     deja margen. El asistente sigue respondiendo (la IA la ponemos nosotros).
  *   · Hasta este tope. Pasado, el cliente suma paquetes para que siga atendiendo solo.
  */
-const MENSAJES_INCLUIDOS = 15000;
+const MENSAJES_INCLUIDOS = 6000;
 
-/** Cuántos trae cada paquete adicional, y lo que cuesta. Espejo de `MENSAJES_ASISTENTE`. */
-const MENSAJES_POR_PAQUETE = 6000;
-const PRECIO_PAQUETE_MENSAJES = 12999;
+/**
+ * Los paquetes de mensajes por encima del tope (2026-10-22). Espejo de `MENSAJES_2000`,
+ * `MENSAJES_5000` y `MENSAJES_10000` en `cobranza.cob_complemento`
+ * (`migrate_cobranza_paquetes_mensajes_2026_10.js`, donde está de dónde sale cada precio).
+ */
+interface PaqueteMensajes {
+  mensajes: number;
+  precio: number;
+}
+const PAQUETES_MENSAJES: PaqueteMensajes[] = [
+  { mensajes: 2000, precio: 4999 },
+  { mensajes: 5000, precio: 9999 },
+  { mensajes: 10000, precio: 17999 },
+];
 
-/** Hasta cuántos paquetes se pueden sumar (igual que `cantidad_maxima` del complemento). */
+/**
+ * Lo que puede costar de más una combinación para preferirla porque da más mensajes. Sin esto,
+ * para 3.000 de más ganaban dos paquetes de 2.000 ($9.998) sobre uno de 5.000 ($9.999): un peso
+ * menos por 1.000 mensajes menos.
+ */
+const TOLERANCIA_PAQUETES = 100;
+
+/**
+ * La combinación de paquetes que cubre `faltan` mensajes: la más barata, salvo que otra cueste
+ * como mucho `TOLERANCIA_PAQUETES` más y dé más mensajes. Con tres tamaños y hasta cinco de cada
+ * uno son 216 combinaciones: se prueban todas. `[]` si no falta nada.
+ */
+function paquetesParaCubrir(faltan: number): { paquete: PaqueteMensajes; cantidad: number }[] {
+  if (faltan <= 0) return [];
+  const sirven: { cuantos: number[]; precio: number; mensajes: number }[] = [];
+  for (let a = 0; a <= MAX_PAQUETES_MENSAJES; a++)
+    for (let b = 0; b <= MAX_PAQUETES_MENSAJES; b++)
+      for (let c = 0; c <= MAX_PAQUETES_MENSAJES; c++) {
+        const cuantos = [a, b, c];
+        const mensajes = cuantos.reduce((s, n, i) => s + n * PAQUETES_MENSAJES[i].mensajes, 0);
+        if (mensajes < faltan) continue;
+        const precio = cuantos.reduce((s, n, i) => s + n * PAQUETES_MENSAJES[i].precio, 0);
+        sirven.push({ cuantos, precio, mensajes });
+      }
+  if (!sirven.length) return [];
+  const minimo = Math.min(...sirven.map((x) => x.precio));
+  const mejor = sirven
+    .filter((x) => x.precio <= minimo + TOLERANCIA_PAQUETES)
+    .sort((x, y) => y.mensajes - x.mensajes || x.precio - y.precio)[0];
+  return mejor.cuantos
+    .map((cantidad, i) => ({ paquete: PAQUETES_MENSAJES[i], cantidad }))
+    .filter((x) => x.cantidad > 0);
+}
+
+/** Hasta cuántos de cada paquete se pueden sumar (igual que `cantidad_maxima` del complemento). */
 const MAX_PAQUETES_MENSAJES = 5;
 
 /**
@@ -405,7 +450,7 @@ const META_COP_POR_MENSAJE_RESPALDO = 3.12;
  * enseñar cómo entra el paquete.
  */
 const MENSAJES_USO_INICIAL = 3000;
-const MENSAJES_USO_MAX = MENSAJES_INCLUIDOS + 6000;
+const MENSAJES_USO_MAX = MENSAJES_INCLUIDOS + 10000;
 const MENSAJES_USO_PASO = 250;
 
 /**
@@ -473,6 +518,14 @@ const COMPLEMENTOS: Complemento[] = [
     titulo: 'Caja adicional',
     descripcion: 'Otro punto de cobro abierto a la vez — una segunda barra, un segundo mostrador.',
     precio: 14999,
+    periodo: '/mes',
+  },
+  {
+    icon: 'message-circle',
+    titulo: 'Mensajes del asistente',
+    descripcion:
+      'Si pasas de los 6.000 al mes: 2.000 por $4.999, 5.000 por $9.999 o 10.000 por $17.999. Lo de Meta va aparte.',
+    precio: 4999,
     periodo: '/mes',
   },
   {
@@ -1388,14 +1441,18 @@ export class LandingComponent {
     return TARJETAS_PLAN.map((t) => {
       const paquete = this.paqueteDe(t.id);
       const mensajesUso = t.conAsistente ? this.mensajesUsoDe(t.id) : 0;
-      const paquetesMsg = Math.min(
-        MAX_PAQUETES_MENSAJES,
-        Math.ceil(Math.max(0, mensajesUso - MENSAJES_INCLUIDOS) / MENSAJES_POR_PAQUETE),
-      );
+      const paquetesElegidos = t.conAsistente
+        ? paquetesParaCubrir(mensajesUso - MENSAJES_INCLUIDOS)
+        : [];
+      const paquetesMsg = paquetesElegidos.reduce((s, x) => s + x.cantidad, 0);
       const mensajesTotal = t.conAsistente
-        ? MENSAJES_INCLUIDOS + paquetesMsg * MENSAJES_POR_PAQUETE
+        ? MENSAJES_INCLUIDOS +
+          paquetesElegidos.reduce((s, x) => s + x.cantidad * x.paquete.mensajes, 0)
         : 0;
-      const costoPaquetesMsg = paquetesMsg * PRECIO_PAQUETE_MENSAJES;
+      const costoPaquetesMsg = paquetesElegidos.reduce(
+        (s, x) => s + x.cantidad * x.paquete.precio,
+        0,
+      );
       const precioPlan = (PRECIO_PLAN[modulo] ?? PRECIO_PLAN['RESTAURANTE'])[t.base];
       const precioConFactura =
         (PRECIO_CON_FACTURACION[modulo] ?? PRECIO_CON_FACTURACION['RESTAURANTE'])[t.base];
@@ -1458,6 +1515,8 @@ export class LandingComponent {
         pedidosUso: t.conAsistente ? this.pedidosAproximados(mensajesUso) : 0,
         /** Los paquetes que ese uso necesita por encima del cupo (0 = cabe en el plan). */
         paquetesMensajes: paquetesMsg,
+        /** Qué paquetes, para el desglose: «1 de 5.000». */
+        paquetesElegidos,
         costoPaquetesMensajes: costoPaquetesMsg,
         /** El tope del asistente (`gener_plan.mensajes_incluidos`), no lo incluido. */
         mensajesTope: MENSAJES_INCLUIDOS,
@@ -1480,8 +1539,8 @@ export class LandingComponent {
           marcaGratis: (META_GRATIS_AL_MES / MENSAJES_USO_MAX) * 100,
           marcaCupo: (MENSAJES_INCLUIDOS / MENSAJES_USO_MAX) * 100,
         },
-        precioPaqueteMensajes: PRECIO_PAQUETE_MENSAJES,
-        mensajesPorPaquete: MENSAJES_POR_PAQUETE,
+        /** El paquete de entrada, para la leyenda: «desde 2.000 por $4.999». */
+        paqueteMinimo: PAQUETES_MENSAJES[0],
         /**
          * El año completo, solo para los planes con facturación —los únicos que se contratan
          * por doce meses—. `precioAnualComparado` es lo que costaría el mismo año comprando el
