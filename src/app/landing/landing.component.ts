@@ -304,19 +304,19 @@ type PlanBaseId = 'BASICO' | 'AVANZADO';
 /**
  * El precio publicado, **por motor y por plan**.
  *
- * Hasta el 2026-09-20 era un solo número por plan para los dos verticales, y eso ya no describe
- * lo que se entrega: el motor de reserva monta además un portal público por negocio —donde el
- * cliente final ve los servicios y agenda solo— y eso es un canal de venta, no una pantalla más.
- * La carta virtual del restaurante se le parece, pero enseña el menú; el portal de agenda trae
- * la cita hecha. Por eso reserva vale más, y la diferencia se mantiene en los dos planes.
+ * Desde el 2026-10-22 los dos motores cuestan LO MISMO, en todos los planes. Del 2026-09-20 a esa
+ * fecha reserva llevó +$10.000 por su portal público de agenda, pero en ese mercado la agenda en
+ * línea es lo mínimo (todos los competidores la traen), no nos cuesta más y su cliente —barbería,
+ * salón, profesional solo— paga menos que un restaurante. Ver
+ * `admin_ws/docs/precios-y-planes.md` §9.
  *
- * ⚠️ `general.gener_plan` guarda **un** precio por plan, sin distinguir motor. Mientras eso no
- * cambie, esta tabla es lo que se promete y aquella es lo que se cobra: hay que alinear la base
- * (o crear un plan por motor) antes de publicar precios distintos.
+ * Se conserva la tabla por motor (y la base conserva su fila por aplicativo en
+ * `cob_precio_plan`) para no tocar la forma del cobro: si algún día un motor vuelve a tener
+ * precio propio, es cambiar un número aquí y otro en la base.
  */
 const PRECIO_PLAN: Record<string, Record<PlanBaseId, number>> = {
   RESTAURANTE: { BASICO: 37999, AVANZADO: 77999 },
-  RESERVA:     { BASICO: 37999, AVANZADO: 87999 },
+  RESERVA:     { BASICO: 37999, AVANZADO: 77999 },
 };
 
 /**
@@ -428,8 +428,8 @@ const PRECIO_CON_FACTURACION: Record<string, Record<PlanBaseId, Record<string, n
     AVANZADO: { S: 117999, M: 132999, L: 147999, XL: 162999 },
   },
   RESERVA: {
-    BASICO:   { S: 91999,  M: 111999, L: 131999, XL: 151999 },
-    AVANZADO: { S: 127999, M: 142999, L: 157999, XL: 172999 },
+    BASICO:   { S: 81999,  M: 101999, L: 121999, XL: 141999 },
+    AVANZADO: { S: 117999, M: 132999, L: 147999, XL: 162999 },
   },
 };
 
