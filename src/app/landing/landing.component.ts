@@ -617,15 +617,23 @@ const FEATURES_POR_MODULO: Record<string, { base: string[]; avanzado: string[] }
   },
 };
 
-/** Lo que el asistente hace, que no es lo mismo en un restaurante que en una agenda. */
+/**
+ * Lo que el asistente hace, que no es lo mismo en un restaurante que en una agenda.
+ *
+ * Hasta el 2026-10-22 decía «o usa el nuestro, sin trámites». Con un número de nuestra WABA Meta
+ * nos cobra a NOSOTROS, y la barra de mensajes promete lo contrario. Decidido: esa opción se
+ * cobrará al costo en la factura y la línea la pone el cliente, pero hasta que exista el renglón
+ * variable de la factura (y Meta confirme el nombre visible) no se ofrece en la landing.
+ * Ver `admin_ws/docs/precios-y-planes.md` §9.
+ */
 const ASISTENTE_POR_MODULO: Record<string, string[]> = {
   RESTAURANTE: [
     'Responde, toma pedidos y agenda domicilios 24/7',
-    'Conecta tu propio número (le pagas a Meta) o usa el nuestro, sin trámites',
+    'Conecta el WhatsApp de tu negocio. ¿No puedes conectarlo? Escríbenos y te ayudamos',
   ],
   RESERVA: [
     'Responde, agenda y confirma citas 24/7',
-    'Conecta tu propio número (le pagas a Meta) o usa el nuestro, sin trámites',
+    'Conecta el WhatsApp de tu negocio. ¿No puedes conectarlo? Escríbenos y te ayudamos',
   ],
 };
 
