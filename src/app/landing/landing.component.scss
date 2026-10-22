@@ -3351,9 +3351,9 @@ lucide-icon {
 
 /* ── Mensajes del asistente, en el detalle de los planes con IA (2026-10-22) ─────────────────
  *
- * Dos dueños de la plata y cada uno con su color: lo NUESTRO en el azul de la marca y lo de
- * META en verde (el de WhatsApp). El tramo gratis va rayado: se ve que existe y que no cuesta.
- * Lo que pasa del cupo va en ámbar porque ahí vuelve a cobrar EscalApp (el paquete).
+ * El plan incluye 1.000 mensajes (rayado); desde el 1.001 los cobra META aparte (verde, el de
+ * WhatsApp) y eso NO va en el plan; pasado el tope de 15.000 vuelve a cobrar EscalApp, el
+ * paquete (ámbar). Lo nuestro, en el azul de la marca.
  *
  * Nada de esto es letra pequeña: le llega a su tarjeta lo pongamos aquí o no, y la única forma
  * de que no parezca un truco es decirlo al mismo tamaño que el resto.
@@ -3535,9 +3535,7 @@ lucide-icon {
 
 /* El «+ Meta» de la tarjeta plegada y de la cabecera del detalle. */
 .lp-plan__meta {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
+  display: block;
   margin: var(--es-spacing-1) 0 0;
   min-height: calc(2 * 1.4em);
   font-size: var(--es-font-size-xs);
@@ -3548,8 +3546,9 @@ lucide-icon {
 }
 
 .lp-plan__meta-mas {
-  font-weight: 800;
-  color: var(--es-accent-green);
+  display: block;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--es-accent-green) 80%, var(--es-text-primary));
 }
 
 .lp-detalle__meta-suma {

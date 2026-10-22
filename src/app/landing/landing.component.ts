@@ -361,12 +361,15 @@ const PAQUETES_FACTURACION: PaqueteDocumentos[] = [
  */
 
 /**
- * Mensajes del asistente que incluye un plan con IA. Debe coincidir con `gener_plan.mensajes_incluidos`.
+ * El TOPE de mensajes del asistente al mes. Debe coincidir con `gener_plan.mensajes_incluidos`,
+ * que pese al nombre ya no es lo que «incluye» el plan (2026-10-22):
  *
- * Subió de 6.000 a 9.000 el 2026-10-22, junto con la barra de Meta: la tarjeta promete que lo que
- * pasa de los 1.000 gratis lo cobra Meta, no nosotros, y eso solo es verdad dentro del cupo.
+ *   · El plan **incluye 1.000 mensajes** (`META_GRATIS_AL_MES`, los que Meta no cobra).
+ *   · Desde el 1.001 cada mensaje lo **cobra Meta aparte**: no va en el plan porque a $77.999 no
+ *     deja margen. El asistente sigue respondiendo (la IA la ponemos nosotros).
+ *   · Hasta este tope. Pasado, el cliente suma paquetes para que siga atendiendo solo.
  */
-const MENSAJES_INCLUIDOS = 9000;
+const MENSAJES_INCLUIDOS = 15000;
 
 /** Cuántos trae cada paquete adicional, y lo que cuesta. Espejo de `MENSAJES_ASISTENTE`. */
 const MENSAJES_POR_PAQUETE = 6000;
@@ -397,12 +400,12 @@ const META_GRATIS_AL_MES = 1000;
 const META_COP_POR_MENSAJE_RESPALDO = 3.12;
 
 /**
- * La barra de mensajes. Arranca en un uso normal (~350 pedidos) y no en el cupo: lo primero que
- * ve el visitante no debe ser el peor caso. Llega hasta dos paquetes por encima del cupo, que es
- * de sobra para enseñar cómo entra el paquete sin volver la barra inmanejable.
+ * La barra de mensajes. Arranca en un uso normal (~350 pedidos) y no en el tope: lo primero que
+ * ve el visitante no debe ser el peor caso. Llega a un paquete por encima del tope, lo justo para
+ * enseñar cómo entra el paquete.
  */
 const MENSAJES_USO_INICIAL = 3000;
-const MENSAJES_USO_MAX = MENSAJES_INCLUIDOS + 2 * 6000;
+const MENSAJES_USO_MAX = MENSAJES_INCLUIDOS + 6000;
 const MENSAJES_USO_PASO = 250;
 
 /**
@@ -1421,15 +1424,17 @@ export class LandingComponent {
         /** Los paquetes que ese uso necesita por encima del cupo (0 = cabe en el plan). */
         paquetesMensajes: paquetesMsg,
         costoPaquetesMensajes: costoPaquetesMsg,
-        mensajesIncluidos: MENSAJES_INCLUIDOS,
-        pedidosIncluidos: t.conAsistente ? this.pedidosAproximados(MENSAJES_INCLUIDOS) : 0,
+        /** El tope del asistente (`gener_plan.mensajes_incluidos`), no lo incluido. */
+        mensajesTope: MENSAJES_INCLUIDOS,
+        /** Los que Meta cobra aparte por ese uso: todo lo que pasa de 1.000. */
+        mensajesMeta: Math.max(0, mensajesUso - META_GRATIS_AL_MES),
         /** El cupo con los paquetes. 0 en los planes sin asistente. */
         mensajesTotal,
         /** Lo que Meta le cobrará aparte por ese uso. No lo cobramos nosotros. */
         costoMeta: t.conAsistente ? this.costoMetaEstimado(mensajesUso) : 0,
         /**
-         * La barra, en % del recorrido: gratis (hasta 1.000), lo que cobra Meta dentro del cupo y
-         * lo que pasa del cupo (Meta + nuestro paquete). Y dónde cae cada marca de la escala.
+         * La barra, en % del recorrido: lo incluido (hasta 1.000), lo que cobra Meta aparte hasta
+         * el tope, y lo que pasa del tope (Meta + nuestro paquete). Y dónde cae cada marca.
          */
         barra: {
           gratis: (Math.min(mensajesUso, META_GRATIS_AL_MES) / MENSAJES_USO_MAX) * 100,

@@ -603,9 +603,8 @@
           <!-- Sin asistente se reserva el renglón: así la lista arranca a la misma altura en las cuatro. -->
           <p class="lp-plan__meta" [class.lp-plan__meta--vacio]="!plan.conAsistente"
              [attr.aria-hidden]="plan.conAsistente ? null : 'true'">
-            <span class="lp-plan__meta-mas">+</span>
-            WhatsApp de Meta según uso · gratis los primeros
-            {{ formatNumero(metaGratisAlMes) }} mensajes
+            Incluye {{ formatNumero(metaGratisAlMes) }} mensajes de WhatsApp al mes.
+            <span class="lp-plan__meta-mas">Desde el {{ formatNumero(metaGratisAlMes + 1) }}, los cobra Meta aparte.</span>
           </p>
 
           <p class="lp-plan__garantia">
@@ -733,7 +732,7 @@
               <span class="lp-detalle__periodo">COP /mes</span>
               @if (plan.conAsistente) {
                 <span class="lp-detalle__meta-suma">
-                  + {{ formatPrice(plan.costoMeta) }} de Meta, según uso
+                  + {{ formatPrice(plan.costoMeta) }} de Meta, aparte
                 </span>
               }
               <span class="lp-detalle__garantia">
@@ -840,26 +839,28 @@
             <div class="lp-msg__escala" aria-hidden="true">
               <span [style.left.%]="plan.barra.marcaGratis">{{ formatNumero(metaGratisAlMes) }}</span>
               <span [style.left.%]="plan.barra.marcaCupo">
-                {{ formatNumero(plan.mensajesIncluidos) }} incluidos
+                tope {{ formatNumero(plan.mensajesTope) }}
               </span>
             </div>
 
             <ul class="lp-msg__leyenda">
               <li>
                 <span class="lp-msg__muestra lp-msg__seg--gratis"></span>
-                Los primeros {{ formatNumero(metaGratisAlMes) }} mensajes del mes: Meta no cobra
+                <span><strong>{{ formatNumero(metaGratisAlMes) }} mensajes al mes incluidos</strong>
+                en el plan.</span>
               </li>
               <li>
                 <span class="lp-msg__muestra lp-msg__seg--meta"></span>
-                Desde el {{ formatNumero(metaGratisAlMes + 1) }}: Meta cobra
-                {{ formatPrecioMensaje(metaCopPorMensaje()) }} por mensaje, directo a tu tarjeta
+                <span>Desde el {{ formatNumero(metaGratisAlMes + 1) }}, <strong>cada mensaje lo
+                cobra Meta aparte</strong>: {{ formatPrecioMensaje(metaCopPorMensaje()) }}, directo
+                a tu tarjeta. No está incluido en el plan.</span>
               </li>
               <li>
                 <span class="lp-msg__muestra lp-msg__seg--fuera"></span>
-                El plan incluye {{ formatNumero(plan.mensajesIncluidos) }} (≈
-                {{ formatNumero(plan.pedidosIncluidos) }} pedidos). Si pasas de ahí, se suma un
-                paquete de {{ formatNumero(plan.mensajesPorPaquete) }} por
-                {{ formatPrice(plan.precioPaqueteMensajes) }}
+                <span>El asistente responde hasta {{ formatNumero(plan.mensajesTope) }} mensajes al
+                mes sin costo extra de EscalApp. Si pasas de ahí, suma un paquete de
+                {{ formatNumero(plan.mensajesPorPaquete) }} por
+                {{ formatPrice(plan.precioPaqueteMensajes) }}.</span>
               </li>
             </ul>
 
@@ -867,7 +868,7 @@
               <div>
                 <dt>
                   <span class="lp-msg__quien lp-msg__quien--nuestro">EscalApp</span>
-                  Plan, fijo
+                  Plan, con {{ formatNumero(metaGratisAlMes) }} mensajes
                 </dt>
                 <dd>{{ formatPrice(plan.precioDetalle - plan.costoPaquetesMensajes) }}</dd>
               </div>
@@ -884,7 +885,8 @@
               <div>
                 <dt>
                   <span class="lp-msg__quien lp-msg__quien--meta">Meta</span>
-                  WhatsApp, según uso
+                  {{ formatNumero(plan.mensajesMeta) }} mensajes aparte ×
+                  {{ formatPrecioMensaje(metaCopPorMensaje()) }}
                 </dt>
                 <dd>{{ formatPrice(plan.costoMeta) }}</dd>
               </div>
@@ -895,9 +897,10 @@
             </dl>
 
             <p class="lp-msg__nota">
-              Lo de Meta no lo cobramos nosotros: le llega a la tarjeta de tu cuenta de WhatsApp
-              Business y solo pagas lo que de verdad se envíe, incluidos los mensajes que escribas
-              tú. Precio de Meta a hoy en Colombia; cambia con el dólar.
+              Los mensajes desde el {{ formatNumero(metaGratisAlMes + 1) }} no están incluidos en
+              el plan: los cobra Meta a la tarjeta de tu cuenta de WhatsApp Business, y solo pagas
+              los que de verdad se envíen, también los que escribas tú. Precio de Meta a hoy en
+              Colombia; cambia con el dólar.
             </p>
           </section>
         }
