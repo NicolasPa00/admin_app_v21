@@ -18,6 +18,14 @@ export const routes: Routes = [
     // descripción nueva. `DefaultTitleStrategy` no toca el título cuando la ruta no lo declara.
   },
 
+  // La página del motor de restaurante. Sin `title` por el mismo motivo que la de arriba: lo pone
+  // `SeoService` en el constructor del componente, que es lo que exige el prerender.
+  {
+    path: 'restaurantes',
+    loadComponent: () =>
+      import('./landing/restaurantes/restaurantes.component').then((m) => m.RestaurantesComponent),
+  },
+
   // Documentos legales públicos — SIN guardia a propósito: quien quiere ejercer sus derechos
   // como titular de datos no tiene por qué tener cuenta, y una política de privacidad que exige
   // iniciar sesión para leerla no cumple su función. Se prerenderizan como estáticas.
