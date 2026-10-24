@@ -167,15 +167,18 @@ export class PruebaGratisStore {
   /**
    * Pide el catálogo real. Se llama desde `afterNextRender`: en el prerender no hay API. Si falla
    * se conserva el respaldo, que es lo que ya está pintado.
+   *
+   * @param nombres los oficios que ofrece ESTA página (por defecto, los de restaurante y los de
+   *        siempre). `/reservas` pasa los suyos: el store es de cada componente, así que no se pisan.
    */
-  cargarOficios(): void {
+  cargarOficios(nombres: readonly string[] = OFICIOS_REGISTRO): void {
     this.auth
       .getRubrosPublicos()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (rubros) => {
           if (!rubros.length) return;
-          const elegidos = OFICIOS_REGISTRO.map((nombre) => {
+          const elegidos = nombres.map((nombre) => {
             const r = rubros.find((x) => x.nombre === nombre);
             return r ? { nombre: r.nombre, label: r.etiqueta || r.nombre } : null;
           }).filter((o): o is OficioPrueba => !!o);

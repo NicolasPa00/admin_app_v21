@@ -4,14 +4,26 @@
 -->
 <header class="cabecera">
   <div class="marco cabecera__fila">
-    <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
-      <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
-        <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
-        <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#7060A8" />
-        <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#1A1F38" />
-      </svg>
-      <span class="marca__nombre">EscalApp</span>
-    </a>
+    <div class="cabecera__izq">
+      <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
+        <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
+          <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
+          <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#7060A8" />
+          <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#1A1F38" />
+        </svg>
+        <span class="marca__nombre">EscalApp</span>
+      </a>
+      <!-- Vuelta a la página madre, a la vista en todos los anchos: el visitante que llegó a este
+           motor por error (o quiere mirar el otro) no tiene que adivinar que el logo hace algo. La ruta
+           es `/inicio` hasta que esa página pase a ser `/`; entonces basta cambiar este `routerLink`. -->
+      <a class="volver" routerLink="/inicio">
+        <svg class="volver__flecha" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="volver__largo">Todos los negocios</span>
+        <span class="volver__corto">Inicio</span>
+      </a>
+    </div>
 
     <nav class="cabecera__nav" aria-label="Secciones">
       <button type="button" class="enlace" (click)="irA('precio')">Precio</button>
@@ -554,6 +566,7 @@
         <nav class="pie__nav" aria-label="Secciones y legal">
           <button type="button" (click)="irA('relevo')">Qué hace</button>
           <button type="button" (click)="irA('precio')">Precio</button>
+          <a routerLink="/inicio">Todos los negocios</a>
           <a routerLink="/auth/login">Iniciar sesión</a>
           <a routerLink="/privacidad">Privacidad</a>
         </nav>

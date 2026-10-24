@@ -26,6 +26,21 @@ export const routes: Routes = [
       import('./landing/restaurantes/restaurantes.component').then((m) => m.RestaurantesComponent),
   },
 
+  // La página del motor de reserva. Misma regla que la de restaurantes: sin `title`, lo pone
+  // `SeoService` en el constructor del componente, que es lo que exige el prerender.
+  {
+    path: 'reservas',
+    loadComponent: () =>
+      import('./landing/reservas/reservas.component').then((m) => m.ReservasComponent),
+  },
+
+  // La página madre: reparte al visitante entre `/restaurantes` y `/reservas`. Ruta nueva, sin tocar
+  // `/` hasta que se valide (mismo criterio que `/restaurantes`). Sin `title`: lo pone `SeoService`.
+  {
+    path: 'inicio',
+    loadComponent: () => import('./landing/inicio/inicio.component').then((m) => m.InicioComponent),
+  },
+
   // Documentos legales públicos — SIN guardia a propósito: quien quiere ejercer sus derechos
   // como titular de datos no tiene por qué tener cuenta, y una política de privacidad que exige
   // iniciar sesión para leerla no cumple su función. Se prerenderizan como estáticas.

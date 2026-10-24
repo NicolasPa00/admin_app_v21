@@ -1932,3 +1932,49 @@
     position: static;
   }
 }
+
+
+/* ── Vuelta a la página madre (cabecera) ──────────────────────────────────── */
+.cabecera__izq {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 0.4rem + 1.5vw, 1.5rem);
+  min-width: 0;
+}
+.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 44px; /* objetivo táctil */
+  padding-inline: 0.5rem 0.75rem;
+  border-radius: 999px;
+  color: var(--r-mudo);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.volver:hover {
+  color: var(--r-tinta);
+  background: var(--r-superficie);
+}
+.volver:focus-visible {
+  outline: 2px solid var(--r-violeta-hondo);
+  outline-offset: 2px;
+}
+.volver__flecha {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.volver__corto {
+  display: none;
+}
+@media (max-width: 639px) {
+  .volver__largo {
+    display: none;
+  }
+  .volver__corto {
+    display: inline;
+  }
+}

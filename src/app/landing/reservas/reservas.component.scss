@@ -1,0 +1,2073 @@
+/* ============================================================================
+   Landing de restaurantes — «El pase»
+
+   La paleta medida vive AQUÍ, en el `:host`, y no en `tokens.css`: la app ya tiene dos sistemas
+   conviviendo (`--es-*` de la landing viva y `--color-*` del admin) y meter un tercero en `:root`
+   los pondría a pelearse. Es la misma receta que usa la carta virtual con sus `--carta-*`.
+
+   Contrastes medidos sobre blanco:
+     tinta          #1A1F38  17,5:1
+     violeta hondo  #585098   6,96:1
+     violeta        #7060A8   5,35:1  ← el único que acepta texto blanco encima: los botones
+     violeta claro  #8078B8   3,96:1  ← SOLO relleno. Nunca texto.
+
+   Ocho cosas que esta hoja no hace, porque tumbaron el primer intento:
+   etiquetas sobre los títulos · 01/02/03 · filetes de 1 px como adorno · degradados · tarjetas con
+   icono arriba · sombras en reposo · versalitas rastreadas · una palabra del titular coloreada.
+   ============================================================================ */
+
+:host {
+  --r-tinta: #1a1f38;
+  --r-violeta-hondo: #585098;
+  --r-violeta: #7060a8;
+  --r-violeta-claro: #8078b8;
+
+  --r-papel: #f4f3f8;
+  --r-superficie: #e9e7f1;
+  --r-blanco: #ffffff;
+  /* 7,4:1 sobre el papel. El #55526f de la paleta medida da 6,96:1 sobre BLANCO, pero el fondo
+     de esta página es #f4f3f8 y ahí se queda en 6,7:1. El texto corrido va en tinta completa. */
+  --r-mudo: #4f4c68;
+  --r-borde: #dedaea;
+  /* El borde de arriba desaparece sobre el papel (#f4f3f8): sirve para separar una tarjeta
+     blanca del blanco, pero no para decir «esto se puede abrir». Este sí se ve. */
+  --r-borde-marcado: #cbc4de;
+
+  --r-marco: 1280px;
+  --r-gutter: 16px;
+  --r-radio: 14px;
+  /* Alto de la barra pegada. Lo usan las píldoras del relevo y la columna de capturas para
+     saber dónde empieza el espacio libre: si cambia aquí, se mueven las tres a la vez. */
+  --r-cabecera: 64px;
+
+  /* Los colores de WhatsApp, tal cual.
+     Es la única excepción a la paleta de la página, y es deliberada: la maqueta del chat es una
+     interfaz AJENA que el visitante conoce de memoria. Pintarla de violeta la convertía en «una
+     app de mensajes cualquiera» y se perdía justo lo que había que decir — que esto pasa dentro
+     de su WhatsApp. Las capturas del panel hacen lo mismo con los colores del panel.
+     No se usan en ningún otro sitio de la página. */
+  --wa-barra: #075e54;
+  /* El verde de marca de WhatsApp, el del botón flotante y el glifo. Sin tocar. */
+  --wa-verde: #25d366;
+  --wa-verde-hondo: #1da851;
+  --wa-fondo: #ece5dd;
+  --wa-entrante: #ffffff;
+  --wa-saliente: #dcf8c6;
+  --wa-visto: #53bdeb;
+
+  --r-paso: cubic-bezier(0.22, 1, 0.36, 1);
+
+  display: block;
+  background: var(--r-papel);
+  color: var(--r-tinta);
+  font-family: var(--es-font-sans, 'Inter', system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* El marco con tope de ancho. Nada en esta hoja mide su ancho en `vw`: a 1920 el contenido se
+   queda donde está y lo que crece son los márgenes, que es justo lo que el intento anterior no
+   hacía. */
+.marco {
+  width: 100%;
+  max-width: var(--r-marco);
+  margin-inline: auto;
+  padding-inline: var(--r-gutter);
+}
+
+@media (min-width: 768px) {
+  :host {
+    --r-gutter: 40px;
+  }
+}
+
+/* Con la cabecera pegada, un salto a una sección dejaba su titular debajo de la barra. Esto es
+   lo que le reserva el hueco; `irA()` solo hace `scrollIntoView({block:'start'})`. */
+.relevo,
+.precio,
+.mensajes,
+.cifras,
+.parada {
+  scroll-margin-top: calc(var(--r-cabecera) + 1.5rem);
+}
+
+/**
+ * El sello de la alianza con WhatsApp y Meta.
+ *
+ * Qué se puede poner y qué no, según las normas de marca de Meta (consultadas 2026-10-24):
+ *  · El **glifo de WhatsApp** sí: se permite usarlo para decir que tu producto funciona con
+ *    WhatsApp, siempre que sea el asset oficial, SIN modificar ni recolorear, SIN combinarlo con
+ *    otros logotipos en un mismo bloque, y sin dar a entender un respaldo que no existe. Por eso
+ *    va suelto, en su verde, al lado de un texto que solo describe un hecho.
+ *  · El **logotipo corporativo de Meta y la insignia de socio, NO**: la insignia solo la pueden
+ *    mostrar quienes están en el programa y además tiene que enlazar a la ficha del directorio de
+ *    socios de Meta. Mientras no haya ficha que enlazar, «Meta» se queda en texto.
+ * Si algún día entramos al directorio, aquí es donde entra la insignia oficial — enlazada.
+ */
+.alianza {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 1.25rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--r-mudo);
+  max-width: 44ch;
+}
+
+.alianza__glifo {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  color: var(--wa-verde);
+}
+
+.alianza__glifo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px; /* taste-skill-ignore: utilidad para lectores de pantalla, no es un filete */
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Escala tipográfica ───────────────────────────────────────────────────── */
+
+.titular {
+  margin: 0;
+  /* El titular es una frase larga a propósito —dice qué es, para quién y qué hace— así que el
+     tope es bajo: a 3,9rem se comía el pliegue entero en cinco líneas. */
+  font-size: clamp(2rem, 1.25rem + 2.3vw, 3rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.titulo-seccion {
+  margin: 0 0 clamp(2rem, 1rem + 2.4vw, 3.25rem);
+  font-size: clamp(1.75rem, 1.15rem + 2.1vw, 2.9rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+
+.entrada {
+  margin: clamp(1.25rem, 1rem + 0.8vw, 1.75rem) 0 0;
+  font-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  line-height: 1.6;
+  color: var(--r-mudo);
+  max-width: 46ch;
+}
+
+/* ── Botones y enlaces ────────────────────────────────────────────────────── */
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--r-radio);
+  background: var(--r-violeta);
+  color: var(--r-blanco);
+  font: inherit;
+  font-weight: 650;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 160ms var(--r-paso);
+}
+
+.boton:hover {
+  background: #5d4f90;
+}
+
+.boton:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+.boton[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.boton--lg {
+  padding: 1rem 1.75rem;
+  font-size: 1.0625rem;
+}
+
+.boton--sm {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9375rem;
+}
+
+/* El contorno usa el violeta hondo (6,96:1), no el de relleno: aquí el violeta ES el texto. */
+.boton--contorno {
+  background: transparent;
+  color: var(--r-violeta-hondo);
+  box-shadow: inset 0 0 0 2px var(--r-violeta-hondo); /* taste-skill-ignore: es el contorno del botón, no una sombra */
+}
+
+.boton--contorno:hover {
+  background: var(--r-superficie);
+}
+
+.enlace {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--r-tinta);
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.enlace:hover {
+  border-bottom-color: var(--r-violeta-claro);
+}
+
+.enlace:focus-visible {
+  outline: 3px solid var(--r-violeta-hondo);
+  outline-offset: 3px;
+}
+
+.enlace[disabled] {
+  color: var(--r-mudo);
+  cursor: not-allowed;
+}
+
+.enlace--sutil {
+  color: var(--r-mudo);
+  font-size: 0.9375rem;
+}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────────── */
+
+/* La cabecera es su propia banda y se queda arriba.
+   El cuerpo va sobre el papel (#f4f3f8) y la cabecera sobre blanco: ese escalón de tono es el que
+   la separa. Un filete de 1 px haría el mismo trabajo peor, y es de lo que esta página no lleva.
+   La sombra sí está permitida aquí porque una barra pegada SÍ flota sobre el contenido. */
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--r-blanco);
+  box-shadow: 0 1px 0 rgb(26 31 56 / 8%), 0 6px 20px rgb(26 31 56 / 6%); /* taste-skill-ignore: barra pegada, flota de verdad */
+}
+
+.cabecera__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: var(--r-cabecera);
+  padding-block: 0.85rem;
+}
+
+.cabecera__nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 0.4rem + 1.2vw, 1.75rem);
+}
+
+/* Entrar y Precio estorban en un móvil: el botón es lo único que hace falta ahí. */
+@media (max-width: 519px) {
+  .cabecera__nav .enlace {
+    display: none;
+  }
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.marca__simbolo {
+  width: 20px;
+  height: 24px;
+  flex: none;
+}
+
+.marca__nombre {
+  font-size: 1.125rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+/* ── 1 · El escenario ─────────────────────────────────────────────────────── */
+
+.heroe {
+  padding-block: clamp(1.5rem, 0.5rem + 3vw, 3.5rem) clamp(3.5rem, 2rem + 4vw, 6rem);
+}
+
+.heroe__reja {
+  display: grid;
+  gap: clamp(2.5rem, 1.5rem + 3vw, 4rem);
+}
+
+@media (min-width: 1024px) {
+  .heroe__reja {
+    grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+    align-items: center;
+    column-gap: clamp(2.5rem, 1rem + 3vw, 4.5rem);
+    /* El teléfono asoma 40 px por debajo del escenario; esta fila le deja el sitio sin abrir un
+       hueco muerto entre la escena y el «Ver otra vez». */
+    row-gap: 3.5rem;
+  }
+
+  /* El «Ver otra vez» pertenece al escenario, así que vive bajo su columna, no bajo el titular. */
+  .heroe__repetir {
+    grid-column: 2;
+    margin-top: 0;
+  }
+}
+
+.heroe__accion {
+  margin-top: clamp(1.75rem, 1.2rem + 1.6vw, 2.5rem);
+}
+
+.heroe__letra {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--r-mudo);
+}
+
+.heroe__repetir {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+  margin: 1rem 0 0;
+}
+
+.heroe__aviso {
+  font-size: 0.8125rem;
+  color: var(--r-mudo);
+}
+
+.heroe__escenario {
+  position: relative;
+}
+
+/* En un móvil la escena se cuenta en orden: primero la conversación, y debajo el panel donde
+   acaba el pedido. Apiladas al revés —el panel antes que el chat— se perdía la causa. */
+@media (max-width: 767px) {
+  .heroe__escenario {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 1.25rem;
+  }
+
+  .heroe__escenario .telefono {
+    margin-top: 0;
+  }
+
+  /* Una captura vertical de 860 px de alto se come la pantalla entera: se enseña la parte de
+     arriba, que es donde están los pedidos. */
+  .pantalla__lienzo {
+    aspect-ratio: 430 / 560;
+  }
+
+  .pantalla__img {
+    object-position: top center;
+  }
+}
+
+/* El marco de navegador. Sin sombra: lo que lo separa del papel es su propio campo, no una
+   penumbra. */
+.pantalla {
+  margin: 0;
+  border-radius: var(--r-radio);
+  overflow: hidden;
+  background: var(--r-blanco);
+  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
+}
+
+.pantalla__barra {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  background: var(--r-superficie);
+  color: var(--r-mudo);
+  font-size: 0.8125rem;
+}
+
+.pantalla__lienzo {
+  position: relative;
+  /* Por debajo de 768 la captura es la del panel en un móvil, que es vertical. */
+  aspect-ratio: 430 / 860;
+  background: var(--r-superficie);
+}
+
+.pantalla__lienzo picture {
+  display: block;
+  height: 100%;
+}
+
+@media (min-width: 768px) {
+  .pantalla__lienzo {
+    aspect-ratio: 16 / 10;
+  }
+}
+
+.pantalla__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+
+/* La tarjeta que entra al panel al final de la conversación. */
+.entrante {
+  position: absolute;
+  right: 4%;
+  top: 30%;
+  width: min(42%, 230px);
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: var(--r-blanco);
+  box-shadow: 0 10px 24px rgb(26 31 56 / 18%); /* taste-skill-ignore: la tarjeta se monta sobre el panel */
+  opacity: 0;
+  transform: translateX(18px);
+  transition:
+    opacity 420ms var(--r-paso),
+    transform 420ms var(--r-paso);
+}
+
+.entrante--dentro {
+  opacity: 1;
+  transform: none;
+}
+
+.entrante__id {
+  font-weight: 750;
+  font-size: 0.9375rem;
+}
+
+.entrante__detalle {
+  font-size: 0.8125rem;
+  color: var(--r-mudo);
+}
+
+.entrante__estado {
+  justify-self: start;
+  margin-top: 0.15rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--r-superficie);
+  color: var(--r-violeta-hondo);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+/* El teléfono. Debajo de 768 va en su sitio, sin solaparse: con 390 px de ancho el solape tapa
+   la captura entera y no se entiende ninguna de las dos cosas. */
+.telefono {
+  margin-top: 1rem;
+  border-radius: var(--r-radio);
+  overflow: hidden;
+  background: var(--wa-fondo);
+}
+
+/* Desde 768 el teléfono se monta sobre el panel por la esquina de abajo a la izquierda, y asoma
+   fuera del marco de la captura. Encima del centro tapaba justo lo que había que leer: las
+   tarjetas de los pedidos. Abajo a la izquierda tapa el final de la lista, que es lo prescindible. */
+@media (min-width: 768px) {
+  .telefono {
+    position: absolute;
+    left: clamp(-32px, -2vw, -16px);
+    bottom: -36px;
+    width: min(42%, 276px);
+    margin-top: 0;
+    box-shadow: 0 18px 40px rgb(26 31 56 / 22%); /* taste-skill-ignore: el teléfono se monta sobre la captura */
+  }
+}
+
+/* La cabecera verde de WhatsApp. Es el detalle que hace que la pantalla se reconozca antes de
+   leer una sola palabra, así que vale más que cualquier adaptación a la paleta de la marca. */
+.telefono__cabeza {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--wa-barra);
+  color: #ffffff;
+}
+
+.telefono__avatar {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 22%);
+}
+
+.telefono__avatar svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.telefono__quien {
+  display: grid;
+  line-height: 1.2;
+}
+
+.telefono__nombre {
+  font-weight: 650;
+  font-size: 0.9375rem;
+}
+
+.telefono__estado {
+  font-size: 0.8125rem;
+  color: rgb(255 255 255 / 78%);
+}
+
+/* El fondo beige con el garabato de WhatsApp. El patrón va en un SVG embebido y muy tenue: a
+   tamaño de maqueta se nota como textura, no como dibujo. */
+.chat {
+  list-style: none;
+  margin: 0;
+  padding: 0.7rem 0.6rem 0.9rem;
+  display: grid;
+  gap: 0.35rem;
+  /* Reserva el alto de la conversación entera: si creciera a medida que llegan las burbujas, el
+     panel de detrás daría un salto en cada mensaje. */
+  min-height: 300px;
+  align-content: start;
+  background-color: var(--wa-fondo);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='84' height='84' viewBox='0 0 84 84'%3E%3Cg fill='none' stroke='%23c8bfae' stroke-width='1.1' stroke-linecap='round' opacity='.5'%3E%3Cpath d='M12 16c3-4 7-4 10 0M58 10l5 5M66 12l-5 5M20 46a5 5 0 1 0 0-10M44 62h8M48 58v8M70 44c2 3 2 6 0 9M30 70c3-3 7-3 10 0M74 70l4 4M78 70l-4 4M8 62h7M10 58l3 8'/%3E%3Ccircle cx='54' cy='34' r='4'/%3E%3Ccircle cx='16' cy='78' r='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Lo que llega: blanco, a la izquierda, con la puntita arriba. */
+.burbuja {
+  position: relative;
+  justify-self: start;
+  max-width: 85%;
+  padding: 0.35rem 0.55rem 0.3rem;
+  border-radius: 8px;
+  border-top-left-radius: 0;
+  background: var(--wa-entrante);
+  color: #111b21;
+  box-shadow: 0 1px 1px rgb(11 20 26 / 13%); /* taste-skill-ignore: es la sombra real de WhatsApp */
+  animation: burbuja-entra 320ms var(--r-paso) both;
+}
+
+/* Lo que manda el cliente desde su teléfono: verde, a la derecha. */
+.burbuja--propia {
+  justify-self: end;
+  border-radius: 8px;
+  border-top-right-radius: 0;
+  background: var(--wa-saliente);
+}
+
+.burbuja__texto {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.34;
+}
+
+/* La hora va al final de la última línea, como en WhatsApp, no en un renglón propio. */
+.burbuja__pie {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.2rem;
+  margin-top: -0.1rem;
+  line-height: 1;
+}
+
+.burbuja__hora {
+  font-size: 0.6875rem;
+  color: rgb(17 27 33 / 50%);
+}
+
+.burbuja__visto {
+  width: 15px;
+  height: 10px;
+  color: var(--wa-visto);
+}
+
+.burbuja--puntos {
+  display: flex;
+  gap: 4px;
+  padding: 0.6rem 0.7rem;
+}
+
+.punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(17 27 33 / 35%);
+  animation: punto 1.1s infinite;
+}
+
+.punto:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.punto:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes burbuja-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes punto {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+/* ── 2 · El relevo ────────────────────────────────────────────────────────── */
+
+.relevo {
+  padding-block: clamp(3.5rem, 2rem + 4vw, 6.5rem);
+  background: var(--r-blanco);
+}
+
+.relevo__reja {
+  display: grid;
+  gap: 2.5rem;
+}
+
+/* Las píldoras viven dentro de la columna pegada, justo encima de la captura, así que no tienen
+   `position` propia: suben y bajan con ella y la alineación entre las dos es automática. Antes
+   cada una estaba sujeta a una altura distinta y al bajar se separaban a la vista. */
+.saltos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.salto {
+  border: 0;
+  border-radius: 999px;
+  background: var(--r-superficie);
+  color: var(--r-tinta);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: background 160ms var(--r-paso);
+}
+
+.salto--activo {
+  background: var(--r-violeta);
+  color: var(--r-blanco);
+}
+
+.salto:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+.parada {
+  padding-block: clamp(2rem, 1rem + 3vw, 3.5rem);
+}
+
+.parada__titulo {
+  margin: 0;
+  font-size: clamp(1.375rem, 1.1rem + 1.1vw, 1.875rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.parada__frase {
+  margin: 0.75rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--r-mudo);
+  max-width: 44ch;
+}
+
+/* Tres cosas concretas por parada.
+   Sin ellas la columna quedaba con dos líneas frente a una captura de 450 px y la sección se leía
+   como una página a medio hacer — que es exactamente lo que pasaba a 1366×768. */
+.detalles {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  max-width: 42ch;
+}
+
+.detalle {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--r-tinta);
+}
+
+/* La marca de la lista es la «E» de tres cintas reducida a una, no un icono de catálogo ni una
+   palomita: la página no lleva ni un icono decorativo. */
+.detalle::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 11px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--r-violeta-claro);
+  transform: skewX(-20deg);
+}
+
+.parada__captura {
+  margin: 1.5rem 0 0;
+  border-radius: var(--r-radio);
+  overflow: hidden;
+  background: var(--r-superficie);
+  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
+}
+
+.parada__captura picture,
+.parada__captura img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* La captura de móvil es vertical y de 860 px: entera ocuparía más que la pantalla, así que se
+   recorta por abajo y se deja ver lo de arriba, que es lo que explica la frase de al lado. */
+@media (max-width: 767px) {
+  .parada__captura {
+    max-height: 62vh;
+    overflow: hidden;
+  }
+}
+
+/* Debajo de 1024 esta columna existe solo para las píldoras, y va la primera: la captura de cada
+   parada la pone la propia parada. */
+@media (max-width: 1023px) {
+  .relevo__pegado {
+    order: -1;
+    margin-bottom: 1.5rem;
+  }
+
+  .relevo__pegado .pantalla {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .relevo__reja {
+    grid-template-columns: minmax(0, 38fr) minmax(0, 62fr);
+    column-gap: clamp(2rem, 1rem + 2.5vw, 3.5rem);
+    align-items: start;
+  }
+
+  /* Debajo de 1024 cada parada lleva su captura; aquí manda la columna pegada y sobran. */
+  .parada__captura {
+    display: none;
+  }
+
+  /* Píldoras y captura, pegadas juntas y centradas en el alto libre.
+     Separadas, cada una tenía su propia altura y al bajar se veía la disparidad; ancladas arriba,
+     en una pantalla de 1080 dejaban 460 px de nada por debajo. El `max` impide que el bloque se
+     meta bajo la cabecera en pantallas bajas, y le deja aire para no quedar pegado a ella. */
+  .relevo__pegado {
+    position: sticky;
+    top: max(calc(var(--r-cabecera) + 2rem), calc(50vh - 300px));
+  }
+
+  /* El alto de una parada decide cuánto dura cada tramo del relevo. Con menos de una ventana el
+     cambio se atropella; con mucho más, la columna de texto se queda vacía mientras se baja —que
+     es lo que pasaba a 62vh antes de que cada parada tuviera sus tres detalles. */
+  .parada {
+    min-height: 48vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: clamp(1.5rem, 1rem + 2vw, 3rem);
+  }
+}
+
+/* Las capturas se cruzan en el mismo hueco: apiladas, y solo una opaca. */
+.pantalla__img--capa {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 320ms var(--r-paso);
+}
+
+.pantalla__img--visible {
+  opacity: 1;
+}
+
+/* ── 3 · La madrugada ─────────────────────────────────────────────────────── */
+
+.madrugada {
+  /* Campo plano. Un degradado aquí sería lo que se le pide a una landing genérica. */
+  background: var(--r-tinta);
+  color: var(--r-blanco);
+  padding-block: clamp(3.5rem, 2rem + 4vw, 6rem);
+  overflow: hidden;
+}
+
+.madrugada__reja {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .madrugada__reja {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+  }
+}
+
+.madrugada__cifra {
+  margin: 0;
+  font-size: clamp(3.5rem, 2rem + 6vw, 6.5rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+  color: var(--r-violeta-claro);
+}
+
+.madrugada__titulo {
+  margin: 1rem 0 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  max-width: 24ch;
+  text-wrap: balance;
+}
+
+.madrugada__texto {
+  margin: 1.25rem 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: #c9c6dd;
+  max-width: 48ch;
+}
+
+.madrugada__nota {
+  margin: 1.5rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #9d99b8;
+  max-width: 46ch;
+}
+
+.madrugada__pulpo {
+  margin: 0;
+  justify-self: center;
+}
+
+.madrugada__pulpo img {
+  display: block;
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+}
+
+/* ── 4 · Las cifras ───────────────────────────────────────────────────────── */
+
+.cifras {
+  padding-block: clamp(3.5rem, 2rem + 4vw, 6rem);
+}
+
+.cifras__salvedad {
+  margin: -1.5rem 0 clamp(2.5rem, 1.5rem + 2vw, 3.5rem);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--r-mudo);
+  max-width: 54ch;
+}
+
+.cifras__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: clamp(1.5rem, 1rem + 1.5vw, 2.5rem);
+}
+
+@media (min-width: 640px) {
+  .cifras__lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .cifras__lista {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Las cuatro iguales, también la que cuenta lo que el asistente NO pudo hacer. */
+.cifra__valor {
+  margin: 0;
+  font-size: clamp(2.75rem, 2rem + 2.4vw, 4rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--r-violeta-hondo);
+}
+
+.cifra__titulo {
+  margin: 0.75rem 0 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.cifra__definicion {
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--r-mudo);
+}
+
+/* ── 5 · Los mensajes ─────────────────────────────────────────────────────── */
+
+.mensajes {
+  background: var(--r-blanco);
+  padding-block: clamp(3.5rem, 2rem + 4vw, 6rem);
+}
+
+.mensajes__texto {
+  margin: 0 0 1.25rem;
+  /* A tamaño legible y no en letra chica: es lo que el cliente paga aparte. */
+  font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--r-mudo);
+  max-width: 56ch;
+}
+
+.mensajes__texto strong {
+  color: var(--r-tinta);
+  font-weight: 700;
+}
+
+/* Centrado, no anclado arriba: la columna de texto y la calculadora tienen altos distintos y
+   alineadas por el borde superior la tarjeta quedaba visiblemente descolgada. */
+.mensajes__reja {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .mensajes__reja {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    column-gap: clamp(2.5rem, 1rem + 3vw, 4.5rem);
+  }
+}
+
+/* ── La calculadora de mensajes ──────────────────────────────────────────── */
+
+.calculadora {
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  border-radius: var(--r-radio);
+  background: var(--r-papel);
+}
+
+.calculadora__pregunta {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  color: var(--r-tinta);
+}
+
+.calculadora__cuantos {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: clamp(2rem, 1.5rem + 1.8vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  color: var(--r-violeta-hondo);
+}
+
+.calculadora__barra {
+  width: 100%;
+  margin: 1rem 0 0;
+  accent-color: var(--r-violeta);
+  cursor: pointer;
+}
+
+.calculadora__barra:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 4px;
+}
+
+.calculadora__cuenta {
+  margin: 1.25rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+}
+
+.calculadora__cuenta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.calculadora__cuenta dt {
+  color: var(--r-mudo);
+}
+
+.calculadora__cuenta dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* El total se separa del desglose por tono y peso, no por un filete. */
+.calculadora__total {
+  margin-top: 0.4rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: cierra una cuenta, como en una factura */
+  font-weight: 750;
+}
+
+.calculadora__total dt {
+  color: var(--r-tinta);
+}
+
+/* Tres líneas reservadas: la nota cambia de texto al cruzar los 6.000 y sin esto el bloque
+   crecía y encogía mientras se arrastra la barra. */
+.calculadora__aviso {
+  margin: 1rem 0 0;
+  min-height: 3.9375rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--r-mudo);
+}
+
+/* ── 6 · El precio ────────────────────────────────────────────────────────── */
+
+.precio {
+  padding-block: clamp(3.5rem, 2rem + 4vw, 6rem);
+}
+
+.planes {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 860px) {
+  .planes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
+}
+
+/* El plan con asistente se distingue por campo, no por una sombra ni una insignia. */
+.plan--destacado {
+  background: var(--r-superficie);
+  box-shadow: inset 0 0 0 2px var(--r-violeta-claro); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
+}
+
+.plan__nombre {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.plan__precio {
+  margin: 0.75rem 0 0;
+  color: var(--r-mudo);
+  font-size: 0.9375rem;
+}
+
+.plan__cifra {
+  display: block;
+  font-size: clamp(2.25rem, 1.75rem + 1.6vw, 3rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  color: var(--r-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+.plan__que {
+  margin: 1.25rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--r-mudo);
+}
+
+.plan__lista {
+  margin: 1.25rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* «Ver todo lo que incluye»: la lista completa no cabe en la tarjeta sin convertirla en un
+   inventario, pero quien compara de verdad la necesita.
+   Va con borde y a todo el ancho, no como un enlace subrayado: suelto no se leía como algo que
+   se pueda pulsar y la gente pasaba de largo. */
+.plan__mas {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--r-borde-marcado); /* taste-skill-ignore: el borde es lo que lo hace parecer pulsable */
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  color: var(--r-violeta-hondo);
+  cursor: pointer;
+  transition: background 160ms var(--r-paso), border-color 160ms var(--r-paso);
+}
+
+.plan__mas:hover {
+  background: var(--r-superficie);
+  border-color: var(--r-violeta-claro);
+}
+
+.plan__mas:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+.plan__mas-flecha {
+  width: 0.9rem;
+  height: 0.9rem;
+  transition: transform 160ms var(--r-paso);
+}
+
+.plan__mas:hover .plan__mas-flecha {
+  transform: translateY(2px);
+}
+
+/* La diferencia entre los dos planes, dicha al pie de cada tarjeta.
+   Nada de insignias de «más popular»: con siete clientes eso sería una invención. */
+.plan__sello {
+  margin: auto 0 0;
+  padding-top: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.45;
+  font-weight: 650;
+  color: var(--r-mudo);
+}
+
+.plan__sello--fuerte {
+  color: var(--r-violeta-hondo);
+}
+
+/* Un solo botón para los dos planes. La prueba es una. */
+.precio__accion {
+  margin-top: clamp(2rem, 1rem + 2vw, 2.75rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  text-align: center;
+}
+
+.precio__nota {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--r-mudo);
+  max-width: 46ch;
+}
+
+.precio__complementos {
+  margin: 2rem 0 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--r-mudo);
+  max-width: 60ch;
+}
+
+/* La facturación electrónica, plegada y con aspecto de acción.
+   Antes era una línea de texto en violeta y nadie veía que se podía pulsar; pero tampoco puede
+   gritar: a un restaurante pequeño este trámite no le hace ninguna gracia, y ponerlo en el centro
+   de la sección de precios lo convertiría en el tema. Un panel sobrio con su chevron. */
+.plegable {
+  margin-top: 2rem;
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+  /* Un borde de verdad, y visible sobre el papel: es lo que dice que esto se abre. Con el
+     `inset 0 0 0 1px` de las tarjetas no se distinguía nada y, al abrirlo, la cabecera parecía
+     quedarse fuera de la caja. */
+  border: 1px solid var(--r-borde-marcado); /* taste-skill-ignore: el borde es lo que lo hace parecer pulsable */
+  overflow: hidden;
+}
+
+.plegable__tirador {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 1.1rem clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  color: var(--r-tinta);
+  transition: background 160ms var(--r-paso);
+}
+
+.plegable__tirador:hover {
+  background: var(--r-papel);
+}
+
+.plegable__tirador:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: -3px;
+}
+
+.plegable__texto {
+  flex: 1;
+  font-weight: 650;
+}
+
+.plegable__pista {
+  font-size: 0.9375rem;
+  color: var(--r-violeta-hondo);
+  font-weight: 650;
+}
+
+.plegable__chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+  color: var(--r-violeta-hondo);
+  transition: transform 200ms var(--r-paso);
+}
+
+.plegable--abierto .plegable__chevron {
+  transform: rotate(180deg);
+}
+
+/* Dos columnas: el texto a la izquierda, la tabla a la derecha. En una sola, la tabla dejaba
+   media sección en blanco a su derecha.
+   La línea de arriba separa la cabecera del cuerpo: sin ella las dos partes se funden en un
+   bloque blanco y no se ve dónde empieza lo que se acaba de abrir. */
+.plegable__cuerpo {
+  display: grid;
+  gap: clamp(1.5rem, 1rem + 2vw, 3rem);
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1rem, 0.5rem + 1.5vw, 1.75rem)
+    clamp(1.5rem, 1rem + 1.5vw, 2rem);
+  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: separa cabecera y cuerpo del acordeón */
+}
+
+@media (min-width: 860px) {
+  .plegable__cuerpo {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: start;
+  }
+}
+
+.plegable__texto-cuerpo {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--r-mudo);
+}
+
+.plegable__texto-cuerpo:last-child {
+  margin-bottom: 0;
+}
+
+.tabla-fe {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla-fe th,
+.tabla-fe td {
+  padding: 0.6rem 0.75rem;
+  text-align: right;
+  font-size: 0.9375rem;
+}
+
+.tabla-fe thead th,
+.tabla-fe tbody th {
+  text-align: left;
+  font-weight: 650;
+  color: var(--r-tinta);
+}
+
+.tabla-fe tbody tr:nth-child(odd) {
+  background: var(--r-superficie);
+}
+
+/* ── 7 · El cierre y el pie ───────────────────────────────────────────────────
+   Un bloque, no dos: el corte diagonal, el pulpo asomando por él, la marca de agua y la barra
+   legal — la misma gramática del pie de la landing viva, con la paleta de esta página. El campo
+   es tinta PLANA: allá hay un degradado y un resplandor azul, y aquí no entra ninguno de los dos.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.pie {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--r-tinta);
+  color: var(--r-blanco);
+  /* Apretado respecto a la primera versión: el cierre ocupaba dos pantallas enteras y el pie es
+     lo último que se lee, no una sección más. */
+  padding-top: clamp(3.5rem, 2.5rem + 4vw, 6rem);
+}
+
+/* El triángulo claro que corta en diagonal la sección anterior. */
+.pie__corte {
+  position: absolute;
+  inset: 0 0 auto;
+  height: clamp(80px, 10vw, 150px);
+  /* El color de la sección de arriba, que desde que precio y mensajes cambiaron de orden es
+     `.mensajes` y va en BLANCO. Con el papel de antes salían tres bandas —blanco, papel, tinta—
+     y la del medio se leía como un corte de color sin motivo. El corte tiene que parecer que la
+     sección de arriba entra en diagonal, no que hay una cuña de otro color. */
+  background: var(--r-blanco);
+  clip-path: polygon(0 0, 100% 0, 100% 22%, 0 64%);
+  z-index: 0;
+}
+
+/* La marca de agua se apoya sobre la barra legal: las descendentes de las «pp» entran en esa
+   franja a propósito y se ven a través de ella. */
+.pie__filigrana {
+  position: absolute;
+  right: clamp(16px, 4vw, 72px);
+  bottom: clamp(44px, 3vw, 52px);
+  font-size: clamp(2.75rem, 8vw, 7rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.8;
+  color: rgb(255 255 255 / 5%);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.pie__pulpo {
+  position: absolute;
+  top: clamp(-8px, 0.5vw, 20px);
+  left: clamp(-20px, 3vw, 72px);
+  z-index: 1;
+  pointer-events: none;
+  line-height: 0;
+}
+
+.pie__pulpo img {
+  width: clamp(200px, 26vw, 360px);
+  height: auto;
+}
+
+/* Debajo de 900 el pulpo se comería el texto del cierre. */
+@media (max-width: 899px) {
+  .pie__pulpo {
+    display: none;
+  }
+}
+
+.pie__dentro {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: clamp(1.75rem, 1.25rem + 1.5vw, 2.5rem);
+  padding-bottom: clamp(2rem, 1.5rem + 2vw, 3.25rem);
+}
+
+.pie__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  max-width: 38ch;
+  margin-inline: auto;
+}
+
+.pie__titulo {
+  margin: 0;
+  font-size: clamp(1.625rem, 1.15rem + 1.7vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.14;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.pie__texto {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #c9c6dd;
+}
+
+/* Sobre tinta el violeta de los botones se apaga; el blanco es lo único que de verdad llama. */
+.boton--claro {
+  background: var(--r-blanco);
+  color: var(--r-tinta);
+}
+
+.boton--claro:hover {
+  background: #e7e4f2;
+}
+
+.boton--claro:focus-visible {
+  outline-color: var(--r-violeta-claro);
+}
+
+.pie__marca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.85rem;
+  padding-top: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  /* Lo único que separa el cierre del bloque de marca. No es un filete de adorno: es el borde
+     entre dos cosas distintas, y es lo que hace la landing viva en el mismo sitio. */
+  border-top: 1px solid rgb(255 255 255 / 10%); /* taste-skill-ignore: separa dos bloques del pie */
+}
+
+.pie__lema {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: #a6a2c0;
+  max-width: 42ch;
+}
+
+.pie__nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 1.5rem;
+  font-size: 0.9375rem;
+}
+
+.pie__nav a,
+.pie__nav button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: #c9c6dd;
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.pie__nav a:hover,
+.pie__nav button:hover {
+  color: var(--r-blanco);
+  border-bottom-color: var(--r-violeta-claro);
+}
+
+.pie__nav a:focus-visible,
+.pie__nav button:focus-visible {
+  outline: 3px solid var(--r-violeta-claro);
+  outline-offset: 3px;
+}
+
+/* Verde de WhatsApp: es el canal de ellos y se reconoce por el color antes que por el texto.
+   El glifo va sin modificar, como pide su guía de marca. */
+.pie__whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: var(--wa-verde);
+  color: #06301a;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 160ms var(--r-paso);
+}
+
+.pie__whatsapp:hover {
+  background: var(--wa-verde-hondo);
+  color: #ffffff;
+}
+
+.pie__whatsapp:focus-visible {
+  outline: 3px solid var(--r-blanco);
+  outline-offset: 3px;
+}
+
+.pie__whatsapp svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.pie__legal {
+  position: relative;
+  z-index: 2;
+  background: rgb(0 0 0 / 25%);
+  padding-block: 1rem;
+  font-size: 0.8125rem;
+  color: #a6a2c0;
+}
+
+.pie__legal-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+
+.pie__legal p {
+  margin: 0;
+}
+
+.pie__legal-enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.pie__legal-enlaces a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.pie__legal-enlaces a:hover {
+  color: var(--r-blanco);
+  border-bottom-color: var(--r-violeta-claro);
+}
+
+/* ── El botón flotante de WhatsApp ────────────────────────────────────────── */
+
+.flotante {
+  position: fixed;
+  right: clamp(16px, 2vw, 24px);
+  bottom: clamp(16px, 2vw, 24px);
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: var(--wa-verde);
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgb(26 31 56 / 28%); /* taste-skill-ignore: flota de verdad sobre la página */
+  transition: background 160ms var(--r-paso), transform 160ms var(--r-paso);
+}
+
+.flotante:hover {
+  background: var(--wa-verde-hondo);
+  transform: translateY(-2px);
+}
+
+.flotante:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 3px;
+}
+
+.flotante svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* ── El detalle de un plan ────────────────────────────────────────────────── */
+
+/* La capa del detalle: cabecera fija, cuerpo que se desplaza, pie fijo con las acciones.
+   Va con las dos clases (`0-2-0`) para ganarle a `.capa__caja`, que está más abajo en la hoja y
+   con la misma especificidad le devolvería su relleno y su `overflow-y`. */
+.capa__caja.detalle {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.detalle__cabeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  /* El relleno de la derecha le reserva el sitio al botón de cerrar, que va absoluto encima: sin
+     él, el precio y el botón de cerrar se tocan. */
+  padding: clamp(1.5rem, 1rem + 1.5vw, 2rem) clamp(3.25rem, 2.5rem + 2vw, 4rem) 1.25rem
+    clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  border-bottom: 1px solid var(--r-borde); /* taste-skill-ignore: separa la cabecera fija del cuerpo */
+}
+
+.detalle__quien {
+  flex: 1 1 16rem;
+}
+
+.detalle__nombre {
+  margin: 0;
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.75rem);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.detalle__que {
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--r-mudo);
+}
+
+/* El precio es lo primero que se busca al abrir esto, así que va grande y a la derecha, no
+   escondido en una línea de texto corrido. */
+.detalle__precio {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+  margin: 0;
+}
+
+.detalle__cifra {
+  font-size: clamp(2rem, 1.5rem + 1.8vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.detalle__moneda {
+  margin-top: 0.2rem;
+  font-size: 0.9375rem;
+  color: var(--r-mudo);
+}
+
+.detalle__sin {
+  margin-top: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--r-mudo);
+}
+
+.detalle__cuerpo {
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+}
+
+.detalle__columnas {
+  display: grid;
+  gap: clamp(1.75rem, 1rem + 2vw, 2.5rem);
+}
+
+@media (min-width: 800px) {
+  .detalle__columnas {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  /* El plan sin asistente no tiene segunda sección: en vez de dejar media capa vacía, la lista
+     se reparte ella misma en dos columnas. */
+  .detalle__columnas--sola {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .detalle__columnas--sola .detalle-lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1.5rem;
+  }
+}
+
+.detalle__rotulo {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--r-tinta);
+}
+
+.detalle__panel {
+  padding: 1rem 1.1rem;
+  border-radius: var(--r-radio);
+  background: var(--r-superficie);
+}
+
+.detalle__panel-titulo {
+  margin: 0 0 0.6rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--r-violeta-hondo);
+}
+
+.detalle__panel-lista {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--r-mudo);
+}
+
+/* Pegado abajo y siempre a la vista: en una pantalla corta los botones quedaban al final de
+   veinte líneas y no se veían sin desplazarse hasta el fondo. */
+.detalle__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: separa el pie fijo del cuerpo */
+  background: var(--r-blanco);
+}
+
+.detalle-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.detalle-nota {
+  margin: 1rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--r-mudo);
+}
+
+/* ── La capa de la prueba ─────────────────────────────────────────────────── */
+
+.capa {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--r-gutter);
+  background: rgb(26 31 56 / 72%);
+  overflow-y: auto;
+  animation: capa-entra 180ms ease both;
+}
+
+.capa__caja {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+}
+
+/* El detalle de un plan necesita el doble de ancho que el formulario de la prueba: son veinte
+   líneas en dos columnas. Va DESPUÉS de `.capa__caja`: con la misma especificidad gana la última,
+   y puesta antes el modal salía con los 440 px del formulario. */
+.capa__caja--ancha {
+  max-width: 720px;
+}
+
+.capa__cerrar {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--r-superficie);
+  color: var(--r-tinta);
+  cursor: pointer;
+}
+
+.capa__cerrar svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.capa__titulo {
+  margin: 0;
+  padding-right: 2rem;
+  font-size: 1.5rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.capa__bajada {
+  margin: 0.6rem 0 1.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--r-mudo);
+}
+
+.formulario {
+  display: grid;
+  gap: 1rem;
+}
+
+.campo {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.campo label {
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.campo input,
+.campo select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 2px solid var(--r-borde);
+  border-radius: 10px;
+  background: var(--r-blanco);
+  color: var(--r-tinta);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.campo input:focus,
+.campo select:focus {
+  outline: none;
+  border-color: var(--r-violeta);
+}
+
+.campo__codigo {
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.campo__error {
+  font-size: 0.8125rem;
+  color: #b3261e;
+}
+
+.capa__error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: #fdecea;
+  color: #8c1d18;
+  font-size: 0.9375rem;
+}
+
+.capa__botones,
+.capa__secundario {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.capa__secundario .enlace {
+  font-size: 0.9375rem;
+  color: var(--r-mudo);
+}
+
+@keyframes capa-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── Quietud ──────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .relevo__pegado {
+    position: static;
+  }
+}
+
+
+/* ── Vuelta a la página madre (cabecera) ──────────────────────────────────── */
+.cabecera__izq {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.75rem, 0.4rem + 1.5vw, 1.5rem);
+  min-width: 0;
+}
+.volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 44px; /* objetivo táctil */
+  padding-inline: 0.5rem 0.75rem;
+  border-radius: 999px;
+  color: var(--r-mudo);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.volver:hover {
+  color: var(--r-tinta);
+  background: var(--r-superficie);
+}
+.volver:focus-visible {
+  outline: 2px solid var(--r-violeta-hondo);
+  outline-offset: 2px;
+}
+.volver__flecha {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.volver__corto {
+  display: none;
+}
+@media (max-width: 639px) {
+  .volver__largo {
+    display: none;
+  }
+  .volver__corto {
+    display: inline;
+  }
+}
+
+
+/* ── 2-bis · Los oficios ─────────────────────────────────────────────────── */
+.oficios {
+  padding-block: clamp(3rem, 2rem + 4vw, 6rem);
+  background: var(--r-superficie);
+}
+.oficios__texto {
+  margin: 1.25rem 0 0;
+  max-width: 52ch;
+  color: var(--r-tinta);
+  font-size: 1.1875rem;
+  line-height: 1.55;
+}
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 0.75rem + 1.25vw, 1.75rem) clamp(0.75rem, 0.5rem + 1.25vw, 1.5rem);
+  margin: clamp(1.75rem, 1.25rem + 2vw, 3rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 900px) {
+  .galeria {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.galeria__item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.galeria__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-radio);
+}
+.galeria__nombre {
+  margin: 0.875rem 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.galeria__frase {
+  margin: 0;
+  color: var(--r-mudo);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  max-width: 34ch;
+}
+.oficios__nota {
+  margin: clamp(1.5rem, 1rem + 1.5vw, 2.25rem) 0 0;
+  color: var(--r-mudo);
+  font-size: 0.9375rem;
+}
+
+/* ── Pulpos que alternan (fundido; solo opacidad) ─────────────────────────── */
+.madrugada__pulpo {
+  display: grid;
+  width: 100%;
+  max-width: 520px;
+}
+.madrugada__pulpo .pulpo-capa {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+.madrugada__pulpo .pulpo-capa--visible {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .madrugada__pulpo .pulpo-capa {
+    transition: none;
+  }
+}
+
+
+/* ── Titular de la primera pantalla: el elemento dominante ───────────────── */
+.heroe__titular {
+  font-size: clamp(2.5rem, 1.4rem + 4.8vw, 5.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  max-width: 18ch;
+}
+@media (min-width: 1024px) {
+  .heroe__titular {
+    grid-column: 1 / -1;
+  }
+}

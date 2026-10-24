@@ -1,0 +1,869 @@
+<!-- ═══════════════════════════ CABECERA ═══════════════════════════
+     Tiene su propio campo (blanco sobre el papel) y se queda arriba al bajar. La separación es un
+     escalón de tono, no un filete: la página no lleva ni una línea de adorno.
+-->
+<header class="cabecera">
+  <div class="marco cabecera__fila">
+    <div class="cabecera__izq">
+      <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
+        <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
+          <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
+          <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#7060A8" />
+          <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#1A1F38" />
+        </svg>
+        <span class="marca__nombre">EscalApp</span>
+      </a>
+      <!-- Vuelta a la página madre, a la vista en todos los anchos: el visitante que llegó a este
+           motor por error (o quiere mirar el otro) no tiene que adivinar que el logo hace algo. La ruta
+           es `/inicio` hasta que esa página pase a ser `/`; entonces basta cambiar este `routerLink`. -->
+      <a class="volver" routerLink="/inicio">
+        <svg class="volver__flecha" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="volver__largo">Todos los negocios</span>
+        <span class="volver__corto">Inicio</span>
+      </a>
+    </div>
+
+    <nav class="cabecera__nav" aria-label="Secciones">
+      <button type="button" class="enlace" (click)="irA('precio')">Precio</button>
+      <a class="enlace" routerLink="/auth/login">Entrar</a>
+      <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
+        Probar gratis
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main id="contenido">
+  <!-- ═══════════════════════════ 1 · EL ESCENARIO ═══════════════════════════
+       La primera pantalla dice qué es, para quién y qué hace. Sin etiqueta encima del titular y
+       sin ninguna palabra coloreada: lo que tiene que destacar es la frase entera.
+  -->
+  <section class="heroe">
+    <div class="marco heroe__reja">
+      <!-- El titular manda: corto, a todo lo ancho y en grande. Lo que antes iba en él (qué hace, por
+           dónde, para quién) pasa a la frase de debajo. -->
+      <h1 class="titular heroe__titular">El asistente que agenda tus citas.</h1>
+
+      <div class="heroe__dicho">
+        <p class="entrada">
+          Contesta tu WhatsApp a cualquier hora, agenda la cita y la deja en tu agenda. EscalApp es
+          el sistema para barberías, salones, spas y otros negocios de citas en Colombia, con
+          profesionales, clientes, caja e informes.
+        </p>
+
+        <!-- El sello de la alianza: el glifo oficial de WhatsApp sin tocar ni recolorear, y Meta
+             solo en texto. Ver el comentario de `.alianza` en la hoja de estilos: el logotipo
+             corporativo de Meta y la insignia de socio tienen condiciones que hoy no se cumplen. -->
+        <p class="alianza">
+          <span class="alianza__glifo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
+              <path
+                d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"
+              />
+            </svg>
+          </span>
+          Con la API oficial de WhatsApp Business. Somos Proveedor de Tecnología de Meta.
+        </p>
+
+        <div class="heroe__accion">
+          <button type="button" class="boton boton--lg" (click)="abrirPrueba()">
+            Probar 30 días gratis
+          </button>
+          <p class="heroe__letra">Sin tarjeta de crédito. Sin contrato.</p>
+        </div>
+      </div>
+
+      <!-- El escenario: la captura real del panel detrás, el chat dibujado delante.
+           Se representa solo al entrar en pantalla; «Ver otra vez» es la única forma de repetirlo. -->
+      <div class="heroe__escenario">
+        <figure class="pantalla">
+          <div class="pantalla__barra" aria-hidden="true">
+            <span class="pantalla__url">escalapp.cloud · Agenda</span>
+          </div>
+          <div class="pantalla__lienzo">
+            <!-- En un móvil una captura de escritorio no enseña nada: se encoge hasta no leerse.
+                 Por debajo de 768 se sirve la captura del panel EN un móvil, que es además como
+                 lo usa de verdad un dueño de negocio entre cita y cita. -->
+            <picture>
+              <source media="(max-width: 767px)" [srcset]="rutaMovil('reserva-agenda')" width="430" height="860" />
+              <img
+                class="pantalla__img"
+                [src]="rutaImagen('reserva-agenda', 1280)"
+                [srcset]="rutaImagen('reserva-agenda', 640) + ' 640w, ' + rutaImagen('reserva-agenda', 1280) + ' 1280w'"
+                sizes="(max-width: 1023px) 100vw, 56vw"
+                width="1280"
+                height="800"
+                alt="Agenda de EscalApp: una columna por profesional con las citas del día, el cliente, el servicio y su estado."
+                fetchpriority="high"
+                decoding="async"
+              />
+            </picture>
+
+            <!-- La consecuencia de la conversación: la cita ya está dentro de la agenda. -->
+            <div class="entrante" [class.entrante--dentro]="pedidoEnPanel()" aria-hidden="true">
+              <span class="entrante__id">10:30</span>
+              <span class="entrante__detalle">Corte y barba · Andrés</span>
+              <span class="entrante__estado">Cita nueva</span>
+            </div>
+          </div>
+        </figure>
+
+        <!-- El chat. Es lo único dibujado a mano de toda la página, porque es lo que se anima.
+             Va con los colores de WhatsApp y no con los de la marca a propósito: lo que se enseña
+             aquí es una interfaz ajena que el visitante ya conoce de memoria, igual que las
+             capturas del panel llevan los colores del panel. Es la pantalla DEL CLIENTE: arriba
+             sale el negocio como contacto, así que lo verde de la derecha es lo que escribe
+             él y lo blanco de la izquierda es lo que contesta el asistente. -->
+        <div class="telefono">
+          <div class="telefono__cabeza">
+            <span class="telefono__avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" focusable="false">
+                <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Z" opacity=".25" />
+                <path d="M12 6a4 4 0 1 1 0 8 4 4 0 0 1 0-8Zm0 9.5c3 0 5.5 1.6 5.5 3.3V20h-11v-1.2c0-1.7 2.5-3.3 5.5-3.3Z" />
+              </svg>
+            </span>
+            <span class="telefono__quien">
+              <span class="telefono__nombre">Tu negocio</span>
+              <span class="telefono__estado">en línea</span>
+            </span>
+          </div>
+
+          <ol class="chat" aria-live="polite">
+            @for (b of conversacion; track $index) {
+              @if (pasoEscena() > $index) {
+                <li class="burbuja" [class.burbuja--propia]="b.de === 'cliente'">
+                  <p class="burbuja__texto">{{ b.texto }}</p>
+                  <span class="burbuja__pie">
+                    <span class="burbuja__hora">{{ b.hora }}</span>
+                    @if (b.de === 'cliente') {
+                      <!-- El doble visto azul de WhatsApp: sin él, las burbujas verdes no se leen
+                           como mensajes enviados. -->
+                      <svg class="burbuja__visto" viewBox="0 0 18 12" aria-hidden="true" focusable="false">
+                        <path
+                          d="M1 6.6 4 9.6 10.2 2.4 M6.8 6.6 9.8 9.6 16 2.4"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.6"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                        />
+                      </svg>
+                    }
+                  </span>
+                </li>
+              }
+            }
+            @if (escribiendo()) {
+              <li class="burbuja burbuja--puntos">
+                <span class="punto"></span><span class="punto"></span><span class="punto"></span>
+                <span class="visualmente-oculto">El asistente está escribiendo</span>
+              </li>
+            }
+          </ol>
+        </div>
+      </div>
+
+      <p class="heroe__repetir">
+        <button type="button" class="enlace enlace--sutil" (click)="volverAVer()">
+          Ver otra vez
+        </button>
+        <!-- La conversación no es de un cliente: sacar mensajes reales a una pieza pública sería
+             un problema de privacidad. Se dice aquí, pegado al chat, y no en una nota al pie. -->
+        <span class="heroe__aviso">
+          Conversación de ejemplo: no es de un cliente real.
+        </span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 2 · EL RELEVO ═══════════════════════════
+       El escenario se queda quieto y lo que cambia al bajar es la captura de detrás. Lo gobierna
+       el scroll; las etiquetas solo sirven para saltar si alguien quiere.
+  -->
+  <section class="relevo" id="relevo" aria-label="Qué hace el sistema">
+    <div class="marco">
+      <h2 class="titulo-seccion">Y a partir de ahí, la cita ya está en la agenda.</h2>
+
+      <div class="relevo__reja">
+        <div class="relevo__texto">
+          @for (p of paradas; track p.id) {
+            <article class="parada" [id]="'hito-' + p.id" [attr.data-parada]="$index">
+              <h3 class="parada__titulo">{{ p.titulo }}</h3>
+              <p class="parada__frase">{{ p.frase }}</p>
+
+              <ul class="detalles">
+                @for (d of p.detalles; track d) {
+                  <li class="detalle">{{ d }}</li>
+                }
+              </ul>
+
+              <!-- En móvil cada parada lleva su propia captura: sin columna pegada no hay relevo
+                   que valga, y una imagen por bloque se lee mejor que una que cambia sola. -->
+              <figure class="parada__captura">
+                <picture>
+                  <source media="(max-width: 767px)" [srcset]="rutaMovil(p.imagen)" width="430" height="860" />
+                  <img
+                    [src]="rutaImagen(p.imagen, 640)"
+                    width="1280"
+                    height="800"
+                    [alt]="p.alt"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
+              </figure>
+            </article>
+          }
+        </div>
+
+        <!-- Las píldoras viven DENTRO de la columna pegada, encima de la captura.
+             Estaban en la columna de texto con su propio `top` y, al bajar, quedaban pegadas a la
+             cabecera mientras la captura se centraba: dos elementos sujetos a alturas distintas,
+             y la asimetría se veía. Compartiendo contenedor la alineación es automática.
+             Debajo de 1024 esta columna solo enseña las píldoras; la captura la pone cada parada. -->
+        <div class="relevo__pegado">
+          <ul class="saltos">
+            @for (p of paradas; track p.id) {
+              <li>
+                <button
+                  type="button"
+                  class="salto"
+                  [class.salto--activo]="paradaActiva() === $index"
+                  [attr.aria-current]="paradaActiva() === $index ? 'true' : null"
+                  (click)="irA('hito-' + p.id)"
+                >
+                  {{ p.etiqueta }}
+                </button>
+              </li>
+            }
+          </ul>
+
+          <figure class="pantalla pantalla--quieta" aria-hidden="true">
+            <div class="pantalla__barra">
+              <span class="pantalla__url">escalapp.cloud · {{ paradaVisible().etiqueta }}</span>
+            </div>
+            <div class="pantalla__lienzo">
+              @for (p of paradas; track p.id) {
+                <img
+                  class="pantalla__img pantalla__img--capa"
+                  [class.pantalla__img--visible]="paradaActiva() === $index"
+                  [src]="rutaImagen(p.imagen, 1280)"
+                  width="1280"
+                  height="800"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
+              }
+            </div>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 2-bis · LOS OFICIOS ═══════════════════════════
+       Una galería, no solo barberías y salones: el mismo sistema atiende ocho oficios y lo que cambia
+       de uno a otro está dicho en una línea. Cada pieza es una ilustración propia; el pie de la sección
+       lo reconoce, para que nadie crea que son los negocios de nadie.
+  -->
+  <section class="oficios" aria-label="Los oficios que atiende">
+    <div class="marco">
+      <h2 class="titulo-seccion">Un solo sistema, ocho oficios.</h2>
+      <p class="oficios__texto">
+        Subes tu logo, tus fotos y tus precios, y eliges los colores de tu marca. Cambian los nombres y
+        lo que se reserva; la agenda es la misma.
+      </p>
+
+      <ul class="galeria">
+        @for (o of oficios; track o.slug) {
+          <li class="galeria__item">
+            <img
+              class="galeria__img"
+              [src]="rutaOficio(o.slug)"
+              width="640"
+              height="480"
+              [alt]="o.alt"
+              loading="lazy"
+              decoding="async"
+            />
+            <h3 class="galeria__nombre">{{ o.nombre }}</h3>
+            <p class="galeria__frase">{{ o.frase }}</p>
+          </li>
+        }
+      </ul>
+
+      <p class="oficios__nota">
+        Las imágenes son ilustraciones nuestras. En la página de cada negocio van sus propias fotos.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 3 · CON EL NEGOCIO CERRADO ═══════════════════════════
+       La única sección sobre campo de tinta, y plana. Sin cifra: no hay clientes de Reserva cuyos
+       números se puedan publicar, y inventarlos está descartado. Lo que se cuenta es qué pasa de verdad.
+  -->
+  <section class="madrugada" aria-label="Con el negocio cerrado">
+    <div class="marco madrugada__reja">
+      <div class="madrugada__dicho">
+        <h2 class="madrugada__titulo">
+          Piden cita a la 1:47 de la mañana. La agenda la recibe.
+        </h2>
+        <p class="madrugada__texto">
+          A esa hora no hay nadie en el local. El asistente ofrece las horas libres de cada
+          profesional y deja la cita en la agenda; el equipo se la encuentra hecha. Y el día antes
+          de la cita, el cliente recibe su recordatorio por WhatsApp.
+        </p>
+      </div>
+
+      <figure class="madrugada__pulpo">
+        @for (p of pulpos; track p.id) {
+          <img
+            class="pulpo-capa"
+            [class.pulpo-capa--visible]="pulpoActivo() === $index"
+            [src]="pulpoSrc(p.id, 1040)"
+            [srcset]="pulpoSrc(p.id, 640) + ' 640w, ' + pulpoSrc(p.id, 1040) + ' 1040w'"
+            sizes="(max-width: 899px) 70vw, 40vw"
+            width="1040"
+            height="777"
+            [alt]="p.alt"
+            [attr.aria-hidden]="pulpoActivo() === $index ? null : 'true'"
+            loading="lazy"
+            decoding="async"
+          />
+        }
+      </figure>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 5 · EL PRECIO ═══════════════════════════
+       Va ANTES de lo que cobra Meta: primero lo que te cuesta a ti, y solo después el coste que
+       no nos pagas a nosotros. Al revés se abría con una factura ajena antes de haber dicho el
+       precio propio.
+  -->
+  <section class="precio" id="precio" aria-label="Precio">
+    <div class="marco">
+      <h2 class="titulo-seccion">Dos planes. El asistente es la diferencia.</h2>
+
+      <div class="planes">
+        @for (plan of planes; track plan.id) {
+          <article class="plan" [class.plan--destacado]="plan.id === 'asistente'">
+            <h3 class="plan__nombre">{{ plan.nombre }}</h3>
+            <p class="plan__precio"><span class="plan__cifra">{{ plan.precio }}</span> al mes</p>
+            <p class="plan__que">{{ plan.que }}</p>
+
+            <ul class="plan__lista">
+              @for (f of plan.destacados; track f) {
+                <li>{{ f }}</li>
+              }
+            </ul>
+
+            <!-- El resto del plan no cabe en una tarjeta sin convertirla en una lista de la
+                 compra, pero quien compara de verdad lo necesita. Va detrás de un clic. -->
+            <button type="button" class="plan__mas" (click)="verDetalle(plan)">
+              Ver todo lo que incluye
+              <svg class="plan__mas-flecha" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path
+                  d="M4 6 L8 10 L12 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <!-- La diferencia, dicha en los dos lados y con las mismas palabras: es el titular de
+                 la sección y tiene que leerse sin comparar listas. -->
+            <p class="plan__sello" [class.plan__sello--fuerte]="plan.id === 'asistente'">
+              {{ plan.sello }}
+            </p>
+          </article>
+        }
+      </div>
+
+      <!-- Un solo botón, y no uno por tarjeta.
+           La prueba es UNA: se entra con los 30 días y el plan se elige al final. Repetir
+           «Probar 30 días gratis» en las dos tarjetas daba a entender que son dos pruebas
+           distintas y obligaba a decidir antes de haber visto nada. -->
+      <div class="precio__accion">
+        <button type="button" class="boton boton--lg" (click)="abrirPrueba()">
+          Probar 30 días gratis
+        </button>
+        <p class="precio__nota">
+          La prueba es la misma para los dos: entras con todo abierto y eliges plan al terminar.
+          Sin tarjeta de crédito.
+        </p>
+      </div>
+
+      <p class="precio__complementos">
+        ¿Más gente o más puntos de cobro? Usuario adicional <strong>$5.999</strong>, caja adicional
+        <strong>$14.999</strong> al mes. Se suman y se quitan cuando quieras.
+      </p>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 6 · LOS MENSAJES ═══════════════════════════
+       A tamaño legible, no en letra chica: quien contrata esto tiene que saber antes de pagar que
+       hay un coste que no nos paga a nosotros.
+  -->
+  <section class="mensajes" aria-label="Lo que cuesta un mensaje">
+    <div class="marco">
+      <h2 class="titulo-seccion">Los mensajes los cobra Meta, no nosotros.</h2>
+
+      <!-- Dos columnas: lo que hay que entender a la izquierda, lo que cuesta a la derecha. En
+           una sola columna la sección dejaba media página en blanco. -->
+      <div class="mensajes__reja">
+        <div>
+          <p class="mensajes__texto">
+            WhatsApp regala <strong>1.000 mensajes al mes</strong> por número. Desde el 1.001, Meta
+            cobra <strong>unos $2,54 por mensaje</strong> y lo carga a tu tarjeta, directamente.
+            Nosotros no revendemos mensajes de Meta.
+          </p>
+          <p class="mensajes__texto">
+            El <strong>recordatorio de cita</strong> es un mensaje de plantilla: Meta lo cobra desde el
+            primero y no descuenta de los 1.000 gratis. Es un recordatorio por cita agendada.
+          </p>
+          <p class="mensajes__texto">
+            Tu plan incluye además una bolsa del asistente para que no tengas que pensar en esto
+            cada mes. Si se te queda corta, se amplía y se vuelve a quitar cuando quieras.
+          </p>
+        </div>
+
+        <!-- La cuenta, hecha. Se pregunta lo único que un dueño puede contestar sin pensarlo
+             —cuántos mensajes manda al mes— y se responde lo único que quiere saber: cuánto le
+             cobra Meta. Sin estimar pedidos ni cruzar dos topes a la vez. -->
+        <div class="calculadora">
+          <label class="calculadora__pregunta" for="cal-mensajes">
+            ¿Cuántos mensajes mandas al mes?
+          </label>
+
+          <output class="calculadora__cuantos" for="cal-mensajes">
+            {{ numero(mensajesMes()) }}
+          </output>
+
+          <input
+            id="cal-mensajes"
+            class="calculadora__barra"
+            type="range"
+            min="1000"
+            max="12000"
+            step="500"
+            [value]="mensajesMes()"
+            (input)="mensajesMes.set(+$any($event.target).value)"
+          />
+
+          <dl class="calculadora__cuenta">
+            <div>
+              <dt>Te regala WhatsApp</dt>
+              <dd>1.000</dd>
+            </div>
+            <div>
+              <dt>Te cobra Meta</dt>
+              <dd>{{ numero(mensajesDePago()) }}</dd>
+            </div>
+            <div class="calculadora__total">
+              <dt>Al mes, a tu tarjeta</dt>
+              <dd>{{ pesos(costoMeta()) }}</dd>
+            </div>
+          </dl>
+
+          <!-- La nota está SIEMPRE, y lo que cambia es el texto.
+               Apareciendo solo al pasar de 6.000, el bloque crecía de golpe y empujaba media
+               página hacia abajo mientras se arrastraba la barra. El `min-height` le reserva sus
+               tres líneas para que tampoco salte entre un texto y el otro. -->
+          <p class="calculadora__aviso">
+            @if (mensajesMes() > 6000) {
+              Pasando de 6.000, el asistente necesita un paquete nuestro: 2.000 por $4.999, 5.000
+              por $9.999 o 10.000 por $19.999. Eso va aparte de lo que cobra Meta.
+            } @else {
+              Tu plan ya trae 6.000 mensajes del asistente al mes, así que hasta ahí no nos pagas
+              nada extra. Lo de arriba es solo lo que cobra Meta.
+            }
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 7 · EL CIERRE Y EL PIE ═══════════════════════════
+       Un solo bloque, como en la landing viva: el corte diagonal, el pulpo asomando por él, la
+       marca de agua y la barra legal. Lo que cambia es la paleta — campo de tinta plano con los
+       tokens `--r-*`, sin el degradado ni el resplandor azul de allá.
+  -->
+  <footer class="pie" aria-label="Empezar y pie de página">
+    <div class="pie__corte" aria-hidden="true"></div>
+    <span class="pie__filigrana" aria-hidden="true">EscalApp</span>
+
+    <div class="pie__pulpo" aria-hidden="true">
+      <img [src]="pulpoPie" width="520" height="290" alt="" loading="lazy" decoding="async" />
+    </div>
+
+    <div class="marco pie__dentro">
+      <div class="pie__cta">
+        <h2 class="pie__titulo">Pruébalo 30 días con tu agenda.</h2>
+        <p class="pie__texto">
+          Te registras con tu cédula y tu correo, y el negocio queda creado en un par de minutos.
+          No pedimos tarjeta y no hay contrato.
+        </p>
+        <button type="button" class="boton boton--lg boton--claro" (click)="abrirPrueba()">
+          Probar 30 días gratis
+        </button>
+      </div>
+
+      <div class="pie__marca">
+        <span class="marca marca--pie">
+          <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
+            <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
+            <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#9B92CC" />
+            <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#FFFFFF" />
+          </svg>
+          <span class="marca__nombre">EscalApp</span>
+        </span>
+        <p class="pie__lema">El sistema para negocios de citas, con su asistente de WhatsApp.</p>
+
+        <nav class="pie__nav" aria-label="Secciones y legal">
+          <button type="button" (click)="irA('relevo')">Qué hace</button>
+          <button type="button" (click)="irA('precio')">Precio</button>
+          <a routerLink="/inicio">Todos los negocios</a>
+          <a routerLink="/auth/login">Iniciar sesión</a>
+          <a routerLink="/privacidad">Privacidad</a>
+        </nav>
+
+        <!-- El único canal real es el WhatsApp comercial, que además es el propio asistente
+             contestando: la demo y el contacto son la misma cosa. Nada de iconos de redes que no
+             llevan a ninguna cuenta. -->
+        <a
+          class="pie__whatsapp"
+          [href]="whatsappContacto"
+          target="_blank"
+          rel="noopener"
+          aria-label="Escríbenos por WhatsApp"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+            <path
+              d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"
+            />
+          </svg>
+          Escríbenos por WhatsApp
+        </a>
+      </div>
+    </div>
+
+    <div class="pie__legal">
+      <div class="marco pie__legal-fila">
+        <p>&copy; {{ anio }} EscalApp. Todos los derechos reservados.</p>
+        <div class="pie__legal-enlaces">
+          <a routerLink="/terminos">Términos y condiciones</a>
+          <a routerLink="/privacidad">Política de privacidad</a>
+          <a routerLink="/eliminacion-datos">Eliminar mis datos</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<!-- El botón flotante de WhatsApp, como en la landing viva: el canal de contacto real está
+     siempre a un toque, en toda la página y no solo al final. Verde de WhatsApp, glifo oficial. -->
+<a
+  class="flotante"
+  [href]="whatsappContacto"
+  target="_blank"
+  rel="noopener"
+  aria-label="Escríbenos por WhatsApp"
+>
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+    <path
+      d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"
+    />
+  </svg>
+</a>
+
+<!-- ═══════════════════════════ EL DETALLE DE UN PLAN ═══════════════════════════
+     Lo que no cabe en la tarjeta: la lista entera, en dos columnas y sin más adornos. Nada de
+     módulos de colores ni calculadoras de mensajes — quien abre esto quiere comparar, no jugar.
+-->
+@if (planAbierto(); as plan) {
+  <div class="capa" role="dialog" aria-labelledby="detalle-titulo">
+    <!-- Tres zonas fijas: cabecera, cuerpo que se desplaza y pie con las acciones.
+         El pie va pegado abajo a propósito: en una pantalla corta los botones quedaban debajo de
+         veinte líneas de lista y había que desplazarse hasta el final para encontrarlos. -->
+    <div class="capa__caja capa__caja--ancha detalle">
+      <header class="detalle__cabeza">
+        <button type="button" class="capa__cerrar" (click)="cerrarDetalle()" aria-label="Cerrar">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path
+              d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
+
+        <div class="detalle__quien">
+          <h2 class="detalle__nombre" id="detalle-titulo">{{ plan.nombre }}</h2>
+          <p class="detalle__que">{{ plan.que }}</p>
+        </div>
+
+        <p class="detalle__precio">
+          <span class="detalle__cifra">{{ plan.precio }}</span>
+          <span class="detalle__moneda">COP al mes</span>
+          <span class="detalle__sin">Sin contratos, cancelas cuando quieras</span>
+        </p>
+      </header>
+
+      <div class="detalle__cuerpo">
+        <div class="detalle__columnas" [class.detalle__columnas--sola]="!plan.asistente">
+          <section>
+            <h3 class="detalle__rotulo">Todo lo que incluye</h3>
+            <ul class="detalle-lista">
+              @for (f of plan.destacados.concat(plan.resto); track f) {
+                <li class="detalle">{{ f }}</li>
+              }
+            </ul>
+          </section>
+
+          @if (plan.asistente; as asis) {
+            <section>
+              <h3 class="detalle__rotulo">Lo que hace el asistente</h3>
+              <div class="detalle__panel">
+                <p class="detalle__panel-titulo">{{ asis.titulo }}</p>
+                <ul class="detalle__panel-lista">
+                  @for (p of asis.puntos; track p) {
+                    <li>{{ p }}</li>
+                  }
+                </ul>
+              </div>
+              <p class="detalle-nota">
+                Incluye 1.000 mensajes de WhatsApp al mes. Desde el 1.001 los cobra Meta a tu
+                tarjeta, unos $2,54 cada uno, y eso no nos lo pagas a nosotros.
+              </p>
+            </section>
+          }
+        </div>
+      </div>
+
+      <footer class="detalle__pie">
+        <a
+          class="boton boton--lg"
+          routerLink="/adquirir"
+          [queryParams]="{ plan: plan.id === 'asistente' ? 'AVANZADO' : 'BASICO', modulo: 'RESERVA' }"
+        >
+          Adquirir plan
+        </a>
+        <button type="button" class="enlace" (click)="cerrarDetalle(); abrirPrueba()">
+          O pruébalo 30 días gratis
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ═══════════════════════════ LA PRUEBA ═══════════════════════════
+     Misma lógica que la landing viva (`PruebaGratisStore`), aspecto propio: aquí no hay degradados
+     ni sombras en reposo, así que la capa de allá quedaría de otra página.
+-->
+@if (prueba.abierto()) {
+  <div class="capa" role="dialog" aria-labelledby="prueba-titulo">
+    <div class="capa__caja">
+      <button type="button" class="capa__cerrar" (click)="prueba.cerrar()" aria-label="Cerrar">
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path
+            d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+
+      @switch (prueba.paso()) {
+        @case ('form') {
+          <h2 class="capa__titulo" id="prueba-titulo">Prueba EscalApp 30 días</h2>
+          <p class="capa__bajada">Sin tarjeta de crédito. Te mandamos un código al correo.</p>
+
+          <form class="formulario" (submit)="$event.preventDefault(); prueba.enviarCodigo()" novalidate>
+            <div class="campo">
+              <label for="p-nombre">Nombre completo</label>
+              <input
+                id="p-nombre"
+                type="text"
+                autocomplete="name"
+                [value]="prueba.nombre()"
+                (input)="prueba.nombre.set($any($event.target).value)"
+                (blur)="prueba.nombreTocado.set(true)"
+              />
+              @if (prueba.nombreTocado() && prueba.nombreError()) {
+                <span class="campo__error">{{ prueba.nombreError() }}</span>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="p-cedula">Número de cédula</label>
+              <input
+                id="p-cedula"
+                type="text"
+                inputmode="numeric"
+                [value]="prueba.cedula()"
+                (input)="prueba.cedula.set($any($event.target).value)"
+                (blur)="prueba.cedulaTocada.set(true)"
+              />
+              @if (prueba.cedulaTocada() && prueba.cedulaError()) {
+                <span class="campo__error">{{ prueba.cedulaError() }}</span>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="p-email">Correo electrónico</label>
+              <input
+                id="p-email"
+                type="email"
+                autocomplete="email"
+                [value]="prueba.email()"
+                (input)="prueba.email.set($any($event.target).value)"
+                (blur)="prueba.emailTocado.set(true)"
+              />
+              @if (prueba.emailTocado() && prueba.emailError()) {
+                <span class="campo__error">{{ prueba.emailError() }}</span>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="p-negocio">Nombre del negocio</label>
+              <input
+                id="p-negocio"
+                type="text"
+                [value]="prueba.nombreNegocio()"
+                (input)="prueba.nombreNegocio.set($any($event.target).value)"
+                (blur)="prueba.nombreNegocioTocado.set(true)"
+              />
+              @if (prueba.nombreNegocioTocado() && prueba.nombreNegocioError()) {
+                <span class="campo__error">{{ prueba.nombreNegocioError() }}</span>
+              }
+            </div>
+
+            <div class="campo">
+              <label for="p-oficio">Tipo de negocio</label>
+              <select
+                id="p-oficio"
+                (change)="prueba.oficio.set($any($event.target).value)"
+                (blur)="prueba.oficioTocado.set(true)"
+              >
+                <option value="" [selected]="!prueba.oficio()">Elige uno</option>
+                @for (o of prueba.oficios(); track o.nombre) {
+                  <!-- `[selected]` por opción y no `[value]` en el select: el valor se aplica
+                       antes de que existan las opciones y no selecciona ninguna. -->
+                  <option [value]="o.nombre" [selected]="prueba.oficio() === o.nombre">
+                    {{ o.label }}
+                  </option>
+                }
+              </select>
+              @if (prueba.oficioTocado() && prueba.oficioError()) {
+                <span class="campo__error">{{ prueba.oficioError() }}</span>
+              }
+            </div>
+
+            @if (prueba.error()) {
+              <p class="capa__error" role="alert">{{ prueba.error() }}</p>
+            }
+
+            <button type="submit" class="boton boton--lg" [disabled]="prueba.cargando()">
+              {{ prueba.cargando() ? 'Enviando…' : 'Mandarme el código' }}
+            </button>
+          </form>
+        }
+
+        @case ('otp') {
+          @if (prueba.editandoCorreo()) {
+            <h2 class="capa__titulo" id="prueba-titulo">Corrige tu correo</h2>
+            <p class="capa__bajada">Te mandamos un código nuevo. El resto de tus datos se conserva.</p>
+            <div class="campo">
+              <label for="p-email-2">Correo electrónico</label>
+              <input
+                id="p-email-2"
+                type="email"
+                [value]="prueba.email()"
+                (input)="prueba.email.set($any($event.target).value)"
+              />
+              @if (prueba.emailTocado() && prueba.emailError()) {
+                <span class="campo__error">{{ prueba.emailError() }}</span>
+              }
+            </div>
+            @if (prueba.error()) {
+              <p class="capa__error" role="alert">{{ prueba.error() }}</p>
+            }
+            <div class="capa__botones">
+              <button type="button" class="boton" [disabled]="prueba.cargando()" (click)="prueba.confirmarCambioCorreo()">
+                Mandar el código
+              </button>
+              <button type="button" class="enlace" (click)="prueba.cancelarCambioCorreo()">
+                Cancelar
+              </button>
+            </div>
+          } @else {
+            <h2 class="capa__titulo" id="prueba-titulo">Revisa tu correo</h2>
+            <p class="capa__bajada">
+              Mandamos un código de 6 dígitos a <strong>{{ prueba.email() }}</strong>
+            </p>
+
+            <form class="formulario" (submit)="$event.preventDefault(); prueba.verificarCodigo()" novalidate>
+              <div class="campo">
+                <label for="p-codigo">Código</label>
+                <input
+                  id="p-codigo"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6"
+                  class="campo__codigo"
+                  [value]="prueba.codigo()"
+                  (input)="prueba.codigo.set($any($event.target).value)"
+                  (blur)="prueba.codigoTocado.set(true)"
+                />
+                @if (prueba.codigoTocado() && prueba.codigoError()) {
+                  <span class="campo__error">{{ prueba.codigoError() }}</span>
+                }
+              </div>
+
+              @if (prueba.error()) {
+                <p class="capa__error" role="alert">{{ prueba.error() }}</p>
+              }
+
+              <button type="submit" class="boton boton--lg" [disabled]="prueba.cargando()">
+                {{ prueba.cargando() ? 'Verificando…' : 'Crear mi cuenta' }}
+              </button>
+            </form>
+
+            <div class="capa__secundario">
+              <button
+                type="button"
+                class="enlace"
+                [disabled]="prueba.reenvioBloqueado()"
+                (click)="prueba.reenviarCodigo()"
+              >
+                {{ prueba.reenvioEtiqueta() }}
+              </button>
+              <button type="button" class="enlace" (click)="prueba.cambiarCorreo()">
+                ¿Escribiste mal el correo?
+              </button>
+            </div>
+          }
+        }
+
+        @case ('success') {
+          <h2 class="capa__titulo" id="prueba-titulo">Tu cuenta está lista</h2>
+          <p class="capa__bajada">
+            Hola, <strong>{{ prueba.nombreCreado() }}</strong>. Tu prueba de 30 días ya está activa.
+            Entra con tu correo y tu número de cédula.
+          </p>
+          <a class="boton boton--lg" routerLink="/auth/login">Entrar a mi negocio</a>
+        }
+      }
+    </div>
+  </div>
+}

@@ -28,6 +28,18 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://escalapp.cloud/reservas</loc>
+    <lastmod>2026-10-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://escalapp.cloud/inicio</loc>
+    <lastmod>2026-10-24</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://escalapp.cloud/adquirir</loc>
     <lastmod>2026-10-20</lastmod>
     <changefreq>monthly</changefreq>
