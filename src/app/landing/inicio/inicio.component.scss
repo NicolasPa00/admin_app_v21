@@ -2369,6 +2369,60 @@ a.logo:active {
   font-size: clamp(1.25rem, 1rem + 0.9vw, 1.75rem);
   letter-spacing: -0.03em;
 }
+/* ── El carrusel del celular ──────────────────────────────────────────────── */
+.logos__copia {
+  display: none;
+}
+@media (max-width: 767px) {
+  .carrusel {
+    /* Los bordes se difuminan para que los logos entren y salgan, no aparezcan cortados. */
+    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent); /* taste-skill-ignore: máscara de recorte del carrusel, no un degradado visible */
+    margin-inline: calc(var(--r-gutter) * -1);
+    overflow: hidden;
+  }
+  .carrusel .logos--clientes {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0;
+    width: max-content;
+    animation: carrusel-corre 22s linear infinite;
+  }
+  /* El espacio va en cada elemento y no en `gap`: así las dos mitades miden exactamente lo mismo y
+     el salto del final cae en el mismo píxel que el principio. */
+  .carrusel .logos--clientes > li {
+    flex: none;
+    padding-inline-end: 2.25rem;
+  }
+  .logos__copia {
+    display: block;
+  }
+  /* Tocarlo lo detiene, para poder leer o abrir uno. */
+  .carrusel:active .logos--clientes,
+  .carrusel:focus-within .logos--clientes {
+    animation-play-state: paused;
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .carrusel {
+    mask-image: none;
+    margin-inline: 0;
+  }
+  .carrusel .logos--clientes {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: auto;
+    animation: none;
+  }
+  .logos__copia {
+    display: none;
+  }
+}
+@keyframes carrusel-corre {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .logos--clientes .logo__texto {
   font-size: clamp(1.25rem, 1rem + 0.8vw, 1.625rem);
 }
@@ -2418,7 +2472,22 @@ a.logo:active {
 /* En esta página lo que va justo encima del pie es `.aliados`, en papel (no `.mensajes` en blanco,
    como en las páginas de cada motor): el corte toma ese color y sube un píxel para que no quede un
    filo entre las dos secciones. */
+/* El pie empieza en una posición con decimales (la altura de lo de arriba no es entera) y el
+   navegador pinta a medias su primera fila: el azul del fondo y el papel del corte se mezclan en un
+   filo gris. Los primeros 6 px del propio fondo del pie ya son papel (una franja lisa, el corte la
+   tapa entera), así que no queda azul que asome. */
+.pie {
+  margin-top: -1px;
+  background-image: linear-gradient(var(--r-papel), var(--r-papel)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
+}
 .pie__corte {
-  inset-block-start: -1px;
   background: var(--r-papel);
+}
+
+/* `_oscuro.scss` reinicia el fondo del pie con el atajo `background`: se repone la franja de papel de
+   arriba (ver `.pie` más arriba) para que en oscuro tampoco asome el filo. */
+:host-context(html[data-tema='oscuro']) .pie {
+  background-image: linear-gradient(var(--r-papel), var(--r-papel)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
 }

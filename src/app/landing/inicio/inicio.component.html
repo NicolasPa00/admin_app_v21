@@ -164,13 +164,23 @@
       <h2 class="titulo-seccion clientes__titulo" id="clientes-titulo">
         Negocios que ya trabajan con EscalApp
       </h2>
-      <ul class="logos logos--clientes" aria-label="Negocios que usan EscalApp">
-        @for (c of clientes; track c.nombre) {
-          <li data-entra>
-            <ng-container *ngTemplateOutlet="logoTpl; context: { $implicit: c }" />
-          </li>
-        }
-      </ul>
+      <!-- En escritorio, una fila centrada. En el celular, un carrusel que corre solo: la lista va
+           dos veces seguidas y se desliza la mitad, así el final empalma con el principio sin salto.
+           La copia es `inert` y `aria-hidden`: ni se enfoca ni se lee dos veces. -->
+      <div class="carrusel">
+        <ul class="logos logos--clientes" aria-label="Negocios que usan EscalApp">
+          @for (c of clientes; track c.nombre) {
+            <li data-entra>
+              <ng-container *ngTemplateOutlet="logoTpl; context: { $implicit: c }" />
+            </li>
+          }
+          @for (c of clientes; track c.nombre) {
+            <li class="logos__copia" aria-hidden="true" inert>
+              <ng-container *ngTemplateOutlet="logoTpl; context: { $implicit: c }" />
+            </li>
+          }
+        </ul>
+      </div>
     </div>
   </section>
 
