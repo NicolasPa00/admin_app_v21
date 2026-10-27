@@ -1,3 +1,6 @@
+@use '../shared/oscuro';
+@use '../shared/comun';
+
 /* ============================================================================
    Landing de restaurantes — «El pase»
 
@@ -6,10 +9,9 @@
    los pondría a pelearse. Es la misma receta que usa la carta virtual con sus `--carta-*`.
 
    Contrastes medidos sobre blanco:
-     tinta          #1A1F38  17,5:1
-     violeta hondo  #585098   6,96:1
-     violeta        #7060A8   5,35:1  ← el único que acepta texto blanco encima: los botones
-     violeta claro  #8078B8   3,96:1  ← SOLO relleno. Nunca texto.
+     tinta          #212142  15,4:1
+     violeta        #5d5497   6,60:1  ← texto, contorno y botones (texto blanco encima)
+     lavanda        #847bb4   3,84:1  ← SOLO relleno. Nunca texto.
 
    Ocho cosas que esta hoja no hace, porque tumbaron el primer intento:
    etiquetas sobre los títulos · 01/02/03 · filetes de 1 px como adorno · degradados · tarjetas con
@@ -17,10 +19,10 @@
    ============================================================================ */
 
 :host {
-  --r-tinta: #1a1f38;
-  --r-violeta-hondo: #585098;
-  --r-violeta: #7060a8;
-  --r-violeta-claro: #8078b8;
+  --r-tinta: #212142;
+  --r-violeta-hondo: #5d5497;
+  --r-violeta: #5d5497;
+  --r-violeta-claro: #847bb4;
 
   --r-papel: #f4f3f8;
   --r-superficie: #e9e7f1;
@@ -183,11 +185,20 @@
   padding: 0.75rem 1.25rem;
   cursor: pointer;
   text-decoration: none;
-  transition: background 160ms var(--r-paso);
+  transition:
+    background 160ms var(--r-paso),
+    transform 160ms var(--r-paso);
+}
+
+/* Responde al dedo antes de que llegue la navegación: un botón que no se hunde parece muerto. */
+.boton:active,
+.flotante:active,
+.pie__whatsapp:active {
+  transform: scale(0.97);
 }
 
 .boton:hover {
-  background: #5d4f90;
+  background: #4d4580;
 }
 
 .boton:focus-visible {
@@ -210,7 +221,7 @@
   font-size: 0.9375rem;
 }
 
-/* El contorno usa el violeta hondo (6,96:1), no el de relleno: aquí el violeta ES el texto. */
+/* El contorno usa el violeta hondo (6,60:1), no el de relleno: aquí el violeta ES el texto. */
 .boton--contorno {
   background: transparent;
   color: var(--r-violeta-hondo);
@@ -295,16 +306,11 @@
   color: inherit;
 }
 
-.marca__simbolo {
-  width: 20px;
-  height: 24px;
+.marca__logo {
+  display: block;
+  height: 32px;
+  width: auto;
   flex: none;
-}
-
-.marca__nombre {
-  font-size: 1.125rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
 }
 
 /* ── 1 · El escenario ─────────────────────────────────────────────────────── */
@@ -891,13 +897,6 @@
   justify-self: center;
 }
 
-.madrugada__pulpo img {
-  display: block;
-  width: 100%;
-  max-width: 520px;
-  height: auto;
-}
-
 /* ── 4 · Las cifras ───────────────────────────────────────────────────────── */
 
 .cifras {
@@ -1382,12 +1381,9 @@
   position: absolute;
   right: clamp(16px, 4vw, 72px);
   bottom: clamp(44px, 3vw, 52px);
-  font-size: clamp(2.75rem, 8vw, 7rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 0.8;
-  color: rgb(255 255 255 / 5%);
-  white-space: nowrap;
+  width: clamp(220px, 30vw, 440px);
+  height: auto;
+  opacity: 0.06;
   pointer-events: none;
   user-select: none;
   z-index: 0;
@@ -1403,7 +1399,7 @@
 }
 
 .pie__pulpo img {
-  width: clamp(200px, 26vw, 360px);
+  width: clamp(120px, 12vw, 190px);
   height: auto;
 }
 
@@ -1428,7 +1424,7 @@
   align-items: center;
   text-align: center;
   gap: 1rem;
-  max-width: 38ch;
+  max-width: 46ch;
   margin-inline: auto;
 }
 
@@ -1936,7 +1932,7 @@
 
 /* ═══════════════════════════ LA PÁGINA MADRE (/inicio) ═══════════════════════════
    Se apoya en lo ya definido arriba (marco, titular, entrada, boton, pie). Lo único nuevo son dos
-   tarjetas de elección, la banda de lo común y la franja de «otro oficio». Mismas reglas de la casa:
+   tarjetas de elección, la sección de lo que no cambia y la de aliados y clientes. Mismas reglas de la casa:
    sin degradados, sin sombras en reposo, sin filetes; el marco de la tarjeta es un anillo de 1 px. */
 
 .inicio {
@@ -1952,6 +1948,7 @@
 }
 
 .eleccion {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(1.25rem, 1rem + 1.5vw, 2rem);
@@ -1963,38 +1960,139 @@
   }
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── La tarjeta: un solo enlace ──────────────────────────────────────────────
+   Arriba, la ESCENA: el campo de color del motor (noche para restaurantes, violeta para citas) con la
+   captura como una ventana que asoma desde abajo y la conversación que la produjo flotando encima.
+   Abajo, el CUERPO en papel blanco. El campo de color distingue las dos respuestas de un vistazo. */
 .opcion {
+  --campo: var(--r-tinta);
+  position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   overflow: hidden;
-  border-radius: var(--r-radio);
+  border-radius: calc(var(--r-radio) + 6px);
   background: var(--r-blanco);
+  color: var(--r-tinta);
+  text-decoration: none;
   box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
+  transition: transform 260ms var(--r-paso);
 }
-.opcion__captura {
-  margin: 0;
-  background: var(--r-superficie);
+.opcion--reservas {
+  --campo: var(--r-violeta);
+}
+.opcion:focus-visible {
+  outline: 3px solid var(--r-violeta-hondo);
+  outline-offset: 4px;
+}
+.opcion:active {
+  transform: scale(0.99);
+}
+
+.opcion__escena {
+  position: relative;
+  /* Más ancha que la captura (1280×800 = 16/10): así la imagen siempre es más alta que su ventana y
+     tiene recorrido para deslizarse al pasar el cursor. */
   aspect-ratio: 2 / 1;
   overflow: hidden;
+  padding: clamp(1.25rem, 0.75rem + 2vw, 2.25rem) clamp(1.25rem, 0.75rem + 2vw, 2.25rem) 0;
+  background: var(--campo);
 }
-.opcion__captura img {
+
+/* La ventana: esquinas de arriba redondeadas y cortada por el borde de abajo, como una pantalla que
+   asoma. La imagen es más alta que el hueco: al pasar el cursor se desliza hacia arriba y deja ver el
+   resto del panel — «te mostramos cómo se ve por dentro». */
+.opcion__ventana {
+  position: relative;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+  background: var(--r-blanco);
+  animation: ventana-asoma 720ms var(--r-paso) both;
+}
+.opcion--reservas .opcion__ventana {
+  animation-delay: 90ms;
+}
+.opcion__ventana img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top left;
+  height: auto;
+  transition: transform 900ms var(--r-paso);
 }
-@media (max-width: 767px) {
-  .opcion__captura {
-    aspect-ratio: 430 / 520;
+
+/* La conversación: burbujas de WhatsApp que flotan sobre la esquina de la captura y corren en
+   bucle, de dos en dos para no tapar la pantalla. Cliente a la izquierda (blanco), asistente a la
+   derecha (verde), como lo ve el negocio. Cada mensaje entra subiendo y empuja al anterior; al acabar
+   la conversación se borran y vuelve a empezar. Flotan de verdad: de ahí la sombra. */
+.opcion__chat {
+  position: absolute;
+  right: clamp(0.75rem, 0.25rem + 1.5vw, 1.5rem);
+  bottom: clamp(0.75rem, 0.25rem + 1.5vw, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  width: min(20rem, 80%);
+  pointer-events: none;
+}
+.opcion__burbuja {
+  flex: none;
+  max-width: 92%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: #1f2a24;
+  box-shadow: 0 6px 18px rgb(17 17 40 / 0.22); /* taste-skill-ignore: la burbuja flota sobre la captura */
+  animation: burbuja-llega 420ms var(--r-paso) both;
+  transition:
+    opacity 600ms var(--r-paso),
+    transform 600ms var(--r-paso);
+}
+.opcion__burbuja--cliente {
+  align-self: flex-start;
+  background: var(--r-blanco);
+  border-bottom-left-radius: 4px;
+  transform-origin: left bottom;
+}
+.opcion__burbuja--asistente {
+  align-self: flex-end;
+  background: #d9fdd3;
+  border-bottom-right-radius: 4px;
+  transform-origin: right bottom;
+}
+/* La edad es cuántos mensajes llegaron después: el anterior se ve un poco apagado. */
+.opcion__burbuja--edad1 {
+  opacity: 0.85;
+}
+.opcion__burbuja--sale {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@keyframes burbuja-llega {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
   }
 }
+
 .opcion__cuerpo {
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.875rem;
+  gap: 0.75rem;
   padding: clamp(1.25rem, 1rem + 1.2vw, 2rem);
 }
 .opcion__titulo {
@@ -2007,53 +2105,132 @@
 }
 .opcion__frase {
   margin: 0;
-  color: var(--r-mudo);
+  color: var(--r-tinta);
   font-size: 1.0625rem;
   line-height: 1.5;
   max-width: 46ch;
 }
 .opcion__oficios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem 0.625rem;
   margin: 0 0 0.5rem;
-  padding: 0;
-  list-style: none;
+  color: var(--r-mudo);
   font-size: 0.9375rem;
-  color: var(--r-tinta);
+  line-height: 1.5;
 }
-.opcion__oficios li {
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  background: var(--r-superficie);
+/* El «botón» es parte del enlace: se ve como acción pero no es un control aparte (un botón dentro de
+   un enlace es HTML inválido). `margin-top: auto` lo baja al fondo y alinea los de las dos tarjetas. */
+.opcion__ir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.875rem 1.375rem;
+  border-radius: var(--r-radio);
+  background: var(--r-violeta);
+  color: var(--r-blanco);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  transition: background 160ms var(--r-paso);
 }
-/* El botón va justo después de la frase para que se vea sin bajar; en dos columnas, el alto mínimo del
-   título y de la frase alinea los dos botones aunque una tarjeta tenga más texto que la otra. */
-@media (min-width: 900px) {
-  .opcion__titulo { min-height: 2.3em; }
-  .opcion__frase { min-height: 4.6em; }
+.opcion__ir svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  transition: transform 220ms var(--r-paso);
 }
-.opcion__oficios { margin: 0.25rem 0 0; }
 
+@media (hover: hover) and (pointer: fine) {
+  .opcion:hover {
+    transform: translateY(-4px);
+  }
+  .opcion:hover .opcion__ventana img {
+    transform: translateY(-16%);
+  }
+  .opcion:hover .opcion__ir {
+    background: #4d4580;
+  }
+  .opcion:hover .opcion__ir svg {
+    transform: translateX(4px);
+  }
+}
+
+@media (max-width: 767px) {
+  .opcion__escena {
+    aspect-ratio: 1 / 1;
+  }
+}
+/* Por debajo de 1200 px la ventana es pequeña y dos burbujas la tapan: queda solo el último mensaje. */
+@media (max-width: 1199px) {
+  .opcion__burbuja--edad1 {
+    display: none;
+  }
+}
+
+@keyframes ventana-asoma {
+  from {
+    clip-path: inset(100% 0 0 0 round 10px 10px 0 0);
+    transform: translateY(24px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 10px 10px 0 0);
+    transform: none;
+  }
+}
+
+/* ── Lo que no cambia ──────────────────────────────────────────────────────── */
 .comun {
   padding-block: clamp(3rem, 2rem + 4vw, 6rem);
   background: var(--r-blanco);
 }
-.comun__lista {
+.comun__fila {
   display: grid;
   grid-template-columns: 1fr;
-  gap: clamp(1.5rem, 1rem + 2vw, 2.5rem);
-  margin: clamp(1.75rem, 1.25rem + 2vw, 3rem) 0 0;
+  gap: clamp(2rem, 1rem + 3vw, 4rem);
+}
+@media (min-width: 960px) {
+  .comun__fila {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    align-items: center;
+  }
+}
+.comun__cabeza .titulo-seccion {
+  margin-bottom: 1rem;
+}
+.comun__bajada {
+  margin: 0;
+  font-size: 1.1875rem;
+  line-height: 1.5;
+  max-width: 38ch;
+}
+.comun__lista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-@media (min-width: 900px) {
-  .comun__lista {
-    grid-template-columns: repeat(3, 1fr);
+/* Tres filas sobre un tono de superficie, separadas por espacio y no por líneas. */
+.comun__item {
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.25rem, 1rem + 1.2vw, 2rem);
+  border-radius: var(--r-radio);
+  background: var(--r-papel);
+  transition:
+    background 220ms var(--r-paso),
+    transform 220ms var(--r-paso);
+}
+/* Al pasar el cursor la fila se adelanta un poco y toma el tono violeta de la casa; el título se
+   colorea. Solo con ratón: en el celular no hay «encima». */
+@media (hover: hover) and (pointer: fine) {
+  .comun__item:hover {
+    background: var(--r-superficie);
+    transform: translateX(6px);
+  }
+  .comun__item:hover .comun__titulo {
+    color: var(--r-violeta-hondo);
   }
 }
 .comun__titulo {
-  margin: 0 0 0.5rem;
+  transition: color 220ms var(--r-paso);
+  margin: 0 0 0.375rem;
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.2;
@@ -2061,42 +2238,187 @@
 }
 .comun__texto {
   margin: 0;
-  color: var(--r-mudo);
+  color: var(--r-tinta);
   font-size: 1.0625rem;
   line-height: 1.55;
-  max-width: 38ch;
+  max-width: 56ch;
 }
 .comun__accion {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1.25rem;
-  margin-top: clamp(2rem, 1.5rem + 2vw, 3rem);
+  margin-top: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
 }
 .comun__nota {
   margin: 0;
   color: var(--r-mudo);
 }
 
-.otro {
-  padding-block: clamp(2rem, 1.5rem + 2vw, 3.5rem);
-  background: var(--r-superficie);
+/* ── Aliados y clientes ─────────────────────────────────────────────────────
+   Dos franjas de logos en gris sobre el papel, como una fila de marcas. Gris y medio apagados en
+   reposo, para que ninguno compita con el contenido ni con los demás; a todo color al pasar el
+   cursor o al enfocarlos. Todos a la misma altura óptica: los anchos varían, la altura no. */
+.aliados {
+  padding-block: clamp(3rem, 2rem + 4vw, 6rem) clamp(4rem, 3rem + 4vw, 7rem);
+  background: var(--r-papel);
 }
-.otro__fila {
+.aliados .titulo-seccion {
+  margin-bottom: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+}
+.logos {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem 2rem;
-}
-.otro__titulo {
-  margin: 0 0 0.25rem;
-  font-size: 1.375rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-.otro__texto {
+  gap: clamp(1.5rem, 1rem + 2.5vw, 3.5rem) clamp(2rem, 1rem + 4vw, 4.5rem);
   margin: 0;
-  color: var(--r-mudo);
-  font-size: 1.0625rem;
+  padding: 0;
+  list-style: none;
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  color: var(--r-tinta);
+  text-decoration: none;
+  filter: grayscale(1);
+  opacity: 0.62;
+  transition:
+    filter 260ms var(--r-paso),
+    opacity 260ms var(--r-paso),
+    transform 160ms var(--r-paso);
+}
+a.logo:hover,
+a.logo:focus-visible {
+  filter: none;
+  opacity: 1;
+}
+a.logo:focus-visible {
+  outline: 3px solid var(--r-violeta-hondo);
+  outline-offset: 6px;
+  border-radius: 6px;
+}
+a.logo:active {
+  transform: scale(0.97);
+}
+.logo__img {
+  display: block;
+  width: auto;
+  height: clamp(1.75rem, 1.4rem + 1vw, 2.375rem);
+}
+.logo__texto {
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+/* Clientes: sus logos son insignias cuadradas con fondo, así que van recortadas en círculo con el
+   nombre al lado (una insignia sola no se lee de lejos). */
+/* Con la franja de aliados apagada, los clientes son la sección: título y logos centrados. */
+.aliados .clientes__titulo {
+  max-width: none;
+  margin: 0 0 clamp(1.75rem, 1.25rem + 1.5vw, 2.5rem);
+  text-align: center;
+}
+.logos--clientes {
+  justify-content: center;
+  gap: clamp(1.25rem, 1rem + 1.5vw, 2.25rem) clamp(1.75rem, 1rem + 3vw, 3.5rem);
+}
+.logo__img--insignia {
+  width: clamp(3.25rem, 2.6rem + 1.8vw, 4.25rem);
+  height: clamp(3.25rem, 2.6rem + 1.8vw, 4.25rem);
+  border-radius: 50%;
+  object-fit: cover;
+  background: #000;
+}
+/* Los sellos de cliente ya vienen en blanco y negro: en reposo solo se apagan un poco. Al pasar el
+   cursor el sello sube, crece un poco y gira apenas, y el nombre se enciende en violeta. */
+.logos--clientes .logo {
+  filter: none;
+  opacity: 0.8;
+}
+.logo__img--insignia,
+.logo__nombre {
+  transition:
+    transform 320ms var(--r-paso),
+    color 220ms var(--r-paso),
+    box-shadow 320ms var(--r-paso);
+}
+@media (hover: hover) and (pointer: fine) {
+  a.logo:hover {
+    transform: translateY(-3px);
+  }
+  .logos--clientes a.logo:hover .logo__img--insignia {
+    transform: scale(1.08) rotate(-4deg);
+    box-shadow: 0 10px 22px rgb(17 17 40 / 0.25); /* taste-skill-ignore: el sello se levanta al pasar el cursor */
+  }
+  .logos--clientes a.logo:hover .logo__nombre {
+    color: var(--r-violeta-hondo);
+  }
+}
+.logo__nombre {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+.logo__nombre--grande {
+  font-size: clamp(1.25rem, 1rem + 0.9vw, 1.75rem);
+  letter-spacing: -0.03em;
+}
+.logos--clientes .logo__texto {
+  font-size: clamp(1.25rem, 1rem + 0.8vw, 1.625rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opcion__ventana,
+  .opcion__burbuja {
+    animation: none;
+  }
+  .opcion:hover,
+  .opcion:hover .opcion__ventana img,
+  .comun__item:hover,
+  a.logo:hover,
+  .logos--clientes a.logo:hover .logo__img--insignia {
+    transform: none;
+  }
+}
+
+
+/* ── Modo oscuro de esta página (el resto está en shared/_oscuro.scss) ─────────
+   La primera pantalla pasa a noche; las tarjetas de elección se quedan blancas (llevan capturas
+   claras del panel) y `.comun` y `.aliados` siguen claras: ahí se lee. Por eso el corte del pie
+   toma el color de `.aliados` y no el de los mensajes, que esta página no tiene. */
+:host-context(html[data-tema='oscuro']) .inicio {
+  background: var(--noche);
+}
+
+:host-context(html[data-tema='oscuro']) .inicio .titular,
+:host-context(html[data-tema='oscuro']) .inicio .inicio__titular {
+  color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .inicio .entrada {
+  color: var(--noche-texto);
+}
+
+/* El campo de restaurantes es azul noche, igual que la primera pantalla oscura: se subiría a ella sin
+   borde. Un paso más claro lo despega y conserva la idea (noche para restaurantes). */
+:host-context(html[data-tema='oscuro']) .opcion--restaurantes {
+  --campo: #34345f;
+}
+
+:host-context(html[data-tema='oscuro']) .pie__corte {
+  background: var(--r-papel);
+}
+
+/* En esta página lo que va justo encima del pie es `.aliados`, en papel (no `.mensajes` en blanco,
+   como en las páginas de cada motor): el corte toma ese color y sube un píxel para que no quede un
+   filo entre las dos secciones. */
+.pie__corte {
+  inset-block-start: -1px;
+  background: var(--r-papel);
 }

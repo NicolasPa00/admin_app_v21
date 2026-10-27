@@ -5,15 +5,12 @@
 <header class="cabecera">
   <div class="marco cabecera__fila">
     <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
-      <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
-        <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
-        <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#7060A8" />
-        <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#1A1F38" />
-      </svg>
-      <span class="marca__nombre">EscalApp</span>
+      <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="122" height="32" />
+        <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="122" height="32" />
     </a>
 
     <nav class="cabecera__nav" aria-label="Secciones">
+      <app-tema-selector />
       <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
       <a class="enlace" routerLink="/reservas">Citas</a>
       <a class="enlace" routerLink="/auth/login">Entrar</a>
@@ -39,83 +36,172 @@
       </p>
 
       <div class="eleccion">
-        @for (o of opciones; track o.id) {
-          <article class="opcion">
-            <figure class="opcion__captura">
-              <picture>
-                <source media="(max-width: 767px)" [srcset]="rutaMovil(o.imagen)" width="430" height="860" />
-                <img
-                  [src]="rutaImagen(o.imagen, 640)"
-                  [srcset]="rutaImagen(o.imagen, 640) + ' 640w, ' + rutaImagen(o.imagen, 1280) + ' 1280w'"
-                  sizes="(max-width: 767px) 100vw, 46vw"
-                  width="1280"
-                  height="800"
-                  [alt]="o.alt"
-                  loading="eager"
-                  decoding="async"
-                />
-              </picture>
-            </figure>
+        <!-- La mascota se asoma sobre las dos opciones, como quien invita a elegir. -->
+        <img
+          class="mascota mascota--guino"
+          [src]="mascota('guino', 480)"
+          [srcset]="mascota('guino', 480) + ' 480w, ' + mascota('guino', 960) + ' 960w'"
+          sizes="(max-width: 767px) 22vw, 13vw"
+          width="480"
+          height="577"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
+        <!-- Cada respuesta es UN enlace: toda la tarjeta lleva a la página de su motor. Arriba, la
+             captura como una ventana sobre el campo de color de ese motor, con la conversación que la
+             produjo corriendo en bucle encima; abajo, para quién es y qué hace. -->
+        @for (o of opciones; track o.id; let n = $index) {
+          <a class="opcion" [class]="'opcion opcion--' + o.id" [routerLink]="o.ruta">
+            <div class="opcion__escena">
+              <figure class="opcion__ventana">
+                <picture>
+                  <source media="(max-width: 767px)" [srcset]="rutaMovil(o.imagen)" width="430" height="860" />
+                  <img
+                    [src]="rutaImagen(o.imagen, 640)"
+                    [srcset]="rutaImagen(o.imagen, 640) + ' 640w, ' + rutaImagen(o.imagen, 1280) + ' 1280w'"
+                    sizes="(max-width: 767px) 92vw, 42vw"
+                    width="1280"
+                    height="800"
+                    [alt]="o.alt"
+                    loading="eager"
+                    decoding="async"
+                  />
+                </picture>
+              </figure>
+
+              <!-- El chat en bucle: el cliente a la izquierda y el asistente a la derecha, como en
+                   WhatsApp visto desde el negocio. Llegan de uno en uno y los viejos se desvanecen.
+                   `data-ui`: es un fragmento de la interfaz de WhatsApp; sus burbujas flotan de verdad. -->
+              <div class="opcion__chat" aria-hidden="true" data-ui>
+                @for (m of chatVisible(o, n); track m.i) {
+                  <p
+                    [class]="
+                      'opcion__burbuja opcion__burbuja--' +
+                      m.de +
+                      ' opcion__burbuja--edad' +
+                      m.edad +
+                      (m.sale ? ' opcion__burbuja--sale' : '')
+                    "
+                  >
+                    {{ m.texto }}
+                  </p>
+                }
+              </div>
+            </div>
 
             <div class="opcion__cuerpo">
               <h2 class="opcion__titulo">{{ o.titulo }}</h2>
               <p class="opcion__frase">{{ o.frase }}</p>
-              <a class="boton boton--lg" [routerLink]="o.ruta">{{ o.boton }}</a>
-              <ul class="opcion__oficios" [attr.aria-label]="'Oficios: ' + o.titulo">
-                @for (of of o.oficios; track of) {
-                  <li>{{ of }}</li>
-                }
-              </ul>
+              <p class="opcion__oficios">
+                <span class="sr-only">Oficios: </span>{{ o.oficios.join(' · ') }}
+              </p>
+              <span class="opcion__ir">
+                {{ o.boton }}
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                  <path d="M4 10h11M11 5.5 15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
             </div>
-          </article>
+          </a>
         }
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════ 2 · LO QUE ES IGUAL ═══════════════════════════
-       Lo que no depende del oficio, dicho una vez. El detalle de cada plan y la calculadora de
-       mensajes viven en la página de cada motor: aquí solo lo que hace falta para decidir a dónde ir.
+  <!-- ═══════════════════════════ 2 · LO QUE NO CAMBIA ═══════════════════════════
+       Lo que no depende del oficio, dicho una vez: a la izquierda la idea y la acción, a la derecha lo
+       que se recibe. El detalle de cada plan y la calculadora de mensajes viven en la página de cada
+       motor.
   -->
-  <section class="comun" aria-label="Lo que tienen en común">
-    <div class="marco">
-      <h2 class="titulo-seccion">En los dos, lo mismo.</h2>
+  <section class="comun" aria-labelledby="comun-titulo">
+    <div class="marco comun__fila">
+      <div class="comun__cabeza">
+        <h2 class="titulo-seccion" id="comun-titulo">Cambia el oficio, no lo que recibes.</h2>
+        <p class="comun__bajada">
+          Tengas un restaurante o un negocio de citas, el asistente, la prueba y el precio son los
+          mismos.
+        </p>
+        <div class="comun__accion">
+          <button type="button" class="boton boton--lg" (click)="abrirPrueba()">
+            Probar 30 días gratis
+          </button>
+          <p class="comun__nota">Sin tarjeta de crédito. Sin contrato.</p>
+        </div>
+      </div>
 
       <ul class="comun__lista">
         @for (c of comunes; track c.titulo) {
-          <li class="comun__item">
+          <li class="comun__item" data-entra>
             <h3 class="comun__titulo">{{ c.titulo }}</h3>
             <p class="comun__texto">{{ c.texto }}</p>
           </li>
         }
       </ul>
-
-      <div class="comun__accion">
-        <button type="button" class="boton boton--lg" (click)="abrirPrueba()">
-          Probar 30 días gratis
-        </button>
-        <p class="comun__nota">Sin tarjeta de crédito. Sin contrato.</p>
-      </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════ 3 · OTRO OFICIO ═══════════════════════════
-       Honestidad en lugar de relleno: si el negocio no es de ninguno de los dos, se le dice y se le
-       da el único canal real (el WhatsApp comercial), sin prometer verticales que no están en producción.
+  <!-- ═══════════════════════════ 3 · ALIADOS Y CLIENTES ═══════════════════════════
+       Dos franjas de logos en gris, como una fila de marcas: los aliados (cada uno a su sitio) y los
+       negocios que ya usan EscalApp (cada uno a su carta virtual o a su página para agendar). Al pasar
+       el cursor el logo recupera su color. Nada inventado: aliados confirmados y negocios reales.
   -->
-  <section class="otro" aria-label="Otro tipo de negocio">
-    <div class="marco otro__fila">
-      <div>
-        <h2 class="otro__titulo">¿Tu negocio no es ninguno de estos?</h2>
-        <p class="otro__texto">
-          Escríbenos por WhatsApp y te decimos con franqueza si podemos atenderlo hoy.
-        </p>
-      </div>
-      <a class="boton boton--contorno" [href]="whatsappContacto" target="_blank" rel="noopener">
-        Escribirnos por WhatsApp
-      </a>
+  <section class="aliados" aria-labelledby="clientes-titulo">
+    <div class="marco">
+      <!-- APAGADA (2026-10-26): el dueño está decidiendo si la franja de aliados va o no. Para
+           volver a ponerla, quitar este comentario (los datos siguen en `ALIADOS`).
+      <h2 class="titulo-seccion" id="aliados-titulo">Nuestros aliados</h2>
+      <ul class="logos" aria-label="Aliados">
+        @for (a of aliados; track a.nombre) {
+          <li data-entra>
+            <ng-container *ngTemplateOutlet="logoTpl; context: { $implicit: a }" />
+          </li>
+        }
+      </ul>
+      -->
+
+      <h2 class="titulo-seccion clientes__titulo" id="clientes-titulo">
+        Negocios que ya trabajan con EscalApp
+      </h2>
+      <ul class="logos logos--clientes" aria-label="Negocios que usan EscalApp">
+        @for (c of clientes; track c.nombre) {
+          <li data-entra>
+            <ng-container *ngTemplateOutlet="logoTpl; context: { $implicit: c }" />
+          </li>
+        }
+      </ul>
     </div>
   </section>
+
+  <!-- Un logo: imagen o, si no la hay, el nombre escrito; con enlace solo si hay a dónde ir. -->
+  <ng-template #logoTpl let-l>
+    @if (l.url) {
+      <a class="logo" [href]="l.url" target="_blank" rel="noopener" [attr.aria-label]="l.nombre">
+        <ng-container *ngTemplateOutlet="logoDentro; context: { $implicit: l }" />
+      </a>
+    } @else {
+      <span class="logo" [attr.aria-label]="l.nombre" role="img">
+        <ng-container *ngTemplateOutlet="logoDentro; context: { $implicit: l }" />
+      </span>
+    }
+  </ng-template>
+  <ng-template #logoDentro let-l>
+    @if (l.imagen) {
+      <img
+        [class]="l.insignia ? 'logo__img logo__img--insignia' : 'logo__img'"
+        [src]="logo(l.imagen)"
+        [alt]="l.nombre"
+        loading="lazy"
+        decoding="async"
+      />
+      @if (l.insignia || l.conNombre) {
+        <span class="logo__nombre" [class.logo__nombre--grande]="l.conNombre">{{ l.nombre }}</span>
+      }
+    } @else {
+      <span class="logo__texto">{{ l.nombre }}</span>
+    }
+  </ng-template>
 
   <!-- ═══════════════════════════ EL CIERRE Y EL PIE ═══════════════════════════
        Un solo bloque, como en la landing viva: el corte diagonal, el pulpo asomando por él, la
@@ -124,10 +210,10 @@
   -->
   <footer class="pie" aria-label="Empezar y pie de página">
     <div class="pie__corte" aria-hidden="true"></div>
-    <span class="pie__filigrana" aria-hidden="true">EscalApp</span>
+    <img class="pie__filigrana" [src]="marca('logotipo-blanco.svg')" width="768" height="159" alt="" aria-hidden="true" />
 
     <div class="pie__pulpo" aria-hidden="true">
-      <img [src]="pulpoPie" width="520" height="290" alt="" loading="lazy" decoding="async" />
+      <img [src]="mascota('guino', 480)" width="480" height="577" alt="" loading="lazy" decoding="async" />
     </div>
 
     <div class="marco pie__dentro">
@@ -144,12 +230,7 @@
 
       <div class="pie__marca">
         <span class="marca marca--pie">
-          <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
-            <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
-            <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#9B92CC" />
-            <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#FFFFFF" />
-          </svg>
-          <span class="marca__nombre">EscalApp</span>
+          <img class="marca__logo" [src]="marca('logo-horizontal-blanco.svg')" alt="EscalApp" width="122" height="32" />
         </span>
         <p class="pie__lema">El sistema para tu negocio, con su asistente de WhatsApp.</p>
 

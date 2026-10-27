@@ -1,0 +1,206 @@
+/* ============================================================================
+   Modo oscuro de la landing — el mismo para /inicio, /restaurantes y /reservas
+
+   Lo enciende quien visita (botón de la cabecera) y se guarda en el navegador; por defecto la
+   página es clara. El tema vive en `<html data-tema="oscuro">`, no en una clase del componente: así
+   un script de una línea en `index.html` lo pone ANTES del primer pintado y la página no parpadea
+   en claro para quien lo eligió oscuro.
+
+   El azul noche de la marca (#212142) pasa de ocupar dos bloques a ocupar cuatro —cabecera y primera
+   pantalla, la madrugada, los mensajes y el pie—. Lo claro queda donde se LEE o se COMPARA (el
+   relevo con las capturas, los oficios, el precio): ahí un campo oscuro cansaba y escondía las
+   capturas del panel, que son blancas.
+
+   Ritmo: noche · claro · claro · NOCHE · claro · NOCHE · noche honda.
+   Dos azules: #212142 es el campo de las secciones; #171733, el más hondo, es la cabecera y el pie,
+   para que cada cambio de bloque sea un escalón de tono y no una línea.
+
+   Contrastes sobre #212142: blanco 15,4:1 · #cdc9e6 ≈ 9:1 · #a9a2d0 6,4:1 (lavanda clara, texto
+   pequeño) · #847bb4 4,0:1 (solo para cifras grandes).
+
+   Se importa con `@use '../shared/oscuro'` al principio de la hoja de cada página. Cada regla lleva
+   el selector del tema delante, así que gana a la hoja base sin importar el orden.
+   ============================================================================ */
+
+/* Con el botón del tema la cabecera se queda sin sitio en un móvil estrecho: el logo se encoge un
+   poco y el botón de la prueba no parte su texto en dos líneas. */
+.cabecera__nav .boton {
+  white-space: nowrap;
+}
+
+@media (max-width: 430px) {
+  .cabecera__fila {
+    gap: 0.5rem;
+  }
+
+  .cabecera .marca__logo {
+    height: 26px;
+    width: auto;
+  }
+
+  .cabecera__nav {
+    gap: 0.25rem;
+  }
+
+  .cabecera__nav .boton--sm {
+    padding-inline: 0.9rem;
+  }
+}
+
+/* En 400 px o menos no caben el «Inicio» y el botón del tema: se queda la flecha, y la palabra sigue
+   ahí para quien usa lector de pantalla. */
+@media (max-width: 400px) {
+  .volver .volver__corto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* El logotipo claro y el oscuro conviven en la cabecera; solo se ve uno. La doble clase gana a
+   `.marca__logo` de la hoja de la página, que se declara después. */
+.marca .marca__logo--oscuro {
+  display: none;
+}
+
+:host-context(html[data-tema='oscuro']) .marca .marca__logo--claro {
+  display: none;
+}
+
+:host-context(html[data-tema='oscuro']) .marca .marca__logo--oscuro {
+  display: block;
+}
+
+:host-context(html[data-tema='oscuro']) {
+  --noche: #212142;
+  --noche-honda: #171733;
+  --noche-texto: #cdc9e6;
+  --noche-suave: #a9a2d0;
+}
+
+/* Cabecera y primera pantalla. */
+:host-context(html[data-tema='oscuro']) .cabecera {
+  background: var(--noche-honda);
+  box-shadow: none;
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera {
+  color: var(--noche-texto);
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera .enlace,
+:host-context(html[data-tema='oscuro']) .volver {
+  color: var(--noche-texto);
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera .enlace:hover,
+:host-context(html[data-tema='oscuro']) .volver:hover {
+  color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .volver:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera .enlace:hover {
+  border-bottom-color: var(--noche-suave);
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera .enlace:focus-visible,
+:host-context(html[data-tema='oscuro']) .volver:focus-visible,
+:host-context(html[data-tema='oscuro']) .heroe .enlace:focus-visible {
+  outline-color: var(--r-blanco);
+}
+
+/* El botón primario es violeta sobre claro; sobre noche el violeta se apaga (2,3:1), así que
+   aquí es blanco con tinta, que es lo que ya hace el cierre. */
+:host-context(html[data-tema='oscuro']) .cabecera .boton,
+:host-context(html[data-tema='oscuro']) .heroe .boton,
+:host-context(html[data-tema='oscuro']) .mensajes .boton {
+  background: var(--r-blanco);
+  color: var(--noche);
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera .boton:hover,
+:host-context(html[data-tema='oscuro']) .heroe .boton:hover,
+:host-context(html[data-tema='oscuro']) .mensajes .boton:hover {
+  background: #e7e4f2;
+}
+
+:host-context(html[data-tema='oscuro']) .boton:focus-visible {
+  outline-color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .heroe {
+  background: var(--noche);
+  color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .heroe .titular,
+:host-context(html[data-tema='oscuro']) .heroe .heroe__titular {
+  color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .heroe .entrada,
+:host-context(html[data-tema='oscuro']) .heroe .alianza,
+:host-context(html[data-tema='oscuro']) .heroe .heroe__letra,
+:host-context(html[data-tema='oscuro']) .heroe .heroe__aviso {
+  color: var(--noche-texto);
+}
+
+:host-context(html[data-tema='oscuro']) .heroe .enlace--sutil {
+  color: var(--noche-suave);
+}
+
+:host-context(html[data-tema='oscuro']) .heroe .enlace--sutil:hover {
+  color: var(--r-blanco);
+  border-bottom-color: var(--noche-suave);
+}
+
+/* El panel y el chat son claros: sobre el azul noche saltan a la vista sin necesitar marco. */
+:host-context(html[data-tema='oscuro']) .pantalla {
+  border-radius: var(--r-radio);
+  overflow: hidden;
+}
+
+:host-context(html[data-tema='oscuro']) .calculadora {
+  /* Hereda el blanco de `.mensajes`: la tarjeta es clara y su texto vuelve a ser tinta. */
+  color: var(--r-tinta);
+}
+
+/* La madrugada ya era azul noche; aquí solo cambia quién la protagoniza: la mascota durmiendo. */
+:host-context(html[data-tema='oscuro']) .madrugada {
+  background: var(--noche);
+}
+
+/* Los mensajes pasan a noche. La calculadora sigue clara: es la tarjeta que se lee y se toca. */
+:host-context(html[data-tema='oscuro']) .mensajes {
+  background: var(--noche);
+  color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .mensajes .titulo-seccion {
+  color: var(--r-blanco);
+}
+
+:host-context(html[data-tema='oscuro']) .mensajes__texto {
+  color: var(--noche-texto);
+}
+
+:host-context(html[data-tema='oscuro']) .mensajes__texto strong {
+  color: var(--r-blanco);
+}
+
+/* El pie, un escalón más hondo que los mensajes para que el corte diagonal se vea. */
+:host-context(html[data-tema='oscuro']) .pie {
+  background: var(--noche-honda);
+}
+
+:host-context(html[data-tema='oscuro']) .pie__corte {
+  background: var(--noche);
+}
+
+

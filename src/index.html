@@ -4,6 +4,19 @@
   <meta charset="utf-8">
   <title>EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas</title>
   <base href="/">
+  <!-- El tema de la landing (claro por defecto, oscuro si el visitante lo eligió). Va ANTES del primer
+       pintado para que quien lo eligió oscuro no vea un destello claro. `?tema=oscuro` o `?tema=claro`
+       en el enlace lo fija PARA ESA VISITA (no toca lo que el visitante tiene guardado): sirve para
+       compartir la página ya en el tema que se quiere enseñar. Mismo `try` que el servicio: sin almacenamiento, la página sigue y solo no recuerda. -->
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get('tema');
+        var oscuro = q ? q === 'oscuro' : localStorage.getItem('escalapp-tema') === 'oscuro';
+        if (oscuro) document.documentElement.setAttribute('data-tema', 'oscuro');
+      } catch (e) {}
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Metadatos de respaldo.

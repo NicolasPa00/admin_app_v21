@@ -51,3 +51,6 @@ Thumbs.db
 *.dump
 *.tgz
 *.tar.gz
+
+# Capturas del inspector de la skill de taste (pruebas locales de diseño)
+.taste-skill/

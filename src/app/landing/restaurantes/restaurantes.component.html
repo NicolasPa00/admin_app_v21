@@ -6,12 +6,8 @@
   <div class="marco cabecera__fila">
     <div class="cabecera__izq">
       <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
-        <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
-          <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
-          <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#7060A8" />
-          <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#1A1F38" />
-        </svg>
-        <span class="marca__nombre">EscalApp</span>
+        <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="122" height="32" />
+        <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="122" height="32" />
       </a>
       <!-- Vuelta a la página madre, a la vista en todos los anchos: el visitante que llegó a este
            motor por error (o quiere mirar el otro) no tiene que adivinar que el logo hace algo. La ruta
@@ -26,6 +22,7 @@
     </div>
 
     <nav class="cabecera__nav" aria-label="Secciones">
+      <app-tema-selector />
       <button type="button" class="enlace" (click)="irA('precio')">Precio</button>
       <a class="enlace" routerLink="/auth/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
@@ -77,6 +74,19 @@
       <!-- El escenario: la captura real del panel detrás, el chat dibujado delante.
            Se representa solo al entrar en pantalla; «Ver otra vez» es la única forma de repetirlo. -->
       <div class="heroe__escenario">
+        <!-- La mascota trabaja sobre el panel: se sienta en el borde del marco. -->
+        <img
+          class="mascota mascota--laptop"
+          [src]="mascota('laptop', 480)"
+          [srcset]="mascota('laptop', 480) + ' 480w, ' + mascota('laptop', 960) + ' 960w'"
+          sizes="(max-width: 1023px) 38vw, 18vw"
+          width="480"
+          height="417"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
         <figure class="pantalla">
           <div class="pantalla__barra" aria-hidden="true">
             <span class="pantalla__url">escalapp.cloud · Despacho</span>
@@ -283,12 +293,13 @@
 
       <figure class="madrugada__pulpo">
         <img
-          [src]="pulpoSrc(1040)"
-          [srcset]="pulpoSrc(640) + ' 640w, ' + pulpoSrc(1040) + ' 1040w'"
-          sizes="(max-width: 899px) 70vw, 40vw"
-          width="1040"
-          height="777"
-          alt="El pulpo cocinero de EscalApp, con cuchillo y bandeja, atendiendo de madrugada."
+          class="mascota-descanso"
+          [src]="mascota('descanso', 960)"
+          [srcset]="mascota('descanso', 480) + ' 480w, ' + mascota('descanso', 960) + ' 960w'"
+          sizes="(max-width: 899px) 80vw, 40vw"
+          width="960"
+          height="569"
+          alt="La mascota de EscalApp durmiendo mientras el asistente atiende."
           loading="lazy"
           decoding="async"
         />
@@ -332,6 +343,10 @@
       <div class="planes">
         @for (plan of planes; track plan.id) {
           <article class="plan" [class.plan--destacado]="plan.id === 'asistente'">
+            @if (plan.id === 'asistente') {
+              <!-- El plan que recomendamos, dicho en la tarjeta: es el que lleva la diferencia. -->
+              <p class="plan__insignia">Recomendado</p>
+            }
             <h3 class="plan__nombre">{{ plan.nombre }}</h3>
             <p class="plan__precio"><span class="plan__cifra">{{ plan.precio }}</span> al mes</p>
             <p class="plan__que">{{ plan.que }}</p>
@@ -345,7 +360,7 @@
             <!-- El resto del plan no cabe en una tarjeta sin convertirla en una lista de la
                  compra, pero quien compara de verdad lo necesita. Va detrás de un clic. -->
             <button type="button" class="plan__mas" (click)="verDetalle(plan)">
-              Ver todo lo que incluye
+              <span class="plan__mas-texto">Ver todo lo que incluye</span>
               <svg class="plan__mas-flecha" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
                 <path
                   d="M4 6 L8 10 L12 6"
@@ -360,7 +375,7 @@
 
             <!-- La diferencia, dicha en los dos lados y con las mismas palabras: es el titular de
                  la sección y tiene que leerse sin comparar listas. -->
-            <p class="plan__sello" [class.plan__sello--fuerte]="plan.id === 'asistente'">
+            <p class="plan__sello">
               {{ plan.sello }}
             </p>
           </article>
@@ -425,21 +440,21 @@
             </div>
 
             <table class="tabla-fe">
-              <caption class="visualmente-oculto">
-                Precio mensual con facturación electrónica según el paquete de documentos
+              <caption class="tabla-fe__leyenda">
+                Precio mensual con facturación electrónica, según el paquete de documentos.
               </caption>
               <thead>
                 <tr>
                   <th scope="col">Documentos al mes</th>
                   <th scope="col">Emprendedor</th>
-                  <th scope="col">Con asistente</th>
+                  <th scope="col" class="tabla-fe__asist">Con asistente</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><th scope="row">100</th><td>$81.999</td><td>$117.999</td></tr>
-                <tr><th scope="row">500</th><td>$101.999</td><td>$132.999</td></tr>
-                <tr><th scope="row">1.200</th><td>$121.999</td><td>$147.999</td></tr>
-                <tr><th scope="row">2.500</th><td>$141.999</td><td>$162.999</td></tr>
+                <tr><th scope="row">100</th><td>$81.999</td><td class="tabla-fe__asist">$117.999</td></tr>
+                <tr><th scope="row">500</th><td>$101.999</td><td class="tabla-fe__asist">$132.999</td></tr>
+                <tr><th scope="row">1.200</th><td>$121.999</td><td class="tabla-fe__asist">$147.999</td></tr>
+                <tr><th scope="row">2.500</th><td>$141.999</td><td class="tabla-fe__asist">$162.999</td></tr>
               </tbody>
             </table>
           </div>
@@ -475,6 +490,16 @@
              —cuántos mensajes manda al mes— y se responde lo único que quiere saber: cuánto le
              cobra Meta. Sin estimar pedidos ni cruzar dos topes a la vez. -->
         <div class="calculadora">
+          <img
+            class="mascota mascota--sentado"
+            [src]="mascota('sentado', 480)"
+            width="480"
+            height="341"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+          />
           <label class="calculadora__pregunta" for="cal-mensajes">
             ¿Cuántos mensajes mandas al mes?
           </label>
@@ -534,10 +559,10 @@
   -->
   <footer class="pie" aria-label="Empezar y pie de página">
     <div class="pie__corte" aria-hidden="true"></div>
-    <span class="pie__filigrana" aria-hidden="true">EscalApp</span>
+    <img class="pie__filigrana" [src]="marca('logotipo-blanco.svg')" width="768" height="159" alt="" aria-hidden="true" />
 
     <div class="pie__pulpo" aria-hidden="true">
-      <img [src]="pulpoPie" width="520" height="290" alt="" loading="lazy" decoding="async" />
+      <img [src]="mascota('guino', 480)" width="480" height="577" alt="" loading="lazy" decoding="async" />
     </div>
 
     <div class="marco pie__dentro">
@@ -554,12 +579,7 @@
 
       <div class="pie__marca">
         <span class="marca marca--pie">
-          <svg class="marca__simbolo" viewBox="0 0 30 36" aria-hidden="true" focusable="false">
-            <path d="M3 1 L28 0 L22 9 L3 10 Z" fill="#8078B8" />
-            <path d="M3 13 L28 12 L22 21 L3 22 Z" fill="#9B92CC" />
-            <path d="M3 25 L28 24 L22 33 L3 34 Z" fill="#FFFFFF" />
-          </svg>
-          <span class="marca__nombre">EscalApp</span>
+          <img class="marca__logo" [src]="marca('logo-horizontal-blanco.svg')" alt="EscalApp" width="122" height="32" />
         </span>
         <p class="pie__lema">El sistema para restaurantes, con su asistente de WhatsApp.</p>
 

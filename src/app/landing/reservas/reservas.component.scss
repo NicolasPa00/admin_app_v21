@@ -1,3 +1,7 @@
+@use '../shared/oscuro';
+@use '../shared/comun';
+@use '../shared/planes';
+
 /* ============================================================================
    Landing de restaurantes — «El pase»
 
@@ -6,10 +10,9 @@
    los pondría a pelearse. Es la misma receta que usa la carta virtual con sus `--carta-*`.
 
    Contrastes medidos sobre blanco:
-     tinta          #1A1F38  17,5:1
-     violeta hondo  #585098   6,96:1
-     violeta        #7060A8   5,35:1  ← el único que acepta texto blanco encima: los botones
-     violeta claro  #8078B8   3,96:1  ← SOLO relleno. Nunca texto.
+     tinta          #212142  15,4:1
+     violeta        #5d5497   6,60:1  ← texto, contorno y botones (texto blanco encima)
+     lavanda        #847bb4   3,84:1  ← SOLO relleno. Nunca texto.
 
    Ocho cosas que esta hoja no hace, porque tumbaron el primer intento:
    etiquetas sobre los títulos · 01/02/03 · filetes de 1 px como adorno · degradados · tarjetas con
@@ -17,10 +20,10 @@
    ============================================================================ */
 
 :host {
-  --r-tinta: #1a1f38;
-  --r-violeta-hondo: #585098;
-  --r-violeta: #7060a8;
-  --r-violeta-claro: #8078b8;
+  --r-tinta: #212142;
+  --r-violeta-hondo: #5d5497;
+  --r-violeta: #5d5497;
+  --r-violeta-claro: #847bb4;
 
   --r-papel: #f4f3f8;
   --r-superficie: #e9e7f1;
@@ -183,11 +186,20 @@
   padding: 0.75rem 1.25rem;
   cursor: pointer;
   text-decoration: none;
-  transition: background 160ms var(--r-paso);
+  transition:
+    background 160ms var(--r-paso),
+    transform 160ms var(--r-paso);
+}
+
+/* Responde al dedo antes de que llegue la navegación: un botón que no se hunde parece muerto. */
+.boton:active,
+.flotante:active,
+.pie__whatsapp:active {
+  transform: scale(0.97);
 }
 
 .boton:hover {
-  background: #5d4f90;
+  background: #4d4580;
 }
 
 .boton:focus-visible {
@@ -210,7 +222,7 @@
   font-size: 0.9375rem;
 }
 
-/* El contorno usa el violeta hondo (6,96:1), no el de relleno: aquí el violeta ES el texto. */
+/* El contorno usa el violeta hondo (6,60:1), no el de relleno: aquí el violeta ES el texto. */
 .boton--contorno {
   background: transparent;
   color: var(--r-violeta-hondo);
@@ -295,16 +307,11 @@
   color: inherit;
 }
 
-.marca__simbolo {
-  width: 20px;
-  height: 24px;
+.marca__logo {
+  display: block;
+  height: 32px;
+  width: auto;
   flex: none;
-}
-
-.marca__nombre {
-  font-size: 1.125rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
 }
 
 /* ── 1 · El escenario ─────────────────────────────────────────────────────── */
@@ -891,13 +898,6 @@
   justify-self: center;
 }
 
-.madrugada__pulpo img {
-  display: block;
-  width: 100%;
-  max-width: 520px;
-  height: auto;
-}
-
 /* ── 4 · Las cifras ───────────────────────────────────────────────────────── */
 
 .cifras {
@@ -996,6 +996,7 @@
 /* ── La calculadora de mensajes ──────────────────────────────────────────── */
 
 .calculadora {
+  position: relative;
   padding: clamp(1.25rem, 1rem + 1vw, 1.75rem);
   border-radius: var(--r-radio);
   background: var(--r-papel);
@@ -1079,128 +1080,6 @@
 
 .precio {
   padding-block: clamp(3.5rem, 2rem + 4vw, 6rem);
-}
-
-.planes {
-  display: grid;
-  gap: 1.5rem;
-}
-
-@media (min-width: 860px) {
-  .planes {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.plan {
-  display: flex;
-  flex-direction: column;
-  padding: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-  border-radius: var(--r-radio);
-  background: var(--r-blanco);
-  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
-}
-
-/* El plan con asistente se distingue por campo, no por una sombra ni una insignia. */
-.plan--destacado {
-  background: var(--r-superficie);
-  box-shadow: inset 0 0 0 2px var(--r-violeta-claro); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
-}
-
-.plan__nombre {
-  margin: 0;
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.plan__precio {
-  margin: 0.75rem 0 0;
-  color: var(--r-mudo);
-  font-size: 0.9375rem;
-}
-
-.plan__cifra {
-  display: block;
-  font-size: clamp(2.25rem, 1.75rem + 1.6vw, 3rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-  color: var(--r-tinta);
-  font-variant-numeric: tabular-nums;
-}
-
-.plan__que {
-  margin: 1.25rem 0 0;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--r-mudo);
-}
-
-.plan__lista {
-  margin: 1.25rem 0 0;
-  padding-left: 1.1rem;
-  display: grid;
-  gap: 0.4rem;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-}
-
-/* «Ver todo lo que incluye»: la lista completa no cabe en la tarjeta sin convertirla en un
-   inventario, pero quien compara de verdad la necesita.
-   Va con borde y a todo el ancho, no como un enlace subrayado: suelto no se leía como algo que
-   se pueda pulsar y la gente pasaba de largo. */
-.plan__mas {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  width: 100%;
-  margin-top: 1.5rem;
-  padding: 0.7rem 1rem;
-  border: 1px solid var(--r-borde-marcado); /* taste-skill-ignore: el borde es lo que lo hace parecer pulsable */
-  border-radius: var(--r-radio);
-  background: var(--r-blanco);
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 650;
-  color: var(--r-violeta-hondo);
-  cursor: pointer;
-  transition: background 160ms var(--r-paso), border-color 160ms var(--r-paso);
-}
-
-.plan__mas:hover {
-  background: var(--r-superficie);
-  border-color: var(--r-violeta-claro);
-}
-
-.plan__mas:focus-visible {
-  outline: 3px solid var(--r-tinta);
-  outline-offset: 2px;
-}
-
-.plan__mas-flecha {
-  width: 0.9rem;
-  height: 0.9rem;
-  transition: transform 160ms var(--r-paso);
-}
-
-.plan__mas:hover .plan__mas-flecha {
-  transform: translateY(2px);
-}
-
-/* La diferencia entre los dos planes, dicha al pie de cada tarjeta.
-   Nada de insignias de «más popular»: con siete clientes eso sería una invención. */
-.plan__sello {
-  margin: auto 0 0;
-  padding-top: 1.5rem;
-  font-size: 1rem;
-  line-height: 1.45;
-  font-weight: 650;
-  color: var(--r-mudo);
-}
-
-.plan__sello--fuerte {
-  color: var(--r-violeta-hondo);
 }
 
 /* Un solo botón para los dos planes. La prueba es una. */
@@ -1382,12 +1261,9 @@
   position: absolute;
   right: clamp(16px, 4vw, 72px);
   bottom: clamp(44px, 3vw, 52px);
-  font-size: clamp(2.75rem, 8vw, 7rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 0.8;
-  color: rgb(255 255 255 / 5%);
-  white-space: nowrap;
+  width: clamp(220px, 30vw, 440px);
+  height: auto;
+  opacity: 0.06;
   pointer-events: none;
   user-select: none;
   z-index: 0;
@@ -1403,7 +1279,7 @@
 }
 
 .pie__pulpo img {
-  width: clamp(200px, 26vw, 360px);
+  width: clamp(130px, 13vw, 200px);
   height: auto;
 }
 
@@ -1428,7 +1304,7 @@
   align-items: center;
   text-align: center;
   gap: 1rem;
-  max-width: 38ch;
+  max-width: 46ch;
   margin-inline: auto;
 }
 
@@ -2038,25 +1914,6 @@
   font-size: 0.9375rem;
 }
 
-/* ── Pulpos que alternan (fundido; solo opacidad) ─────────────────────────── */
-.madrugada__pulpo {
-  display: grid;
-  width: 100%;
-  max-width: 520px;
-}
-.madrugada__pulpo .pulpo-capa {
-  grid-area: 1 / 1;
-  opacity: 0;
-  transition: opacity 900ms ease;
-}
-.madrugada__pulpo .pulpo-capa--visible {
-  opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .madrugada__pulpo .pulpo-capa {
-    transition: none;
-  }
-}
 
 
 /* ── Titular de la primera pantalla: el elemento dominante ───────────────── */
@@ -2071,3 +1928,5 @@
     grid-column: 1 / -1;
   }
 }
+
+

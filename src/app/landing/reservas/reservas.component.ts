@@ -1,5 +1,4 @@
 import {
-
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -13,6 +12,8 @@ import { RouterLink } from '@angular/router';
 
 import { AssetService } from '../../core/services/asset.service';
 import { SeoService } from '../../core/services/seo.service';
+import { montarEntradas } from '../shared/entradas';
+import { TemaSelectorComponent } from '../shared/tema-selector.component';
 import { PruebaGratisStore } from '../shared/prueba-gratis.store';
 import { environment } from '../../../environments/environment';
 
@@ -212,12 +213,6 @@ const OFICIOS_GALERIA: OficioGaleria[] = [
   { slug: 'hospedaje', nombre: 'Hospedaje', frase: 'Reserva por noches, anticipo y calendario sincronizado con Airbnb y Booking.', alt: 'Ilustración de una cama.' },
 ];
 
-/** Los pulpos de la sección «con el negocio cerrado»: alternan, como los oficios. */
-const PULPOS = [
-  { id: 'barberia', alt: 'El pulpo barbero de EscalApp, con sus herramientas de trabajo.' },
-  { id: 'salonbelleza', alt: 'El pulpo manicurista de EscalApp, con su esmalte y su pincel.' },
-];
-
 /** Lo que traen los dos planes. El segundo es el primero más el asistente, y así se cuenta. */
 const COMUNES_DESTACADOS = [
   'Agenda por profesional, con sus horarios',
@@ -295,7 +290,7 @@ const PASOS_ESCENA = CONVERSACION.length + 1;
 @Component({
   selector: 'app-reservas',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TemaSelectorComponent],
   providers: [PruebaGratisStore],
   templateUrl: './reservas.component.html',
   styleUrl: './reservas.component.scss',
@@ -318,10 +313,6 @@ export class ReservasComponent {
 
   protected readonly paradas = PARADAS;
   protected readonly oficios = OFICIOS_GALERIA;
-  protected readonly pulpos = PULPOS;
-
-  /** Cuál de los pulpos se ve. Gira solo en el navegador y solo si no se pidió reducir el movimiento. */
-  protected readonly pulpoActivo = signal(0);
     protected readonly conversacion = CONVERSACION;
   protected readonly planes = PLANES;
 
@@ -423,12 +414,17 @@ export class ReservasComponent {
     this.prueba.oficios.set(OFICIOS_RESERVA);
 
     afterNextRender(() => {
+      montarEntradas(this.destroyRef);
       this.prueba.cargarOficios(OFICIOS_RESERVA.map((o) => o.nombre));
       this.montarObservadores();
-      this.girarPulpos();
     });
 
     this.destroyRef.onDestroy(() => this.limpiarTemporizadores());
+  }
+
+  /** Los recursos de la marca (logo, pulpo, logotipo), por el servicio como el resto de imágenes. */
+  protected marca(archivo: string): string {
+    return this.assets.getAssetPath(`marca/${archivo}`);
   }
 
   /**
@@ -456,22 +452,9 @@ export class ReservasComponent {
     return this.assets.getAssetPath(`producto/${nombre}-movil-430.webp`);
   }
 
-  /**
-   * El pulpo que asoma por el corte del pie — otra pose, no la misma de «La madrugada».
-   *
-   * Repetir la ilustración del cocinero a dos pantallas de distancia la gasta; el que emerge es el
-   * que ya usa el pie de la landing viva, así que el cierre se reconoce como de la misma casa.
-   */
-  protected get pulpoPie(): string {
-    return this.assets.getAssetPath('producto/pulpo-emergiendo-520.webp');
-  }
-
-  /**
-   * El pulpo, en WebP. El PNG original pesa 2,2 MB y es el activo más grande de la página; a 1040
-   * de ancho en WebP son 63 kB y a tamaño de pantalla no se distingue.
-   */
-  protected pulpoSrc(id: string, ancho: 640 | 1040): string {
-    return this.assets.getAssetPath(`producto/pulpo-${id}-${ancho}.webp`);
+  /** Una pose de la mascota oficial (WebP con fondo transparente, a 480 o 960 px de ancho). */
+  protected mascota(pose: 'laptop' | 'guino' | 'sentado' | 'descanso', ancho: 480 | 960): string {
+    return this.assets.getAssetPath(`marca/pulpo-${pose}-${ancho}.webp`);
   }
 
   /** Sin oficio por defecto: la página habla de ocho, así que el visitante elige el suyo. */
@@ -537,16 +520,6 @@ export class ReservasComponent {
       window.removeEventListener('scroll', planificar);
       window.removeEventListener('resize', planificar);
     });
-  }
-
-  /**
-   * Alterna los pulpos cada 5 s con un fundido. Si el sistema pide reducir el movimiento se queda el
-   * primero. Se consulta en cada arranque, igual que el resto, y el intervalo se limpia al destruir.
-   */
-  private girarPulpos(): void {
-    if (this.sinMovimiento || this.pulpos.length < 2) return;
-    const reloj = setInterval(() => this.pulpoActivo.update((i) => (i + 1) % this.pulpos.length), 5000);
-    this.destroyRef.onDestroy(() => clearInterval(reloj));
   }
 
   /** La escena se representa sola la primera vez que el escenario entra en pantalla. */

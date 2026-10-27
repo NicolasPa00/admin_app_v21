@@ -1,0 +1,92 @@
+/* Lo que comparten las tres páginas de la landing: la mascota y la entrada de los títulos.
+   Se importa con `@use '../shared/comun'` al principio de la hoja de cada página. */
+
+/* ── La mascota (marca oficial, 2026-10) ──────────────────────────────────────
+   Decorativa (`alt=""`): se sienta sobre el borde de lo que acompaña. Las cuatro poses son WebP con
+   fondo transparente a 480 y 960 px. */
+.mascota {
+  position: absolute;
+  z-index: 2;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mascota--laptop {
+  right: clamp(8px, 4%, 48px);
+  bottom: 100%;
+  width: clamp(104px, 15vw, 210px);
+  margin-bottom: -10px;
+}
+
+.mascota--sentado {
+  right: clamp(12px, 8%, 56px);
+  bottom: 100%;
+  width: clamp(120px, 16vw, 190px);
+  margin-bottom: -12px;
+}
+
+.mascota--guino {
+  right: clamp(8px, 3%, 40px);
+  bottom: 100%;
+  width: clamp(96px, 13vw, 170px);
+  margin-bottom: -8px;
+}
+
+/* En un móvil la escena va apilada y el chat queda arriba: la mascota no tiene un borde donde
+   sentarse sin tapar el chat, así que se queda fuera. */
+@media (max-width: 767px) {
+  .mascota--laptop,
+  .mascota--guino {
+    display: none;
+  }
+}
+
+.mascota-descanso {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+.pie__pulpo img {
+  width: clamp(120px, 12vw, 190px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Respira, no baila: 5 px de subida y bajada, tan lento que se siente más que se ve. */
+  .mascota--laptop,
+  .mascota--sentado,
+  .mascota--guino {
+    animation: mascota-respira 5.5s ease-in-out infinite;
+  }
+}
+
+@keyframes mascota-respira {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* ── Entrada de los títulos (ver entradas.ts) ─────────────────────────────────
+   El contenido nace visible; `.entra` lo esconde solo si está bajo la primera pantalla. */
+.entra {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.entra--visto {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 480ms var(--r-paso),
+    transform 480ms var(--r-paso);
+  transition-delay: var(--entra-retraso, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entra {
+    opacity: 1;
+    transform: none;
+  }
+}

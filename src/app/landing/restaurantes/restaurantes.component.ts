@@ -1,5 +1,4 @@
 import {
-
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
@@ -13,6 +12,8 @@ import { RouterLink } from '@angular/router';
 
 import { AssetService } from '../../core/services/asset.service';
 import { SeoService } from '../../core/services/seo.service';
+import { montarEntradas } from '../shared/entradas';
+import { TemaSelectorComponent } from '../shared/tema-selector.component';
 import { PruebaGratisStore } from '../shared/prueba-gratis.store';
 import { environment } from '../../../environments/environment';
 
@@ -297,7 +298,7 @@ const PASOS_ESCENA = CONVERSACION.length + 1;
 @Component({
   selector: 'app-restaurantes',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TemaSelectorComponent],
   providers: [PruebaGratisStore],
   templateUrl: './restaurantes.component.html',
   styleUrl: './restaurantes.component.scss',
@@ -433,6 +434,7 @@ export class RestaurantesComponent {
     });
 
     afterNextRender(() => {
+      montarEntradas(this.destroyRef);
       this.prueba.cargarOficios();
       this.montarObservadores();
     });
@@ -440,11 +442,21 @@ export class RestaurantesComponent {
     this.destroyRef.onDestroy(() => this.limpiarTemporizadores());
   }
 
+  /** Los recursos de la marca (logo, pulpo, logotipo), por el servicio como el resto de imágenes. */
+  protected marca(archivo: string): string {
+    return this.assets.getAssetPath(`marca/${archivo}`);
+  }
+
   /**
    * Las capturas se hicieron a 1280×800 y no a 1600×1000 a propósito: en el marco de la landing
    * una captura de 1600 se encoge tanto que el panel deja de leerse, y una captura de software
    * que no se lee no enseña nada.
    */
+  /** Una pose de la mascota oficial (WebP con fondo transparente, a 480 o 960 px de ancho). */
+  protected mascota(pose: 'laptop' | 'guino' | 'sentado' | 'descanso', ancho: 480 | 960): string {
+    return this.assets.getAssetPath(`marca/pulpo-${pose}-${ancho}.webp`);
+  }
+
   protected rutaImagen(nombre: string, ancho: 640 | 1280): string {
     return this.assets.getAssetPath(`producto/${nombre}-${ancho}.webp`);
   }
@@ -458,24 +470,6 @@ export class RestaurantesComponent {
    */
   protected rutaMovil(nombre: string): string {
     return this.assets.getAssetPath(`producto/${nombre}-movil-430.webp`);
-  }
-
-  /**
-   * El pulpo que asoma por el corte del pie — otra pose, no la misma de «La madrugada».
-   *
-   * Repetir la ilustración del cocinero a dos pantallas de distancia la gasta; el que emerge es el
-   * que ya usa el pie de la landing viva, así que el cierre se reconoce como de la misma casa.
-   */
-  protected get pulpoPie(): string {
-    return this.assets.getAssetPath('producto/pulpo-emergiendo-520.webp');
-  }
-
-  /**
-   * El pulpo, en WebP. El PNG original pesa 2,2 MB y es el activo más grande de la página; a 1040
-   * de ancho en WebP son 63 kB y a tamaño de pantalla no se distingue.
-   */
-  protected pulpoSrc(ancho: 640 | 1040): string {
-    return this.assets.getAssetPath(`producto/pulpo-${ancho}.webp`);
   }
 
   protected abrirPrueba(): void {
