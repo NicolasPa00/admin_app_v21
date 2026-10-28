@@ -2071,9 +2071,11 @@
   border-bottom-right-radius: 4px;
   transform-origin: right bottom;
 }
-/* La edad es cuántos mensajes llegaron después: el anterior se ve un poco apagado. */
+/* La edad es cuántos mensajes llegaron después. Hasta 2026-10-27 el anterior se apagaba al 85 %
+   y la captura de debajo se transparentaba por el texto: con poco brillo o al sol no se leía.
+   Ahora las burbujas son opacas y la vieja solo baja un tono de letra (más de 8:1 sobre el verde). */
 .opcion__burbuja--edad1 {
-  opacity: 0.85;
+  color: #3d4a43;
 }
 .opcion__burbuja--sale {
   opacity: 0;
@@ -2177,9 +2179,11 @@
 }
 
 /* ── Lo que no cambia ──────────────────────────────────────────────────────── */
+/* Papel desde 2026-10-27: ahora va después de la franja de clientes (blanca) y antes del pie,
+   que abre con una franja de papel. */
 .comun {
   padding-block: clamp(3rem, 2rem + 4vw, 6rem);
-  background: var(--r-blanco);
+  background: var(--r-papel);
 }
 .comun__fila {
   display: grid;
@@ -2212,7 +2216,7 @@
 .comun__item {
   padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.25rem, 1rem + 1.2vw, 2rem);
   border-radius: var(--r-radio);
-  background: var(--r-papel);
+  background: var(--r-blanco);
   transition:
     background 220ms var(--r-paso),
     transform 220ms var(--r-paso);
@@ -2259,9 +2263,11 @@
    Dos franjas de logos en gris sobre el papel, como una fila de marcas. Gris y medio apagados en
    reposo, para que ninguno compita con el contenido ni con los demás; a todo color al pasar el
    cursor o al enfocarlos. Todos a la misma altura óptica: los anchos varían, la altura no. */
+/* Una franja corta y blanca entre las tarjetas y los precios: es una prueba, no una sección
+   entera, así que no se lleva una pantalla. */
 .aliados {
-  padding-block: clamp(3rem, 2rem + 4vw, 6rem) clamp(4rem, 3rem + 4vw, 7rem);
-  background: var(--r-papel);
+  padding-block: clamp(2.5rem, 1.75rem + 2.5vw, 4rem);
+  background: var(--r-blanco);
 }
 .aliados .titulo-seccion {
   margin-bottom: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
@@ -2487,7 +2493,11 @@ a.logo:active {
 }
 
 /* `_oscuro.scss` reinicia el fondo del pie con el atajo `background`: se repone la franja de papel de
-   arriba (ver `.pie` más arriba) para que en oscuro tampoco asome el filo. */
+   arriba (ver `.pie` más arriba) para que en oscuro tampoco asome el filo. Van las TRES propiedades:
+   el atajo también devuelve el tamaño a `auto` y la repetición a `repeat`, y con solo la imagen la
+   franja de 6 px se estiraba a todo el pie y lo dejaba claro. */
 :host-context(html[data-tema='oscuro']) .pie {
   background-image: linear-gradient(var(--r-papel), var(--r-papel)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
 }

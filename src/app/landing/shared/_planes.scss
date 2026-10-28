@@ -2,14 +2,14 @@
    Las tarjetas de plan — /restaurantes y /reservas
 
    Los dos planes se parecen a propósito (el segundo es el primero más el asistente), así que lo que
-   los distingue tiene que verse de lejos y sin leer: el plan con asistente es un campo de azul
-   noche con letra blanca, y el otro, una tarjeta blanca. La pestaña «Recomendado» cabalga el borde.
+   los distingue tiene que verse de lejos y sin leer: las dos son blancas y el plan con asistente
+   lleva un marco azul noche de 2 px con la pestaña «Recomendado» cabalgando el borde.
 
    Cada tarjeta se lee de arriba abajo en el orden en que se decide: cómo se llama, cuánto cuesta,
    qué es, qué trae, y al pie —sobre su propia franja— la diferencia que justifica el precio.
 
-   Contrastes: blanco sobre #212142 15,4:1 · #cdc9e6 sobre #212142 ≈ 9:1 · violeta #5d5497 sobre
-   blanco 6,6:1. Se importa con `@use '../shared/planes'` al principio de la hoja de cada página.
+   Contrastes: blanco sobre #212142 15,4:1 · violeta #5d5497 sobre blanco 6,6:1. Se importa con
+   `@use '../shared/planes'` al principio de la hoja de cada página.
    ============================================================================ */
 
 .planes {
@@ -36,30 +36,42 @@
   border-radius: var(--r-radio);
   background: var(--r-blanco);
   color: var(--plan-texto);
-  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
 }
 
-/* El plan con asistente se distingue por campo: azul noche plano, sin degradado ni sombra. */
+/* El marco va en una capa encima y no en la propia tarjeta: la franja del pie llega a los bordes y
+   su fondo tapaba la sombra interior, así que el marco desaparecía justo abajo. */
+.plan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 var(--plan-marco-ancho, 1px) var(--plan-marco, var(--r-borde)); /* taste-skill-ignore: marco de la tarjeta, sin desenfoque */
+  pointer-events: none;
+}
+
+/* El plan con asistente se distingue por el marco: la misma tarjeta blanca con un borde de 2 px
+   en azul noche, como en la landing anterior. Hasta 2026-10-27 fue un campo entero (azul noche,
+   luego violeta) y pesaba demasiado al lado de la otra: el dueño quiere que resalte, no que sea
+   otra cosa. La pestaña «Recomendado» es del mismo azul que el marco, así que se lee como parte de él. */
 .plan--destacado {
-  --plan-texto: var(--r-blanco);
-  --plan-suave: #cdc9e6;
-  --plan-acento: #a9a2d0;
-  background: var(--r-tinta);
-  box-shadow: none;
+  --plan-marco: var(--r-tinta);
+  --plan-marco-ancho: 2px;
 }
 
-/* «Recomendado»: una pestaña pegada al borde de arriba, en el violeta lleno con letra blanca
-   (6,6:1). Cabalga el marco —mitad dentro, mitad fuera— y lleva un aro del color del papel que la
-   recorta del azul noche: se lee como un corte en la tarjeta y no como una etiqueta suelta. */
+/* «Recomendado»: una pestaña pegada al borde de arriba, en azul noche con letra blanca (15,4:1),
+   del color del marco. Cabalga el marco —mitad dentro, mitad fuera— y lleva un aro del color del
+   papel que la recorta de la tarjeta: se lee como un corte en el marco y no como una etiqueta
+   suelta. Va por encima de la capa del marco. */
 .plan__insignia {
   position: absolute;
+  z-index: 1;
   top: 0;
   left: var(--plan-pad);
   transform: translateY(-50%);
   margin: 0;
   padding: 0.35rem 0.95rem;
   border-radius: 999px;
-  background: var(--r-violeta);
+  background: var(--r-tinta);
   color: var(--r-blanco);
   box-shadow: 0 0 0 4px var(--r-papel); /* taste-skill-ignore: aro de recorte, sin desenfoque ni desplazamiento */
   font-size: 0.875rem;
@@ -104,8 +116,9 @@
 
 /* La lista con un visto dibujado (máscara sobre `currentColor`), del mismo trazo en las dos
    tarjetas, en lugar de la viñeta del navegador. */
+/* El margen de abajo separa la lista de la franja del pie, ahora que entre las dos no va nada. */
 .plan__lista {
-  margin: 1.5rem 0 0;
+  margin: 1.5rem 0 1.75rem;
   padding: 0;
   list-style: none;
   display: grid;
@@ -131,54 +144,6 @@
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.4 6.4 11.6 12.8 4.6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
-/* «Ver todo lo que incluye»: es un enlace a la lista completa, no un botón de compra. Antes iba con
-   borde y a todo el ancho y competía con la cifra; ahora es una línea de acción con su flecha, y
-   solo en el gesto (`:hover`) se subraya. */
-.plan__mas {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 1.4rem 0 1.75rem;
-  padding: 0.35rem 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 650;
-  color: var(--plan-acento);
-  cursor: pointer;
-}
-
-.plan--destacado .plan__mas {
-  color: var(--r-blanco);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .plan__mas:hover .plan__mas-texto {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-}
-
-.plan__mas:focus-visible {
-  outline: 3px solid currentColor;
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-.plan__mas-flecha {
-  width: 0.9rem;
-  height: 0.9rem;
-  transition: transform 160ms var(--r-paso);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .plan__mas:hover .plan__mas-flecha {
-    transform: translateY(2px);
-  }
-}
-
 /* La diferencia entre los dos planes, al pie de cada tarjeta y sobre su propia franja: la franja
    llega a los bordes y es el escalón de tono que cierra la tarjeta.
    Nada de «más popular»: con tan pocos clientes eso sería una invención; por eso «Recomendado». */
@@ -194,6 +159,836 @@
 }
 
 .plan--destacado .plan__sello {
-  background: rgb(255 255 255 / 9%);
+  background: color-mix(in srgb, #847bb4 14%, var(--r-blanco));
+  color: var(--r-violeta-hondo);
+}
+
+/* «Adquirir plan», al fondo de cada tarjeta y justo encima de la franja del pie. `margin-top: auto`
+   lo baja hasta abajo: las dos tarjetas tienen listas de largo distinto y así los botones quedan a
+   la misma altura. La franja ya no necesita su propio `auto`. */
+.plan__adquirir {
+  width: 100%;
+  margin: auto 0 1.75rem;
+  padding-block: 0.85rem;
+}
+
+.plan__adquirir + .plan__sello {
+  margin-top: 0;
+}
+
+/* «Todo lo del Emprendedor, más:» — abre la lista del plan con asistente. Es lo que deja ver la
+   diferencia sin comparar dos listas que repetían la mitad. */
+.plan__antes {
+  margin: 1.5rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--plan-texto);
+}
+
+.plan__lista--tras-antes {
+  margin-top: 0.85rem;
+}
+
+/* ── El detalle de los planes, en ventanas (2026-10-27) ──────────────────────
+   Pedido del dueño: debajo de las tarjetas, dos botones en una fila —«Comparar los dos planes» y,
+   en /restaurantes, «Precios con facturación electrónica»— y cada uno abre una ventana (`<dialog>`
+   nativo: foco atrapado, Esc y el contenido sigue en el HTML prerenderizado). Antes era un plegable
+   en la página. */
+.precio__ventanas {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: clamp(1.5rem, 1rem + 1.5vw, 2rem);
+}
+
+@media (min-width: 720px) {
+  .precio__ventanas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* Un solo botón (en /reservas no hay facturación): no se estira a todo el ancho. */
+@media (min-width: 720px) {
+  .precio__ventanas:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Cada botón es una fila que se lee entera: icono, qué abre, una pista y la flecha. Blanco con su
+   marco, como las tarjetas de arriba; al pasar el ratón el marco toma el violeta y la flecha avanza. */
+.abre-ventana {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.25rem 1rem 1rem;
+  border: 0;
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+  box-shadow: inset 0 0 0 1px var(--r-borde-marcado); /* taste-skill-ignore: el marco es lo que lo hace parecer pulsable */
+  font: inherit;
+  text-align: left;
+  color: var(--r-tinta);
+  cursor: pointer;
+  transition:
+    box-shadow 180ms var(--r-paso),
+    transform 140ms var(--r-paso);
+}
+
+.abre-ventana__icono {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  border-radius: 12px;
+  background: var(--r-superficie);
+  color: var(--r-violeta-hondo);
+}
+
+.abre-ventana svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.abre-ventana__icono svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+.abre-ventana__texto {
+  display: grid;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.abre-ventana__titulo {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.abre-ventana__pista {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--r-mudo);
+}
+
+.abre-ventana__flecha {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  color: var(--r-violeta-hondo);
+  transition: transform 220ms var(--r-paso);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abre-ventana:hover {
+    box-shadow: inset 0 0 0 2px var(--r-violeta); /* taste-skill-ignore: el marco se marca al pasar el ratón */
+  }
+  .abre-ventana:hover .abre-ventana__flecha {
+    transform: translateX(4px);
+  }
+}
+
+/* Se hunde un poco al pulsarlo: confirma que la mano llegó. */
+.abre-ventana:active {
+  transform: scale(0.985);
+}
+
+.abre-ventana:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+/* La ventana. Entra subiendo 12 px y pasando de 98 % a 100 % (260 ms, ease-out fuerte); sale más
+   rápido (180 ms). `@starting-style` y `allow-discrete` hacen la entrada y la salida sin script.
+   Dentro, la cabecera de la tabla se pega arriba del cuerpo y no bajo la barra de la página: por eso
+   `--r-cabecera` vale 0 aquí. */
+.ventana {
+  --r-cabecera: 0px;
+  width: min(960px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(88dvh, 920px);
+  /* Explícito: los estilos globales de la app ponen `margin: 0` a todo y anulan el `auto` con el
+     que el navegador centra los `<dialog>` (la ventana salía pegada arriba a la izquierda). */
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: var(--r-blanco);
+  color: var(--r-tinta);
+  box-shadow: 0 30px 80px -24px rgb(23 23 51 / 50%);
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out,
+    overlay 180ms allow-discrete,
+    display 180ms allow-discrete;
+}
+
+.ventana[open] {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transform: none;
+  transition-duration: 260ms;
+  transition-timing-function: var(--r-paso);
+}
+
+@starting-style {
+  .ventana[open] {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+.ventana::backdrop {
+  background: rgb(23 23 51 / 0%);
+  transition:
+    background 220ms ease-out,
+    overlay 220ms allow-discrete,
+    display 220ms allow-discrete;
+}
+
+.ventana[open]::backdrop {
+  background: rgb(23 23 51 / 55%);
+}
+
+@starting-style {
+  .ventana[open]::backdrop {
+    background: rgb(23 23 51 / 0%);
+  }
+}
+
+.ventana__cabeza {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
+  box-shadow: inset 0 -1px 0 var(--r-borde); /* taste-skill-ignore: separa la cabecera fija del cuerpo que se desplaza */
+}
+
+.ventana__titulo {
+  margin: 0;
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.ventana__bajada {
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--r-mudo);
+}
+
+.ventana__cerrar {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--r-superficie);
+  color: var(--r-tinta);
+  cursor: pointer;
+  transition:
+    background 160ms var(--r-paso),
+    transform 140ms var(--r-paso);
+}
+
+.ventana__cerrar svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ventana__cerrar:hover {
+    background: var(--r-borde-marcado);
+  }
+}
+
+.ventana__cerrar:active {
+  transform: scale(0.94);
+}
+
+.ventana__cerrar:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+/* El cuerpo se desplaza por dentro y no arrastra la página al llegar al final. */
+.ventana__cuerpo {
+  position: relative; /* contiene los `.sr-only` de las celdas */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 clamp(1rem, 0.5rem + 1.5vw, 1.75rem) clamp(1.25rem, 1rem + 1vw, 1.75rem);
+}
+
+.ventana__intro {
+  margin: 1.25rem 0 0;
+  max-width: 68ch;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--r-tinta);
+}
+
+/* La barra de abajo de una ventana: queda fija mientras el cuerpo se desplaza. */
+.ventana__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
+  background: var(--r-blanco);
+  box-shadow: inset 0 1px 0 var(--r-borde); /* taste-skill-ignore: separa la barra fija del cuerpo que se desplaza */
+}
+
+/* ── La ventana de facturación electrónica ───────────────────────────────── */
+
+/* Lo que incluye, en dos columnas con el visto de las tarjetas. */
+.fe-incluye {
+  display: grid;
+  gap: 0.6rem 1.5rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--r-tinta);
+}
+
+@media (min-width: 600px) {
+  .fe-incluye {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fe-incluye li {
+  position: relative;
+  padding-left: 1.6rem;
+}
+
+.fe-incluye li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.1em;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: var(--r-violeta);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.4 6.4 11.6 12.8 4.6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.4 6.4 11.6 12.8 4.6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* La tabla, dentro de su propio marco: cabecera sobre superficie y la columna del asistente con su
+   tinte. `overflow: clip` recorta las esquinas sin romper la cabecera pegada. */
+.fe-tabla {
+  margin-top: 1.5rem;
+  border-radius: var(--r-radio);
+  box-shadow: inset 0 0 0 1px var(--r-borde-marcado); /* taste-skill-ignore: el marco de la tabla */
+  overflow: clip;
+}
+
+/* Cuatro filas: la cabecera no necesita quedarse pegada, y pegada tapaba una fila en el celular. */
+.fe-tabla .comparar__tabla thead th {
+  position: static;
+  background: var(--r-superficie);
+  padding-block: 0.85rem;
+}
+
+.fe-tabla .comparar__tabla thead .comparar__plan:last-child {
+  background: color-mix(in srgb, #847bb4 18%, var(--r-superficie));
+}
+
+.fe-tabla__esquina {
+  padding-left: 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--r-mudo);
+}
+
+.fe-tabla .comparar__que {
+  padding-left: 1rem;
+  font-weight: 600;
+}
+
+.fe-tabla .comparar__tabla thead + tbody > tr:first-child > * {
+  border-top: 0;
+}
+
+/* «Emprendedor + Facturación» en una línea, como «Plan Empresarial» al lado. Solo con espacio: en
+   el celular las dos columnas no caben con el nombre entero y se parte. */
+@media (min-width: 600px) {
+  .fe-tabla .comparar__col {
+    width: 14rem;
+  }
+  .fe-tabla .comparar__plan-nombre {
+    white-space: nowrap;
+  }
+}
+
+/* La nota de la ventana ocupa todo el ancho: con el tope de 68ch quedaba en cinco líneas. Con las
+   dos clases, porque `.comparar__nota` va más abajo en este archivo y con una sola le ganaba. */
+.comparar__nota.fe-nota {
+  max-width: none;
+}
+
+/* Debajo del nombre del plan y del paquete, la aclaración en pequeño («Con asistente», «Hasta 500»). */
+.comparar__plan-sub,
+.comparar__que-sub {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--r-mudo);
+}
+
+/* Cada precio es un botón: se toca para elegirlo. El elegido se rellena de violeta. */
+.fe-precio {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 7.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: dice que el precio se puede tocar */
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--r-tinta);
+  cursor: pointer;
+  transition:
+    background 160ms var(--r-paso),
+    color 160ms var(--r-paso),
+    box-shadow 160ms var(--r-paso),
+    transform 120ms var(--r-paso);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fe-precio:hover {
+    box-shadow: inset 0 0 0 2px var(--r-violeta-claro);
+  }
+}
+
+.fe-precio:active {
+  transform: scale(0.96);
+}
+
+.fe-precio:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+.fe-precio--elegido,
+.fe-precio--elegido:hover {
+  background: var(--r-violeta);
   color: var(--r-blanco);
+  box-shadow: none;
+}
+
+/* «¿Tienes dudas?»: una franja suave al final del cuerpo, con el verde de WhatsApp en el botón. */
+.fe-dudas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--r-radio);
+  background: var(--r-papel);
+}
+
+.fe-dudas__titulo {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 750;
+  color: var(--r-tinta);
+}
+
+.fe-dudas__texto {
+  margin: 0.2rem 0 0;
+  max-width: 50ch;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--r-mudo);
+}
+
+.fe-dudas__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  border-radius: 999px;
+  background: var(--wa-verde);
+  color: #06301a;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 160ms var(--r-paso),
+    transform 120ms var(--r-paso);
+}
+
+.fe-dudas__boton svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fe-dudas__boton:hover {
+    background: var(--wa-verde-hondo);
+  }
+}
+
+.fe-dudas__boton:active {
+  transform: scale(0.97);
+}
+
+.fe-dudas__boton:focus-visible {
+  outline: 3px solid var(--r-tinta);
+  outline-offset: 2px;
+}
+
+/* ── Los documentos adicionales de facturación (en su ventana) ──────────── */
+/* La calculadora (`.calculadora*`) la trae cada página: es la misma de los mensajes. */
+
+/* Texto y paquetes a la izquierda, la calculadora a la derecha; una columna en el celular. */
+.fe-extra {
+  display: grid;
+  gap: 1.25rem 2rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 720px) {
+  .fe-extra {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+}
+
+.fe-extra__paquetes {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+}
+
+.fe-extra__paquetes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--r-borde); /* taste-skill-ignore: el mismo marco que los precios de la tabla */
+  color: var(--r-tinta);
+}
+
+.fe-extra__paquetes strong {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fe-extra__calculadora .calculadora__cuenta dd {
+  text-align: right;
+}
+
+.fe-extra__calculadora .calculadora__aviso a {
+  color: var(--r-violeta-hondo);
+  font-weight: 600;
+}
+
+/* La elección, resumida en la barra fija: qué es y cuánto cuesta. */
+.fe-eleccion {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.fe-eleccion__que {
+  font-size: 0.875rem;
+  color: var(--r-mudo);
+}
+
+.fe-eleccion__precio {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--r-tinta);
+}
+
+.fe-eleccion__precio small {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--r-mudo);
+}
+
+.fe-eleccion__boton {
+  flex: none;
+  padding: 0.85rem 2rem;
+}
+
+@media (max-width: 599px) {
+  .fe-precio {
+    min-width: 0;
+    width: 100%;
+    padding: 0.5rem 0.35rem;
+    font-size: 0.875rem;
+  }
+  .fe-tabla .comparar__que,
+  .fe-tabla__esquina {
+    padding-left: 0.75rem;
+  }
+  .fe-eleccion__precio {
+    font-size: 1.25rem;
+  }
+  .fe-eleccion__boton {
+    padding-inline: 1.25rem;
+  }
+}
+
+/* En el celular, una hoja que sube desde abajo, a todo lo ancho. */
+@media (max-width: 599px) {
+  .ventana {
+    width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(32px);
+  }
+  .ventana[open] {
+    transform: none;
+  }
+  @starting-style {
+    .ventana[open] {
+      transform: translateY(32px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ventana,
+  .ventana[open] {
+    transform: none;
+  }
+  @starting-style {
+    .ventana[open] {
+      transform: none;
+    }
+  }
+  .abre-ventana:hover .abre-ventana__flecha,
+  .abre-ventana:active {
+    transform: none;
+  }
+}
+
+.comparar__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+/* Las dos columnas de plan, del mismo ancho; la del asistente, teñida de lavanda de arriba abajo
+   para que se lea como una columna y no como celdas sueltas. */
+.comparar__col {
+  width: clamp(4.25rem, 2.5rem + 9vw, 11rem);
+}
+
+.comparar__col--destacada {
+  background: rgb(132 123 180 / 10%);
+}
+
+/* La cabecera con los dos planes se queda pegada arriba mientras se baja por la tabla (en la
+   ventana, `--r-cabecera` vale 0): así nunca se pierde qué columna es cuál. */
+.comparar__tabla thead th,
+.comparar__tabla thead td {
+  position: sticky;
+  top: var(--r-cabecera);
+  z-index: 1;
+  background: var(--r-blanco);
+  padding: 1.25rem 0.5rem 1rem;
+  box-shadow: inset 0 -1px 0 var(--r-borde); /* taste-skill-ignore: la línea bajo la cabecera pegada */
+}
+
+.comparar__plan {
+  text-align: center;
+  vertical-align: bottom;
+}
+
+/* Opaco: la cabecera pegada tapa las filas que pasan por debajo. Es el mismo tinte de la columna.
+   Lleva `thead` delante para ganarle al fondo blanco de la regla de arriba. */
+.comparar__tabla thead .comparar__plan:last-child {
+  background: color-mix(in srgb, #847bb4 10%, var(--r-blanco));
+}
+
+.comparar__plan-nombre {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--r-tinta);
+}
+
+.comparar__plan:last-child .comparar__plan-nombre {
+  color: var(--r-violeta-hondo);
+}
+
+.comparar__plan-precio {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: clamp(1rem, 0.8rem + 0.8vw, 1.375rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--r-tinta);
+  font-variant-numeric: tabular-nums;
+}
+
+/* El tema de cada bloque: un escalón de tamaño, no una etiqueta en mayúsculas. */
+.comparar__grupo {
+  padding: 1.75rem 0 0.5rem;
+  text-align: left;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--r-tinta);
+}
+
+.comparar__tabla tbody:first-of-type .comparar__grupo {
+  padding-top: 1.25rem;
+}
+
+.comparar__que {
+  padding: 0.7rem 1rem 0.7rem 0;
+  text-align: left;
+  font-weight: 400;
+  color: var(--r-tinta);
+  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: filas de una tabla de verdad */
+}
+
+.comparar__valor {
+  position: relative;
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: 700;
+  color: var(--r-tinta);
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: filas de una tabla de verdad */
+}
+
+/* El visto: el mismo trazo de las tarjetas, en violeta. */
+.comparar__si {
+  display: inline-block;
+  width: 1.15rem;
+  height: 1.15rem;
+  vertical-align: middle;
+  background: var(--r-violeta);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.4 6.4 11.6 12.8 4.6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.2 8.4 6.4 11.6 12.8 4.6' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* «No incluido»: una raya corta y apagada, que se lee como hueco y no como error. */
+.comparar__no {
+  display: inline-block;
+  width: 0.75rem;
+  height: 2px;
+  border-radius: 1px;
+  vertical-align: middle;
+  background: var(--r-borde-marcado);
+}
+
+/* En la ventana de facturación, la primera fila (sin facturación) va apagada: es la referencia
+   que dice que lo de abajo son totales con el plan incluido. */
+.comparar__valor--suave {
+  font-weight: 500;
+  color: var(--r-mudo);
+}
+
+/* Va debajo de la tabla, a todo el ancho: dentro de la primera celda, en el celular quedaba en
+   una columna de seis palabras por línea. */
+.comparar__nota {
+  margin: 1.25rem 0 0;
+  max-width: 68ch;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--r-mudo);
+}
+
+.comparar__accion {
+  padding: 1.25rem 0.375rem 1rem;
+  text-align: center;
+  vertical-align: top;
+}
+
+.comparar__accion .boton {
+  width: 100%;
+  max-width: 9rem;
+}
+
+/* En el celular la columna de texto necesita todo el sitio: columnas de plan angostas, el nombre
+   del plan más pequeño y los botones sin relleno de lado. */
+@media (max-width: 599px) {
+  .comparar__tabla {
+    font-size: 0.875rem;
+  }
+  .comparar__col {
+    width: 4rem;
+  }
+  .comparar__tabla thead th,
+  .comparar__tabla thead td {
+    padding-inline: 0.25rem;
+  }
+  .comparar__plan-nombre {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+  .comparar__valor {
+    padding-inline: 0.25rem;
+  }
+  .comparar__que {
+    padding-right: 0.5rem;
+  }
+  .comparar__accion {
+    padding-inline: 0.2rem;
+  }
+  .comparar__accion .boton {
+    padding-inline: 0.25rem;
+    font-size: 0.8125rem;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

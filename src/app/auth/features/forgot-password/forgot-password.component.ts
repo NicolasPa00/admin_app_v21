@@ -10,11 +10,12 @@ import {
   LucideAngularModule,
   LucideIconProvider,
   LUCIDE_ICONS,
-  Zap, ShieldCheck, TrendingUp,
+  AlertCircle, ArrowRight, ChevronLeft, Clock, Inbox, Loader2, Mail, MailCheck, ShieldAlert,
 } from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
 import { AssetService } from '../../../core/services/asset.service';
+import { EscenasLoginComponent } from '../../shared/escenas/escenas-login.component';
 
 /**
  * ForgotPasswordComponent — Solicita el envío de un código OTP de 6 dígitos.
@@ -29,9 +30,9 @@ import { AssetService } from '../../../core/services/asset.service';
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, LucideAngularModule, EscenasLoginComponent],
   providers: [
-    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Zap, ShieldCheck, TrendingUp }) },
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ AlertCircle, ArrowRight, ChevronLeft, Clock, Inbox, Loader2, Mail, MailCheck, ShieldAlert }) },
   ],
   templateUrl: './forgot-password.component.html',
   styleUrl: './forgot-password.component.scss',
@@ -56,13 +57,21 @@ export class ForgotPasswordComponent {
 
   readonly emailError = computed(() => {
     const val = this.email().trim();
-    if (!val) return 'El email es obligatorio';
+    if (!val) return 'Escribe tu correo';
     if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val))
-      return 'Formato de email inválido';
+      return 'Revisa el correo: parece incompleto';
     return null;
   });
 
   readonly formValid = computed(() => !this.emailError());
+
+  /** El correo partido en la arroba, para cortarlo ahí si no cabe en una línea. */
+  readonly correoUsuario = computed(() => this.email().trim().split('@')[0]);
+  readonly correoDominio = computed(() => {
+    const correo = this.email().trim();
+    const arroba = correo.indexOf('@');
+    return arroba < 0 ? '' : correo.slice(arroba);
+  });
 
   /** URL para el botón "Ingresar código" — lleva el email como query param. */
   readonly resetUrl = computed(() =>

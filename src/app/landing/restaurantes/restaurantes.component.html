@@ -4,25 +4,26 @@
 -->
 <header class="cabecera">
   <div class="marco cabecera__fila">
-    <div class="cabecera__izq">
-      <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
-        <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="122" height="32" />
-        <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="122" height="32" />
-      </a>
-      <!-- Vuelta a la página madre, a la vista en todos los anchos: el visitante que llegó a este
-           motor por error (o quiere mirar el otro) no tiene que adivinar que el logo hace algo. La ruta
-           es `/inicio` hasta que esa página pase a ser `/`; entonces basta cambiar este `routerLink`. -->
-      <a class="volver" routerLink="/inicio">
-        <svg class="volver__flecha" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-          <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-        <span class="volver__largo">Todos los negocios</span>
-        <span class="volver__corto">Inicio</span>
-      </a>
-    </div>
+    <!-- El logo lleva a la página que elige entre los dos negocios (`/inicio` hasta que pase a ser
+         `/`). El «‹ Todos los negocios» que iba a su lado se quitó (2026-10-27): suelto junto al logo
+         parecía una miga de pan; ahora «Inicio» va escrito en el menú, junto a la luna. -->
+    <a class="marca" routerLink="/inicio" aria-label="EscalApp, todos los negocios">
+      <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="116" height="32" />
+      <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="116" height="32" />
+    </a>
 
     <nav class="cabecera__nav" aria-label="Secciones">
       <app-tema-selector />
+      <!-- «Inicio» escrito, junto a la luna y en todos los anchos (2026-10-27): que el logo lleve al
+           inicio lo sabe quien hace páginas, no el dueño de una barbería. -->
+      <a class="enlace enlace--inicio" routerLink="/inicio">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+          <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        </svg>
+        Inicio
+      </a>
+      <a class="enlace" routerLink="/reservas">Citas</a>
       <button type="button" class="enlace" (click)="irA('precio')">Precio</button>
       <a class="enlace" routerLink="/auth/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
@@ -60,7 +61,13 @@
               />
             </svg>
           </span>
-          Con la API oficial de WhatsApp Business. Somos Proveedor de Tecnología de Meta.
+          <span class="alianza__texto">
+            <strong class="alianza__titulo">Somos Proveedor de Tecnología de Meta</strong>
+            <span class="alianza__detalle">
+              Tu número se conecta por la API oficial de WhatsApp Business, no con apps no oficiales que
+              ponen en riesgo tu línea.
+            </span>
+          </span>
         </p>
 
         <div class="heroe__accion">
@@ -351,27 +358,28 @@
             <p class="plan__precio"><span class="plan__cifra">{{ plan.precio }}</span> al mes</p>
             <p class="plan__que">{{ plan.que }}</p>
 
-            <ul class="plan__lista">
+            @if (plan.antesDeLista) {
+              <p class="plan__antes">{{ plan.antesDeLista }}</p>
+            }
+            <ul class="plan__lista" [class.plan__lista--tras-antes]="plan.antesDeLista">
               @for (f of plan.destacados; track f) {
                 <li>{{ f }}</li>
               }
             </ul>
 
-            <!-- El resto del plan no cabe en una tarjeta sin convertirla en una lista de la
-                 compra, pero quien compara de verdad lo necesita. Va detrás de un clic. -->
-            <button type="button" class="plan__mas" (click)="verDetalle(plan)">
-              <span class="plan__mas-texto">Ver todo lo que incluye</span>
-              <svg class="plan__mas-flecha" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                <path
-                  d="M4 6 L8 10 L12 6"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
+
+            <!-- Comprar este plan, desde su tarjeta (2026-10-27). Relleno en el recomendado y de
+                 contorno en el otro: el mismo par que «Adquirir» en la ventana de comparación. La
+                 prueba gratis sigue siendo UNA, debajo de las dos tarjetas. -->
+            <a
+              class="boton plan__adquirir"
+              [class.boton--contorno]="plan.id !== 'asistente'"
+              routerLink="/adquirir"
+              [queryParams]="{ plan: plan.id === 'asistente' ? 'AVANZADO' : 'BASICO', modulo: 'RESTAURANTE' }"
+              [attr.aria-label]="'Adquirir el plan ' + plan.nombre"
+            >
+              Adquirir plan
+            </a>
 
             <!-- La diferencia, dicha en los dos lados y con las mismas palabras: es el titular de
                  la sección y tiene que leerse sin comparar listas. -->
@@ -381,6 +389,327 @@
           </article>
         }
       </div>
+
+      <!-- El detalle de los planes en VENTANAS (2026-10-27, pedido del dueño): dos botones en una
+           fila debajo de las tarjetas, y cada uno abre un `<dialog>` nativo —foco atrapado, Esc,
+           y el contenido sigue en el HTML prerenderizado, así que el buscador lo lee—. Se cierra
+           con la X, con Esc o tocando fuera. Estilos en `shared/_planes.scss` (`.abre-ventana`,
+           `.ventana`). -->
+      <div class="precio__ventanas">
+        <button type="button" class="abre-ventana" (click)="abrirVentana(ventanaComparar)">
+          <span class="abre-ventana__icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M3 5h.01" /><path d="M3 12h.01" /><path d="M3 19h.01" />
+              <path d="M8 5h13" /><path d="M8 12h13" /><path d="M8 19h13" />
+          </svg>
+          </span>
+          <span class="abre-ventana__texto">
+            <span class="abre-ventana__titulo">Comparar los dos planes</span>
+            <span class="abre-ventana__pista">Todo lo que trae cada uno, línea a línea</span>
+          </span>
+          <svg class="abre-ventana__flecha" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+          </svg>
+        </button>
+        <button type="button" class="abre-ventana" (click)="abrirVentana(ventanaFe)">
+          <span class="abre-ventana__icono" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
+              <path d="M12 17.5v-11" />
+          </svg>
+          </span>
+          <span class="abre-ventana__texto">
+            <span class="abre-ventana__titulo">Precios con facturación electrónica</span>
+            <span class="abre-ventana__pista">Opcional. Certificado digital gratis con el plan anual</span>
+          </span>
+          <svg class="abre-ventana__flecha" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <dialog #ventanaComparar class="ventana" [attr.aria-labelledby]="'ventana-comparar-titulo'" (click)="cerrarSiFondo($event, ventanaComparar)">
+        <header class="ventana__cabeza">
+          <div>
+            <h3 class="ventana__titulo" id="ventana-comparar-titulo">Comparar los dos planes</h3>
+            <p class="ventana__bajada">Todo lo que trae cada uno, línea a línea.</p>
+          </div>
+          <button type="button" class="ventana__cerrar" (click)="ventanaComparar.close()" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </header>
+        <div class="ventana__cuerpo">
+          <table class="comparar__tabla">
+            <caption class="sr-only">Qué trae cada plan</caption>
+            <colgroup>
+              <col />
+              <col class="comparar__col" />
+              <col class="comparar__col comparar__col--destacada" />
+            </colgroup>
+            <thead>
+              <tr>
+                <td></td>
+                @for (plan of planes; track plan.id) {
+                  <th scope="col" class="comparar__plan">
+                    <span class="comparar__plan-nombre">{{ plan.id === 'asistente' ? 'Con asistente' : plan.nombre }}</span>
+                    <span class="comparar__plan-precio">{{ plan.precio }}</span>
+                  </th>
+                }
+              </tr>
+            </thead>
+            @for (grupo of comparacion; track grupo.titulo) {
+              <tbody>
+                <tr>
+                  <th scope="colgroup" class="comparar__grupo">{{ grupo.titulo }}</th>
+                  <td></td>
+                  <td></td>
+                </tr>
+                @for (fila of grupo.filas; track fila.texto) {
+                  <tr>
+                    <th scope="row" class="comparar__que">{{ fila.texto }}</th>
+                    @for (valor of [fila.base, fila.asistente]; track $index) {
+                      <td class="comparar__valor">
+                        @if (valor === true) {
+                          <span class="comparar__si" aria-hidden="true"></span><span class="sr-only">Incluido</span>
+                        } @else if (valor === false) {
+                          <span class="comparar__no" aria-hidden="true"></span><span class="sr-only">No incluido</span>
+                        } @else {
+                          {{ valor }}
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            }
+            <tfoot>
+              <tr>
+                <td></td>
+                @for (plan of planes; track plan.id) {
+                  <td class="comparar__accion">
+                    <a
+                      class="boton boton--sm"
+                      [class.boton--contorno]="plan.id !== 'asistente'"
+                      routerLink="/adquirir"
+                      [queryParams]="{ plan: plan.id === 'asistente' ? 'AVANZADO' : 'BASICO', modulo: 'RESTAURANTE' }"
+                      [attr.aria-label]="'Adquirir ' + plan.nombre"
+                    >
+                      Adquirir
+                    </a>
+                  </td>
+                }
+              </tr>
+            </tfoot>
+          </table>
+          <p class="comparar__nota">
+            El asistente incluye 1.000 mensajes de WhatsApp al mes. Desde el 1.001 los cobra Meta a tu tarjeta, unos $2,54 cada uno, y eso no nos lo pagas a nosotros.
+          </p>
+        </div>
+      </dialog>
+
+      <!-- La ventana de facturación es una pequeña calculadora: se toca el precio del plan y el tope de
+           documentos que interesa, y la barra de abajo lo resume con UN botón de «Adquirir» que
+           lleva a comprar ese tramo exacto. Arriba, lo que incluye (solo lo que el producto ya hace);
+           al final, «¿Tienes dudas?» con el WhatsApp. -->
+      <dialog #ventanaFe class="ventana" [attr.aria-labelledby]="'ventana-fe-titulo'" (click)="cerrarSiFondo($event, ventanaFe)">
+        <header class="ventana__cabeza">
+          <div>
+            <h3 class="ventana__titulo" id="ventana-fe-titulo">Facturación electrónica ante la DIAN</h3>
+            <p class="ventana__bajada">Elige tu plan y cuántos documentos emites al mes.</p>
+          </div>
+          <button type="button" class="ventana__cerrar" (click)="ventanaFe.close()" aria-label="Cerrar">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="ventana__cuerpo">
+          <ul class="fe-incluye">
+            <li>Certificado digital gratis si pagas el plan anual</li>
+            <li>Cuota fija al mes, nunca por documento</li>
+            <li>Tu cliente recibe la factura por correo, con tu marca</li>
+            <li>En cada cobro eliges si facturas o no</li>
+          </ul>
+
+          <div class="fe-tabla">
+            <table class="comparar__tabla">
+              <caption class="sr-only">
+                Precio total al mes con facturación electrónica, según el plan y los documentos que emitas.
+                Toca un precio para elegirlo.
+              </caption>
+              <colgroup>
+                <col />
+                <col class="comparar__col" />
+                <col class="comparar__col comparar__col--destacada" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col" class="fe-tabla__esquina">Documentos al mes</th>
+                  <!-- Los nombres de la página de compra (`gener_plan`): «Emprendedor + Facturación» y
+                       «Plan Empresarial». Así el cliente lee lo mismo aquí y al pagar. -->
+                  <th scope="col" class="comparar__plan">
+                    <span class="comparar__plan-nombre">Emprendedor + Facturación</span>
+                    <span class="comparar__plan-sub">Sin asistente</span>
+                  </th>
+                  <th scope="col" class="comparar__plan">
+                    <span class="comparar__plan-nombre">Plan Empresarial</span>
+                    <span class="comparar__plan-sub">Con asistente</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (tramo of tramosFe; track tramo.tope; let i = $index) {
+                  <tr>
+                    <th scope="row" class="comparar__que">
+                      Paquete {{ tramo.paquete }}
+                      <span class="comparar__que-sub">Hasta {{ numero(tramo.tope) }}</span>
+                    </th>
+                    <td class="comparar__valor">
+                      <button
+                        type="button"
+                        class="fe-precio"
+                        [class.fe-precio--elegido]="feTramo() === i && fePlan() === 'base'"
+                        [attr.aria-pressed]="feTramo() === i && fePlan() === 'base'"
+                        [attr.aria-label]="'Emprendedor + Facturación ' + tramo.paquete + ', hasta ' + numero(tramo.tope) + ' documentos: ' + pesos(tramo.base) + ' al mes'"
+                        (click)="elegirFe(i, 'base')"
+                      >
+                        {{ pesos(tramo.base) }}
+                      </button>
+                    </td>
+                    <td class="comparar__valor">
+                      <button
+                        type="button"
+                        class="fe-precio"
+                        [class.fe-precio--elegido]="feTramo() === i && fePlan() === 'asistente'"
+                        [attr.aria-pressed]="feTramo() === i && fePlan() === 'asistente'"
+                        [attr.aria-label]="'Plan Empresarial ' + tramo.paquete + ', hasta ' + numero(tramo.tope) + ' documentos: ' + pesos(tramo.asistente) + ' al mes'"
+                        (click)="elegirFe(i, 'asistente')"
+                      >
+                        {{ pesos(tramo.asistente) }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="comparar__nota fe-nota">
+            Precios totales al mes, con el plan incluido. El certificado digital que exige la DIAN va gratis
+            si pagas el año completo; con pago mensual se cobra aparte. Sin facturación electrónica, los
+            planes cuestan $37.999 y $77.999. ¿Todavía no facturas electrónicamente? Empieza sin ella y
+            actívala cuando tu negocio la necesite.
+          </p>
+
+          <div class="fe-dudas">
+            <div>
+              <p class="fe-dudas__titulo">¿Tienes dudas?</p>
+              <p class="fe-dudas__texto">
+                Charla con nosotros: te ayudamos a calcular cuántos documentos emites y qué paquete te
+                conviene.
+              </p>
+            </div>
+            <a class="fe-dudas__boton" [href]="whatsappFe" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+                <path
+                  d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"
+                />
+              </svg>
+              Escríbenos por WhatsApp
+            </a>
+          </div>
+
+          <!-- Para quien pasa de 2.500 documentos al mes: la misma calculadora de los mensajes. Se
+               pregunta cuántos documentos emite y se contesta qué paquete le alcanza, qué adicionales
+               le faltan y cuánto queda al mes con el plan elegido en la tabla. Precios y márgenes en
+               `PAQUETES_EXTRA_FE`. -->
+          <section class="fe-extra" aria-labelledby="fe-extra-titulo">
+            <div>
+              <p class="fe-dudas__titulo" id="fe-extra-titulo">¿Emites más de 2.500 documentos al mes?</p>
+              <p class="fe-dudas__texto">
+                Toma el paquete XL y súmale documentos adicionales. Se cobran cada mes junto con tu plan.
+              </p>
+              <ul class="fe-extra__paquetes">
+                @for (paquete of paquetesExtraFe; track paquete.docs) {
+                  <li>
+                    <span>+{{ numero(paquete.docs) }} documentos al mes</span>
+                    <strong>{{ pesos(paquete.precio) }}</strong>
+                  </li>
+                }
+              </ul>
+            </div>
+
+            <div class="calculadora fe-extra__calculadora">
+              <label class="calculadora__pregunta" for="cal-documentos">
+                ¿Cuántos documentos emites al mes?
+              </label>
+
+              <output class="calculadora__cuantos" for="cal-documentos">
+                {{ numero(feDocsMes()) }}
+              </output>
+
+              <input
+                id="cal-documentos"
+                class="calculadora__barra"
+                type="range"
+                min="100"
+                max="10000"
+                step="100"
+                [value]="feDocsMes()"
+                (input)="feDocsMes.set(+$any($event.target).value)"
+              />
+
+              <dl class="calculadora__cuenta">
+                <div>
+                  <dt>Tu paquete</dt>
+                  <dd>{{ feCalculo().tramo.paquete }} · hasta {{ numero(feCalculo().tramo.tope) }}</dd>
+                </div>
+                <div>
+                  <dt>Adicionales</dt>
+                  <dd>{{ feCalculo().adicionales || 'No los necesitas' }}</dd>
+                </div>
+                <div class="calculadora__total">
+                  <dt>Al mes, {{ feCalculo().plan }}</dt>
+                  <dd>{{ pesos(feCalculo().total) }}</dd>
+                </div>
+              </dl>
+
+              <p class="calculadora__aviso">
+                @if (feCalculo().adicionales) {
+                  Los adicionales se activan aparte del botón «Adquirir»:
+                  <a [href]="whatsappFeExtra" target="_blank" rel="noopener">escríbenos por WhatsApp</a>
+                  y los sumamos a tu plan.
+                  @if (feDocsMes() >= 10000) {
+                    ¿Emites aún más? Te armamos un paquete a tu medida.
+                  }
+                } @else {
+                  Con {{ numero(feDocsMes()) }} documentos al mes te alcanza el paquete
+                  {{ feCalculo().tramo.paquete }}, sin adicionales. Lo eliges en la tabla de arriba.
+                }
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <footer class="ventana__pie">
+          <p class="fe-eleccion" aria-live="polite">
+            <span class="fe-eleccion__que">{{ feEleccion().plan }} · hasta {{ feEleccion().tope }} documentos al mes</span>
+            <span class="fe-eleccion__precio">{{ feEleccion().precio }} <small>al mes</small></span>
+          </p>
+          <a
+            class="boton fe-eleccion__boton"
+            routerLink="/adquirir"
+            [queryParams]="{ plan: feEleccion().codigo, modulo: 'RESTAURANTE' }"
+          >
+            Adquirir
+          </a>
+        </footer>
+      </dialog>
 
       <!-- Un solo botón, y no uno por tarjeta.
            La prueba es UNA: se entra con los 30 días y el plan se elige al final. Repetir
@@ -401,65 +730,6 @@
         <strong>$14.999</strong> al mes. Se suman y se quitan cuando quieras.
       </p>
 
-      <!-- La facturación electrónica es un trámite que a la mayoría de restaurantes pequeños no
-           les hace gracia, así que no se vende: se ofrece plegada, con aspecto de acción para que
-           se vea que hay algo detrás, y sin un color que la convierta en el centro de la sección. -->
-      <div class="plegable" [class.plegable--abierto]="facturacionAbierta()">
-        <button
-          type="button"
-          class="plegable__tirador"
-          [attr.aria-expanded]="facturacionAbierta()"
-          aria-controls="facturacion"
-          (click)="facturacionAbierta.set(!facturacionAbierta())"
-        >
-          <span class="plegable__texto">¿Necesitas facturación electrónica ante la DIAN?</span>
-          <span class="plegable__pista">{{ facturacionAbierta() ? 'Cerrar' : 'Ver precios' }}</span>
-          <svg class="plegable__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path
-              d="M4 6 L8 10 L12 6"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-
-        @if (facturacionAbierta()) {
-          <div class="plegable__cuerpo" id="facturacion">
-            <div>
-              <p class="plegable__texto-cuerpo">
-                Se suma a cualquiera de los dos planes con el certificado digital incluido. La
-                cuota es fija al mes, nunca por documento, y depende de cuántos emitas.
-              </p>
-              <p class="plegable__texto-cuerpo">
-                Si hoy no facturas electrónicamente, no necesitas esto para empezar: se añade
-                cuando te toque.
-              </p>
-            </div>
-
-            <table class="tabla-fe">
-              <caption class="tabla-fe__leyenda">
-                Precio mensual con facturación electrónica, según el paquete de documentos.
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Documentos al mes</th>
-                  <th scope="col">Emprendedor</th>
-                  <th scope="col" class="tabla-fe__asist">Con asistente</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><th scope="row">100</th><td>$81.999</td><td class="tabla-fe__asist">$117.999</td></tr>
-                <tr><th scope="row">500</th><td>$101.999</td><td class="tabla-fe__asist">$132.999</td></tr>
-                <tr><th scope="row">1.200</th><td>$121.999</td><td class="tabla-fe__asist">$147.999</td></tr>
-                <tr><th scope="row">2.500</th><td>$141.999</td><td class="tabla-fe__asist">$162.999</td></tr>
-              </tbody>
-            </table>
-          </div>
-        }
-      </div>
     </div>
   </section>
 
@@ -579,7 +849,7 @@
 
       <div class="pie__marca">
         <span class="marca marca--pie">
-          <img class="marca__logo" [src]="marca('logo-horizontal-blanco.svg')" alt="EscalApp" width="122" height="32" />
+          <img class="marca__logo" [src]="marca('logo-horizontal-blanco.svg')" alt="EscalApp" width="116" height="32" />
         </span>
         <p class="pie__lema">El sistema para restaurantes, con su asistente de WhatsApp.</p>
 
@@ -639,87 +909,6 @@
     />
   </svg>
 </a>
-
-<!-- ═══════════════════════════ EL DETALLE DE UN PLAN ═══════════════════════════
-     Lo que no cabe en la tarjeta: la lista entera, en dos columnas y sin más adornos. Nada de
-     módulos de colores ni calculadoras de mensajes — quien abre esto quiere comparar, no jugar.
--->
-@if (planAbierto(); as plan) {
-  <div class="capa" role="dialog" aria-labelledby="detalle-titulo">
-    <!-- Tres zonas fijas: cabecera, cuerpo que se desplaza y pie con las acciones.
-         El pie va pegado abajo a propósito: en una pantalla corta los botones quedaban debajo de
-         veinte líneas de lista y había que desplazarse hasta el final para encontrarlos. -->
-    <div class="capa__caja capa__caja--ancha detalle">
-      <header class="detalle__cabeza">
-        <button type="button" class="capa__cerrar" (click)="cerrarDetalle()" aria-label="Cerrar">
-          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-            <path
-              d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5"
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-
-        <div class="detalle__quien">
-          <h2 class="detalle__nombre" id="detalle-titulo">{{ plan.nombre }}</h2>
-          <p class="detalle__que">{{ plan.que }}</p>
-        </div>
-
-        <p class="detalle__precio">
-          <span class="detalle__cifra">{{ plan.precio }}</span>
-          <span class="detalle__moneda">COP al mes</span>
-          <span class="detalle__sin">Sin contratos, cancelas cuando quieras</span>
-        </p>
-      </header>
-
-      <div class="detalle__cuerpo">
-        <div class="detalle__columnas" [class.detalle__columnas--sola]="!plan.asistente">
-          <section>
-            <h3 class="detalle__rotulo">Todo lo que incluye</h3>
-            <ul class="detalle-lista">
-              @for (f of plan.destacados.concat(plan.resto); track f) {
-                <li class="detalle">{{ f }}</li>
-              }
-            </ul>
-          </section>
-
-          @if (plan.asistente; as asis) {
-            <section>
-              <h3 class="detalle__rotulo">Lo que hace el asistente</h3>
-              <div class="detalle__panel">
-                <p class="detalle__panel-titulo">{{ asis.titulo }}</p>
-                <ul class="detalle__panel-lista">
-                  @for (p of asis.puntos; track p) {
-                    <li>{{ p }}</li>
-                  }
-                </ul>
-              </div>
-              <p class="detalle-nota">
-                Incluye 1.000 mensajes de WhatsApp al mes. Desde el 1.001 los cobra Meta a tu
-                tarjeta, unos $2,54 cada uno, y eso no nos lo pagas a nosotros.
-              </p>
-            </section>
-          }
-        </div>
-      </div>
-
-      <footer class="detalle__pie">
-        <a
-          class="boton boton--lg"
-          routerLink="/adquirir"
-          [queryParams]="{ plan: plan.id === 'asistente' ? 'AVANZADO' : 'BASICO', modulo: 'RESTAURANTE' }"
-        >
-          Adquirir plan
-        </a>
-        <button type="button" class="enlace" (click)="cerrarDetalle(); abrirPrueba()">
-          O pruébalo 30 días gratis
-        </button>
-      </footer>
-    </div>
-  </div>
-}
 
 <!-- ═══════════════════════════ LA PRUEBA ═══════════════════════════
      Misma lógica que la landing viva (`PruebaGratisStore`), aspecto propio: aquí no hay degradados

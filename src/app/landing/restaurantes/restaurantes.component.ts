@@ -13,6 +13,7 @@ import { RouterLink } from '@angular/router';
 import { AssetService } from '../../core/services/asset.service';
 import { SeoService } from '../../core/services/seo.service';
 import { montarEntradas } from '../shared/entradas';
+import { PAQUETES_EXTRA_FE, PlanFe, TRAMOS_FE, calcularFe, nombrePlanFe } from '../shared/facturacion';
 import { TemaSelectorComponent } from '../shared/tema-selector.component';
 import { PruebaGratisStore } from '../shared/prueba-gratis.store';
 import { environment } from '../../../environments/environment';
@@ -71,30 +72,38 @@ interface ParadaRelevo {
 }
 
 /**
- * Un plan, en dos niveles de detalle.
+ * Un plan, como se ve en su tarjeta. Lo completo vive en la tabla de `COMPARACION`.
  *
- * La tarjeta enseña seis funciones y el resto vive detrás de «Ver todo lo que incluye». Es el
- * punto medio entre lo que había —tres líneas, que no dejaban comparar— y las once de la landing
- * viva, que convierten la sección en una lista de la compra.
+ * La tarjeta del asistente NO repite lo del Emprendedor: arranca con «Todo lo del Emprendedor,
+ * más:» y enseña solo lo que la distingue. Antes repetía cuatro líneas de la otra y la diferencia
+ * —que es el titular de la sección— había que buscarla.
  */
 interface Plan {
   id: 'base' | 'asistente';
   nombre: string;
   precio: string;
   que: string;
+  /** La línea que abre la lista, cuando la lista es «lo de antes, más esto». */
+  antesDeLista?: string;
   /** Lo que se ve en la tarjeta. Seis, no más. */
   destacados: string[];
-  /** Lo que se añade al abrir el detalle. */
-  resto: string[];
-  /**
-   * El bloque aparte del detalle: lo que hace el asistente, punto por punto.
-   *
-   * Va separado de la lista de funciones porque es lo que de verdad distingue a un plan del otro,
-   * y mezclado entre veinte líneas se perdía.
-   */
-  asistente?: { titulo: string; puntos: string[] };
   /** La diferencia entre los dos, dicha con las mismas palabras en ambos. */
   sello: string;
+}
+
+/**
+ * Una fila de la tabla que compara los dos planes. `true` es un visto, `false` una raya («no
+ * incluido») y un texto se escribe tal cual (las cantidades: «8», «10»).
+ */
+interface FilaComparada {
+  texto: string;
+  base: boolean | string;
+  asistente: boolean | string;
+}
+
+interface GrupoComparado {
+  titulo: string;
+  filas: FilaComparada[];
 }
 
 /** Una cifra real de producción, con lo que significa exactamente. */
@@ -236,59 +245,82 @@ const CONVERSACION: Burbuja[] = [
   },
 ];
 
-/** Lo que traen los dos planes. El segundo es el primero más el asistente, y así se cuenta. */
-const COMUNES_DESTACADOS = [
-  'Carta digital con QR',
-  'Carga tu carta con IA desde un PDF o fotos',
-  'Mesas, comandas y pantalla de cocina',
-  'Domicilios con precio por barrio',
-];
-
-const COMUNES_RESTO = [
-  'Caja con varios medios de pago',
-  'Inventario con recetas y proveedores',
-  'Costo y ganancia de cada producto',
-  'Tiqueteras y fiado de clientes',
-  'Reportes de ventas, impuestos y domicilios',
-  'Funciona en celular, tablet y computador',
-  'Cada persona entra con su usuario y sus permisos',
-];
-
 const PLANES: Plan[] = [
   {
     id: 'base',
     nombre: 'Emprendedor',
     precio: '$37.999',
     que: 'El sistema completo para operar el restaurante desde el primer día.',
-    destacados: ['8 usuarios incluidos', '1 caja incluida', ...COMUNES_DESTACADOS],
-    resto: COMUNES_RESTO,
+    destacados: [
+      '8 usuarios y 1 caja incluidos',
+      'Carta digital con QR',
+      'Carga tu carta con IA desde un PDF o fotos',
+      'Mesas, comandas y pantalla de cocina',
+      'Domicilios con precio por barrio',
+      'Inventario, costos y reportes',
+    ],
     sello: 'El WhatsApp lo sigues contestando tú.',
   },
   {
     id: 'asistente',
     nombre: 'Emprendedor con asistente',
     precio: '$77.999',
-    que: 'Todo lo anterior y un asistente de IA atendiendo tu WhatsApp por ti.',
+    que: 'Un asistente de IA que atiende tu WhatsApp por ti.',
+    antesDeLista: 'Todo lo del Emprendedor, más:',
     destacados: [
-      '10 usuarios incluidos',
-      '2 cajas incluidas',
-      'Asistente de IA en WhatsApp',
-      'Conectas tu propio número',
-      ...COMUNES_DESTACADOS.slice(0, 2),
+      '10 usuarios y 2 cajas incluidos',
+      'Contesta tu WhatsApp a cualquier hora, también con el local cerrado',
+      'Toma el pedido completo y lo deja en tu caja',
+      'Avisa al cliente cuando su pedido está listo',
+      'Te pasa el turno si hace falta una persona',
     ],
-    resto: [...COMUNES_DESTACADOS.slice(2), ...COMUNES_RESTO],
-    asistente: {
-      titulo: 'Asistente de IA en WhatsApp',
-      puntos: [
-        'Contesta al instante, a cualquier hora, también con el local cerrado',
-        'Toma el pedido de principio a fin y lo deja en el sistema',
-        'Avisa al cliente por WhatsApp cuando su pedido está listo',
-        'Si hace falta una persona, te pasa el turno en vez de inventarse una respuesta',
-        'Ves y contestas todas las conversaciones desde el sistema',
-        'Conectas el WhatsApp de tu negocio. Si no puedes, lo hacemos contigo',
-      ],
-    },
     sello: 'El WhatsApp lo contesta el asistente, también de madrugada.',
+  },
+];
+
+/**
+ * La comparación completa, por temas. El asistente va primero porque es la diferencia; el resto
+ * lo traen los dos y se lee de un vistazo bajando por la columna de vistos.
+ */
+const COMPARACION: GrupoComparado[] = [
+  {
+    titulo: 'El asistente de IA en WhatsApp',
+    filas: [
+      { texto: 'Contesta al instante, a cualquier hora, también con el local cerrado', base: false, asistente: true },
+      { texto: 'Toma el pedido de principio a fin y lo deja en el sistema', base: false, asistente: true },
+      { texto: 'Avisa al cliente por WhatsApp cuando su pedido está listo', base: false, asistente: true },
+      { texto: 'Si hace falta una persona, te pasa el turno en vez de inventarse una respuesta', base: false, asistente: true },
+      { texto: 'Ves y contestas todas las conversaciones desde el sistema', base: false, asistente: true },
+      { texto: 'Conectas el WhatsApp de tu negocio. Si no puedes, lo hacemos contigo', base: false, asistente: true },
+    ],
+  },
+  {
+    titulo: 'Pedidos y carta',
+    filas: [
+      { texto: 'Carta digital con QR', base: true, asistente: true },
+      { texto: 'Carga tu carta con IA desde un PDF o fotos', base: true, asistente: true },
+      { texto: 'Mesas, comandas y pantalla de cocina', base: true, asistente: true },
+      { texto: 'Domicilios con precio por barrio', base: true, asistente: true },
+    ],
+  },
+  {
+    titulo: 'Caja y dinero',
+    filas: [
+      { texto: 'Caja con varios medios de pago', base: true, asistente: true },
+      { texto: 'Inventario con recetas y proveedores', base: true, asistente: true },
+      { texto: 'Costo y ganancia de cada producto', base: true, asistente: true },
+      { texto: 'Tiqueteras y fiado de clientes', base: true, asistente: true },
+      { texto: 'Reportes de ventas, impuestos y domicilios', base: true, asistente: true },
+    ],
+  },
+  {
+    titulo: 'Tu equipo',
+    filas: [
+      { texto: 'Usuarios incluidos', base: '8', asistente: '10' },
+      { texto: 'Cajas incluidas', base: '1', asistente: '2' },
+      { texto: 'Cada persona entra con su usuario y sus permisos', base: true, asistente: true },
+      { texto: 'Funciona en celular, tablet y computador', base: true, asistente: true },
+    ],
   },
 ];
 
@@ -323,17 +355,7 @@ export class RestaurantesComponent {
   protected readonly cifras = CIFRAS;
   protected readonly conversacion = CONVERSACION;
   protected readonly planes = PLANES;
-
-  /** El plan cuyo detalle está abierto, o `null`. */
-  protected readonly planAbierto = signal<Plan | null>(null);
-
-  protected verDetalle(plan: Plan): void {
-    this.planAbierto.set(plan);
-  }
-
-  protected cerrarDetalle(): void {
-    this.planAbierto.set(null);
-  }
+  protected readonly comparacion = COMPARACION;
 
   /** El oficio con el que entra el registro: la página entera habla de restaurantes. */
   private readonly OFICIO = 'RESTAURANTE';
@@ -405,8 +427,56 @@ export class RestaurantesComponent {
 
   // ── Precio ──
 
-  /** La facturación electrónica se cuenta aparte: la pide una minoría y son ocho precios. */
-  protected readonly facturacionAbierta = signal(false);
+  /**
+   * La facturación electrónica se cuenta aparte, en su ventana: la pide una minoría y son ocho
+   * precios. Precios y cuentas en `shared/facturacion.ts`, los mismos en `/restaurantes` y `/reservas`.
+   */
+  protected readonly tramosFe = TRAMOS_FE;
+
+  /**
+   * La elección en la ventana de facturación: un tramo y un plan. Arranca en el recomendado (con
+   * asistente) y el tramo más pequeño; tocar un precio la cambia y la barra de abajo la resume.
+   */
+  protected readonly feTramo = signal(0);
+  protected readonly fePlan = signal<PlanFe>('asistente');
+  protected readonly feEleccion = computed(() => {
+    const tramo = TRAMOS_FE[this.feTramo()];
+    const conAsistente = this.fePlan() === 'asistente';
+    return {
+      plan: `${nombrePlanFe(this.fePlan())} ${tramo.paquete}`,
+      tope: this.numero(tramo.tope),
+      precio: this.pesos(conAsistente ? tramo.asistente : tramo.base),
+      codigo: conAsistente ? tramo.codigoAsistente : tramo.codigoBase,
+    };
+  });
+
+  protected elegirFe(tramo: number, plan: PlanFe): void {
+    this.feTramo.set(tramo);
+    this.fePlan.set(plan);
+  }
+
+  // ── Documentos adicionales ──
+
+  protected readonly paquetesExtraFe = PAQUETES_EXTRA_FE;
+
+  /** Lo que el dueño responde en la calculadora. Arranca por encima del XL, que es para quien está. */
+  protected readonly feDocsMes = signal(3000);
+
+  /**
+   * El paquete que le alcanza, los adicionales que le faltan y el total, con el plan que tenga
+   * elegido en la tabla (con o sin asistente). No cambia la elección de la tabla: los adicionales
+   * no se compran desde «Adquirir», se activan por WhatsApp.
+   */
+  protected readonly feCalculo = computed(() =>
+    calcularFe(this.feDocsMes(), this.fePlan(), (valor) => this.numero(valor)),
+  );
+
+  /** Para «¿Tienes dudas?» de la ventana de facturación: aquí sí llega con la pregunta escrita. */
+  protected readonly whatsappFe =
+    `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, tengo dudas sobre la facturación electrónica de EscalApp para mi restaurante')}`;
+
+  protected readonly whatsappFeExtra =
+    `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, necesito documentos adicionales de facturación electrónica para mi restaurante')}`;
 
   constructor() {
     // En el constructor y no en `afterNextRender`: la ruta es `Prerender`, así que esto corre
@@ -474,6 +544,31 @@ export class RestaurantesComponent {
 
   protected abrirPrueba(): void {
     this.prueba.abrir(this.OFICIO);
+  }
+
+  /**
+   * Abre una ventana de la sección de precios. Mientras está abierta la página de atrás no se
+   * desplaza; el hueco de la barra de scroll se rellena para que nada salte de sitio.
+   */
+  protected abrirVentana(ventana: HTMLDialogElement): void {
+    const raiz = document.documentElement;
+    const barra = window.innerWidth - raiz.clientWidth;
+    raiz.style.overflow = 'hidden';
+    raiz.style.paddingRight = barra > 0 ? `${barra}px` : '';
+    ventana.addEventListener(
+      'close',
+      () => {
+        raiz.style.overflow = '';
+        raiz.style.paddingRight = '';
+      },
+      { once: true },
+    );
+    ventana.showModal();
+  }
+
+  /** Un clic en el fondo oscuro (el propio `<dialog>`, fuera de su contenido) la cierra. */
+  protected cerrarSiFondo(evento: MouseEvent, ventana: HTMLDialogElement): void {
+    if (evento.target === ventana) ventana.close();
   }
 
   /**

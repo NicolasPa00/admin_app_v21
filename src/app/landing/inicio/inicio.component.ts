@@ -137,7 +137,7 @@ const COMUNES: Comun[] = [
   {
     titulo: 'Los mismos planes y precios',
     texto:
-      'Emprendedor a $37.999 al mes y Emprendedor con asistente a $77.999, con 1.000 mensajes de WhatsApp incluidos. Desde el 1.001, los cobra Meta directamente, no nosotros.',
+      'Emprendedor a $37.999 al mes y con asistente a $77.999. El asistente trae 1.000 mensajes de WhatsApp al mes; si tu negocio escribe más, cada mensaje extra (unos $2,54) lo cobra WhatsApp a tu tarjeta, no nosotros.',
   },
 ];
 

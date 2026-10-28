@@ -106,29 +106,88 @@
  *    socios de Meta. Mientras no haya ficha que enlazar, «Meta» se queda en texto.
  * Si algún día entramos al directorio, aquí es donde entra la insignia oficial — enlazada.
  */
+/* Desde 2026-10-27 es una credencial y no una línea gris: el dueño quiere que sorprenda que somos
+   proveedores. Tarjeta blanca (también en oscuro: es un documento que se lee), el glifo en su verde
+   dentro de un círculo verde claro, el hecho en negrita y, debajo, por qué le importa al cliente.
+   Los colores del texto van fijos porque la tarjeta es clara en los dos temas. */
 .alianza {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  margin: 1.25rem 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.45;
-  color: var(--r-mudo);
-  max-width: 44ch;
+  gap: 0.9rem;
+  margin: 1.5rem 0 0;
+  padding: 0.9rem 1.1rem 0.9rem 0.9rem;
+  max-width: 30rem;
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+  box-shadow:
+    inset 0 0 0 1px rgb(37 211 102 / 35%),
+    0 10px 28px -14px rgb(18 140 126 / 45%); /* taste-skill-ignore: la credencial se separa del papel */
 }
 
 .alianza__glifo {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex: none;
+  border-radius: 50%;
+  background: #e7f8ee;
   color: var(--wa-verde);
 }
 
 .alianza__glifo svg {
-  width: 100%;
-  height: 100%;
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* El «verificado»: un anillo verde que sale del glifo dos veces al cargar la página y se apaga.
+   Se ve una vez por visita, así que puede ser un gesto; transform y opacity, nada más. */
+.alianza__glifo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--wa-verde); /* taste-skill-ignore: es el anillo que se expande, no un borde */
+  opacity: 0;
+  animation: alianza-anillo 1400ms var(--r-paso) 700ms 2;
+}
+
+@keyframes alianza-anillo {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alianza__glifo::after {
+    animation: none;
+  }
+}
+
+.alianza__texto {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.alianza__titulo {
+  font-size: 1.0625rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--r-tinta);
+}
+
+.alianza__detalle {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--r-mudo);
 }
 
 .visualmente-oculto {
@@ -704,6 +763,7 @@
 }
 
 .parada__titulo {
+  text-wrap: balance;
   margin: 0;
   font-size: clamp(1.375rem, 1.1rem + 1.1vw, 1.875rem);
   font-weight: 750;
@@ -1108,187 +1168,6 @@
   max-width: 60ch;
 }
 
-/* La facturación electrónica, plegada y con aspecto de acción.
-   Antes era una línea de texto en violeta y nadie veía que se podía pulsar; pero tampoco puede
-   gritar: a un restaurante pequeño este trámite no le hace ninguna gracia, y ponerlo en el centro
-   de la sección de precios lo convertiría en el tema. Un panel sobrio con su chevron. */
-.plegable {
-  margin-top: 2rem;
-  border-radius: var(--r-radio);
-  background: var(--r-blanco);
-  /* Un borde de verdad, y visible sobre el papel: es lo que dice que esto se abre. Con el
-     `inset 0 0 0 1px` de las tarjetas no se distinguía nada y, al abrirlo, la cabecera parecía
-     quedarse fuera de la caja. */
-  border: 1px solid var(--r-borde-marcado); /* taste-skill-ignore: el borde es lo que lo hace parecer pulsable */
-  overflow: hidden;
-}
-
-.plegable__tirador {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  border: 0;
-  background: none;
-  padding: 1.1rem clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
-  font: inherit;
-  cursor: pointer;
-  text-align: left;
-  color: var(--r-tinta);
-  transition: background 160ms var(--r-paso);
-}
-
-.plegable__tirador:hover {
-  background: var(--r-papel);
-}
-
-.plegable__tirador:focus-visible {
-  outline: 3px solid var(--r-tinta);
-  outline-offset: -3px;
-}
-
-.plegable__texto {
-  flex: 1;
-  font-weight: 650;
-}
-
-.plegable__pista {
-  font-size: 0.9375rem;
-  color: var(--r-violeta-hondo);
-  font-weight: 650;
-}
-
-.plegable__chevron {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex: none;
-  color: var(--r-violeta-hondo);
-  transition: transform 200ms var(--r-paso);
-}
-
-.plegable--abierto .plegable__chevron {
-  transform: rotate(180deg);
-}
-
-/* Dos columnas: el texto a la izquierda, la tabla a la derecha. En una sola, la tabla dejaba
-   media sección en blanco a su derecha.
-   La línea de arriba separa la cabecera del cuerpo: sin ella las dos partes se funden en un
-   bloque blanco y no se ve dónde empieza lo que se acaba de abrir. */
-.plegable__cuerpo {
-  display: grid;
-  gap: clamp(1.5rem, 1rem + 2vw, 3rem);
-  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1rem, 0.5rem + 1.5vw, 1.75rem)
-    clamp(1.5rem, 1rem + 1.5vw, 2rem);
-  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: separa cabecera y cuerpo del acordeón */
-}
-
-@media (min-width: 860px) {
-  .plegable__cuerpo {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-    align-items: start;
-  }
-}
-
-.plegable__texto-cuerpo {
-  margin: 0 0 1rem;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--r-mudo);
-}
-
-.plegable__texto-cuerpo:last-child {
-  margin-bottom: 0;
-}
-
-/* La tabla de la facturación electrónica.
-   Los precios van a la derecha y sus encabezados también, para que cada cifra quede bajo el nombre
-   que la explica (antes los encabezados iban a la izquierda y las cifras a la derecha). La columna
-   «Con asistente» lleva el tono violeta de la tarjeta de su plan y se lee de arriba abajo como una
-   sola pieza. Las líneas entre filas sí valen: es una tabla de verdad. */
-.tabla-fe {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-variant-numeric: tabular-nums;
-}
-
-.tabla-fe__leyenda {
-  caption-side: top;
-  padding: 0 0 1rem;
-  text-align: left;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--r-mudo);
-}
-
-.tabla-fe th,
-.tabla-fe td {
-  padding: 0.95rem 1.1rem;
-  text-align: right;
-  font-size: 1.0625rem;
-  font-weight: 650;
-  color: var(--r-tinta);
-  border-bottom: 1px solid var(--r-borde); /* taste-skill-ignore: línea entre filas de una tabla real */
-}
-
-.tabla-fe thead th {
-  padding-block: 0.7rem;
-  font-size: 0.875rem;
-  line-height: 1.3;
-  color: var(--r-mudo);
-  vertical-align: bottom;
-}
-
-.tabla-fe thead th:first-child,
-.tabla-fe tbody th {
-  text-align: left;
-}
-
-.tabla-fe tbody th {
-  font-size: 1.125rem;
-  font-weight: 800;
-}
-
-.tabla-fe tbody tr:last-child th,
-.tabla-fe tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.plegable__cuerpo > * {
-  /* Sin esto, la tabla impone su ancho a la columna del acordeón y todo se sale por la derecha. */
-  min-width: 0;
-}
-
-@media (max-width: 520px) {
-  .tabla-fe th,
-  .tabla-fe td {
-    padding: 0.8rem 0.5rem;
-    font-size: 0.9375rem;
-  }
-
-  .tabla-fe tbody th {
-    font-size: 1rem;
-  }
-
-  .tabla-fe thead th {
-    font-size: 0.8125rem;
-  }
-}
-
-.tabla-fe__asist {
-  background: var(--r-superficie);
-  border-bottom-color: color-mix(in srgb, var(--r-violeta) 16%, transparent) !important;
-}
-
-.tabla-fe thead .tabla-fe__asist {
-  border-radius: var(--r-radio) var(--r-radio) 0 0;
-  color: var(--r-violeta-hondo);
-}
-
-.tabla-fe tbody tr:last-child .tabla-fe__asist {
-  border-radius: 0 0 var(--r-radio) var(--r-radio);
-}
-
 /* ── 7 · El cierre y el pie ───────────────────────────────────────────────────
    Un bloque, no dos: el corte diagonal, el pulpo asomando por él, la marca de agua y la barra
    legal — la misma gramática del pie de la landing viva, con la paleta de esta página. El campo
@@ -1558,165 +1437,6 @@
   height: 1.6rem;
 }
 
-/* ── El detalle de un plan ────────────────────────────────────────────────── */
-
-/* La capa del detalle: cabecera fija, cuerpo que se desplaza, pie fijo con las acciones.
-   Va con las dos clases (`0-2-0`) para ganarle a `.capa__caja`, que está más abajo en la hoja y
-   con la misma especificidad le devolvería su relleno y su `overflow-y`. */
-.capa__caja.detalle {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-}
-
-.detalle__cabeza {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem 2rem;
-  /* El relleno de la derecha le reserva el sitio al botón de cerrar, que va absoluto encima: sin
-     él, el precio y el botón de cerrar se tocan. */
-  padding: clamp(1.5rem, 1rem + 1.5vw, 2rem) clamp(3.25rem, 2.5rem + 2vw, 4rem) 1.25rem
-    clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-  border-bottom: 1px solid var(--r-borde); /* taste-skill-ignore: separa la cabecera fija del cuerpo */
-}
-
-.detalle__quien {
-  flex: 1 1 16rem;
-}
-
-.detalle__nombre {
-  margin: 0;
-  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.75rem);
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.detalle__que {
-  margin: 0.5rem 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--r-mudo);
-}
-
-/* El precio es lo primero que se busca al abrir esto, así que va grande y a la derecha, no
-   escondido en una línea de texto corrido. */
-.detalle__precio {
-  display: grid;
-  justify-items: end;
-  text-align: right;
-  margin: 0;
-}
-
-.detalle__cifra {
-  font-size: clamp(2rem, 1.5rem + 1.8vw, 2.75rem);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums;
-}
-
-.detalle__moneda {
-  margin-top: 0.2rem;
-  font-size: 0.9375rem;
-  color: var(--r-mudo);
-}
-
-.detalle__sin {
-  margin-top: 0.4rem;
-  font-size: 0.8125rem;
-  color: var(--r-mudo);
-}
-
-.detalle__cuerpo {
-  flex: 1;
-  overflow-y: auto;
-  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-}
-
-.detalle__columnas {
-  display: grid;
-  gap: clamp(1.75rem, 1rem + 2vw, 2.5rem);
-}
-
-@media (min-width: 800px) {
-  .detalle__columnas {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-
-  /* El plan sin asistente no tiene segunda sección: en vez de dejar media capa vacía, la lista
-     se reparte ella misma en dos columnas. */
-  .detalle__columnas--sola {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .detalle__columnas--sola .detalle-lista {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 1.5rem;
-  }
-}
-
-.detalle__rotulo {
-  margin: 0 0 1rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--r-tinta);
-}
-
-.detalle__panel {
-  padding: 1rem 1.1rem;
-  border-radius: var(--r-radio);
-  background: var(--r-superficie);
-}
-
-.detalle__panel-titulo {
-  margin: 0 0 0.6rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--r-violeta-hondo);
-}
-
-.detalle__panel-lista {
-  margin: 0;
-  padding-left: 1.1rem;
-  display: grid;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--r-mudo);
-}
-
-/* Pegado abajo y siempre a la vista: en una pantalla corta los botones quedaban al final de
-   veinte líneas y no se veían sin desplazarse hasta el fondo. */
-.detalle__pie {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.5rem;
-  padding: 1rem clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: separa el pie fijo del cuerpo */
-  background: var(--r-blanco);
-}
-
-.detalle-lista {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.6rem;
-}
-
-.detalle-nota {
-  margin: 1rem 0 0;
-  font-size: 0.875rem;
-  line-height: 1.55;
-  color: var(--r-mudo);
-}
-
 /* ── La capa de la prueba ─────────────────────────────────────────────────── */
 
 .capa {
@@ -1740,13 +1460,6 @@
   padding: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
   border-radius: var(--r-radio);
   background: var(--r-blanco);
-}
-
-/* El detalle de un plan necesita el doble de ancho que el formulario de la prueba: son veinte
-   líneas en dos columnas. Va DESPUÉS de `.capa__caja`: con la misma especificidad gana la última,
-   y puesta antes el modal salía con los 440 px del formulario. */
-.capa__caja--ancha {
-  max-width: 720px;
 }
 
 .capa__cerrar {
@@ -1875,56 +1588,27 @@
 }
 
 
-/* ── Vuelta a la página madre (cabecera) ──────────────────────────────────── */
-.cabecera__izq {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.75rem, 0.4rem + 1.5vw, 1.5rem);
-  min-width: 0;
-}
-.volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 44px; /* objetivo táctil */
-  padding-inline: 0.5rem 0.75rem;
-  border-radius: 999px;
-  color: var(--r-mudo);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.volver:hover {
-  color: var(--r-tinta);
-  background: var(--r-superficie);
-}
-.volver:focus-visible {
-  outline: 2px solid var(--r-violeta-hondo);
-  outline-offset: 2px;
-}
-.volver__flecha {
-  width: 16px;
-  height: 16px;
-  flex: none;
-}
-.volver__corto {
-  display: none;
-}
-@media (max-width: 639px) {
-  .volver__largo {
-    display: none;
-  }
-  .volver__corto {
-    display: inline;
-  }
-}
-
-
-
 /* El titular de esta página son cinco líneas y el escenario queda centrado respecto a él, así que
    arriba tiene poco aire: la mascota del borde se hace más pequeña para no meterse bajo la cabecera. */
 .mascota--laptop {
   width: clamp(88px, 10vw, 138px);
   margin-bottom: -8px;
+}
+
+/* El filo entre `.mensajes` y el pie (2026-10-27). El corte diagonal es una capa blanca encima del
+   fondo tinta del pie; según el ancho, el redondeo deja una fila de un píxel donde asoma la tinta y
+   se ve una raya gris. Como en /inicio: el pie sube un píxel y lleva arriba una franja lisa de 6 px
+   del color de la sección de arriba, que tapa ese hueco a cualquier ancho. En oscuro, `_oscuro.scss`
+   reinicia el fondo con el atajo `background`, así que se reponen las TRES propiedades. */
+.pie {
+  margin-top: -1px;
+  background-image: linear-gradient(var(--r-blanco), var(--r-blanco)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
+}
+
+:host-context(html[data-tema='oscuro']) .pie {
+  background-image: linear-gradient(var(--noche), var(--noche)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
 }

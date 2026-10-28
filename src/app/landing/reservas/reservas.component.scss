@@ -106,29 +106,88 @@
  *    socios de Meta. Mientras no haya ficha que enlazar, «Meta» se queda en texto.
  * Si algún día entramos al directorio, aquí es donde entra la insignia oficial — enlazada.
  */
+/* Desde 2026-10-27 es una credencial y no una línea gris: el dueño quiere que sorprenda que somos
+   proveedores. Tarjeta blanca (también en oscuro: es un documento que se lee), el glifo en su verde
+   dentro de un círculo verde claro, el hecho en negrita y, debajo, por qué le importa al cliente.
+   Los colores del texto van fijos porque la tarjeta es clara en los dos temas. */
 .alianza {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  margin: 1.25rem 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.45;
-  color: var(--r-mudo);
-  max-width: 44ch;
+  gap: 0.9rem;
+  margin: 1.5rem 0 0;
+  padding: 0.9rem 1.1rem 0.9rem 0.9rem;
+  max-width: 30rem;
+  border-radius: var(--r-radio);
+  background: var(--r-blanco);
+  box-shadow:
+    inset 0 0 0 1px rgb(37 211 102 / 35%),
+    0 10px 28px -14px rgb(18 140 126 / 45%); /* taste-skill-ignore: la credencial se separa del papel */
 }
 
 .alianza__glifo {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex: none;
+  border-radius: 50%;
+  background: #e7f8ee;
   color: var(--wa-verde);
 }
 
 .alianza__glifo svg {
-  width: 100%;
-  height: 100%;
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* El «verificado»: un anillo verde que sale del glifo dos veces al cargar la página y se apaga.
+   Se ve una vez por visita, así que puede ser un gesto; transform y opacity, nada más. */
+.alianza__glifo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--wa-verde); /* taste-skill-ignore: es el anillo que se expande, no un borde */
+  opacity: 0;
+  animation: alianza-anillo 1400ms var(--r-paso) 700ms 2;
+}
+
+@keyframes alianza-anillo {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alianza__glifo::after {
+    animation: none;
+  }
+}
+
+.alianza__texto {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.alianza__titulo {
+  font-size: 1.0625rem;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--r-tinta);
+}
+
+.alianza__detalle {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--r-mudo);
 }
 
 .visualmente-oculto {
@@ -367,6 +426,15 @@
 
 .heroe__escenario {
   position: relative;
+}
+
+/* El pulpo se sienta ENCIMA del panel (fuera de su caja), así que la rejilla no le cuenta el alto.
+   En /restaurantes el titular de cinco líneas empuja el escenario hacia abajo y le deja sitio; aquí
+   el titular es corto y, sin este margen, el pulpo quedaba cortado bajo la barra de arriba. */
+@media (min-width: 1024px) {
+  .heroe__escenario {
+    margin-top: clamp(96px, 12vw, 170px);
+  }
 }
 
 /* En un móvil la escena se cuenta en orden: primero la conversación, y debajo el panel donde
@@ -704,6 +772,7 @@
 }
 
 .parada__titulo {
+  text-wrap: balance;
   margin: 0;
   font-size: clamp(1.375rem, 1.1rem + 1.1vw, 1.875rem);
   font-weight: 750;
@@ -1493,165 +1562,6 @@
   height: 1.6rem;
 }
 
-/* ── El detalle de un plan ────────────────────────────────────────────────── */
-
-/* La capa del detalle: cabecera fija, cuerpo que se desplaza, pie fijo con las acciones.
-   Va con las dos clases (`0-2-0`) para ganarle a `.capa__caja`, que está más abajo en la hoja y
-   con la misma especificidad le devolvería su relleno y su `overflow-y`. */
-.capa__caja.detalle {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-}
-
-.detalle__cabeza {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem 2rem;
-  /* El relleno de la derecha le reserva el sitio al botón de cerrar, que va absoluto encima: sin
-     él, el precio y el botón de cerrar se tocan. */
-  padding: clamp(1.5rem, 1rem + 1.5vw, 2rem) clamp(3.25rem, 2.5rem + 2vw, 4rem) 1.25rem
-    clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-  border-bottom: 1px solid var(--r-borde); /* taste-skill-ignore: separa la cabecera fija del cuerpo */
-}
-
-.detalle__quien {
-  flex: 1 1 16rem;
-}
-
-.detalle__nombre {
-  margin: 0;
-  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.75rem);
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.detalle__que {
-  margin: 0.5rem 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--r-mudo);
-}
-
-/* El precio es lo primero que se busca al abrir esto, así que va grande y a la derecha, no
-   escondido en una línea de texto corrido. */
-.detalle__precio {
-  display: grid;
-  justify-items: end;
-  text-align: right;
-  margin: 0;
-}
-
-.detalle__cifra {
-  font-size: clamp(2rem, 1.5rem + 1.8vw, 2.75rem);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.035em;
-  font-variant-numeric: tabular-nums;
-}
-
-.detalle__moneda {
-  margin-top: 0.2rem;
-  font-size: 0.9375rem;
-  color: var(--r-mudo);
-}
-
-.detalle__sin {
-  margin-top: 0.4rem;
-  font-size: 0.8125rem;
-  color: var(--r-mudo);
-}
-
-.detalle__cuerpo {
-  flex: 1;
-  overflow-y: auto;
-  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-}
-
-.detalle__columnas {
-  display: grid;
-  gap: clamp(1.75rem, 1rem + 2vw, 2.5rem);
-}
-
-@media (min-width: 800px) {
-  .detalle__columnas {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
-
-  /* El plan sin asistente no tiene segunda sección: en vez de dejar media capa vacía, la lista
-     se reparte ella misma en dos columnas. */
-  .detalle__columnas--sola {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .detalle__columnas--sola .detalle-lista {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: 1.5rem;
-  }
-}
-
-.detalle__rotulo {
-  margin: 0 0 1rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--r-tinta);
-}
-
-.detalle__panel {
-  padding: 1rem 1.1rem;
-  border-radius: var(--r-radio);
-  background: var(--r-superficie);
-}
-
-.detalle__panel-titulo {
-  margin: 0 0 0.6rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: var(--r-violeta-hondo);
-}
-
-.detalle__panel-lista {
-  margin: 0;
-  padding-left: 1.1rem;
-  display: grid;
-  gap: 0.5rem;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--r-mudo);
-}
-
-/* Pegado abajo y siempre a la vista: en una pantalla corta los botones quedaban al final de
-   veinte líneas y no se veían sin desplazarse hasta el fondo. */
-.detalle__pie {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.5rem;
-  padding: 1rem clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
-  border-top: 1px solid var(--r-borde); /* taste-skill-ignore: separa el pie fijo del cuerpo */
-  background: var(--r-blanco);
-}
-
-.detalle-lista {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.6rem;
-}
-
-.detalle-nota {
-  margin: 1rem 0 0;
-  font-size: 0.875rem;
-  line-height: 1.55;
-  color: var(--r-mudo);
-}
-
 /* ── La capa de la prueba ─────────────────────────────────────────────────── */
 
 .capa {
@@ -1675,13 +1585,6 @@
   padding: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
   border-radius: var(--r-radio);
   background: var(--r-blanco);
-}
-
-/* El detalle de un plan necesita el doble de ancho que el formulario de la prueba: son veinte
-   líneas en dos columnas. Va DESPUÉS de `.capa__caja`: con la misma especificidad gana la última,
-   y puesta antes el modal salía con los 440 px del formulario. */
-.capa__caja--ancha {
-  max-width: 720px;
 }
 
 .capa__cerrar {
@@ -1810,52 +1713,6 @@
 }
 
 
-/* ── Vuelta a la página madre (cabecera) ──────────────────────────────────── */
-.cabecera__izq {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.75rem, 0.4rem + 1.5vw, 1.5rem);
-  min-width: 0;
-}
-.volver {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 44px; /* objetivo táctil */
-  padding-inline: 0.5rem 0.75rem;
-  border-radius: 999px;
-  color: var(--r-mudo);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.volver:hover {
-  color: var(--r-tinta);
-  background: var(--r-superficie);
-}
-.volver:focus-visible {
-  outline: 2px solid var(--r-violeta-hondo);
-  outline-offset: 2px;
-}
-.volver__flecha {
-  width: 16px;
-  height: 16px;
-  flex: none;
-}
-.volver__corto {
-  display: none;
-}
-@media (max-width: 639px) {
-  .volver__largo {
-    display: none;
-  }
-  .volver__corto {
-    display: inline;
-  }
-}
-
-
 /* ── 2-bis · Los oficios ─────────────────────────────────────────────────── */
 .oficios {
   padding-block: clamp(3rem, 2rem + 4vw, 6rem);
@@ -1886,15 +1743,21 @@
   flex-direction: column;
   min-width: 0;
 }
+/* `overflow: clip` y no `hidden`: recorta igual las esquinas sin crear un contenedor de scroll. */
+.galeria__marco {
+  overflow: clip;
+  border-radius: var(--r-radio);
+}
 .galeria__img {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: var(--r-radio);
+  transition: transform 520ms var(--r-paso);
 }
 .galeria__nombre {
+  transition: color 200ms var(--r-paso);
   margin: 0.875rem 0 0.25rem;
   font-size: 1.125rem;
   font-weight: 750;
@@ -1908,25 +1771,46 @@
   line-height: 1.5;
   max-width: 34ch;
 }
+/* Al pasar el ratón la foto se acerca un poco dentro de su marco (solo transform: no mueve nada
+   alrededor) y el nombre toma el violeta de la casa, como las filas de «Lo que no cambia» en
+   /inicio. Lento a propósito (520 ms): es una foto, no un botón. Solo con ratón: en el celular no
+   hay «encima» y un toque dejaría la foto ampliada. */
+@media (hover: hover) and (pointer: fine) {
+  .galeria__item:hover .galeria__img {
+    transform: scale(1.06);
+  }
+  .galeria__item:hover .galeria__nombre {
+    color: var(--r-violeta-hondo);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .galeria__img {
+    transition: none;
+  }
+  .galeria__item:hover .galeria__img {
+    transform: none;
+  }
+}
 .oficios__nota {
   margin: clamp(1.5rem, 1rem + 1.5vw, 2.25rem) 0 0;
   color: var(--r-mudo);
   font-size: 0.9375rem;
 }
 
-
-
-/* ── Titular de la primera pantalla: el elemento dominante ───────────────── */
-.heroe__titular {
-  font-size: clamp(2.5rem, 1.4rem + 4.8vw, 5.25rem);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
-  max-width: 18ch;
-}
-@media (min-width: 1024px) {
-  .heroe__titular {
-    grid-column: 1 / -1;
-  }
+/* El filo entre `.mensajes` y el pie (2026-10-27). El corte diagonal es una capa blanca encima del
+   fondo tinta del pie; según el ancho, el redondeo deja una fila de un píxel donde asoma la tinta y
+   se ve una raya gris. Como en /inicio: el pie sube un píxel y lleva arriba una franja lisa de 6 px
+   del color de la sección de arriba, que tapa ese hueco a cualquier ancho. En oscuro, `_oscuro.scss`
+   reinicia el fondo con el atajo `background`, así que se reponen las TRES propiedades. */
+.pie {
+  margin-top: -1px;
+  background-image: linear-gradient(var(--r-blanco), var(--r-blanco)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
 }
 
-
+:host-context(html[data-tema='oscuro']) .pie {
+  background-image: linear-gradient(var(--noche), var(--noche)); /* taste-skill-ignore: franja lisa de 6 px, no un degradado */
+  background-size: 100% 6px;
+  background-repeat: no-repeat;
+}

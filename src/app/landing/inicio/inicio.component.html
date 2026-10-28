@@ -5,8 +5,8 @@
 <header class="cabecera">
   <div class="marco cabecera__fila">
     <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
-      <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="122" height="32" />
-        <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="122" height="32" />
+      <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="116" height="32" />
+        <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="116" height="32" />
     </a>
 
     <nav class="cabecera__nav" aria-label="Secciones">
@@ -110,42 +110,13 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════ 2 · LO QUE NO CAMBIA ═══════════════════════════
-       Lo que no depende del oficio, dicho una vez: a la izquierda la idea y la acción, a la derecha lo
-       que se recibe. El detalle de cada plan y la calculadora de mensajes viven en la página de cada
-       motor.
-  -->
-  <section class="comun" aria-labelledby="comun-titulo">
-    <div class="marco comun__fila">
-      <div class="comun__cabeza">
-        <h2 class="titulo-seccion" id="comun-titulo">Cambia el oficio, no lo que recibes.</h2>
-        <p class="comun__bajada">
-          Tengas un restaurante o un negocio de citas, el asistente, la prueba y el precio son los
-          mismos.
-        </p>
-        <div class="comun__accion">
-          <button type="button" class="boton boton--lg" (click)="abrirPrueba()">
-            Probar 30 días gratis
-          </button>
-          <p class="comun__nota">Sin tarjeta de crédito. Sin contrato.</p>
-        </div>
-      </div>
-
-      <ul class="comun__lista">
-        @for (c of comunes; track c.titulo) {
-          <li class="comun__item" data-entra>
-            <h3 class="comun__titulo">{{ c.titulo }}</h3>
-            <p class="comun__texto">{{ c.texto }}</p>
-          </li>
-        }
-      </ul>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════ 3 · ALIADOS Y CLIENTES ═══════════════════════════
+  <!-- ═══════════════════════════ 2 · QUIÉN YA LO USA ═══════════════════════════
        Dos franjas de logos en gris, como una fila de marcas: los aliados (cada uno a su sitio) y los
        negocios que ya usan EscalApp (cada uno a su carta virtual o a su página para agendar). Al pasar
        el cursor el logo recupera su color. Nada inventado: aliados confirmados y negocios reales.
+       Va justo después de las tarjetas (2026-10-27) y ANTES de los precios: quien llega ve primero
+       que negocios como el suyo ya lo usan, y solo después cuánto cuesta. Por la misma razón aquí
+       no hay «más de X negocios»: con los clientes de hoy sería una cifra inventada.
   -->
   <section class="aliados" aria-labelledby="clientes-titulo">
     <div class="marco">
@@ -181,6 +152,38 @@
           }
         </ul>
       </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ 3 · LO QUE NO CAMBIA ═══════════════════════════
+       Lo que no depende del oficio, dicho una vez: a la izquierda la idea y la acción, a la derecha lo
+       que se recibe. El detalle de cada plan y la calculadora de mensajes viven en la página de cada
+       motor.
+  -->
+  <section class="comun" aria-labelledby="comun-titulo">
+    <div class="marco comun__fila">
+      <div class="comun__cabeza">
+        <h2 class="titulo-seccion" id="comun-titulo">Cambia el oficio, no lo que recibes.</h2>
+        <p class="comun__bajada">
+          Tengas un restaurante o un negocio de citas, el asistente, la prueba y el precio son los
+          mismos.
+        </p>
+        <div class="comun__accion">
+          <button type="button" class="boton boton--lg" (click)="abrirPrueba()">
+            Probar 30 días gratis
+          </button>
+          <p class="comun__nota">Sin tarjeta de crédito. Sin contrato.</p>
+        </div>
+      </div>
+
+      <ul class="comun__lista">
+        @for (c of comunes; track c.titulo) {
+          <li class="comun__item" data-entra>
+            <h3 class="comun__titulo">{{ c.titulo }}</h3>
+            <p class="comun__texto">{{ c.texto }}</p>
+          </li>
+        }
+      </ul>
     </div>
   </section>
 
@@ -240,7 +243,7 @@
 
       <div class="pie__marca">
         <span class="marca marca--pie">
-          <img class="marca__logo" [src]="marca('logo-horizontal-blanco.svg')" alt="EscalApp" width="122" height="32" />
+          <img class="marca__logo" [src]="marca('logo-horizontal-blanco.svg')" alt="EscalApp" width="116" height="32" />
         </span>
         <p class="pie__lema">El sistema para tu negocio, con su asistente de WhatsApp.</p>
 

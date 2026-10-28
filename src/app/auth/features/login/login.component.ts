@@ -10,14 +10,14 @@ import {
   LucideAngularModule,
   LucideIconProvider,
   LUCIDE_ICONS,
-  Eye, EyeOff, Sun, Moon, Loader2,
+  Eye, EyeOff, Loader2,
   User, Lock, ArrowRight, ChevronLeft, AlertCircle,
-  Zap, ShieldCheck, TrendingUp,
 } from 'lucide-angular';
 
 import { AuthService } from '../../data-access/auth.service';
 import { AssetService } from '../../../core/services/asset.service';
 import { LoginRequest } from '../../models/auth.models';
+import { EscenasLoginComponent } from '../../shared/escenas/escenas-login.component';
 
 /**
  * LoginComponent — Página de inicio de sesión.
@@ -28,9 +28,9 @@ import { LoginRequest } from '../../models/auth.models';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterLink, LucideAngularModule],
+  imports: [RouterLink, LucideAngularModule, EscenasLoginComponent],
   providers: [
-    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Sun, Moon, Loader2, User, Lock, ArrowRight, ChevronLeft, AlertCircle, Zap, ShieldCheck, TrendingUp }) },
+    { provide: LUCIDE_ICONS, multi: true, useValue: new LucideIconProvider({ Eye, EyeOff, Loader2, User, Lock, ArrowRight, ChevronLeft, AlertCircle }) },
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',

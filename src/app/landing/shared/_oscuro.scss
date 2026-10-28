@@ -47,19 +47,6 @@
   }
 }
 
-/* En 400 px o menos no caben el «Inicio» y el botón del tema: se queda la flecha, y la palabra sigue
-   ahí para quien usa lector de pantalla. */
-@media (max-width: 400px) {
-  .volver .volver__corto {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
 /* El logotipo claro y el oscuro conviven en la cabecera; solo se ve uno. La doble clase gana a
    `.marca__logo` de la hoja de la página, que se declara después. */
 .marca .marca__logo--oscuro {
@@ -91,18 +78,12 @@
   color: var(--noche-texto);
 }
 
-:host-context(html[data-tema='oscuro']) .cabecera .enlace,
-:host-context(html[data-tema='oscuro']) .volver {
+:host-context(html[data-tema='oscuro']) .cabecera .enlace {
   color: var(--noche-texto);
 }
 
-:host-context(html[data-tema='oscuro']) .cabecera .enlace:hover,
-:host-context(html[data-tema='oscuro']) .volver:hover {
+:host-context(html[data-tema='oscuro']) .cabecera .enlace:hover {
   color: var(--r-blanco);
-}
-
-:host-context(html[data-tema='oscuro']) .volver:hover {
-  background: rgb(255 255 255 / 10%);
 }
 
 :host-context(html[data-tema='oscuro']) .cabecera .enlace:hover {
@@ -110,7 +91,6 @@
 }
 
 :host-context(html[data-tema='oscuro']) .cabecera .enlace:focus-visible,
-:host-context(html[data-tema='oscuro']) .volver:focus-visible,
 :host-context(html[data-tema='oscuro']) .heroe .enlace:focus-visible {
   outline-color: var(--r-blanco);
 }
@@ -139,8 +119,7 @@
   color: var(--r-blanco);
 }
 
-:host-context(html[data-tema='oscuro']) .heroe .titular,
-:host-context(html[data-tema='oscuro']) .heroe .heroe__titular {
+:host-context(html[data-tema='oscuro']) .heroe .titular {
   color: var(--r-blanco);
 }
 

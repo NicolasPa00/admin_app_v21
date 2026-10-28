@@ -32,13 +32,13 @@
   <meta property="og:title" content="EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas">
   <meta property="og:description" content="El asistente de IA contesta, toma el pedido y lo deja en tu sistema. Caja, cocina, inventario y facturación DIAN en un solo lugar.">
   <meta property="og:url" content="https://escalapp.cloud/">
-  <meta property="og:image" content="https://escalapp.cloud/images/og-escalapp.png">
+  <meta property="og:image" content="https://escalapp.cloud/images/og-escalapp-marca.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas">
   <meta name="twitter:description" content="El asistente de IA contesta, toma el pedido y lo deja en tu sistema. Caja, cocina, inventario y facturación DIAN en un solo lugar.">
-  <meta name="twitter:image" content="https://escalapp.cloud/images/og-escalapp.png">
+  <meta name="twitter:image" content="https://escalapp.cloud/images/og-escalapp-marca.png">
   <!-- Inter.
        Los DOS sistemas de tokens la declaran primera —`--es-font-sans` en tokens.css y
        `--font-family` en _theme.scss— pero no se cargaba en ninguna parte, así que todo
@@ -55,9 +55,11 @@
        Las rutas van SIN barra inicial a propósito: se resuelven contra el <base href>,
        que el build reescribe a /admin/, /restaurante/ o /reserva/ según la app. Con
        "/images/icono.png" el navegador las pedía a la raíz del dominio, donde no están. -->
+  <!-- favicon.svg es el del kit del diseñador (símbolo a color sobre azul noche): nítido a
+       cualquier tamaño. Los navegadores que lo entienden lo prefieren; el .ico queda de respaldo.
+       Sin los PNG de 16/32 a propósito: Chrome los escoge antes que el SVG si están. -->
   <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="site.webmanifest">
   <meta name="theme-color" content="#4338CA">

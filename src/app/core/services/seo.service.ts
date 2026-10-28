@@ -37,7 +37,7 @@ const ORIGEN = 'https://escalapp.cloud';
 const BASE = '';
 
 /** La imagen que sale en la tarjeta al compartir. 1200x630 es lo que piden Meta y X. */
-const IMAGEN_DEFECTO = `${ORIGEN}${BASE}/images/og-escalapp.png`;
+const IMAGEN_DEFECTO = `${ORIGEN}${BASE}/images/og-escalapp-marca.png`;
 
 export interface MetadatosPagina {
   titulo: string;

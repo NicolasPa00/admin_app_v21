@@ -90,3 +90,30 @@
     transform: none;
   }
 }
+
+/* Ninguna palabra sola en la última línea de un párrafo (Impeccable las marca como «straggler»).
+   `:where` deja la especificidad mínima: un párrafo que ya pide `balance` en su propia regla gana. */
+:where(p, li, th, td) {
+  text-wrap: pretty;
+}
+
+/* «Inicio» en la cabecera de /restaurantes y /reservas: con su casita y visible también en el
+   celular. La triple clase gana a la regla de cada página que oculta los enlaces del menú en
+   pantallas estrechas (se declara después, con dos clases). */
+.cabecera__nav .enlace.enlace--inicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.enlace--inicio svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
