@@ -8,10 +8,11 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
-import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import {
   Search, Users, Eye, Building2, AlertCircle, ArrowRight,
   X, ShieldCheck, Pencil, Check, Loader2, LogIn, Power, Trash2, History,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { UsuariosAdminService } from '../../data-access/usuarios-admin.service';
 import { AuthService } from '../../../auth/data-access/auth.service';

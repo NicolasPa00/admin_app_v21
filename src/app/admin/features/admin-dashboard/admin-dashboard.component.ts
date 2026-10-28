@@ -9,11 +9,12 @@ import {
 import { Router }            from '@angular/router';
 import { TitleCasePipe }     from '@angular/common';
 import { catchError, forkJoin, of } from 'rxjs';
-import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import {
   AlertCircle, Building2, ArrowRight, Hash, Phone, Mail,
   DollarSign, Receipt, TrendingUp, TrendingDown, Minus,
   TriangleAlert, Lock, CalendarClock, CalendarRange, X, Wallet,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
 import { AuthService }          from '../../../auth/data-access/auth.service';

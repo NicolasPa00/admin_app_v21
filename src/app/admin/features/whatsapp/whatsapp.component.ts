@@ -14,10 +14,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   Loader2,
   Smartphone,
   MessageCircle,
@@ -26,7 +24,7 @@ import {
   Check,
   ArrowRight,
   Settings,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AdminService } from '../../data-access/admin.service';
 import { AuthService } from '../../../auth/data-access/auth.service';

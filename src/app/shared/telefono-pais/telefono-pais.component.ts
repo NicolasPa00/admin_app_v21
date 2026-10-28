@@ -10,13 +10,11 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   ChevronDown,
   TriangleAlert,
-} from 'lucide-angular';
+} from '../../core/icons/phosphor';
 
 import { PaisDisponible, PaisesService } from '../../core/services/paises.service';
 import { BanderaComponent } from '../bandera/bandera.component';

@@ -8,10 +8,8 @@ import {
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   Gauge,
   RefreshCw,
   AlertCircle,
@@ -23,7 +21,7 @@ import {
   Info,
   MessageCircle,
   Bot,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { ConsumoIaService } from '../../data-access/consumo-ia.service';
 import {

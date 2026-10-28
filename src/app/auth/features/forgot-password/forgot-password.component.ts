@@ -6,12 +6,10 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { LucideAngularModule, LucideIconProvider, LUCIDE_ICONS } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LucideIconProvider,
-  LUCIDE_ICONS,
   AlertCircle, ArrowRight, ChevronLeft, Clock, Inbox, Loader2, Mail, MailCheck, ShieldAlert,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AuthService } from '../../data-access/auth.service';
 import { AssetService } from '../../../core/services/asset.service';

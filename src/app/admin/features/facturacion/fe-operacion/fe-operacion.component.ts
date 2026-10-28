@@ -11,10 +11,8 @@ import {
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   AlertCircle,
   Check,
   KeyRound,
@@ -24,7 +22,7 @@ import {
   Save,
   ShieldCheck,
   TriangleAlert,
-} from 'lucide-angular';
+} from '../../../../core/icons/phosphor';
 
 import { FacturacionService } from '../../../data-access/facturacion.service';
 import {

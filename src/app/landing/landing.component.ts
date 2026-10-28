@@ -11,10 +11,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { LucideAngularModule, LucideIconProvider, LUCIDE_ICONS } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LucideIconProvider,
-  LUCIDE_ICONS,
   Sun,
   Moon,
   Rocket,
@@ -80,7 +78,7 @@ import {
   Hotel,
   BedDouble,
   Tent,
-} from 'lucide-angular';
+} from '../core/icons/phosphor';
 
 import { AssetService } from '../core/services/asset.service';
 import { SeoService } from '../core/services/seo.service';

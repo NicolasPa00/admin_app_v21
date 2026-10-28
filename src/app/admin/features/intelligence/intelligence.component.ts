@@ -8,11 +8,11 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Bot, Search, X, ChevronLeft, ChevronRight, Loader2, AlertCircle,
   MessageSquare, Zap, CircleAlert, CircleCheck, Timer, Wrench, Coins, Filter, BellOff,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { IntelligenceService } from '../../data-access/intelligence.service';
 import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';

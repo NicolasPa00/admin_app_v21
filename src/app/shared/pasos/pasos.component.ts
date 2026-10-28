@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { LUCIDE_ICONS, LucideAngularModule, LucideIconProvider, Check } from 'lucide-angular';
+import { LUCIDE_ICONS, LucideAngularModule, LucideIconProvider } from 'lucide-angular';
+import {    Check } from '../../core/icons/phosphor';
 
 /** Un paso del asistente. */
 export interface Paso {

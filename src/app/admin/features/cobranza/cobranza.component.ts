@@ -6,11 +6,11 @@ import {
   signal,
   computed,
 } from '@angular/core';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Wallet, Search, RotateCcw, Loader2, FilePlus2, CheckCircle2, Ban,
   ChevronDown, ChevronRight, AlertCircle, TrendingUp, CreditCard,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
 import {

@@ -6,14 +6,12 @@ import {
   OnInit,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideAngularModule, LucideIconProvider, LUCIDE_ICONS } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LucideIconProvider,
-  LUCIDE_ICONS,
   Eye,
   EyeOff,
   Loader2,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AuthService } from '../../data-access/auth.service';
 

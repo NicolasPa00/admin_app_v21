@@ -2,10 +2,8 @@ import { Component, DestroyRef, afterNextRender, computed, inject, signal } from
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
+import { LucideAngularModule, LucideIconProvider, LUCIDE_ICONS } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LucideIconProvider,
-  LUCIDE_ICONS,
   ArrowRight,
   ArrowLeft,
   BadgeCheck,
@@ -26,7 +24,7 @@ import {
   Store,
   User,
   UserPlus,
-} from 'lucide-angular';
+} from '../core/icons/phosphor';
 
 import { AssetService } from '../core/services/asset.service';
 import { TelefonoPaisComponent } from '../shared/telefono-pais/telefono-pais.component';

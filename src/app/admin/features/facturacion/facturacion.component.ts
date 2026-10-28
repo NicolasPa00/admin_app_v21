@@ -7,10 +7,8 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   AlertCircle,
   Building2,
   Check,
@@ -21,7 +19,7 @@ import {
   Save,
   Store,
   TriangleAlert,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AdminService } from '../../data-access/admin.service';
 import { AuthService } from '../../../auth/data-access/auth.service';

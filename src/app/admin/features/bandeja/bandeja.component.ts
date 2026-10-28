@@ -16,12 +16,12 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe, isPlatformBrowser } from '@angular/common';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
   Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { BandejaService } from '../../data-access/bandeja.service';
 import { PantallaAnchaService } from '../../../core/services/pantalla-ancha.service';
