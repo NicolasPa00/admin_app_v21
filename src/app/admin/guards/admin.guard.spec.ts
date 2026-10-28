@@ -53,7 +53,7 @@ describe('adminGuard', () => {
 
   // --- No autenticado ---
 
-  it('should redirect to /auth/login when not authenticated', () => {
+  it('should redirect to /login when not authenticated', () => {
     const mock: Partial<AuthService> = {
       isAuthenticated: signal(false) as never,
       currentUser:     signal(null)  as never,
@@ -71,7 +71,7 @@ describe('adminGuard', () => {
     );
 
     expect(result).toBe(false);
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
   });
 
   // --- Super Administrador ---

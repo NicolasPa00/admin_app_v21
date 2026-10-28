@@ -260,7 +260,7 @@ export class InicioComponent {
       titulo: 'EscalApp — el sistema para tu negocio, con un asistente en WhatsApp',
       descripcion:
         'Restaurantes, barberías, salones, spas y otros negocios de citas: el sistema para operarlos y un asistente que contesta tu WhatsApp. Prueba 30 días gratis, sin tarjeta.',
-      ruta: '/inicio',
+      ruta: '/',
     });
 
     this.prueba.oficios.set(OFICIOS_INICIO);

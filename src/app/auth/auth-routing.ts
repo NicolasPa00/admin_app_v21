@@ -12,19 +12,10 @@ import { authGuard } from './guards/auth.guard';
  * Lazy-loading: cada componente se carga bajo demanda.
  */
 export const authRoutes: Routes = [
-  {
-    path: '',
-    redirectTo: 'login',
-    pathMatch: 'full',
-  },
-  {
-    path: 'login',
-    loadComponent: () =>
-      import('./features/login/login.component').then(
-        (m) => m.LoginComponent,
-      ),
-    title: 'Iniciar sesión',
-  },
+  // El login vive en `/login` (app.routes.ts) desde el 2026-10-27. Estas dos se quedan para los
+  // enlaces viejos: los correos de bienvenida y recuperación ya enviados llevan `/auth/login`.
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: 'login', redirectTo: '/login', pathMatch: 'full' },
   {
     path: 'register',
     loadComponent: () =>

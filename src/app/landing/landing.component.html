@@ -47,7 +47,7 @@
     </ul>
 
     <div class="lp-nav__actions">
-      <a routerLink="/auth/login" class="es-btn es-btn--outline es-btn--sm">Iniciar sesión</a>
+      <a routerLink="/login" class="es-btn es-btn--outline es-btn--sm">Iniciar sesión</a>
       <button
         type="button"
         class="es-btn es-btn--primary es-btn--sm lp-nav__prueba"
@@ -1087,7 +1087,7 @@
         <a (click)="scrollTo('how'); $event.preventDefault()" href="#">¿Cómo funciona?</a>
         <a (click)="scrollTo('features'); $event.preventDefault()" href="#">Funcionalidades</a>
         <a (click)="scrollTo('planes'); $event.preventDefault()" href="#">Planes</a>
-        <a routerLink="/auth/login">Iniciar sesión</a>
+        <a routerLink="/login">Iniciar sesión</a>
         <a routerLink="/privacidad">Privacidad</a>
       </nav>
       <!-- Solo lo que existe.
@@ -1311,7 +1311,7 @@
 
           <p class="lp-modal__login-hint">
             ¿Ya tienes cuenta?
-            <a routerLink="/auth/login" (click)="closeModal()">Inicia sesión aquí</a>
+            <a routerLink="/login" (click)="closeModal()">Inicia sesión aquí</a>
           </p>
         }
 
@@ -1521,7 +1521,7 @@
 
         @if (modalStep() === 'success') {
           <a
-            routerLink="/auth/login"
+            routerLink="/login"
             class="es-btn es-btn--primary es-btn--block"
             (click)="closeModal()"
           >

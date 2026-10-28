@@ -799,6 +799,7 @@ export class AdquirirPageComponent {
   }
 
   protected volverALanding(): void {
-    this.router.navigate(['/'], { fragment: 'planes' });
+    // La portada ya no tiene sección de planes: están en `/restaurantes` y `/reservas`.
+    this.router.navigate(['/']);
   }
 }

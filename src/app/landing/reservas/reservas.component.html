@@ -7,7 +7,7 @@
     <!-- El logo lleva a la página que elige entre los dos negocios (`/inicio` hasta que pase a ser
          `/`). El «‹ Todos los negocios» que iba a su lado se quitó (2026-10-27): suelto junto al logo
          parecía una miga de pan; ahora «Inicio» va escrito en el menú, junto a la luna. -->
-    <a class="marca" routerLink="/inicio" aria-label="EscalApp, todos los negocios">
+    <a class="marca" routerLink="/" aria-label="EscalApp, todos los negocios">
       <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="116" height="32" />
       <img class="marca__logo marca__logo--oscuro" [src]="marca('logo-horizontal-blanco.svg')" alt="" width="116" height="32" />
     </a>
@@ -16,7 +16,7 @@
       <app-tema-selector />
       <!-- «Inicio» escrito, junto a la luna y en todos los anchos (2026-10-27): que el logo lleve al
            inicio lo sabe quien hace páginas, no el dueño de una barbería. -->
-      <a class="enlace enlace--inicio" routerLink="/inicio">
+      <a class="enlace enlace--inicio" routerLink="/">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
           <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -25,7 +25,7 @@
       </a>
       <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
       <button type="button" class="enlace" (click)="irA('precio')">Precio</button>
-      <a class="enlace" routerLink="/auth/login">Entrar</a>
+      <a class="enlace" routerLink="/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
         Probar gratis
       </button>
@@ -879,8 +879,8 @@
         <nav class="pie__nav" aria-label="Secciones y legal">
           <button type="button" (click)="irA('relevo')">Qué hace</button>
           <button type="button" (click)="irA('precio')">Precio</button>
-          <a routerLink="/inicio">Todos los negocios</a>
-          <a routerLink="/auth/login">Iniciar sesión</a>
+          <a routerLink="/">Todos los negocios</a>
+          <a routerLink="/login">Iniciar sesión</a>
           <a routerLink="/privacidad">Privacidad</a>
         </nav>
 
@@ -1130,7 +1130,7 @@
             Hola, <strong>{{ prueba.nombreCreado() }}</strong>. Tu prueba de 30 días ya está activa.
             Entra con tu correo y tu número de cédula.
           </p>
-          <a class="boton boton--lg" routerLink="/auth/login">Entrar a mi negocio</a>
+          <a class="boton boton--lg" routerLink="/login">Entrar a mi negocio</a>
         }
       }
     </div>

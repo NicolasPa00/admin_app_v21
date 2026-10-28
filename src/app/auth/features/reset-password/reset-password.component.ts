@@ -24,7 +24,7 @@ import { AuthService } from '../../data-access/auth.service';
  *  1. Lee el query param `email` (inyectado por ForgotPasswordComponent).
  *  2. Usuario ingresa el código OTP de 6 dígitos recibido por correo.
  *  3. Usuario ingresa y confirma la nueva contraseña.
- *  4. POST /admin/auth/reset-password → 200 OK → redirect a /auth/login.
+ *  4. POST /admin/auth/reset-password → 200 OK → redirect a /login.
  */
 @Component({
   selector: 'app-reset-password',
@@ -169,7 +169,7 @@ export class ResetPasswordComponent implements OnInit {
         next: () => {
           this.loading.set(false);
           this.success.set(true);
-          setTimeout(() => this.router.navigate(['/auth/login']), 2500);
+          setTimeout(() => this.router.navigate(['/login']), 2500);
         },
         error: (err) => {
           this.loading.set(false);

@@ -14,7 +14,7 @@ import { AuthService } from '../data-access/auth.service';
  *   canActivate: [authGuard(['admin', 'manager'])]
  *
  * Si el usuario no está autenticado o no tiene el rol requerido,
- * se redirige a /auth/login.
+ * se redirige a /login.
  *
  * @param allowedRoles — Roles permitidos. Si no se proporcionan,
  *                        cualquier usuario autenticado tiene acceso.
@@ -35,7 +35,7 @@ export function authGuard(allowedRoles?: string[]): CanActivateFn {
 
     // ¿Está autenticado?
     if (!authService.isAuthenticated()) {
-      router.navigate(['/auth/login']);
+      router.navigate(['/login']);
       return false;
     }
 
@@ -53,7 +53,7 @@ export function authGuard(allowedRoles?: string[]): CanActivateFn {
     if (allowedRoles && allowedRoles.length > 0) {
       const user = authService.currentUser();
       if (!user) {
-        router.navigate(['/auth/login']);
+        router.navigate(['/login']);
         return false;
       }
       // Recopilar todas las descripciones de rol (globales + por negocio)
@@ -62,7 +62,7 @@ export function authGuard(allowedRoles?: string[]): CanActivateFn {
         ...user.negocios.flatMap((n) => n.roles.map((r) => r.descripcion)),
       ];
       if (!allowedRoles.some((role) => allRoles.includes(role))) {
-        router.navigate(['/auth/login']);
+        router.navigate(['/login']);
         return false;
       }
     }

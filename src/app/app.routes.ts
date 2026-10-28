@@ -6,16 +6,27 @@ import { ayudaRoutes } from './ayuda/ayuda-routing';
 import { adminGuard } from './admin/guards/admin.guard';
 
 export const routes: Routes = [
-  // Landing page pública
+  // La portada: `/inicio`, la página madre que reparte al visitante entre `/restaurantes` y
+  // `/reservas`, pasó a la raíz el 2026-10-27 (pedido del dueño). La landing anterior
+  // (`landing/landing.component`) queda en el código sin ruta, por si hay que volver.
+  // SIN `title` a propósito: lo pone `SeoService` desde el componente. El `title` de la ruta lo
+  // aplica el router DESPUÉS de construir el componente y pisaba el del servicio.
   {
     path: '',
-    loadComponent: () => import('./landing/landing.component').then((m) => m.LandingComponent),
+    loadComponent: () => import('./landing/inicio/inicio.component').then((m) => m.InicioComponent),
     pathMatch: 'full',
-    // SIN `title` a propósito: lo pone `SeoService` desde el componente, junto al resto de los
-    // metadatos. El `title` de la ruta lo aplica el router DESPUÉS de que el componente se
-    // construya, así que tenerlo en los dos sitios no es redundancia — es el de la ruta pisando
-    // al del servicio, que es justo lo que pasaba: la página salía con el titular viejo y con la
-    // descripción nueva. `DefaultTitleStrategy` no toca el título cuando la ruta no lo declara.
+  },
+
+  // La dirección vieja de la portada, para los enlaces que ya circulan.
+  { path: 'inicio', redirectTo: '', pathMatch: 'full' },
+
+  // El login en la raíz (`/login`) desde el 2026-10-27, más corto de decir y de escribir.
+  // `/auth/login` redirige aquí (ver `auth-routing.ts`): los correos ya enviados lo enlazan.
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./auth/features/login/login.component').then((m) => m.LoginComponent),
+    title: 'Iniciar sesión',
   },
 
   // La página del motor de restaurante. Sin `title` por el mismo motivo que la de arriba: lo pone
@@ -32,13 +43,6 @@ export const routes: Routes = [
     path: 'reservas',
     loadComponent: () =>
       import('./landing/reservas/reservas.component').then((m) => m.ReservasComponent),
-  },
-
-  // La página madre: reparte al visitante entre `/restaurantes` y `/reservas`. Ruta nueva, sin tocar
-  // `/` hasta que se valide (mismo criterio que `/restaurantes`). Sin `title`: lo pone `SeoService`.
-  {
-    path: 'inicio',
-    loadComponent: () => import('./landing/inicio/inicio.component').then((m) => m.InicioComponent),
   },
 
   // Documentos legales públicos — SIN guardia a propósito: quien quiere ejercer sus derechos
@@ -98,7 +102,7 @@ export const routes: Routes = [
   // Está escrito en `admin_ws/docs/centro-de-ayuda.md`, sección «Cómo se abre al público».
   { path: 'ayuda', canActivate: [adminGuard()], children: ayudaRoutes },
 
-  // Módulo de autenticación — /auth/login, /auth/register, etc.
+  // Módulo de autenticación — /auth/register, /auth/callback, etc. (el login está en /login).
   { path: 'auth', children: authRoutes },
 
   // Módulo Admin — /admin/dashboard, /admin/tipos-negocio/:id/roles

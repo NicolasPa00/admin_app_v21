@@ -79,7 +79,7 @@ export function whatsappGuard(): CanActivateFn {
     const authService = inject(AuthService);
     const router = inject(Router);
     if (!authService.isAuthenticated() || !authService.currentUser()) {
-      router.navigate(['/auth/login']);
+      router.navigate(['/login']);
       return false;
     }
     if (pasoPendiente(authService, router)) return false;
@@ -93,7 +93,7 @@ export function whatsappGuard(): CanActivateFn {
  * adminGuard — Protege rutas del módulo Admin.
  *
  * Reglas de acceso:
- *   1. Usuario NO autenticado → redirige a /auth/login.
+ *   1. Usuario NO autenticado → redirige a /login.
  *   2. Usuario con rol "SUPER ADMINISTRADOR" → acceso completo.
  *   3. Usuario con algún rol en `allowedRoles` → acceso parcial (ve sus tipos).
  *   4. Ninguna condición satisfecha → redirige a /admin/dashboard (tiene sesión, pero no permiso).
@@ -120,13 +120,13 @@ export function adminGuard(allowedRoles: string[] = []): CanActivateFn {
 
     // 1. Verificar autenticación
     if (!authService.isAuthenticated()) {
-      router.navigate(['/auth/login']);
+      router.navigate(['/login']);
       return false;
     }
 
     const user = authService.currentUser();
     if (!user) {
-      router.navigate(['/auth/login']);
+      router.navigate(['/login']);
       return false;
     }
     if (pasoPendiente(authService, router)) return false;

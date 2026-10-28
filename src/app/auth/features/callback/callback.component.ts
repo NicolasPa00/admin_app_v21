@@ -153,7 +153,7 @@ export class CallbackComponent implements OnInit {
   }
 
   protected irALogin(): void {
-    void this.router.navigate(['/auth/login'], { replaceUrl: true });
+    void this.router.navigate(['/login'], { replaceUrl: true });
   }
 
   /**

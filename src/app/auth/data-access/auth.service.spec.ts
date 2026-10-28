@@ -102,7 +102,7 @@ describe('AuthService', () => {
   });
 
   describe('logout()', () => {
-    it('debería limpiar estado y navegar a /auth/login', () => {
+    it('debería limpiar estado y navegar a /login', () => {
       service
         .login({ num_identificacion: '1000000001', password: 'Admin123*' })
         .subscribe();
@@ -113,7 +113,7 @@ describe('AuthService', () => {
       expect(service.currentUser()).toBeNull();
       expect(service.getAccessToken()).toBeNull();
       expect(service.isAuthenticated()).toBe(false);
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
     });
   });
 

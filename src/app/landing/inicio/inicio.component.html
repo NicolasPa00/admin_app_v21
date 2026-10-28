@@ -13,7 +13,7 @@
       <app-tema-selector />
       <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
       <a class="enlace" routerLink="/reservas">Citas</a>
-      <a class="enlace" routerLink="/auth/login">Entrar</a>
+      <a class="enlace" routerLink="/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
         Probar gratis
       </button>
@@ -250,7 +250,10 @@
         <nav class="pie__nav" aria-label="Secciones y legal">
           <a routerLink="/restaurantes">Restaurantes</a>
           <a routerLink="/reservas">Negocios de citas</a>
-          <a routerLink="/auth/login">Iniciar sesión</a>
+          <a routerLink="/login">Iniciar sesión</a>
+          <!-- La portada vieja tenía «Paga tu plan» en la cabecera: los clientes que pagan a mano
+               llegan por aquí y no deben perder el camino. -->
+          <a routerLink="/pagar">Paga tu mensualidad</a>
           <a routerLink="/privacidad">Privacidad</a>
         </nav>
 
@@ -501,7 +504,7 @@
             Hola, <strong>{{ prueba.nombreCreado() }}</strong>. Tu prueba de 30 días ya está activa.
             Entra con tu correo y tu número de cédula.
           </p>
-          <a class="boton boton--lg" routerLink="/auth/login">Entrar a mi negocio</a>
+          <a class="boton boton--lg" routerLink="/login">Entrar a mi negocio</a>
         }
       }
     </div>

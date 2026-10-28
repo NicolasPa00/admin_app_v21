@@ -350,7 +350,7 @@ export class AuthService {
       localStorage.removeItem('admin_token');
       localStorage.removeItem('admin_user_meta');
     }
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/login']);
   }
 
   /**

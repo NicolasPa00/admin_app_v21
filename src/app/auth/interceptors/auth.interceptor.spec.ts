@@ -89,7 +89,7 @@ describe('authInterceptor', () => {
 
     expect(authService.getAccessToken()).toBeNull();
     expect(authService.currentUser()).toBeNull();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
 
     // Sin refresh: no debe quedar ninguna otra petición pendiente.
     httpTesting.verify();
@@ -122,7 +122,7 @@ describe('authInterceptor', () => {
       expect(authService.isImpersonating()).toBe(false);
       expect(authService.currentUser()?.id_usuario).toBe(1);
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin/dashboard']);
-      expect(routerSpy.navigate).not.toHaveBeenCalledWith(['/auth/login']);
+      expect(routerSpy.navigate).not.toHaveBeenCalledWith(['/login']);
     });
 
     it('las respuestas que iban en vuelo con la sesión vieja no cierran la cuenta recuperada', () => {
@@ -133,7 +133,7 @@ describe('authInterceptor', () => {
       httpTesting.expectOne(`${API}/b`).flush(null, no401);
 
       expect(authService.getAccessToken()).toBe('my-token');
-      expect(routerSpy.navigate).not.toHaveBeenCalledWith(['/auth/login']);
+      expect(routerSpy.navigate).not.toHaveBeenCalledWith(['/login']);
     });
 
     it('sin la cuenta propia guardada, cierra la sesión como siempre', () => {
@@ -143,7 +143,7 @@ describe('authInterceptor', () => {
       httpTesting.expectOne(`${API}/negocios`).flush(null, no401);
 
       expect(authService.getAccessToken()).toBeNull();
-      expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
     });
   });
 });
