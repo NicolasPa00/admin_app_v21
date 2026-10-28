@@ -6,11 +6,12 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { DatePipe, TitleCasePipe } from '@angular/common';
-import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import {
   Utensils, Car, Scissors, ShoppingCart, Wrench, PiggyBank,
   Landmark, Building2, CheckCircle2, XCircle, Users, ArrowRight,
   CalendarDays, RotateCw,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { TipoNegocioConRoles } from '../../models/admin.models';
 

@@ -7,12 +7,12 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Landmark, Plus, Download, RefreshCw, Loader2, Pencil, Ban, CircleAlert, ArrowDownLeft,
   ArrowUpRight, ArrowLeftRight, Search, Info, Settings, CreditCard, Receipt, Wallet, TrendingUp,
   Copy, ChartColumn,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { CarteraService } from '../../data-access/cartera.service';
 import {

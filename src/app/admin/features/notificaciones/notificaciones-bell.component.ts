@@ -8,9 +8,10 @@ import {
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import {
   Bell, BellOff, CheckCheck, AlertTriangle, Clock, X, MessageCircle, User,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 import { NotificacionService } from '../../data-access/notificacion.service';
 import { ConversacionEsperando, Notificacion } from '../../models/notificacion.models';
 

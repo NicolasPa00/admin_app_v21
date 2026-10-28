@@ -15,17 +15,15 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   RefreshCw,
   CreditCard,
   Loader2,
   AlertCircle,
   CheckCircle2,
   ShieldCheck,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
 import { PagoAutomatico, TerminosPagoAutomatico } from '../../models/cobranza.models';

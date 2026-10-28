@@ -6,7 +6,8 @@ import {
   signal,
   computed,
 } from '@angular/core';
-import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import {
   Plus, Check, AlertCircle, Loader2, Tag, Palette,
   UtensilsCrossed, Car, Scissors, ShoppingCart, Dumbbell, Wrench,
   PiggyBank, Landmark, Store, Building2, Calendar, Briefcase,
@@ -14,7 +15,7 @@ import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   // faltaban aquí, así que `iconoDe()` los descartaba y todos caían al genérico 'store'.
   Coffee, Croissant, IceCreamCone, Beer, Sandwich, Pizza, Sparkles, Flower2,
   Hand, HandHeart, Stethoscope, Syringe, PenTool, PawPrint, Dog, Hotel, BedDouble, Tent,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AdminService } from '../../data-access/admin.service';
 import { ToastService } from '../../../shared/toast/toast.service';

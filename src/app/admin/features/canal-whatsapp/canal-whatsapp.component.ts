@@ -17,10 +17,8 @@ import {
   NegocioSelector,
   SelectorNegocioComponent,
 } from '../../../shared/selector-negocio/selector-negocio.component';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   AlertCircle,
   Check,
   CircleCheck,
@@ -31,7 +29,7 @@ import {
   Smartphone,
   Store,
   Unlink,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { environment } from '../../../../environments/environment';
 import { AdminService } from '../../data-access/admin.service';

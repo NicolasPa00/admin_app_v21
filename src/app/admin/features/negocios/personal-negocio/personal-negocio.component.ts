@@ -8,10 +8,10 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   UserRound, X, Pencil, Power, Loader2, AlertCircle, Check, ShieldCheck,
-} from 'lucide-angular';
+} from '../../../../core/icons/phosphor';
 
 import { UsuariosAdminService } from '../../../data-access/usuarios-admin.service';
 import { ModalCabeceraComponent } from '../../../../shared/modal-cabecera/modal-cabecera.component';

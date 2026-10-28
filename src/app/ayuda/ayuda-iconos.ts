@@ -14,7 +14,7 @@ import {
   CircleHelp, Loader2, Lock, Sparkles, ExternalLink, ThumbsUp, ThumbsDown, Link2,
   ListOrdered, Video, Film, Eye, EyeOff, Tag, Timer, Hash, Plus, Trash2, Save, Pencil,
   GripVertical, Clapperboard, AlertCircle, Info, ChevronDown, ChevronUp, Copy,
-} from 'lucide-angular';
+} from '../core/icons/phosphor';
 
 /**
  * Los iconos del Centro de ayuda.

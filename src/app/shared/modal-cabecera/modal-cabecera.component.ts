@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { LUCIDE_ICONS, LucideAngularModule, LucideIconProvider } from 'lucide-angular';
 import {
-  LUCIDE_ICONS,
-  LucideAngularModule,
-  LucideIconProvider,
   Bot,
   Building2,
   CalendarClock,
@@ -40,7 +38,7 @@ import {
   Users,
   Wallet,
   X,
-} from 'lucide-angular';
+} from '../../core/icons/phosphor';
 
 /**
  * ModalCabeceraComponent — la cabecera estándar de TODOS los modales del admin.

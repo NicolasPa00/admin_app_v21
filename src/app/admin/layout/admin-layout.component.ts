@@ -18,10 +18,8 @@ import {
 } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule,
-  LUCIDE_ICONS,
-  LucideIconProvider,
   LayoutGrid,
   Settings,
   Users,
@@ -47,7 +45,7 @@ import {
   TriangleAlert,
   X,
   CircleHelp,
-} from 'lucide-angular';
+} from '../../core/icons/phosphor';
 
 import { AuthService } from '../../auth/data-access/auth.service';
 import { AssetService } from '../../core/services/asset.service';

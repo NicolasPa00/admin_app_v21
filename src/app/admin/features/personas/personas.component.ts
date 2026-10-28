@@ -8,11 +8,11 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DatePipe } from '@angular/common';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Users, Search, Phone, Store, ChevronLeft, ChevronRight, X,
   Loader2, AlertCircle, ShoppingBag, Receipt, CalendarClock, Info,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { PersonasService } from '../../data-access/personas.service';
 import { Ficha360, PersonaResumen } from '../../models/persona.models';

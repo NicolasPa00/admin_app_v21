@@ -9,11 +9,11 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   ChartColumn, Building2, Receipt, Wallet, Users, CalendarCheck, MessageCircle,
   Package, LogIn, Store, AlertCircle, Loader2, RefreshCw, Eye, EyeOff, TrendingUp,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { EstadisticasService } from '../../data-access/estadisticas.service';
 import {

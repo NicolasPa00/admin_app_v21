@@ -1,5 +1,6 @@
 import { Component, inject, signal, computed } from '@angular/core';
-import { LucideAngularModule, LucideIconProvider, LUCIDE_ICONS, Loader2 } from 'lucide-angular';
+import { LucideAngularModule, LucideIconProvider, LUCIDE_ICONS } from 'lucide-angular';
+import {    Loader2 } from '../../../core/icons/phosphor';
 
 import { AuthService } from '../../data-access/auth.service';
 import { VERSION, VIGENTE_DESDE } from '../../../legal/legal-content';

@@ -6,11 +6,11 @@ import {
   signal,
   computed,
 } from '@angular/core';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   History, Database, Zap, AlertCircle, ChevronLeft, ChevronRight,
   ChevronDown, Download, Loader2, RotateCcw,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AuditoriaService } from '../../data-access/auditoria.service';
 import {

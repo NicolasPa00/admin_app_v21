@@ -7,11 +7,11 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   User, Lock, Building2, Save, Eye, EyeOff,
   CreditCard, Calendar, CheckCircle, XCircle, AlertCircle,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AuthService } from '../../../auth/data-access/auth.service';
 // NegocioPlanInfo: solo lo usaba la sección «Mis negocios» (comentada).

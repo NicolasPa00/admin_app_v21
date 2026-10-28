@@ -13,11 +13,11 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
 import {
-  LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   Wallet, CreditCard, Loader2, AlertCircle, CheckCircle2, Clock, Plus, Minus, Check, X,
   Receipt, Eye, FileText, Share2, Download, Mail, Send,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { CobranzaService } from '../../data-access/cobranza.service';
 import { ConciliacionPagosService } from '../../data-access/conciliacion-pagos.service';

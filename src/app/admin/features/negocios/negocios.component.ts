@@ -10,11 +10,12 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, catchError, debounceTime, forkJoin, of, switchMap, tap } from 'rxjs';
-import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
+import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
+import {
   Plus, Search, Building2, Pencil, Power, X, AlertCircle, Loader2,
   Check, UserRound, UserPlus, CalendarRange, TriangleAlert, Trash2, History,
   MapPin, CornerDownRight,
-} from 'lucide-angular';
+} from '../../../core/icons/phosphor';
 
 import { AuthService } from '../../../auth/data-access/auth.service';
 import { SUPER_ADMIN_ROL } from '../../guards/admin.guard';
