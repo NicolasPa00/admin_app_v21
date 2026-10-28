@@ -1,0 +1,246 @@
+<!--
+  Cuatro escenas de lo que EscalApp hace de verdad, contadas con piezas del propio producto (el
+  chat del asistente, la comanda de cocina, la carta leída por IA) y no con fotos de archivo:
+  eso es lo que ningún competidor puede poner en su login. Los nombres y precios son de ejemplo.
+-->
+<aside class="escena" aria-roledescription="carrusel" aria-label="Lo que hace EscalApp">
+  <img
+    class="escena__logo"
+    [src]="assetService.getAssetPath('marca/logo-horizontal-blanco.svg')"
+    alt="EscalApp"
+    width="116"
+    height="32"
+  />
+
+  <div class="pestanas" role="tablist" aria-label="Escenas">
+    @for (e of escenas; track e.id; let i = $index) {
+      <button
+        type="button"
+        role="tab"
+        class="pestana"
+        [class.pestana--activa]="i === activa()"
+        [id]="'escena-tab-' + e.id"
+        [attr.aria-selected]="i === activa()"
+        aria-controls="escena-panel"
+        [tabIndex]="i === activa() ? 0 : -1"
+        (click)="ir(i)"
+        (keydown)="mover($event, i)"
+      >
+        <span class="pestana__pista">
+          @if (i === activa()) {
+            <span
+              class="pestana__relleno pestana__relleno--corre"
+              [style.animation-duration.ms]="e.duracionMs"
+              (animationend)="siguiente()"
+            ></span>
+          } @else if (i < activa()) {
+            <span class="pestana__relleno"></span>
+          }
+        </span>
+        <span class="pestana__nombre">{{ e.pestana }}</span>
+      </button>
+    }
+  </div>
+
+  @for (e of escenas; track e.id; let i = $index) {
+    @if (i === activa()) {
+      <div
+        [class]="'cuadro cuadro--' + e.id"
+        role="tabpanel"
+        id="escena-panel"
+        [attr.aria-labelledby]="'escena-tab-' + e.id"
+      >
+        <div class="escena__texto">
+          <p class="escena__titulo">
+            {{ e.titulo }}
+            <span class="escena__acento">{{ e.acento }}</span>
+          </p>
+          <p class="escena__bajada">{{ e.bajada }}</p>
+        </div>
+
+        @switch (e.id) {
+          @case ('pulpo') {
+            <img
+              class="pulpo"
+              [src]="assetService.getAssetPath('marca/pulpo-oficina-1080.webp')"
+              [attr.srcset]="
+                assetService.getAssetPath('marca/pulpo-oficina-640.webp') + ' 640w, ' +
+                assetService.getAssetPath('marca/pulpo-oficina-1080.webp') + ' 1080w'
+              "
+              sizes="(min-width: 900px) 470px, 220px"
+              alt="El pulpo de EscalApp atendiendo la caja, el teléfono y el computador a la vez"
+              width="1080"
+              height="687"
+            />
+          }
+
+          <!-- El chat se escribe solo: cada mensaje crece desde cero y empuja a los de arriba,
+               como en el teléfono. El «escribiendo…» ocupa el sitio de la respuesta y se va. -->
+          @case ('whatsapp') {
+            <div class="pieza">
+              <div class="tel" aria-hidden="true">
+                <div class="tel__cabecera">
+                  <span class="tel__avatar">LE</span>
+                  <span class="tel__quien">
+                    <b>La Esquina Burger</b>
+                    <small>en línea</small>
+                  </span>
+                </div>
+                <div class="tel__chat">
+                  <div class="msj" style="--d: 300ms">
+                    <p class="globo globo--entra">
+                      Hola, ¿me mandas una doble con papas a San Ignacio?
+                      <time>21:14</time>
+                    </p>
+                  </div>
+                  <div class="msj msj--escribiendo" style="--d: 1000ms">
+                    <p class="escribiendo"><i></i><i></i><i></i></p>
+                  </div>
+                  <div class="msj" style="--d: 2300ms">
+                    <div class="globo globo--sale">
+                      <span class="globo__titulo">Tu pedido</span>
+                      <span class="globo__linea"><span>1 × Hamburguesa doble</span><span>$22.000</span></span>
+                      <span class="globo__linea"><span>1 × Papas rústicas</span><span>$6.000</span></span>
+                      <span class="globo__linea"><span>Domicilio · San Ignacio</span><span>$4.000</span></span>
+                      <span class="globo__linea globo__linea--total"><span>Total</span><span>$32.000</span></span>
+                      <span>¿Lo confirmo?</span>
+                      <time>21:14</time>
+                    </div>
+                  </div>
+                  <div class="msj" style="--d: 2900ms">
+                    <p class="botones"><span>Confirmar</span><span>Cambiar algo</span></p>
+                  </div>
+                  <div class="msj" style="--d: 4300ms">
+                    <p class="globo globo--entra">Sí, confirma <time>21:15</time></p>
+                  </div>
+                  <div class="msj" style="--d: 5200ms">
+                    <p class="globo globo--sale">Listo, ya está en cocina. Te aviso cuando salga. <time>21:15</time></p>
+                  </div>
+                </div>
+                <p class="tel__aviso" style="--d: 6300ms">
+                  <img [src]="assetService.getAssetPath('marca/isotipo-color.svg')" alt="" width="15" height="20" />
+                  <span><b>Pedido #128</b> llegó a tu caja</span>
+                </p>
+              </div>
+            </div>
+          }
+
+          <!-- La página pública de una barbería (su subdominio): el cliente elige servicio,
+               barbero y una hora libre, agenda, y un día antes le llega el recordatorio. -->
+          @case ('reservas') {
+            <div class="pieza">
+              <div class="agenda" aria-hidden="true">
+                <p class="agenda__url">elcorte.escalapp.cloud</p>
+                <p class="agenda__negocio">Barbería El Corte</p>
+                <p class="agenda__servicio">
+                  <span><b>Corte + barba</b><small>45 min</small></span>
+                  <b>$35.000</b>
+                </p>
+                <p class="agenda__gente">
+                  <span class="agenda__persona agenda__persona--elegida"><i>A</i>Andrés</span>
+                  <span class="agenda__persona"><i>M</i>Mateo</span>
+                  <span class="agenda__persona"><i>J</i>Juan</span>
+                </p>
+                <p class="agenda__horas">
+                  <span class="agenda__hora--ocupada">9:45</span>
+                  <span>10:30</span>
+                  <span class="agenda__hora--elegida">11:15</span>
+                </p>
+                <p class="agenda__boton">Agendar cita</p>
+                <p class="agenda__hecha">
+                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M3.2 8.4 6.4 11.6 12.8 4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <span><b>Cita agendada</b> Miércoles 29, 11:15 con Andrés</span>
+                </p>
+              </div>
+              <p class="aviso-wa aviso-wa--arriba" style="--d: 5600ms" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>
+                  <b>Recordatorio, un día antes</b>
+                  Mañana a las 11:15 tienes cita con Andrés. ¿Confirmas?
+                </span>
+              </p>
+            </div>
+          }
+
+          <!-- La comanda sale como de la impresora; la cocina va marcando y, al final, el aviso
+               de «listo» le llega al cliente por WhatsApp. -->
+          @case ('cocina') {
+            <div class="pieza">
+              <div class="comanda" aria-hidden="true">
+                <div class="comanda__cabeza">
+                  <span>
+                    <b>Para llevar</b>
+                    <small>Laura · 19:42</small>
+                  </span>
+                  <span class="estado">
+                    <span class="estado__uno">En preparación</span>
+                    <span class="estado__dos">Listo</span>
+                  </span>
+                </div>
+                <ul class="comanda__lista">
+                  <li style="--d: 1700ms">
+                    <span class="marca"></span><b>2</b>
+                    <span>Hamburguesa doble <small>Sin cebolla</small></span>
+                  </li>
+                  <li style="--d: 2600ms">
+                    <span class="marca"></span><b>1</b>
+                    <span>Papas rústicas</span>
+                  </li>
+                  <li style="--d: 3500ms">
+                    <span class="marca"></span><b>1</b>
+                    <span>Limonada de coco</span>
+                  </li>
+                </ul>
+                <p class="comanda__pie">Lleva 12 min</p>
+              </div>
+              <p class="aviso-wa" style="--d: 5000ms" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                  <path d="M8.8 11.9 11 14l4.2-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span>
+                  <b>WhatsApp a Laura</b>
+                  Tu pedido está listo para recoger.
+                </span>
+              </p>
+            </div>
+          }
+
+          <!-- La foto de una carta de papel, el escáner que la recorre y, al lado, la tabla que
+               se va llenando con lo que leyó la IA. -->
+          @case ('carta') {
+            <div class="pieza">
+              <div class="papel" aria-hidden="true">
+                <b class="papel__nombre">La Esquina</b>
+                <span class="papel__linea"><span>Doble</span><span>22</span></span>
+                <span class="papel__linea"><span>Papas rústicas</span><span>6</span></span>
+                <span class="papel__linea"><span>Limonada coco</span><span>8</span></span>
+                <i class="papel__escaner"></i>
+              </div>
+              <div class="leida" aria-hidden="true">
+                <p class="leida__cabeza">
+                  <span>Carta leída</span>
+                  <small>3 productos</small>
+                </p>
+                <p class="leida__fila" style="--d: 1700ms"><span>Hamburguesa doble</span><small>Hamburguesas</small><b>$22.000</b></p>
+                <p class="leida__fila" style="--d: 2400ms"><span>Papas rústicas</span><small>Acompañantes</small><b>$6.000</b></p>
+                <p class="leida__fila" style="--d: 3100ms"><span>Limonada de coco</span><small>Bebidas</small><b>$8.000</b></p>
+                <p class="leida__listo" style="--d: 4200ms">
+                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path d="M3.2 8.4 6.4 11.6 12.8 4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  Lista para vender
+                </p>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    }
+  }
+</aside>

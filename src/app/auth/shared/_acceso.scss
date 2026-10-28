@@ -1,0 +1,491 @@
+/* ============================================================================
+   Pantallas de acceso — login y «Olvidé mi contraseña» (Brand Book, 2026-10-27)
+
+   Se importa con `@use '../../shared/acceso'` desde la hoja de cada pantalla. Una pieza blanca sobre papel, partida en dos como una tarjeta abierta: la escena (noche
+   profunda + el pulpo de la oficina, el de siempre) y las credenciales. Los colores son los de las
+   landings, pero viven aquí como `--l-*` y no se mezclan con los `--color-*` del panel: el login
+   es la puerta de la marca, no una pantalla del panel.
+
+   Sin animación de entrada: el personal entra varias veces al día y una entrada animada solo
+   haría esperar. El movimiento se queda en lo que responde a la mano (pulsar, enfocar).
+
+   El color de fondo de la escena y del botón es la «noche profunda» #1a1635, la que eligió el
+   dueño el 2026-10-27: más oscura que el azul noche #212142 y del mismo tono que el cuerpo del
+   pulpo, así que el pulpo se lee por sus brillos y su camisa, no por su silueta.
+
+   Contrastes: blanco sobre #1a1635 17,4:1 · #c9c4e3 sobre #1a1635 10,6:1 · lavanda #847bb4 sobre
+   #1a1635 4,6:1 (solo en el titular, letra grande) · #212142 sobre blanco 15,4:1 · #4f4c68 sobre
+   blanco 8,2:1 · marcador #6f6b88 sobre blanco 5,0:1.
+   ============================================================================ */
+
+:host {
+  --l-noche: #1a1635;
+  --l-noche-alzada: #2c2752;
+  --l-tinta: #212142;
+  --l-violeta: #5d5497;
+  --l-lavanda: #847bb4;
+  --l-lavanda-suave: #e6e3f3;
+  --l-lavanda-niebla: #c9c4e3;
+  --l-papel: #f4f3f8;
+  --l-blanco: #ffffff;
+  --l-mudo: #4f4c68;
+  --l-marcador: #6f6b88;
+  --l-borde: #cbc4de;
+  --l-error: #b42318;
+  --l-error-fondo: #fdecea;
+  --l-paso: cubic-bezier(0.23, 1, 0.32, 1);
+
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--l-tinta);
+  caret-color: var(--l-violeta);
+}
+
+:host ::selection {
+  background: var(--l-lavanda-suave);
+  color: var(--l-tinta);
+}
+
+// ── La página y la pieza ────────────────────────────────────────────────────
+
+/* En el celular no hay tarjeta sobre papel: la escena ocupa la pantalla en noche profunda y las
+   credenciales suben desde abajo como una hoja, a mano del pulgar. Escena y hoja comparten el
+   espacio (la hoja monta 24 px sobre la escena) en vez de apilarse como dos cajas. */
+.acceso {
+  min-height: 100dvh;
+  background: var(--l-noche);
+
+  @media (min-width: 900px) {
+    display: grid;
+    place-items: center;
+    padding: 32px;
+    background: var(--l-papel);
+  }
+}
+
+.acceso__pieza {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+
+  @media (min-width: 900px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+    max-width: 1080px;
+    min-height: min(680px, calc(100dvh - 64px));
+    padding: 10px;
+    border-radius: 28px;
+    background: var(--l-blanco);
+    box-shadow:
+      0 1px 2px rgb(33 33 66 / 6%),
+      0 24px 56px -28px rgb(33 33 66 / 28%);
+  }
+}
+
+// ── Las credenciales ────────────────────────────────────────────────────────
+
+/* La hoja: blanca, con las esquinas de arriba redondeadas y el relleno de abajo que respeta la
+   barra de inicio del iPhone. El contenido se queda en 400 px y centrado en tabletas. */
+.credenciales {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: -24px;
+  padding: 28px max(20px, calc((100% - 400px) / 2)) calc(20px + env(safe-area-inset-bottom));
+  border-radius: 24px 24px 0 0;
+  background: var(--l-blanco);
+
+  @media (min-width: 900px) {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    border-radius: 0;
+  }
+}
+
+/* En el celular la franja de arriba ya lleva el logo: el isotipo repetido sobraba. */
+.credenciales__isotipo {
+  display: none;
+
+  @media (min-width: 900px) {
+    display: block;
+    width: 34px;
+    height: auto;
+    margin: 0 auto 20px;
+  }
+}
+
+/* Los iconos de Lucide son elementos en línea: sin esto quedan un pelo por encima del texto. */
+.credenciales lucide-icon {
+  display: inline-flex;
+}
+
+.credenciales__titulo {
+  margin: 0;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+  color: var(--l-tinta);
+}
+
+.credenciales__bajada {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--l-mudo);
+  text-wrap: balance;
+}
+
+.credenciales__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--l-error-fondo);
+  color: var(--l-error);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.45;
+
+  lucide-icon {
+    flex: none;
+    margin-top: 1px;
+  }
+}
+
+.credenciales__form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+// ── Un campo ────────────────────────────────────────────────────────────────
+
+.campo__fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.campo__etiqueta {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--l-tinta);
+}
+
+.campo__caja {
+  position: relative;
+}
+
+.campo__icono {
+  position: absolute;
+  display: flex;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--l-marcador);
+  pointer-events: none;
+  transition: color 160ms ease;
+}
+
+.campo__caja:focus-within .campo__icono {
+  color: var(--l-violeta);
+}
+
+/* 16 px de letra: con menos, Safari en el iPhone hace zoom al tocar el campo. */
+.campo__entrada {
+  width: 100%;
+  height: 50px;
+  padding: 0 14px 0 44px;
+  border: 1px solid var(--l-borde);
+  border-radius: 12px;
+  background: var(--l-blanco);
+  font: inherit;
+  font-size: 1rem;
+  color: var(--l-tinta);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+
+  &::placeholder {
+    color: var(--l-marcador);
+  }
+
+  &:hover {
+    border-color: var(--l-lavanda);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--l-violeta);
+    box-shadow: 0 0 0 3px rgb(93 84 151 / 22%);
+  }
+
+  &[aria-invalid='true'] {
+    border-color: var(--l-error);
+  }
+
+  &[aria-invalid='true']:focus {
+    box-shadow: 0 0 0 3px rgb(180 35 24 / 18%);
+  }
+
+  &--clave {
+    padding-right: 48px;
+  }
+}
+
+.campo__ver {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--l-mudo);
+  cursor: pointer;
+  transition: color 160ms ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--l-violeta);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--l-violeta);
+    outline-offset: -2px;
+  }
+}
+
+.campo__aviso {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--l-error);
+}
+
+// ── Enlaces y botón ─────────────────────────────────────────────────────────
+
+.credenciales__enlace {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--l-violeta);
+  text-decoration: none;
+  text-underline-offset: 3px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--l-violeta);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* El botón es el violeta de la marca, como «Probar gratis» en las landings. Al pulsarlo se hunde
+   un poco: confirma que la mano llegó, sin hacer esperar. */
+.credenciales__entrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--l-noche);
+  color: var(--l-blanco);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    transform 140ms var(--l-paso);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      background: var(--l-noche-alzada);
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--l-lavanda);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: progress;
+    opacity: 0.75;
+  }
+}
+
+.credenciales__girando {
+  display: inline-flex;
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.credenciales__volver {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--l-lavanda-suave);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--l-mudo);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--l-violeta);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--l-violeta);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+// ── «Olvidé mi contraseña»: el estado «enviado» ─────────────────────────────
+
+.credenciales__hecho {
+  display: grid;
+  justify-items: center;
+}
+
+/* El único icono grande de la hoja: dice «ya está» antes de leer. Entra una vez, al cambiar de
+   estado, desde un poco más pequeño (nunca desde cero). */
+.credenciales__sello {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  background: var(--l-lavanda-suave);
+  color: var(--l-noche);
+  animation: sello-entra 420ms var(--l-paso) both;
+}
+
+@keyframes sello-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+/* El correo en su propia línea, para leerlo de un golpe y ver si está bien escrito. Uno largo no
+   ensancha la hoja: se parte donde haga falta. */
+.credenciales__correo {
+  max-width: 100%;
+  margin: 10px 0 0;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--l-papel);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--l-tinta);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.credenciales__pasos {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 8px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--l-papel);
+  list-style: none;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--l-mudo);
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  lucide-icon {
+    flex: none;
+    margin-top: 1px;
+    color: var(--l-violeta);
+  }
+
+  strong {
+    color: var(--l-tinta);
+  }
+}
+
+/* La salida secundaria: texto, sin caja, para que no compita con el botón oscuro. */
+.credenciales__otra {
+  height: 44px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--l-violeta);
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--l-papel);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--l-violeta);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .credenciales__sello {
+    animation: none;
+  }
+
+  .credenciales__girando {
+    animation: none;
+  }
+
+  .credenciales__entrar:active:not(:disabled) {
+    transform: none;
+  }
+}

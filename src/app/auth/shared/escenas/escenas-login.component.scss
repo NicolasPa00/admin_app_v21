@@ -1,0 +1,1106 @@
+/* ============================================================================
+   Escenas del login — el carrusel del panel izquierdo
+
+   Los colores llegan heredados del login (`--l-*`). Cada escena tiene UN momento: el texto entra
+   con el panel y la pieza del producto se arma sola (el chat se escribe, la comanda se imprime y
+   se marca, la carta se lee). Todo entra con un ease-out fuerte (`--l-paso`) y desde muy cerca:
+   nada aparece de la nada ni rebota.
+
+   Con «reducir movimiento» no corre nada: cada escena se ve ya terminada y se cambia con las
+   pestañas (la barra no avanza, así que el carrusel no pasa solo).
+   ============================================================================ */
+
+:host {
+  display: flex;
+  min-width: 0;
+  /* En el celular la escena se estira con lo que deje la hoja: la hoja queda pegada abajo. */
+  flex: 1 0 auto;
+}
+
+.escena {
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* En el celular la escena es el fondo de la pantalla y la hoja de credenciales monta 24 px
+     sobre ella; el relleno de abajo deja ese hueco. */
+  /* Con menos alto, titular y pieza se pisan. Si la hoja es alta (el «Revisa tu correo» de
+     «Olvidé mi contraseña»), la página baja unos píxeles en vez de encimarlos. */
+  min-height: 360px;
+  padding: calc(18px + env(safe-area-inset-top)) 20px 44px;
+  background: var(--l-noche);
+  color: var(--l-blanco);
+
+  /* Teléfono bajito: la hoja entera tiene que caber sin desplazar, así que la escena cede. */
+  @media (max-width: 899px) and (max-height: 720px) {
+    min-height: 0;
+  }
+
+  @media (min-width: 900px) {
+    min-height: 0;
+    padding: clamp(28px, 3vw, 40px);
+    border-radius: 20px;
+  }
+}
+
+.escena__logo {
+  position: relative;
+  z-index: 2;
+  width: 116px;
+  height: auto;
+}
+
+// ── Las pestañas: una barra que se llena por escena ──────────────────────────
+
+.pestanas {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 18px;
+
+  @media (min-width: 900px) {
+    gap: 8px;
+    margin-top: 28px;
+  }
+}
+
+.pestana {
+  display: grid;
+  gap: 8px;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--l-lavanda-niebla);
+  cursor: pointer;
+  transition: color 160ms ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--l-blanco);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--l-lavanda);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
+  &--activa {
+    color: var(--l-blanco);
+  }
+}
+
+.pestana__pista {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 16%);
+}
+
+.pestana__relleno {
+  position: absolute;
+  inset: 0;
+  background: var(--l-blanco);
+  transform-origin: left;
+}
+
+/* La barra ES el temporizador: al terminar dispara `animationend` y pasa la escena. Lineal,
+   porque es tiempo que corre, no un objeto que se mueve. */
+.pestana__relleno--corre {
+  transform: scaleX(0);
+  animation: llenar linear forwards;
+}
+
+/* Sin pausa al pasar el ratón ni al enfocar (2026-10-27, pedido del dueño): el carrusel sigue
+   siempre. La pausa por foco además se quedaba pegada tras hacer clic en una pestaña y parecía
+   roto. Quien necesita que no se mueva tiene «reducir movimiento» (la barra no corre) y las
+   pestañas para elegir escena. */
+
+@keyframes llenar {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.pestana__nombre {
+  font-size: 0.6875rem;
+
+  @media (min-width: 900px) {
+    font-size: 0.8125rem;
+  }
+
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ── El texto de cada escena ─────────────────────────────────────────────────
+
+.cuadro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.escena__texto {
+  position: relative;
+  z-index: 2;
+  margin-top: 18px;
+  animation: entra 520ms var(--l-paso) both;
+
+  @media (min-width: 900px) {
+    margin-top: clamp(28px, 5vh, 48px);
+    max-width: 26rem;
+  }
+
+}
+
+.escena__titulo {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.1rem + 1.6vw, 2.625rem);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  color: var(--l-blanco);
+}
+
+/* La segunda línea en lavanda: el titular se lee en dos tiempos. */
+.escena__acento {
+  display: block;
+  color: var(--l-lavanda);
+}
+
+/* En el celular solo el titular: la bajada empujaría la pieza bajo la hoja. */
+.escena__bajada {
+  display: none;
+  margin: 18px 0 0;
+
+  @media (min-width: 900px) {
+    display: block;
+  }
+
+  max-width: 34ch;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--l-lavanda-niebla);
+  text-wrap: pretty;
+}
+
+/* Desde un poco más abajo y un poco desenfocado: el desenfoque disimula el cambio de escena, que
+   es un corte, como si fuera una sola transformación. */
+@keyframes entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+}
+
+@keyframes aparece {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+// ── Escena 1: el pulpo ──────────────────────────────────────────────────────
+
+/* Se apoya en el borde de abajo, con el escritorio cortado por el marco (en el celular, por la
+   hoja de las credenciales). */
+.pulpo {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  width: min(80%, 330px);
+  height: auto;
+  transform: translateX(-50%);
+  pointer-events: none;
+  user-select: none;
+  animation: pulpo-entra 700ms var(--l-paso) 120ms both;
+
+  @media (min-width: 900px) {
+    bottom: -12px;
+    width: min(84%, 450px);
+  }
+}
+
+@keyframes pulpo-entra {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(24px);
+  }
+}
+
+/* El lienzo de las demás escenas: ocupa el panel entero y sus piezas se colocan contra él. En el
+   celular las mismas piezas se dibujan a tres cuartos, ancladas abajo al centro, así que el chat,
+   la agenda y la comanda son los mismos que en el escritorio, solo más pequeños. */
+.pieza {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  @media (max-width: 899px) {
+    transform: scale(0.66);
+    transform-origin: 50% 100%;
+  }
+
+  /* Tableta en vertical: hay sitio para dibujarlas casi a tamaño de escritorio. */
+  @media (min-width: 600px) and (max-width: 899px) {
+    transform: scale(0.92);
+  }
+}
+
+/* Teléfono bajito (iPhone SE y parecidos): la hoja entera tiene que caber sin desplazar, así que
+   la escena se queda en el logo, las barras y el titular, que sigue rotando. Las piezas y el
+   pulpo no caben sin pisar las pestañas. */
+@media (max-width: 899px) and (max-height: 720px) {
+  .pieza,
+  .pulpo,
+  .pestana__nombre {
+    display: none;
+  }
+
+  .pestana {
+    gap: 0;
+  }
+}
+
+.aviso-wa {
+  display: flex;
+}
+
+// ── Escena 2: el chat de WhatsApp ───────────────────────────────────────────
+
+/* Un teléfono que sale por abajo del panel, como el pulpo: está en uso, no en exhibición. */
+.tel {
+  position: absolute;
+  left: 50%;
+  bottom: -28px;
+  width: min(82%, 360px);
+  height: min(46%, 330px);
+  min-height: 270px;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 26px 26px 0 0;
+  border: 6px solid #2c2752;
+  border-bottom: 0;
+  background: #efeae2;
+  color: #111b21;
+  font-size: 0.8125rem;
+  animation: aparece 600ms var(--l-paso) 100ms both;
+}
+
+.tel__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 0 rgb(17 27 33 / 8%);
+}
+
+.tel__avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f2a33a;
+  color: #3b2200;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.tel__quien {
+  display: grid;
+  line-height: 1.25;
+
+  b {
+    font-size: 0.875rem;
+  }
+
+  small {
+    font-size: 0.75rem;
+    color: #00a884;
+  }
+}
+
+/* Los mensajes se apilan desde abajo: cuando entra uno nuevo empuja a los de arriba fuera del
+   teléfono, como en un chat de verdad. */
+.tel__chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden; /* lo que sube de más se corta bajo la cabecera, no encima */
+  padding: 0 10px 34px;
+}
+
+/* Cada mensaje crece de alto cero a su alto (fila de rejilla 0fr → 1fr) y su globo aparece
+   encima. Es lo único del login que anima algo distinto de transform/opacity: con seis
+   mensajes cortos no se nota, y es lo que hace que el chat «empuje». */
+.msj {
+  display: grid;
+  grid-template-rows: 0fr;
+  animation: msj-crece 380ms var(--l-paso) var(--d) forwards;
+
+  > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+@keyframes msj-crece {
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
+.globo,
+.botones,
+.escribiendo {
+  margin: 8px 0 0;
+  animation: aparece 380ms var(--l-paso) var(--d) both;
+}
+
+.globo {
+  position: relative;
+  max-width: 84%;
+  padding: 7px 9px 18px;
+  border-radius: 10px;
+  line-height: 1.35;
+  box-shadow: 0 1px 0.5px rgb(11 20 26 / 13%);
+
+  time {
+    position: absolute;
+    right: 8px;
+    bottom: 4px;
+    font-size: 0.6875rem;
+    color: #667781;
+  }
+
+  &--entra {
+    justify-self: start;
+    background: #ffffff;
+    border-top-left-radius: 2px;
+  }
+
+  &--sale {
+    justify-self: end;
+    background: #d9fdd3;
+    border-top-right-radius: 2px;
+  }
+}
+
+/* El resumen del pedido: como lo manda el asistente, con los precios alineados. */
+div.globo--sale {
+  display: grid;
+  gap: 2px;
+  width: 84%;
+}
+
+.globo__titulo {
+  font-weight: 700;
+}
+
+.globo__linea {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+
+  &--total {
+    margin: 3px 0 4px;
+    padding-top: 3px;
+    border-top: 1px solid rgb(17 27 33 / 12%);
+    font-weight: 700;
+  }
+}
+
+/* Los botones de respuesta rápida que WhatsApp pone bajo el mensaje. */
+.botones {
+  justify-self: end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 84%;
+
+  span {
+    padding: 6px 4px;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #027eb5;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 1px 0.5px rgb(11 20 26 / 13%);
+  }
+}
+
+/* «Escribiendo…» ocupa su sitio un rato y se recoge antes de que llegue la respuesta. */
+.msj--escribiendo {
+  animation: escribiendo 1300ms var(--l-paso) var(--d) forwards;
+}
+
+@keyframes escribiendo {
+  0% {
+    grid-template-rows: 0fr;
+  }
+  18%,
+  82% {
+    grid-template-rows: 1fr;
+  }
+  100% {
+    grid-template-rows: 0fr;
+  }
+}
+
+.escribiendo {
+  justify-self: end;
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #d9fdd3;
+
+  i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #667781;
+    animation: punto 900ms ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 150ms;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 300ms;
+    }
+  }
+}
+
+@keyframes punto {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* El aviso de EscalApp baja sobre el chat: el pedido ya está en la caja del negocio. */
+.tel__aviso {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--l-blanco);
+  color: var(--l-tinta);
+  font-size: 0.8125rem;
+  box-shadow: 0 10px 24px -8px rgb(26 22 53 / 45%);
+  animation: aviso-baja 460ms var(--l-paso) var(--d) both;
+
+  img {
+    flex: none;
+  }
+}
+
+@keyframes aviso-baja {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.97);
+  }
+}
+
+// ── Escena 3: la página pública de una barbería ─────────────────────────────
+
+/* La página de reservas del negocio, en su subdominio, saliendo por abajo como el teléfono. */
+.agenda {
+  position: absolute;
+  left: clamp(28px, 3vw, 40px);
+  bottom: -18px;
+  width: min(76%, 340px);
+  padding: 12px 16px 30px;
+  border-radius: 16px 16px 0 0;
+  background: var(--l-blanco);
+  color: var(--l-tinta);
+  font-size: 0.8125rem;
+  animation: aparece 600ms var(--l-paso) 100ms both;
+
+  p {
+    margin: 0;
+  }
+
+  .agenda__url {
+    width: fit-content;
+    margin: 0 auto 10px;
+  }
+
+  .agenda__servicio,
+  .agenda__gente,
+  .agenda__boton {
+    margin-top: 10px;
+  }
+
+  .agenda__horas {
+    margin-top: 10px;
+  }
+}
+
+.agenda__url {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--l-papel);
+  font-size: 0.6875rem;
+  color: var(--l-mudo);
+}
+
+.agenda__negocio {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.agenda__servicio {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 2px var(--l-noche);
+
+  > span {
+    display: grid;
+  }
+
+  small {
+    color: var(--l-mudo);
+  }
+}
+
+.agenda__gente {
+  display: flex;
+  gap: 6px;
+}
+
+.agenda__persona {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--l-borde);
+  font-weight: 600;
+
+  i {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--l-lavanda-suave);
+    font-style: normal;
+    font-size: 0.6875rem;
+    font-weight: 800;
+  }
+
+  &--elegida {
+    background: var(--l-noche);
+    color: var(--l-blanco);
+    box-shadow: none;
+
+    i {
+      background: var(--l-lavanda);
+      color: var(--l-blanco);
+    }
+  }
+}
+
+.agenda__horas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+
+  span {
+    padding: 6px 0;
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px var(--l-borde);
+    font-weight: 600;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .agenda__hora--ocupada {
+    background: var(--l-papel);
+    box-shadow: none;
+    color: var(--l-marcador);
+    text-decoration: line-through;
+  }
+
+  /* El cliente toca 11:15: la hora se rellena, y después el botón se hunde como bajo un dedo. */
+  .agenda__hora--elegida {
+    animation: elegir 260ms var(--l-paso) 2200ms forwards;
+  }
+}
+
+@keyframes elegir {
+  to {
+    background: var(--l-noche);
+    color: var(--l-blanco);
+    box-shadow: none;
+  }
+}
+
+.agenda__boton {
+  padding: 9px 0;
+  border-radius: 10px;
+  background: var(--l-noche);
+  color: var(--l-blanco);
+  font-weight: 700;
+  text-align: center;
+  animation: pulsar 260ms ease 3200ms;
+}
+
+@keyframes pulsar {
+  50% {
+    transform: scale(0.97);
+  }
+}
+
+/* La confirmación cae sobre el botón. */
+.agenda__hecha {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #dcf5e6;
+  color: #0f6b3a;
+  line-height: 1.3;
+  animation: aparece 420ms var(--l-paso) 3600ms both;
+
+  svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  b {
+    display: block;
+  }
+}
+
+.aviso-wa--arriba {
+  bottom: 190px;
+}
+
+// ── Escena 4: la comanda de cocina ──────────────────────────────────────────
+
+/* Sale como de la impresora: se descubre de arriba abajo. */
+.comanda {
+  position: absolute;
+  left: clamp(28px, 3vw, 40px);
+  bottom: -18px;
+  width: min(74%, 330px);
+  padding: 16px 16px 34px;
+  border-radius: 14px 14px 0 0;
+  background: var(--l-blanco);
+  color: var(--l-tinta);
+  animation: imprime 900ms var(--l-paso) 200ms both;
+}
+
+@keyframes imprime {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-10px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.comanda__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed var(--l-borde);
+
+  > span:first-child {
+    display: grid;
+    line-height: 1.25;
+  }
+
+  b {
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  small {
+    font-size: 0.8125rem;
+    color: var(--l-mudo);
+  }
+}
+
+/* El estado cambia de «En preparación» a «Listo» cuando la última línea está marcada. Las dos
+   etiquetas ocupan la misma celda y se cruzan. */
+.estado {
+  display: grid;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+
+  > span {
+    grid-area: 1 / 1;
+    padding: 4px 10px;
+    border-radius: 999px;
+    text-align: center;
+  }
+}
+
+.estado__uno {
+  background: #fdf0d5;
+  color: #7a4b00;
+  animation: se-va 240ms ease 4300ms forwards;
+}
+
+.estado__dos {
+  background: #dcf5e6;
+  color: #0f6b3a;
+  opacity: 0;
+  animation: aparece 320ms var(--l-paso) 4400ms forwards;
+}
+
+@keyframes se-va {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.comanda__lista {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+
+  li {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: start;
+    gap: 10px;
+    line-height: 1.3;
+  }
+
+  li > span:last-child {
+    animation: hecho 300ms ease var(--d) forwards;
+  }
+
+  small {
+    display: block;
+    font-size: 0.8125rem;
+    color: #b42318;
+  }
+}
+
+/* La cocina marca la línea: la casilla se llena y el plato pasa a gris. */
+@keyframes hecho {
+  to {
+    color: var(--l-marcador);
+  }
+}
+
+.marca {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 2px var(--l-borde);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--l-noche)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.4 6.8 11.2 12 5.2' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 14px no-repeat;
+    opacity: 0;
+    transform: scale(0.6);
+    animation: marca 260ms var(--l-paso) var(--d) forwards;
+  }
+}
+
+@keyframes marca {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.comanda__pie {
+  margin: 16px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--l-mudo);
+}
+
+/* El aviso le llega al cliente: entra desde el lado del cliente, a la derecha. */
+.aviso-wa {
+  position: absolute;
+  right: clamp(20px, 2.5vw, 32px);
+  bottom: 150px;
+  z-index: 1;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 230px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #d9fdd3;
+  color: #111b21;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  box-shadow: 0 14px 30px -10px rgb(0 0 0 / 55%);
+  animation: aviso-entra 520ms var(--l-paso) var(--d) both;
+
+  svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: #008069;
+  }
+
+  b {
+    display: block;
+  }
+}
+
+@keyframes aviso-entra {
+  from {
+    opacity: 0;
+    transform: translateX(24px) scale(0.97);
+  }
+}
+
+// ── Escena 5: la carta leída por IA ─────────────────────────────────────────
+
+/* La carta de papel, ladeada como quien le toma la foto a la que tiene en el mostrador. */
+.papel {
+  position: absolute;
+  left: clamp(24px, 3vw, 40px);
+  bottom: 70px;
+  width: 168px;
+  padding: 16px 14px 18px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #fbf7ee;
+  color: #3a3226;
+  rotate: -5deg;
+  box-shadow: 0 18px 32px -14px rgb(0 0 0 / 60%);
+  animation: aparece 560ms var(--l-paso) 100ms both;
+}
+
+.papel__nombre {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.papel__linea {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px dotted rgb(58 50 38 / 35%);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* El escáner baja dos veces por la carta. */
+.papel__escaner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--l-lavanda);
+  box-shadow: 0 0 0 6px rgb(132 123 180 / 22%);
+  opacity: 0;
+  animation: escanea 1400ms ease-in-out 700ms 2 both;
+}
+
+@keyframes escanea {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(170px);
+  }
+}
+
+.leida {
+  position: absolute;
+  right: clamp(20px, 2.5vw, 32px);
+  bottom: 28px;
+  width: min(66%, 300px);
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  background: var(--l-blanco);
+  color: var(--l-tinta);
+  font-size: 0.8125rem;
+  box-shadow: 0 18px 36px -14px rgb(0 0 0 / 60%);
+  animation: aparece 560ms var(--l-paso) 400ms both;
+
+  p {
+    margin: 0;
+  }
+}
+
+.leida__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 8px;
+  font-weight: 700;
+
+  small {
+    font-weight: 500;
+    color: var(--l-mudo);
+  }
+}
+
+.leida__fila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--l-lavanda-suave);
+  animation: fila-entra 420ms var(--l-paso) var(--d) both;
+
+  span {
+    font-weight: 600;
+  }
+
+  small {
+    grid-row: 2;
+    font-size: 0.75rem;
+    color: var(--l-mudo);
+  }
+
+  b {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes fila-entra {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+}
+
+.leida .leida__listo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #dcf5e6;
+  color: #0f6b3a;
+  font-weight: 700;
+  animation: aparece 380ms var(--l-paso) var(--d) both;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// ── Reducir movimiento: cada escena ya terminada, sin nada que corra ────────
+
+@media (prefers-reduced-motion: reduce) {
+  .escena *,
+  .escena *::before,
+  .escena *::after {
+    animation: none !important;
+  }
+
+  .pestana__relleno--corre {
+    transform: scaleX(1);
+  }
+
+  .msj {
+    grid-template-rows: 1fr;
+  }
+
+  .agenda__horas .agenda__hora--elegida {
+    background: var(--l-noche);
+    color: var(--l-blanco);
+    box-shadow: none;
+  }
+
+  .msj--escribiendo,
+  .estado__uno,
+  .papel__escaner {
+    display: none;
+  }
+
+  .estado__dos {
+    opacity: 1;
+  }
+
+  .marca::after {
+    opacity: 1;
+    transform: none;
+  }
+
+  .comanda__lista li > span:last-child {
+    color: var(--l-marcador);
+  }
+}
