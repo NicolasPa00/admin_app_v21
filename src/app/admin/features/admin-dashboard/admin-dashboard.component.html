@@ -98,7 +98,7 @@
           <!-- Icono + nombre + tipo -->
           <header class="neg-card__header">
             <div class="neg-card__icon" aria-hidden="true">
-              <lucide-icon name="building-2" [size]="24" />
+              <lucide-icon [name]="iconoModulo(negocio.tipoNombre)" [size]="22" />
             </div>
             <div class="neg-card__heading">
               <h2 class="neg-card__name" [title]="negocio.nombre">{{ negocio.nombre }}</h2>
@@ -134,21 +134,21 @@
           <dl class="neg-card__meta">
             <div class="neg-card__meta-row">
               <lucide-icon name="hash" [size]="13" aria-hidden="true" />
-              <dt class="sr-only">NIT</dt>
+              <dt class="neg-card__meta-label">NIT</dt>
               <dd [class.neg-card__meta-empty]="!negocio.nit">
-                NIT: {{ negocio.nit || 'Sin definir' }}
+                {{ negocio.nit || 'Sin definir' }}
               </dd>
             </div>
             <div class="neg-card__meta-row">
               <lucide-icon name="phone" [size]="13" aria-hidden="true" />
-              <dt class="sr-only">Teléfono</dt>
+              <dt class="neg-card__meta-label">Teléfono</dt>
               <dd [class.neg-card__meta-empty]="!negocio.telefono">
                 {{ negocio.telefono || 'Sin definir' }}
               </dd>
             </div>
             <div class="neg-card__meta-row">
               <lucide-icon name="mail" [size]="13" aria-hidden="true" />
-              <dt class="sr-only">Email</dt>
+              <dt class="neg-card__meta-label">Email</dt>
               <dd
                 [class.neg-card__meta-empty]="!negocio.email_contacto"
                 [title]="negocio.email_contacto || ''"

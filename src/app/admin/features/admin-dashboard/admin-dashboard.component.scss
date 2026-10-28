@@ -141,12 +141,28 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl);
-  transition: box-shadow var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    box-shadow 200ms var(--ease-out),
+    border-color var(--transition-fast),
+    transform 200ms var(--ease-out);
 
-  &:hover {
-    box-shadow: var(--shadow-md);
+  // Se eleva un poco al pasar el ratón. Solo con ratón: en una pantalla táctil el «hover» se queda
+  // pegado después de tocar.
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      box-shadow: 0 8px 24px rgba(var(--color-primary-rgb), 0.12);
+      border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+      transform: translateY(-2px);
+    }
+  }
+
+  // Con teclado, la tarjeta entera marca dónde está el foco, no solo el botón.
+  &:focus-within {
     border-color: var(--color-primary);
-    transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &:hover { transform: none; }
   }
 }
 
@@ -210,16 +226,23 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 
-  lucide-icon { flex-shrink: 0; opacity: .7; }
+  lucide-icon { flex-shrink: 0; color: var(--color-text-muted); }
 
   // Valores largos (email) se truncan en vez de crecer la tarjeta.
   dd {
     margin: 0;
     min-width: 0;
+    color: var(--color-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+}
+
+// La etiqueta en gris y el valor en tinta: así «NIT» y el número no se leen como una sola cosa.
+.neg-card__meta-label {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 // Texto para datos sin valor ("Sin definir").
@@ -241,6 +264,18 @@
   align-items: center;
   justify-content: center;
   gap: var(--spacing-xs);
+  min-height: 40px;
+
+  // La flecha avanza un poco al pasar el ratón: dice «esto te lleva al negocio».
+  lucide-icon:last-child {
+    transition: transform 200ms var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) lucide-icon:last-child {
+      transform: translateX(3px);
+    }
+  }
 }
 
 // ── Identificador del plan en la tarjeta ────────────────────

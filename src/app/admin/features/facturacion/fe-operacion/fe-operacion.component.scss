@@ -34,8 +34,6 @@
     color: var(--color-primary);
     font-size: 0.6875rem;
     font-weight: 600;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
   }
 
   &__sub,
@@ -287,8 +285,6 @@
       color: var(--color-text-muted);
       font-size: 0.6875rem;
       font-weight: 600;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
     }
 
     tr:last-child td {

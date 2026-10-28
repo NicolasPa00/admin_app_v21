@@ -30,7 +30,7 @@ const ICONOS_DISPONIBLES = [
   'pen-tool', 'paw-print', 'dog', 'hotel', 'bed-double', 'tent',
 ];
 
-const COLOR_DEFAULT = '#6366F1';
+const COLOR_DEFAULT = '#5d5497';
 
 /**
  * RegistrarComponent — Registro de clientes (Super Admin).

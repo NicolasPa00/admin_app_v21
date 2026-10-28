@@ -13,6 +13,7 @@ import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider,
   AlertCircle, Building2, ArrowRight, Hash, Phone, Mail,
   DollarSign, Receipt, TrendingUp, TrendingDown, Minus,
   TriangleAlert, Lock, CalendarClock, CalendarRange, X, Wallet,
+  UtensilsCrossed, CalendarCheck, Dumbbell, Car, Store,
 } from 'lucide-angular';
 
 import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
@@ -75,6 +76,7 @@ interface KpiMetrica {
         AlertCircle, Building2, ArrowRight, Hash, Phone, Mail,
         DollarSign, Receipt, TrendingUp, TrendingDown, Minus,
         TriangleAlert, Lock, CalendarClock, CalendarRange, X, Wallet,
+  UtensilsCrossed, CalendarCheck, Dumbbell, Car, Store,
       }),
     },
   ],
@@ -155,6 +157,19 @@ export class AdminDashboardComponent implements OnInit {
     TIENDA:      environment.tiendaAppUrl,
     RESERVA:     environment.reservaAppUrl,
   };
+
+  /** El ícono de la tarjeta según el módulo: se reconoce de un vistazo qué clase de negocio es. */
+  private readonly ICONO_MODULO: Record<string, string> = {
+    RESTAURANTE: 'utensils-crossed',
+    RESERVA:     'calendar-check',
+    GIMNASIO:    'dumbbell',
+    PARQUEADERO: 'car',
+    TIENDA:      'store',
+  };
+
+  protected iconoModulo(tipoNombre: string | undefined): string {
+    return this.ICONO_MODULO[(tipoNombre ?? '').toUpperCase().replace(/\s+/g, '_')] ?? 'building-2';
+  }
 
   private resolveAppUrl(tipoNombre: string | undefined): string | undefined {
     if (!tipoNombre) return undefined;

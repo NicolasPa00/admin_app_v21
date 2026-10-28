@@ -4,39 +4,67 @@
 // Importar en src/styles.scss: @use './styles/theme';
 // ============================================================
 
-// ---------- MODO CLARO (por defecto) ----------
+// ---------- MODO CLARO (el único, desde 2026-10-27) ----------
+//
+// La identidad del libro de marca (2026-10-26), la misma de las landings y del login: violeta
+// profundo para lo que se pulsa, azul noche para el texto y la barra lateral, lavanda solo como
+// relleno. Los grises llevan un toque lavanda para que el panel y la marca se lean como una familia.
+// Sigue siendo un sistema PROPIO del admin (--color-*): no se mezcla con los --es-* / --r-* de las
+// landings, solo comparte los valores.
+//
+// Contrastes medidos sobre blanco: azul noche 15,4:1 · violeta 6,6:1 · #4f4c68 8,4:1 ·
+// #6c6987 5,2:1 (4,7:1 sobre el fondo #f4f3f8). El lavanda (#847bb4, 3,8:1) NUNCA va en texto.
 :root {
-  // --- Colores principales (EscalApp brand: azul corporativo) ---
-  --color-primary: #312E81;
-  --color-primary-hover: #4F46E5;
-  --color-primary-light: #6366F1;
+  // --- Colores principales ---
+  --color-primary: #5d5497;
+  --color-primary-hover: #4b4482;
+  --color-primary-light: #847bb4; // solo relleno: barras, fondos tenues
   --color-on-primary: #ffffff;
-  --color-primary-rgb: 49, 46, 129;
+  --color-primary-rgb: 93, 84, 151;
 
   // --- Fondo y superficies ---
-  --color-bg: #f5f5f5;
+  --color-bg: #f4f3f8;
   --color-surface: #ffffff;
-  --color-surface-hover: #f0edfa;
+  --color-surface-hover: #efedf6;
   --color-surface-elevated: #ffffff;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.10);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-elevated: 0 2px 8px rgba(0, 0, 0, 0.10);
+  // Sombras teñidas de azul noche: una gris pura sobre el fondo lavanda se ve sucia.
+  --shadow-sm: 0 1px 2px rgba(33, 33, 66, 0.06);
+  --shadow-md: 0 2px 8px rgba(33, 33, 66, 0.08);
+  --shadow-lg: 0 8px 24px rgba(33, 33, 66, 0.12);
+  --shadow-elevated: 0 2px 8px rgba(33, 33, 66, 0.08);
   --shadow-featured: 0 4px 20px rgba(var(--color-primary-rgb), 0.15);
 
   // --- Texto ---
-  --color-text-primary: #0F0A2A;
-  --color-text-secondary: #616161;
-  --color-text-muted: #9e9e9e;
+  --color-text-primary: #212142;
+  // Alias: 46 reglas de las pantallas escriben `--color-text`, que nunca existió. En un `color:`
+  // no se notaba (hereda), pero dentro de un `color-mix()` anulaba la regla entera en silencio.
+  --color-text: var(--color-text-primary);
+  --color-text-secondary: #4f4c68;
+  --color-text-muted: #6c6987;
 
   // --- Bordes ---
-  --color-border: #e0e0e0;
-  --color-border-strong: #bdbdbd;
+  --color-border: #dedaea;
+  --color-border-strong: #cbc4de;
 
-  // --- Estados ---
-  --color-success: #2e7d32;
-  --color-success-rgb: 46, 125, 50;
-  --color-success-bg: #e8f5e9;
+  // --- Barra lateral (azul noche) ---
+  // El ancla de la marca en el panel. Texto #cdc9e6 = 9,4:1 sobre el azul noche.
+  --color-sidebar-bg: #212142;
+  --color-sidebar-text: #cdc9e6;
+  --color-sidebar-text-strong: #ffffff;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.07);
+  --color-sidebar-active: rgba(132, 123, 180, 0.32);
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-focus: #a9a2d0;
+
+  // --- Estados (semánticos: no cambian con la marca) ---
+  // Medidos 2026-10-27 contra el fondo y su propia pastilla, y simulando los tres daltonismos
+  // (admin_ws/docs/colores-de-estado.md). El verde pasó de #2e7d32 (4,36:1 en su pastilla, y casi
+  // igual al rojo con deuteranopia: ΔE 6,8) a uno más azulado: 5,0:1 en la pastilla y ΔE 9,9.
+  // Rojo y ámbar siguen cerca con deuteranopia (ΔE 5,2) en toda variante que pase contraste: por eso
+  // una pastilla de estado SIEMPRE lleva su palabra, nunca solo el color.
+  --color-success: #17734f;
+  --color-success-rgb: 23, 115, 79;
+  --color-success-bg: #e6f1eb;
   --color-error: #c62828;
   --color-error-rgb: 198, 40, 40;
   --color-error-bg: #ffebee;
@@ -44,20 +72,24 @@
   --color-warning-rgb: 154, 74, 0;
   --color-warning-bg: #fff3e0;
 
-  // --- Acentos ---
-  --color-accent-blue: #6366f1;
-  --color-accent-blue-rgb: 99, 102, 241;
+  // --- Acentos (para datos: gráficas y series) ---
+  --color-accent-blue: #4a6fb3;
+  --color-accent-blue-rgb: 74, 111, 179;
   --color-accent-green: #38a169;
   --color-accent-green-rgb: 56, 161, 105;
   --color-accent-orange: #c05621;
   --color-accent-orange-rgb: 192, 86, 33;
-  --color-accent-purple: #7b1fa2;
-  --color-accent-purple-rgb: 123, 31, 162;
+  --color-accent-purple: #5d5497;
+  --color-accent-purple-rgb: 93, 84, 151;
 
   // --- Focus ---
-  --color-focus: #312E81;
-  --focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.4);
+  --color-focus: #5d5497;
+  --focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.35);
   --focus-ring-error: 0 0 0 3px rgba(var(--color-error-rgb), 0.15);
+
+  // --- Movimiento ---
+  // Salida fuerte: arranca rápido y frena, así la respuesta se siente inmediata.
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 
   // --- Tipografía ---
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
@@ -112,6 +144,19 @@ body {
   height: 100%;
 }
 
+// Lo que el navegador pinta por su cuenta también lleva la marca: la selección de texto, el
+// cursor de escritura, las casillas y las barras de desplazamiento.
+html {
+  accent-color: var(--color-primary);
+  caret-color: var(--color-primary);
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+::selection {
+  background-color: rgba(132, 123, 180, 0.3);
+  color: var(--color-text-primary);
+}
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-size-base);
@@ -147,11 +192,18 @@ body {
   background-color: var(--color-primary);
   color: var(--color-on-primary);
   transition: background-color var(--transition-fast),
+    color var(--transition-fast),
     box-shadow var(--transition-fast),
-    opacity var(--transition-fast);
+    opacity var(--transition-fast),
+    transform 160ms var(--ease-out);
 
   &:hover:not(:disabled) {
     background-color: var(--color-primary-hover);
+  }
+
+  // Se hunde un poco al pulsarlo: confirma que el botón oyó el clic.
+  &:active:not(:disabled) {
+    transform: scale(0.97);
   }
 
   &:focus-visible {
@@ -188,7 +240,7 @@ body {
     color: var(--color-text-secondary);
 
     &:hover:not(:disabled) {
-      background-color: var(--color-bg-secondary, rgba(0, 0, 0, 0.05));
+      background-color: var(--color-surface-hover);
       color: var(--color-text-primary);
     }
   }
@@ -214,13 +266,14 @@ body {
   font-family: var(--font-family);
   color: var(--color-text-primary);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  // El borde del campo un escalón más fuerte que el de las tarjetas: así se ve dónde se escribe.
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
   transition: border-color var(--transition-fast),
     box-shadow var(--transition-fast);
 
   &::placeholder {
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted);
   }
 
   &:focus-visible {
@@ -231,7 +284,7 @@ body {
 
   &[aria-invalid='true'] {
     border-color: var(--color-error);
-    box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.15);
+    box-shadow: var(--focus-ring-error);
   }
 }
 

@@ -100,8 +100,6 @@
     padding: var(--spacing-md);
     font-size: var(--font-size-xs);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     color: var(--color-text-muted);
     border-bottom: 1px solid var(--color-border);
     white-space: nowrap;
@@ -475,8 +473,6 @@
 
   small {
     font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
     color: var(--color-text-muted);
   }
 
@@ -522,8 +518,6 @@
 .neg-plan-actual__titulo {
   font-size: var(--font-size-xs);
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: var(--color-text-muted);
 }
 
@@ -910,8 +904,6 @@
     dt {
       font-size: var(--font-size-xs);
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
       color: var(--color-text-muted);
     }
 

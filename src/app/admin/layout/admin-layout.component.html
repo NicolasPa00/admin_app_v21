@@ -16,15 +16,16 @@
         routerLink="/admin/dashboard"
         class="adm__brand"
         (click)="closeMobile()"
-        aria-label="Ir al inicio"
+        aria-label="EscalApp, ir al inicio"
       >
+        <!-- El logo oficial en blanco, sobre el azul noche de la barra (libro de marca 2026-10-26). -->
         <img
-          class="adm__icono"
-          [src]="assets.getAssetPath('icono-escalapp.png')"
+          class="adm__logo"
+          [src]="assets.getAssetPath('marca/logo-horizontal-blanco.svg')"
           alt=""
-          aria-hidden="true"
+          width="116"
+          height="32"
         />
-        <span class="adm__nombre marca">EscalApp</span>
       </a>
 
       <button

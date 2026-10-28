@@ -1,6 +1,6 @@
 // ============================================================
 // AdminLayoutComponent — Estilos del shell
-// Sistema azul corporativo (--color-*). Sidebar + header + main.
+// Marca 2026-10-27: barra lateral en azul noche (--color-sidebar-*), el resto claro (--color-*).
 // ============================================================
 
 :host {
@@ -26,8 +26,8 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  background: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
   transition: width var(--transition-normal);
   z-index: 50;
 }
@@ -42,8 +42,8 @@
   justify-content: space-between;
   gap: var(--spacing-sm);
   height: var(--hdr-h);
-  padding: 0 var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--spacing-md) 0 var(--spacing-lg);
+  border-bottom: 1px solid var(--color-sidebar-border);
   flex-shrink: 0;
 }
 
@@ -55,27 +55,10 @@
   text-decoration: none;
 }
 
-/**
- * Sin el `brightness(0) invert(1)` que llevaba el logotipo antiguo: aquel era gris y
- * el filtro lo pasaba a blanco en tema oscuro. Sobre este icono lo dejaría en una
- * silueta blanca, sin índigos ni E. El que cambia con el tema es el nombre.
- */
-.adm__icono {
-  height: 30px;
+.adm__logo {
+  display: block;
+  height: 28px;
   width: auto;
-  flex-shrink: 0;
-  object-fit: contain;
-}
-
-.adm__nombre {
-  font-family: var(--font-marca);
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .adm__collapse-btn {
@@ -88,18 +71,19 @@
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--color-text-muted);
+  color: var(--color-sidebar-text);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 
   &:hover {
-    background: var(--color-surface-hover);
-    color: var(--color-primary);
+    background: var(--color-sidebar-hover);
+    color: var(--color-sidebar-text-strong);
   }
 
   &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
+    outline: 2px solid var(--color-sidebar-focus);
+    outline-offset: 2px;
+    box-shadow: none;
   }
 }
 
@@ -111,11 +95,12 @@
   padding: var(--spacing-md) var(--spacing-sm);
   flex: 1;
   overflow-y: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .adm__sidebar-foot {
   padding: var(--spacing-sm);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-sidebar-border);
 }
 
 .adm__nav-item {
@@ -128,51 +113,45 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-text-secondary);
+  color: var(--color-sidebar-text);
   font-family: var(--font-family);
   font-size: var(--font-size-sm);
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 
   lucide-icon {
     flex-shrink: 0;
   }
 
-  &:hover {
-    background: var(--color-surface-hover);
-    color: var(--color-text-primary);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
-
-  // Item activo: fondo suave + texto primario + acento lateral
-  &.is-active {
-    background: rgba(var(--color-primary-rgb), 0.1);
-    color: var(--color-primary);
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 3px;
-      height: 60%;
-      border-radius: var(--radius-full);
-      background: var(--color-primary);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--color-sidebar-hover);
+      color: var(--color-sidebar-text-strong);
     }
   }
 
+  // Sobre el azul noche el anillo violeta no se ve: el foco va en lavanda clara.
+  &:focus-visible {
+    outline: 2px solid var(--color-sidebar-focus);
+    outline-offset: -2px;
+    box-shadow: none;
+  }
+
+  // Activo: una pastilla lavanda y el rótulo en blanco. Sin raya lateral: sobre la barra oscura
+  // el cambio de brillo ya dice dónde se está.
+  &.is-active {
+    background: var(--color-sidebar-active);
+    color: var(--color-sidebar-text-strong);
+    font-weight: 600;
+  }
+
   &--logout:hover {
-    background: var(--color-error-bg);
-    color: var(--color-error);
+    background: rgba(244, 154, 146, 0.14);
+    color: #f6b0a9;
   }
 }
 
@@ -472,7 +451,7 @@
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(15, 15, 34, 0.5);
   z-index: 45;
 }
 
@@ -485,8 +464,8 @@
     height: 100vh;
     width: var(--sb-w);
     transform: translateX(-100%);
-    transition: transform var(--transition-normal);
-    box-shadow: var(--shadow-lg);
+    transition: transform 280ms var(--ease-out);
+    box-shadow: 8px 0 32px rgba(15, 15, 34, 0.28);
   }
 
   // En modo drawer nunca se colapsa a riel: siempre ancho completo
@@ -631,11 +610,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.85rem 1rem 0.6rem;
-    font-size: 0.82rem;
+    font-size: var(--font-size-sm);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
     border-bottom: 1px solid var(--color-border);
   }
 
