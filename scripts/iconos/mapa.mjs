@@ -77,7 +77,7 @@ export const ALIAS = {
   // Comunicacion  (el logo real de WhatsApp, con el auricular)
   'message-circle': 'whatsapp-logo', 'message-square': 'chat',
   'bot-message-square': 'chat-teardrop-dots', 'bot': 'robot',
-  'mail': 'envelope', 'facebook': 'facebook-logo', 'instagram': 'instagram-logo',
+  'mail': 'envelope', 'mail-check': 'envelope-open', 'facebook': 'facebook-logo', 'instagram': 'instagram-logo',
   'youtube': 'youtube-logo', 'megaphone': 'megaphone',
 
   // Negocio / restaurante

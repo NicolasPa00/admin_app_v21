@@ -148,6 +148,7 @@
     "LogIn": "sign-in",
     "LogOut": "sign-out",
     "Mail": "envelope",
+    "MailCheck": "envelope-open",
     "MapPin": "map-pin",
     "Megaphone": "megaphone",
     "Menu": "list",
