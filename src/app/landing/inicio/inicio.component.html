@@ -2,7 +2,7 @@
      La misma de las páginas de cada motor. Aquí los enlaces del centro llevan a esas páginas: el
      trabajo de esta es repartir al visitante, no explicarle el producto.
 -->
-<header class="cabecera">
+<header class="cabecera" (keydown.escape)="menuAbierto.set(false)">
   <div class="marco cabecera__fila">
     <a class="marca" routerLink="/" aria-label="EscalApp, inicio">
       <img class="marca__logo marca__logo--claro" [src]="marca('logo-horizontal-color.svg')" alt="" width="116" height="32" />
@@ -10,12 +10,34 @@
     </a>
 
     <nav class="cabecera__nav" aria-label="Secciones">
-      <app-tema-selector />
-      <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
-      <a class="enlace" routerLink="/reservas">Citas</a>
-      <a class="enlace" routerLink="/login">Entrar</a>
+      <div
+        class="cabecera__secciones"
+        id="menu-secciones"
+        [class.cabecera__secciones--abierto]="menuAbierto()"
+      >
+        <app-tema-selector />
+        <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
+        <a class="enlace" routerLink="/reservas">Citas</a>
+      </div>
+      <a class="enlace enlace--entrar" routerLink="/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
         Probar gratis
+      </button>
+      <!-- En un celular solo quedan a la vista «Entrar» y «Probar gratis» (2026-10-28): ocultar
+           «Entrar» dejaba a los clientes sin forma de iniciar sesión. Lo demás va en este menú. -->
+      <button
+        type="button"
+        class="menu-boton"
+        [attr.aria-expanded]="menuAbierto()"
+        aria-controls="menu-secciones"
+        [attr.aria-label]="menuAbierto() ? 'Cerrar el menú' : 'Abrir el menú'"
+        (click)="menuAbierto.set(!menuAbierto())"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path class="menu-boton__raya menu-boton__raya--1" d="M4 7h16" />
+          <path class="menu-boton__raya menu-boton__raya--2" d="M4 12h16" />
+          <path class="menu-boton__raya menu-boton__raya--3" d="M4 17h16" />
+        </svg>
       </button>
     </nav>
   </div>

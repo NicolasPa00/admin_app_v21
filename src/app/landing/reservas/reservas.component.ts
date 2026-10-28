@@ -343,6 +343,9 @@ export class ReservasComponent {
 
   protected readonly prueba = inject(PruebaGratisStore);
 
+  /** El menú de la cabecera en un celular: ahí solo quedan a la vista «Entrar» y la prueba. */
+  protected readonly menuAbierto = signal(false);
+
   protected readonly paradas = PARADAS;
   protected readonly oficios = OFICIOS_GALERIA;
     protected readonly conversacion = CONVERSACION;

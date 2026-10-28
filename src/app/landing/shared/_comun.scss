@@ -117,3 +117,149 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+/* ── El menú de la cabecera en un celular (2026-10-28) ────────────────────────
+   Antes, por debajo de 520 px se ocultaban TODOS los enlaces, «Entrar» incluido, y quien ya era
+   cliente no tenía cómo iniciar sesión desde el celular. Ahora a la vista quedan siempre las dos
+   puertas —«Entrar» y «Probar gratis»— y lo demás (inicio, la otra vertical, precio y el tema) va
+   en un panel que abre la hamburguesa. En una pantalla ancha el contenedor no existe para el
+   diseño (`display: contents`) y la cabecera se ve como siempre. */
+.cabecera__nav .enlace--entrar {
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.menu-boton {
+  display: none;
+  place-items: center;
+  width: 44px; /* objetivo táctil */
+  height: 44px;
+  margin-right: -10px; /* el dibujo queda alineado con el borde del marco, no la caja */
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms var(--r-paso);
+}
+
+.menu-boton:active {
+  transform: scale(0.94);
+}
+
+.menu-boton:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+.menu-boton svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Las tres rayas se vuelven una X: la de en medio se apaga y las otras dos giran sobre el centro. */
+.menu-boton__raya {
+  transform-origin: 12px 12px;
+  transition:
+    transform 200ms var(--r-paso),
+    opacity 120ms var(--r-paso);
+}
+
+.menu-boton[aria-expanded='true'] .menu-boton__raya--1 {
+  transform: translateY(5px) rotate(45deg);
+}
+
+.menu-boton[aria-expanded='true'] .menu-boton__raya--2 {
+  opacity: 0;
+}
+
+.menu-boton[aria-expanded='true'] .menu-boton__raya--3 {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+@media (min-width: 720px) {
+  .cabecera__secciones {
+    display: contents;
+  }
+}
+
+@media (max-width: 719px) {
+  .menu-boton {
+    display: inline-grid;
+  }
+
+  /* El panel cuelga de la cabecera pegada (que es su bloque contenedor) y ocupa todo el ancho.
+     Cerrado queda con `visibility: hidden`, que además lo saca del orden del tabulador. */
+  .cabecera__secciones {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0.25rem var(--r-gutter) 1rem;
+    background: var(--r-blanco);
+    box-shadow: 0 14px 24px rgb(26 31 56 / 10%); /* taste-skill-ignore: el panel flota sobre la página */
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 180ms var(--r-paso),
+      transform 180ms var(--r-paso),
+      visibility 0s linear 180ms;
+  }
+
+  .cabecera__secciones--abierto {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 180ms var(--r-paso),
+      transform 180ms var(--r-paso);
+  }
+
+  /* Cada opción es una fila de 52 px, cómoda para el dedo. La regla base del enlace pinta una raya
+     de 2 px debajo al pasar el ratón; aquí esa raya es la separación entre filas. */
+  .cabecera__secciones .enlace,
+  .cabecera__nav .cabecera__secciones .enlace.enlace--inicio {
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    font-size: 1.0625rem;
+    text-align: left;
+    border-bottom: 1px solid var(--r-borde);
+    touch-action: manipulation;
+  }
+
+  .cabecera__secciones app-tema-selector {
+    order: 1; /* el tema va al final: es lo que menos se busca */
+    margin: 0.5rem 0 0 -10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cabecera__secciones,
+  .cabecera__secciones--abierto,
+  .menu-boton__raya {
+    transition: none;
+  }
+}
+
+/* En los celulares más estrechos (320–379 px) no caben el logo entero, «Entrar», la prueba y la
+   hamburguesa: el logo se queda en su símbolo. Es el mismo SVG recortado por la izquierda, donde
+   está el símbolo (194 de 924 de ancho), así que sirve igual para el claro y el oscuro. */
+@media (max-width: 379px) {
+  .cabecera .marca .marca__logo {
+    width: 20px;
+    height: 26px;
+    object-fit: cover;
+    object-position: left center;
+  }
+}

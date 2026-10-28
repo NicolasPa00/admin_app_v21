@@ -230,6 +230,9 @@ export class InicioComponent {
 
   protected readonly prueba = inject(PruebaGratisStore);
 
+  /** El menú de la cabecera en un celular: ahí solo quedan a la vista «Entrar» y la prueba. */
+  protected readonly menuAbierto = signal(false);
+
   protected readonly opciones = OPCIONES;
   protected readonly comunes = COMUNES;
   /** Apagados por ahora: el dueño está decidiendo si la franja de aliados va o no. */

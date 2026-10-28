@@ -183,3 +183,14 @@
 }
 
 
+
+/* El panel del menú en un celular: el mismo azul hondo de la cabecera, del que cuelga. */
+:host-context(html[data-tema='oscuro']) .cabecera__secciones {
+  background: var(--noche-honda);
+  box-shadow: 0 14px 24px rgb(0 0 0 / 30%); /* taste-skill-ignore: el panel flota sobre la página */
+}
+
+:host-context(html[data-tema='oscuro']) .cabecera__secciones .enlace,
+:host-context(html[data-tema='oscuro']) .cabecera__nav .cabecera__secciones .enlace.enlace--inicio {
+  border-bottom-color: rgb(205 201 230 / 16%);
+}

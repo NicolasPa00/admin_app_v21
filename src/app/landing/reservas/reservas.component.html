@@ -2,7 +2,7 @@
      Tiene su propio campo (blanco sobre el papel) y se queda arriba al bajar. La separación es un
      escalón de tono, no un filete: la página no lleva ni una línea de adorno.
 -->
-<header class="cabecera">
+<header class="cabecera" (keydown.escape)="menuAbierto.set(false)">
   <div class="marco cabecera__fila">
     <!-- El logo lleva a la página que elige entre los dos negocios (`/inicio` hasta que pase a ser
          `/`). El «‹ Todos los negocios» que iba a su lado se quitó (2026-10-27): suelto junto al logo
@@ -13,21 +13,43 @@
     </a>
 
     <nav class="cabecera__nav" aria-label="Secciones">
-      <app-tema-selector />
-      <!-- «Inicio» escrito, junto a la luna y en todos los anchos (2026-10-27): que el logo lleve al
-           inicio lo sabe quien hace páginas, no el dueño de una barbería. -->
-      <a class="enlace enlace--inicio" routerLink="/">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
-          <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        </svg>
-        Inicio
-      </a>
-      <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
-      <button type="button" class="enlace" (click)="irA('precio')">Precio</button>
-      <a class="enlace" routerLink="/login">Entrar</a>
+      <div
+        class="cabecera__secciones"
+        id="menu-secciones"
+        [class.cabecera__secciones--abierto]="menuAbierto()"
+      >
+        <app-tema-selector />
+        <!-- «Inicio» escrito, junto a la luna y en todos los anchos (2026-10-27): que el logo lleve al
+             inicio lo sabe quien hace páginas, no el dueño de una barbería. -->
+        <a class="enlace enlace--inicio" routerLink="/">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+            <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+          Inicio
+        </a>
+        <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
+        <button type="button" class="enlace" (click)="irA('precio'); menuAbierto.set(false)">Precio</button>
+      </div>
+      <a class="enlace enlace--entrar" routerLink="/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
         Probar gratis
+      </button>
+      <!-- En un celular solo quedan a la vista «Entrar» y «Probar gratis» (2026-10-28): ocultar
+           «Entrar» dejaba a los clientes sin forma de iniciar sesión. Lo demás va en este menú. -->
+      <button
+        type="button"
+        class="menu-boton"
+        [attr.aria-expanded]="menuAbierto()"
+        aria-controls="menu-secciones"
+        [attr.aria-label]="menuAbierto() ? 'Cerrar el menú' : 'Abrir el menú'"
+        (click)="menuAbierto.set(!menuAbierto())"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path class="menu-boton__raya menu-boton__raya--1" d="M4 7h16" />
+          <path class="menu-boton__raya menu-boton__raya--2" d="M4 12h16" />
+          <path class="menu-boton__raya menu-boton__raya--3" d="M4 17h16" />
+        </svg>
       </button>
     </nav>
   </div>

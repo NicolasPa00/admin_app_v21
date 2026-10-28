@@ -351,13 +351,6 @@
   gap: clamp(0.75rem, 0.4rem + 1.2vw, 1.75rem);
 }
 
-/* Entrar y Precio estorban en un móvil: el botón es lo único que hace falta ahí. */
-@media (max-width: 519px) {
-  .cabecera__nav .enlace {
-    display: none;
-  }
-}
-
 .marca {
   display: inline-flex;
   align-items: center;
