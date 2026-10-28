@@ -27,6 +27,9 @@ const DESTINO: Record<string, string> = {
   // Meta desconectó el número propio del negocio (p. ej. 14 días sin abrir WhatsApp Business):
   // se lleva directo a la pantalla desde la que se reconecta.
   WHATSAPP_DESCONECTADO: '/admin/whatsapp/numero',
+  // El asistente chocó con algo que el cliente no debería haber leído (2026-10-26): quien está
+  // esperando está en una conversación, y es ahí donde se atiende mientras se arregla la causa.
+  ASISTENTE_MAL_CONFIGURADO: '/admin/whatsapp',
 };
 
 @Component({
@@ -472,6 +475,7 @@ export class NotificacionesBellComponent implements OnInit, OnDestroy {
       case 'VENCIMIENTO_PLAN': return 'alert-triangle';
       case 'CONVERSACION_ESCALADA': return 'message-circle';
       case 'WHATSAPP_DESCONECTADO': return 'alert-triangle';
+      case 'ASISTENTE_MAL_CONFIGURADO': return 'alert-triangle';
       default: return 'bell';
     }
   }
