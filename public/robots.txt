@@ -14,10 +14,22 @@ Disallow: /dashboard
 Disallow: /restaurante/
 Disallow: /reserva/
 
+# El login. Es una ruta nueva (2026-10-27) y se prerenderiza, así que sin esta línea Google la
+# indexa: una página con un formulario y nada más, compitiendo con la portada por la consulta
+# «escalapp». Se cierra por la misma razón que /auth/ — lo de iniciar sesión no se busca.
+Disallow: /login
+
 # El centro de ayuda está cerrado a super admin hasta que tenga videos (decisión del 2026-10-19).
 # Indexar una portada vacía enseñaría que no hay ayuda, que es lo contrario de lo que vende.
 # Cuando se abra: quitar esta línea y pasar /ayuda/** a Prerender, o Google seguirá viendo nada.
 Disallow: /ayuda
+
+# ⚠️ NO añadir aquí un Disallow que toque /favicon.*, /icon-*.png, /apple-touch-icon.png ni
+# /images/: el icono que Google enseña al lado del resultado lo trae **Googlebot-Image**, y una
+# regla que lo tape deja el resultado con el icono que tuviera cacheado — que es exactamente el
+# síntoma que se arregló el 2026-10-28. Hoy están permitidos porque no caen bajo ninguna regla;
+# no hace falta un Allow explícito, y un grupo `User-agent: Googlebot-Image` propio sería peor:
+# los grupos no se heredan, así que ese bot dejaría de ver TODOS los Disallow de arriba.
 
 # Los rastreadores de enlaces tienen que poder entrar a la portada: son los que arman la tarjeta
 # cuando alguien comparte el enlace en un chat.

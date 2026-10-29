@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 
 import { AssetService } from '../core/services/asset.service';
+import { SeoService } from '../core/services/seo.service';
 import {
   BORRADOR,
   DOCUMENTOS,
@@ -12,6 +13,35 @@ import {
   VERSION,
   VIGENTE_DESDE,
 } from './legal-content';
+
+/**
+ * La descripción de cada documento y su ruta canónica.
+ *
+ * Es una tabla aquí y no un campo de `DocumentoLegal` porque es texto de BUSCADOR, no del
+ * documento: lo que se lee bajo el título en Google, no una cláusula. `ruta` tiene que coincidir
+ * con la de `app.routes.ts`; `RUTAS_LEGALES` no sirve porque ahí la de privacidad se llama
+ * «Política de Privacidad» y el documento, «Política de Tratamiento de Datos Personales».
+ */
+const SEO_LEGAL: Record<string, { ruta: string; descripcion: string }> = {
+  terminos: {
+    ruta: '/terminos',
+    descripcion:
+      'Términos y Condiciones de EscalApp: qué incluye el servicio, planes y pagos, períodos de '
+      + 'prueba, facturación electrónica y limitación de responsabilidad.',
+  },
+  privacidad: {
+    ruta: '/privacidad',
+    descripcion:
+      'Cómo trata EscalApp los datos personales: responsable del tratamiento, finalidades, '
+      + 'derechos del titular y cómo ejercerlos.',
+  },
+  eliminacion: {
+    ruta: '/eliminacion-datos',
+    descripcion:
+      'Cómo pedir la eliminación de tus datos personales en EscalApp, qué se borra, qué se '
+      + 'conserva por obligación legal y en cuánto tiempo.',
+  },
+};
 
 /**
  * LegalPageComponent — muestra los documentos legales públicos.
@@ -103,5 +133,39 @@ export class LegalPageComponent {
 
   protected alternarIndice(): void {
     this.indiceAbierto.update((v) => !v);
+  }
+
+  /**
+   * Los metadatos del documento que toca.
+   *
+   * Hasta el 2026-10-28 estas tres rutas eran las únicas del sitemap que **no** pasaban por
+   * `SeoService`: el `title` lo ponía la ruta y todo lo demás lo heredaban del respaldo de
+   * `index.html`. El resultado en producción era que `/terminos`, `/privacidad` y
+   * `/eliminacion-datos` salían SIN canonical, con la descripción de la portada y, lo peor, con
+   * `og:url` = `https://escalapp.cloud/` las tres: cuatro URLs distintas declarándose la misma
+   * página, que es la definición de contenido duplicado.
+   *
+   * Va en el constructor y no en `afterNextRender` por lo mismo que las landings: la ruta es
+   * `Prerender` y esto tiene que quedar horneado en el HTML.
+   *
+   * Se lee del `snapshot` y no de la señal `clave`: `toSignal` sobre `route.data` emite de forma
+   * síncrona en la práctica, pero si algún día dejara de hacerlo los TRES documentos saldrían con
+   * los metadatos de «términos» y nada fallaría a la vista. El snapshot no tiene esa duda.
+   *
+   * Las tres rutas perdieron su `title` en `app.routes.ts` al mismo tiempo: lo pone `aplicar`, y
+   * la regla del proyecto es que la ruta no lo declare si el componente ya lo hace (el router lo
+   * aplica DESPUÉS de construir el componente y pisaba el del servicio).
+   */
+  constructor() {
+    const seo = inject(SeoService);
+    const clave = (this.route.snapshot.data['documento'] as string) ?? 'terminos';
+    const meta = SEO_LEGAL[clave] ?? SEO_LEGAL['terminos'];
+    const titulo = `${DOCUMENTOS[clave]?.titulo ?? 'Documentos legales'} — EscalApp`;
+    seo.aplicar({
+      titulo,
+      descripcion: meta.descripcion,
+      ruta: meta.ruta,
+      tipo: 'article',
+    });
   }
 }

@@ -27,6 +27,7 @@ import {
 } from '../core/icons/phosphor';
 
 import { AssetService } from '../core/services/asset.service';
+import { SeoService } from '../core/services/seo.service';
 import { TelefonoPaisComponent } from '../shared/telefono-pais/telefono-pais.component';
 import { PagosPublicosService } from '../pagos/pagos-publicos.service';
 import { recordarPago, tomarPagoEnCurso } from '../core/utils/pasarelas';
@@ -207,6 +208,27 @@ export class AdquirirPageComponent {
     const qp = this.route.snapshot.queryParamMap;
     if (qp.get('plan')) this.planPedido.set(qp.get('plan')!);
     if (qp.get('modulo')) this.moduloPedido.set(qp.get('modulo')!.toUpperCase());
+
+    // Sus propios metadatos, y conviene saber qué se gana y qué no.
+    //
+    // Esta ruta es `RenderMode.Client` (ver `app.routes.server.ts`), así que esto corre SOLO en
+    // el navegador: WhatsApp y Facebook, que no ejecutan JavaScript, no lo verán nunca. Google
+    // sí —renderiza en una segunda pasada— y es a quien va dirigido.
+    //
+    // Sin esto la página heredaba el respaldo de `index.html`, que incluye `og:url` y canonical
+    // apuntando a `https://escalapp.cloud/`: `/adquirir` le estaba diciendo a Google que es la
+    // portada. Eso es peor que no decir nada, y es gratis arreglarlo.
+    //
+    // `/adquirir` SALIÓ del `sitemap.xml` el 2026-10-28 por ser `Client`: el rastreador recibe 0
+    // bytes de texto en la primera pasada. Si algún día se prerenderiza, vuelve al sitemap y
+    // esto pasa a estar horneado.
+    inject(SeoService).aplicar({
+      titulo: 'Adquiere tu plan — EscalApp',
+      descripcion:
+        'Elige tu plan de EscalApp y empieza hoy: sistema completo para tu negocio y, si lo '
+        + 'quieres, el asistente que contesta tu WhatsApp. Pago seguro con tarjeta.',
+      ruta: '/adquirir',
+    });
 
     // Las dos consultas van en afterNextRender porque esta ruta se prerenderiza: durante el
     // build no hay API a la que preguntar, y pedirlo ahí dejaría el HTML servido con el mensaje

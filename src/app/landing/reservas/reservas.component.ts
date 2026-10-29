@@ -475,19 +475,26 @@ export class ReservasComponent {
         'El asistente contesta tu WhatsApp, agenda la cita y la deja en tu agenda. Agenda por profesional, página para que tus clientes agenden solos, caja e informes. Prueba 30 días gratis, sin tarjeta.',
       ruta: '/reservas',
     });
+    // Mismo bloque que `/restaurantes`, y por las mismas razones: ver el comentario de allí.
     this.seo.datosEstructurados('reservas', {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: 'EscalApp para negocios de citas',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
+      url: this.seo.urlAbsoluta('/reservas'),
+      inLanguage: 'es-CO',
+      image: this.seo.urlAbsoluta('/images/og-escalapp-marca.png'),
       description:
         'Sistema de agenda y reservas con asistente en WhatsApp: citas por profesional, página para agendar, caja e informes.',
       offers: {
         '@type': 'Offer',
-        price: '37999',
+        price: PLANES[0].precio.replace(/\D/g, ''),
         priceCurrency: 'COP',
+        availability: 'https://schema.org/InStock',
+        url: this.seo.urlAbsoluta('/adquirir'),
       },
+      publisher: { '@id': `${this.seo.urlAbsoluta('/')}#organizacion` },
     });
 
     this.prueba.oficios.set(OFICIOS_RESERVA);

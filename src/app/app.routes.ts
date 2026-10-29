@@ -48,17 +48,18 @@ export const routes: Routes = [
   // Documentos legales públicos — SIN guardia a propósito: quien quiere ejercer sus derechos
   // como titular de datos no tiene por qué tener cuenta, y una política de privacidad que exige
   // iniciar sesión para leerla no cumple su función. Se prerenderizan como estáticas.
+  //
+  // SIN `title` desde el 2026-10-28, como las landings: lo pone `SeoService` desde el componente,
+  // junto con la descripción, el canonical y el Open Graph, que es lo que les faltaba.
   {
     path: 'terminos',
     loadComponent: () => import('./legal/legal-page.component').then((m) => m.LegalPageComponent),
     data: { documento: 'terminos' },
-    title: 'Términos y Condiciones — EscalApp',
   },
   {
     path: 'privacidad',
     loadComponent: () => import('./legal/legal-page.component').then((m) => m.LegalPageComponent),
     data: { documento: 'privacidad' },
-    title: 'Política de Tratamiento de Datos — EscalApp',
   },
   {
     // Meta exige una URL de instrucciones de eliminación de datos para publicar la app, y es un
@@ -67,7 +68,6 @@ export const routes: Routes = [
     path: 'eliminacion-datos',
     loadComponent: () => import('./legal/legal-page.component').then((m) => m.LegalPageComponent),
     data: { documento: 'eliminacion' },
-    title: 'Cómo eliminar tus datos — EscalApp',
   },
 
   // Compra de un plan — SIN guardia: quien compra todavía no tiene cuenta. La vista crea el
@@ -75,10 +75,10 @@ export const routes: Routes = [
   // Es una ruta y no un modal porque a mitad del flujo el visitante se va al checkout de la
   // pasarela: la vuelta tiene que ser una URL con la referencia.
   {
+    // SIN `title`: lo pone `SeoService` desde el componente, con la descripción y el canonical.
     path: 'adquirir',
     loadComponent: () =>
       import('./adquirir/adquirir-page.component').then((m) => m.AdquirirPageComponent),
-    title: 'Adquiere tu plan — EscalApp',
   },
 
   // Portal de pagos — SIN guardia a propósito: exigir login para pagar es la forma más eficaz de

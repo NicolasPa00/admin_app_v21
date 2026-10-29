@@ -1,25 +1,28 @@
 {
   "name": "EscalApp",
   "short_name": "EscalApp",
-  "description": "Panel de administración de EscalApp",
+  "description": "EscalApp: el sistema para tu negocio, con un asistente en WhatsApp",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "lang": "es-CO",
   "background_color": "#FFFFFF",
-  "theme_color": "#212142",
+  "theme_color": "#191a24",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "icon-192.png?v=2",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512.png?v=2",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icon-maskable-512.png",
+      "src": "icon-maskable-512.png?v=2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

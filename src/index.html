@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas</title>
+  <!-- El título de RESPALDO, el que ven las rutas que se renderizan en el navegador. Tiene que
+       decir lo mismo que la portada (`InicioComponent`): hasta el 2026-10-28 aquí seguía el
+       titular de la landing anterior («Tu WhatsApp toma los pedidos solo»), que dejó de ser el
+       mensaje el 27-10 y salía tal cual en `/adquirir`, `/login` y `/pagar`. -->
+  <title>EscalApp — el sistema para tu negocio, con un asistente en WhatsApp</title>
   <base href="/">
   <!-- El tema de la landing (claro por defecto, oscuro si el visitante lo eligió). Va ANTES del primer
        pintado para que quien lo eligió oscuro no vea un destello claro. `?tema=oscuro` o `?tema=claro`
@@ -24,20 +28,23 @@
        son los que quedan en las que se renderizan en el navegador. Hasta el 2026-10-20 no había
        ninguno: pegar el enlace en WhatsApp daba una URL pelada, sin título ni imagen, que es la
        peor forma de que te recomienden. -->
-  <meta name="description" content="El asistente de IA contesta tu WhatsApp, toma el pedido y lo deja en tu sistema: caja, cocina, inventario y facturación DIAN en un solo lugar. Prueba 30 días gratis.">
+  <meta name="description" content="Restaurantes, barberías, salones, spas y otros negocios de citas: el sistema para operarlos y un asistente que contesta tu WhatsApp. Prueba 30 días gratis, sin tarjeta.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="EscalApp">
   <meta property="og:locale" content="es_CO">
-  <meta property="og:title" content="EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas">
-  <meta property="og:description" content="El asistente de IA contesta, toma el pedido y lo deja en tu sistema. Caja, cocina, inventario y facturación DIAN en un solo lugar.">
-  <meta property="og:url" content="https://escalapp.cloud/">
+  <meta property="og:title" content="EscalApp — el sistema para tu negocio, con un asistente en WhatsApp">
+  <meta property="og:description" content="Restaurantes, barberías, salones, spas y otros negocios de citas: el sistema para operarlos y un asistente que contesta tu WhatsApp.">
+  <!-- NO se declara `og:url` ni canonical aquí. Es un respaldo que heredan TODAS las rutas que se
+       renderizan en el navegador (`/adquirir`, `/login`, `/pagar`, `/admin/**`), así que una URL
+       fija haría que cada una de ellas se declarara la portada: cuatro páginas distintas
+       diciéndole a Google que son la misma. Las rutas que importan lo ponen por `SeoService`. -->
   <meta property="og:image" content="https://escalapp.cloud/images/og-escalapp-marca.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="EscalApp — Tu WhatsApp toma los pedidos solo, 24 horas">
-  <meta name="twitter:description" content="El asistente de IA contesta, toma el pedido y lo deja en tu sistema. Caja, cocina, inventario y facturación DIAN en un solo lugar.">
+  <meta name="twitter:title" content="EscalApp — el sistema para tu negocio, con un asistente en WhatsApp">
+  <meta name="twitter:description" content="Restaurantes, barberías, salones, spas y otros negocios de citas: el sistema para operarlos y un asistente que contesta tu WhatsApp.">
   <meta name="twitter:image" content="https://escalapp.cloud/images/og-escalapp-marca.png">
   <!-- Inter.
        Los DOS sistemas de tokens la declaran primera —`--es-font-sans` en tokens.css y
@@ -55,14 +62,27 @@
        Las rutas van SIN barra inicial a propósito: se resuelven contra el <base href>,
        que el build reescribe a /admin/, /restaurante/ o /reserva/ según la app. Con
        "/images/icono.png" el navegador las pedía a la raíz del dominio, donde no están. -->
-  <!-- favicon.svg es el del kit del diseñador (símbolo a color sobre azul noche): nítido a
-       cualquier tamaño. Los navegadores que lo entienden lo prefieren; el .ico queda de respaldo.
+  <!-- Todo el juego sale de `scripts/generar-iconos.mjs`, que LEE `public/logo-fondo-oscuro.svg`
+       —el logotipo oficial del diseñador— y escribe también los de `negocio_app` y `reserva_app`.
+       Antes se exportaban a mano y el SVG no coincidía con los PNG del manifiesto.
+
+       Los iconos llevan **solo el isotipo**, no el logotipo con la palabra: medido a 16, 24 y 32
+       px, con el lockup completo la «E» se encoge hasta ser una mota y «EscalApp» queda en un
+       borrón de tres píxeles de alto. La palabra sí va en `logo-escalapp-512.png`, que es lo que
+       declara `Organization.logo` en los datos estructurados — ahí Google lo lee grande y el
+       nombre escrito ayuda.
+
+       El `?v=2` es lo único que obliga al navegador —y a Google, que cachea el icono por HOSTNAME
+       y lo rastrea en su propio calendario— a volver a pedirlo. Al cambiar el icono: subir a v3.
        Sin los PNG de 16/32 a propósito: Chrome los escoge antes que el SVG si están. -->
-  <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" type="image/svg+xml" href="favicon.svg">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" href="favicon.ico?v=2" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg?v=2">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
   <link rel="manifest" href="site.webmanifest">
-  <meta name="theme-color" content="#4338CA">
+  <!-- El mismo `#191a24` del fondo del logotipo, y el mismo que el manifiesto. Hasta el
+       2026-10-28 aquí decía `#4338CA` (el índigo anterior al Brand Book) y el manifiesto
+       `#212142`: dos respuestas al mismo navegador. -->
+  <meta name="theme-color" content="#191a24">
   <!-- Nombre bajo el icono al añadir a la pantalla de inicio en iOS. -->
   <meta name="apple-mobile-web-app-title" content="EscalApp">
 </head>

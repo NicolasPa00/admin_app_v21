@@ -491,19 +491,31 @@ export class RestaurantesComponent {
         'El asistente contesta tu WhatsApp, arma el pedido con tu carta y lo deja en tu caja. Pedidos, mesas, cocina, caja e inventario. Prueba 30 días gratis, sin tarjeta.',
       ruta: '/restaurantes',
     });
+    // `url`, `image`, `inLanguage` y `publisher` se añadieron el 2026-10-28: sin `url` Google no
+    // sabe a qué página atribuir el producto, y sin `publisher` el bloque queda huérfano de la
+    // `Organization` que declara la portada — que es de donde sale el logotipo de la marca.
+    // El precio se deriva de la tarjeta de plan que la página ENSEÑA (`PLANES[0].precio`) en vez
+    // de repetirse como literal: así no puede quedarse una cifra vieja en los datos
+    // estructurados mientras la pantalla dice otra, que es lo que se escribe mal solo.
     this.seo.datosEstructurados('restaurantes', {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: 'EscalApp para restaurantes',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
+      url: this.seo.urlAbsoluta('/restaurantes'),
+      inLanguage: 'es-CO',
+      image: this.seo.urlAbsoluta('/images/og-escalapp-marca.png'),
       description:
         'Sistema de restaurante con asistente de IA en WhatsApp: pedidos, mesas, cocina, caja, inventario y reportes.',
       offers: {
         '@type': 'Offer',
-        price: '37999',
+        price: PLANES[0].precio.replace(/\D/g, ''),
         priceCurrency: 'COP',
+        availability: 'https://schema.org/InStock',
+        url: this.seo.urlAbsoluta('/adquirir'),
       },
+      publisher: { '@id': `${this.seo.urlAbsoluta('/')}#organizacion` },
     });
 
     afterNextRender(() => {

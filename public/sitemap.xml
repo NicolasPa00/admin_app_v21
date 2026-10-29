@@ -11,49 +11,49 @@
     · Que se quiera  — `/ayuda` está prerenderizada y es pública de diseño, pero hoy está cerrada
                        a super admin hasta que tenga videos, así que no entra.
 
+  **`/adquirir` SALIÓ el 2026-10-28** y es el ejemplo de por qué existe el segundo filtro: está
+  declarada `RenderMode.Client` en `app.routes.server.ts` (depende de los parámetros de la URL y
+  de dos consultas al API, y el prerender chocaba al hidratar), así que el rastreador recibe 0
+  bytes de texto — medido. Llevaba año y medio anunciada en este archivo. Si algún día se
+  prerenderiza una cáscara con sus metadatos, vuelve aquí.
+
   Las URLs cuelgan de la raíz desde el 2026-10-20, cuando la app dejó de servirse bajo `/admin/`.
   Si vuelve a moverse, hay que cambiarlas aquí y en `SeoService.BASE`.
 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://escalapp.cloud/</loc>
-    <lastmod>2026-10-27</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://escalapp.cloud/restaurantes</loc>
-    <lastmod>2026-10-24</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://escalapp.cloud/reservas</loc>
-    <lastmod>2026-10-24</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://escalapp.cloud/adquirir</loc>
-    <lastmod>2026-10-20</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://escalapp.cloud/terminos</loc>
-    <lastmod>2026-09-10</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://escalapp.cloud/privacidad</loc>
-    <lastmod>2026-09-10</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://escalapp.cloud/eliminacion-datos</loc>
-    <lastmod>2026-09-10</lastmod>
+    <lastmod>2026-10-28</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

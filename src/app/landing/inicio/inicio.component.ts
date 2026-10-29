@@ -265,12 +265,69 @@ export class InicioComponent {
         'Restaurantes, barberías, salones, spas y otros negocios de citas: el sistema para operarlos y un asistente que contesta tu WhatsApp. Prueba 30 días gratis, sin tarjeta.',
       ruta: '/',
     });
+    this.aplicarDatosEstructurados();
 
     this.prueba.oficios.set(OFICIOS_INICIO);
     afterNextRender(() => {
       this.prueba.cargarOficios(OFICIOS_INICIO.map((o) => o.nombre));
       montarEntradas(this.destroyRef);
       this.arrancarChat();
+    });
+  }
+
+  /**
+   * Los datos estructurados de la PORTADA.
+   *
+   * Se perdieron el 2026-10-27, cuando `/inicio` sustituyó a la landing vieja en `path: ''`: el
+   * bloque JSON-LD vivía en `landing.component.ts`, que quedó sin ruta, y nadie lo echó de menos
+   * porque no se ve. En producción la portada quedó sin una sola línea de datos estructurados
+   * mientras `/restaurantes` y `/reservas` sí los tenían.
+   *
+   * ## Por qué aquí va `Organization` y no `SoftwareApplication`
+   *
+   * Esta página no enseña precios: reparte al visitante entre los dos motores, y el precio vive
+   * en la página de cada uno. Declarar aquí una `Offer` sería una cifra que la página no muestra
+   * —y una cifra más que se queda atrás cuando cambie la tarifa—. Lo que sí es de la portada, y
+   * de ninguna otra, es **quién es EscalApp**: es el bloque del que Google saca el nombre y el
+   * logotipo de la marca.
+   *
+   * El `logo` apunta a `logo-escalapp-512.png` —el logotipo COMPLETO, con la palabra escrita,
+   * que genera `scripts/generar-iconos.mjs` desde el archivo del diseñador— y no al
+   * `images/icono-escalapp.png` que declaraba la landing vieja: ese es el hexágono ANTERIOR al
+   * Brand Book, y mientras siguiera declarado le estábamos diciendo a Google que el logo de la
+   * marca es el viejo.
+   *
+   * Aquí va el lockup entero y no el icono de la pestaña **porque son sitios distintos**: Google
+   * enseña este a tamaño grande, donde la palabra ayuda a asociar el nombre, mientras que el
+   * favicon se mira a 16 px, donde la misma palabra es un borrón. Un archivo para cada uno.
+   */
+  private aplicarDatosEstructurados(): void {
+    const sitio = this.seo.urlAbsoluta('/');
+    this.seo.datosEstructurados('organizacion', {
+      '@context': 'https://schema.org',
+      '@graph': [
+        {
+          '@type': 'Organization',
+          '@id': `${sitio}#organizacion`,
+          name: 'EscalApp',
+          url: sitio,
+          logo: this.seo.urlAbsoluta('/logo-escalapp-512.png'),
+          image: this.seo.urlAbsoluta('/images/og-escalapp-marca.png'),
+          description:
+            'Software de gestión para restaurantes y negocios de citas, con un asistente de IA '
+            + 'que atiende el WhatsApp del negocio.',
+          areaServed: 'CO',
+          sameAs: [environment.whatsappUrl],
+        },
+        {
+          '@type': 'WebSite',
+          '@id': `${sitio}#sitio`,
+          url: sitio,
+          name: 'EscalApp',
+          inLanguage: 'es-CO',
+          publisher: { '@id': `${sitio}#organizacion` },
+        },
+      ],
     });
   }
 
