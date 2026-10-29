@@ -404,7 +404,7 @@ export class MisPagosComponent implements OnInit {
 
   /** «Plan Básico» tal cual, o «plan Básico» si el catálogo trae solo el apellido. */
   protected nombreConPlan(nombre: string): string {
-    return /^plan/i.test(nombre) ? nombre : `plan ${nombre}`;
+    return /^plan\b/i.test(nombre) ? nombre : `plan ${nombre}`;
   }
 
   /**
