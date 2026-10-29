@@ -36,12 +36,26 @@
   </div>
 } @else if (nivel() === 'aplicativos') {
   <!-- Nivel 1: los aplicativos. -->
-  <section class="ay-portada">
-    <h1>¿Con qué necesitas ayuda?</h1>
-    <p>
-      Elige el módulo de tu negocio y encuentra el tutorial del paso exacto que necesitas.
-      También puedes buscar directamente arriba.
-    </p>
+  <section class="ay-portada ay-portada--inicio">
+    <div class="ay-portada__texto">
+      <h1>¿Con qué necesitas ayuda?</h1>
+      <p>
+        Elige el módulo de tu negocio y encuentra el tutorial del paso exacto que necesitas.
+        También puedes buscar directamente arriba.
+      </p>
+    </div>
+    <!-- Decorativa: la mascota no dice nada que no diga el título. -->
+    <img
+      class="ay-portada__pulpo"
+      [src]="pulpo.src"
+      [srcset]="pulpo.srcset"
+      sizes="150px"
+      width="150"
+      height="180"
+      alt=""
+      aria-hidden="true"
+      decoding="async"
+    />
   </section>
 
   @if (aplicativos().length) {

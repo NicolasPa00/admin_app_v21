@@ -47,6 +47,44 @@
   }
 }
 
+// La portada de la ayuda lleva la mascota (guiño) a la derecha del título, como la landing.
+// El texto manda: la imagen no empuja nada y en el celular se va, que ahí el espacio es para las
+// tarjetas.
+.ay-portada--inicio {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.ay-portada__texto { min-width: 0; }
+
+.ay-portada__pulpo {
+  flex: 0 0 auto;
+  width: 150px;
+  height: auto;
+  // Se asoma al borde de las tarjetas, como en la landing: apoyado, no flotando.
+  margin-bottom: -28px;
+  // El único momento con autor de la portada: aparece una vez al llegar, sin rebote. La ayuda
+  // se visita de vez en cuando, así que una entrada aquí no cansa.
+  animation: ay-pulpo-entra 420ms var(--ay-ease-out) 120ms both;
+
+  @media (max-width: 640px) { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    animation: ay-pulpo-aparece 200ms ease both;
+  }
+}
+
+@keyframes ay-pulpo-entra {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ay-pulpo-aparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .ay-encabezado {
   display: flex;
   align-items: center;

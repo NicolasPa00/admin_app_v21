@@ -1,12 +1,66 @@
 @use './ayuda-ui' as ui;
 
 :host {
+  // ── La identidad de la marca, solo dentro del centro de ayuda (2026-10-28) ──────────────────
+  //
+  // El centro de ayuda se pinta con los tokens `--es-*` de la landing, que traían el violeta
+  // eléctrico anterior y grises neutros. Aquí se les dan los valores del libro de marca,
+  // los mismos que ya usan el panel (`_theme.scss`) y las landings nuevas (`--r-*`): violeta
+  // profundo para lo que se pulsa, azul noche para el texto y las superficies oscuras, grises con
+  // un toque lavanda. Se redefinen en el `:host` del shell para que lleguen a las cuatro pantallas
+  // (todas cuelgan de él) sin tocar la landing vieja ni mezclar sistemas: siguen siendo `--es-*`.
+  // Solo claro, como el panel. Contrastes sobre blanco: azul noche 15,4:1 · violeta 6,6:1 ·
+  // #4f4c68 8,4:1 · #6c6987 5,2:1. Sobre el azul noche, el lavanda claro #a9a2d0 da 6,7:1.
+  --es-primary: #5d5497;
+  --es-primary-hover: #4b4482;
+  // Solo sobre las superficies oscuras (escenario del tutorial, cabecera oscura): un lavanda que
+  // se lea ahí. El #847bb4 del panel es relleno sobre claro y en texto oscuro se queda corto.
+  --es-primary-light: #a9a2d0;
+  --es-on-primary: #ffffff;
+  // La cabecera oscura y el escenario arrancan del mismo azul noche de la barra lateral del panel.
+  --es-secondary-darker: #212142;
+  --es-ink: #212142;
+  --es-text-primary: #212142;
+  --es-text-secondary: #4f4c68;
+  --es-text-muted: #6c6987;
+  --es-text-on-dark: #ffffff;
+  --es-text-on-dark-secondary: #cdc9e6;
+  --es-bg: #f4f3f8;
+  --es-bg-card: #ffffff;
+  --es-surface-alt: #efedf6;
+  --es-border: #dedaea;
+  --es-border-light: #e9e7f1;
+  --es-border-on-dark: rgba(255, 255, 255, 0.1);
+  --es-border-on-dark-strong: rgba(255, 255, 255, 0.2);
+  // Estados: los mismos del panel (medidos en admin_ws/docs/colores-de-estado.md).
+  --es-success: #17734f;
+  --es-warning: #9a4a00;
+  --es-warning-subtle: #fff3e0;
+  --es-error: #c62828;
+  // Sombras teñidas de azul noche: una gris pura sobre el fondo lavanda se ve sucia.
+  --es-shadow-sm: 0 1px 2px rgba(33, 33, 66, 0.06);
+  --es-shadow-md: 0 2px 8px rgba(33, 33, 66, 0.08);
+  --es-shadow-lg: 0 8px 24px rgba(33, 33, 66, 0.12);
+  --es-shadow-xl: 0 16px 40px rgba(33, 33, 66, 0.18);
+
+  // Lo que pinta el navegador también lleva la marca: cursor de escritura y controles nativos.
+  caret-color: var(--es-primary);
+  // La curva de salida fuerte de todo el centro (hover de tarjetas, pulsar botones, la mascota).
+  --ay-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  accent-color: var(--es-primary);
+
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background: var(--es-bg);
   font-family: var(--es-font-sans);
   color: var(--es-text-primary);
+}
+
+// La selección de texto con el lavanda de la marca, no el azul del sistema. `::ng-deep` para que
+// llegue a las pantallas que cuelgan del shell (tema, búsqueda, guía escrita).
+:host ::ng-deep ::selection {
+  background: color-mix(in srgb, var(--es-primary) 24%, transparent);
 }
 
 // ── Cabecera ────────────────────────────────────────────────────────────────────────────────

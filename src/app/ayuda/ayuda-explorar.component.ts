@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { LucideAngularModule } from 'lucide-angular';
 
+import { AssetService } from '../core/services/asset.service';
 import { AyudaService } from './ayuda.service';
 import { AplicativoAyuda, ModuloAyuda } from './ayuda.models';
 import { PROVEEDOR_ICONOS_AYUDA, iconoSeguro } from './ayuda-iconos';
@@ -33,8 +34,16 @@ import { duracionLegible } from './duracion';
 export class AyudaExplorarComponent {
   private readonly ruta = inject(ActivatedRoute);
   private readonly ayuda = inject(AyudaService);
+  private readonly assets = inject(AssetService);
 
   protected readonly icono = iconoSeguro;
+  /** La mascota del libro de marca (guiño), la misma pose que en la portada de la landing. */
+  protected readonly pulpo = {
+    src: this.assets.getAssetPath('marca/pulpo-guino-480.webp'),
+    srcset:
+      this.assets.getAssetPath('marca/pulpo-guino-480.webp') + ' 480w, ' +
+      this.assets.getAssetPath('marca/pulpo-guino-960.webp') + ' 960w',
+  };
   protected readonly duracion = duracionLegible;
 
   /** Los parámetros vienen de la URL, no de un estado: así «atrás» y recargar funcionan. */

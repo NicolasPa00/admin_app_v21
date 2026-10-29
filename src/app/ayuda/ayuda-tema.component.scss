@@ -23,14 +23,21 @@
   padding-block: 20px 26px;
   min-height: calc(100vh - var(--ay-cabecera));
   min-height: calc(100dvh - var(--ay-cabecera));
-  background:
-    radial-gradient(
-      900px 420px at 15% 0%,
-      color-mix(in srgb, var(--es-primary) 30%, transparent),
-      transparent 70%
-    ),
-    linear-gradient(180deg, var(--es-secondary-darker), var(--es-ink));
+  // El fondo es la «malla_noche» del paquete de fondos del diseñador (`Respuesta diseñador/Fondos`),
+  // generada con su misma herramienta pero SIN el símbolo del centro: cuando la vista se apila
+  // (tablet, celular) el símbolo blanco quedaba detrás de los pasos y su texto blanco se perdía.
+  // Su borde es el mismo azul noche de la cabecera oscura, así que no hay costura. El color va
+  // primero: es lo que se pinta mientras carga la imagen.
+  background: var(--es-secondary-darker) image-set(
+      url('/images/marca/fondo-malla-noche-1600.webp') 1x,
+      url('/images/marca/fondo-malla-noche-2560.webp') 2x
+    ) center / cover no-repeat;
   color: var(--es-text-on-dark);
+
+  // En vertical la versión del celular, compuesta para esa proporción.
+  @media (max-aspect-ratio: 4 / 5) {
+    background-image: url('/images/marca/fondo-malla-noche-movil-860.webp');
+  }
 
   &__interior {
     @include ui.contenedor-escenario;

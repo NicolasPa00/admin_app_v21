@@ -40,8 +40,9 @@
   border: 1px solid var(--es-border);
   border-radius: var(--es-radius-lg);
   box-shadow: var(--es-shadow-sm);
-  transition: border-color var(--es-transition), box-shadow var(--es-transition),
-    transform var(--es-transition);
+  // Curva propia y no `ease`: la de serie se siente blanda al levantar la tarjeta.
+  transition: border-color 200ms var(--ay-ease-out), box-shadow 200ms var(--ay-ease-out),
+    transform 200ms var(--ay-ease-out);
 }
 
 @mixin tarjeta-interactiva {
@@ -51,11 +52,22 @@
   color: inherit;
   cursor: pointer;
 
-  &:hover,
+  // El hover solo con ratón: en el celular un toque dejaba la tarjeta «levantada».
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: var(--es-primary);
+      box-shadow: var(--es-shadow-md);
+      transform: translateY(-2px);
+    }
+  }
   &:focus-visible {
+    outline: none;
     border-color: var(--es-primary);
-    box-shadow: var(--es-shadow-md);
-    transform: translateY(-2px);
+    box-shadow: var(--es-shadow-md), 0 0 0 3px color-mix(in srgb, var(--es-primary) 28%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transform: none !important;
   }
 }
 
@@ -119,9 +131,14 @@
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: background var(--es-transition);
+  transition: background 200ms ease, transform 160ms var(--ay-ease-out);
 
-  &:hover { background: var(--es-primary-hover); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) { background: var(--es-primary-hover); }
+  }
+  // Responde al dedo: el botón «oye» el clic.
+  &:active:not(:disabled) { transform: scale(0.97); }
+  &:focus-visible { outline: 2px solid var(--es-primary); outline-offset: 2px; }
   &:disabled { opacity: 0.55; cursor: not-allowed; }
 }
 
@@ -131,7 +148,9 @@
   color: var(--es-text-primary);
   border: 1px solid var(--es-border);
 
-  &:hover { background: var(--es-surface-alt); border-color: var(--es-primary); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) { background: var(--es-surface-alt); border-color: var(--es-primary); }
+  }
 }
 
 // El cuerpo de una guía escrita (lo que sale del pipe `markdown`). Va con `::ng-deep` en quien lo
@@ -172,12 +191,14 @@
 
   // La cita es donde van los avisos de las guías («esto no hace falta para empezar»), así que
   // tiene que leerse como un aparte y no como un bloque de código.
+  // Una caja apenas teñida del violeta de la marca, sin raya de color a un lado (2026-10-28):
+  // esa raya gruesa es el «aviso» genérico de cualquier plantilla.
   blockquote {
     margin: 1em 0;
     padding: 12px 16px;
-    border-left: 3px solid var(--es-primary);
-    background: var(--es-surface-alt);
-    border-radius: 0 var(--es-radius-md) var(--es-radius-md) 0;
+    border: 1px solid color-mix(in srgb, var(--es-primary) 22%, transparent);
+    background: color-mix(in srgb, var(--es-primary) 6%, var(--es-bg-card));
+    border-radius: var(--es-radius-md);
 
     p:last-child { margin-bottom: 0; }
   }
