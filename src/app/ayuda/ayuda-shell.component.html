@@ -1,7 +1,15 @@
 <header class="ay-cabecera" [class.ay-cabecera--oscura]="inmersivo()">
   <div class="ay-cabecera__interior">
     <a routerLink="/ayuda" class="ay-marca" aria-label="Centro de ayuda de EscalApp">
-      <span class="ay-marca__icono"><lucide-icon name="circle-help" [size]="20" /></span>
+      <!-- El isotipo de la marca, no un ícono de «ayuda»: esto es EscalApp. Sobre la cabecera
+           oscura del tutorial va el blanco, porque la pieza azul noche del de color desaparece. -->
+      <img
+        class="ay-marca__isotipo"
+        [src]="inmersivo() ? isotipo.blanco : isotipo.color"
+        width="26"
+        height="34"
+        alt=""
+      />
       <span class="ay-marca__texto">
         <strong>Centro de ayuda</strong>
         <small>EscalApp</small>

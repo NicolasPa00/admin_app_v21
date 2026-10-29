@@ -8,6 +8,14 @@
   padding-block: 32px 56px;
 }
 
+// La portada: título, pulpo y tarjetas en UN bloque centrado del ancho de tres tarjetas. Con el
+// contenedor que crece hasta 1660px las tres tarjetas quedaban a la izquierda y el pulpo, alineado
+// al borde del contenedor y no a ellas, flotaba solo al otro lado de la pantalla (2026-10-28).
+// `:host(.…)` pesa más que el `:host` del mixin, también dentro de sus media queries.
+:host(.ay-explorar--inicio) {
+  max-width: 1180px;
+}
+
 // ── Miga de pan ─────────────────────────────────────────────────────────────────────────────
 
 .ay-miga {
@@ -60,11 +68,16 @@
 .ay-portada__texto { min-width: 0; }
 
 .ay-portada__pulpo {
+  position: relative;
+  // Por encima de las tarjetas: los tentáculos se apoyan sobre el borde de la tercera.
+  z-index: 1;
   flex: 0 0 auto;
   width: 150px;
   height: auto;
-  // Se asoma al borde de las tarjetas, como en la landing: apoyado, no flotando.
-  margin-bottom: -28px;
+  // Sentado sobre la tercera tarjeta, no al borde de la pantalla: baja hasta pisarla 8px y se
+  // aparta un poco de su esquina.
+  margin-bottom: -36px;
+  margin-right: 28px;
   // El único momento con autor de la portada: aparece una vez al llegar, sin rebote. La ayuda
   // se visita de vez en cuando, así que una entrada aquí no cansa.
   animation: ay-pulpo-entra 420ms var(--ay-ease-out) 120ms both;

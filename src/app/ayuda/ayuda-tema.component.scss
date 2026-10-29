@@ -23,24 +23,46 @@
   padding-block: 20px 26px;
   min-height: calc(100vh - var(--ay-cabecera));
   min-height: calc(100dvh - var(--ay-cabecera));
-  // El fondo es la «malla_noche» del paquete de fondos del diseñador (`Respuesta diseñador/Fondos`),
-  // generada con su misma herramienta pero SIN el símbolo del centro: cuando la vista se apila
-  // (tablet, celular) el símbolo blanco quedaba detrás de los pasos y su texto blanco se perdía.
-  // Su borde es el mismo azul noche de la cabecera oscura, así que no hay costura. El color va
-  // primero: es lo que se pinta mientras carga la imagen.
-  background: var(--es-secondary-darker) image-set(
-      url('/images/marca/fondo-malla-noche-1600.webp') 1x,
-      url('/images/marca/fondo-malla-noche-2560.webp') 2x
-    ) center / cover no-repeat;
+  // El fondo difuminado de siempre, con los azules más oscuros de la marca: arranca en el azul
+  // noche de la cabecera oscura (sin costura) y baja a la «noche honda» de las landings, con el
+  // resplandor violeta arriba a la izquierda. La malla del paquete del diseñador se probó y el
+  // dueño prefirió volver a este, en los azules más oscuros (2026-10-28).
+  background:
+    radial-gradient( /* taste-skill-ignore: el fondo difuminado lo pidió el dueño (2026-10-28) */
+      900px 420px at 15% 0%,
+      color-mix(in srgb, var(--es-primary) 34%, transparent),
+      transparent 70%
+    ),
+    radial-gradient( /* taste-skill-ignore: idem */
+      700px 500px at 100% 100%,
+      color-mix(in srgb, var(--es-primary) 14%, transparent),
+      transparent 70%
+    ),
+    linear-gradient(180deg, var(--es-secondary-darker), #171733); /* taste-skill-ignore: idem */
   color: var(--es-text-on-dark);
-
-  // En vertical la versión del celular, compuesta para esa proporción.
-  @media (max-aspect-ratio: 4 / 5) {
-    background-image: url('/images/marca/fondo-malla-noche-movil-860.webp');
-  }
 
   &__interior {
     @include ui.contenedor-escenario;
+    // Lo que mide el escenario de verdad: el lateral, el hueco y el video, cuyo ancho sale del
+    // alto disponible (ver `&__video`).
+    --ay-video-max: calc((100vh - 290px) * 16 / 9);
+    --ay-lateral: 340px;
+    --ay-hueco: 20px;
+
+    @supports (height: 100dvh) {
+      --ay-video-max: calc((100dvh - 290px) * 16 / 9);
+    }
+  }
+
+  &__miga,
+  &__titulo,
+  &__rejilla {
+    max-width: calc(var(--ay-lateral) + var(--ay-hueco) + var(--ay-video-max));
+    margin-inline: auto;
+  }
+
+  &__rejilla--sin-pasos {
+    max-width: var(--ay-video-max);
   }
 
   &__miga {
@@ -590,6 +612,7 @@
 
 @media (min-width: 1500px) {
   .ay-escena__rejilla { grid-template-columns: minmax(330px, 390px) minmax(0, 1fr); gap: 26px; }
+  .ay-escena__interior { --ay-lateral: 390px; --ay-hueco: 26px; }
   .ay-escena__titulo h1 { font-size: var(--es-font-size-2xl); }
   .ay-paso { padding: 13px 14px; }
 }
@@ -619,7 +642,10 @@
   .ay-pasos-lat__lista { overflow-y: visible; flex: 0 0 auto; }
 
   .ay-escena__video,
-  .ay-escena__pie {
+  .ay-escena__pie,
+  .ay-escena__miga,
+  .ay-escena__titulo,
+  .ay-escena__rejilla {
     max-width: none;
   }
 }

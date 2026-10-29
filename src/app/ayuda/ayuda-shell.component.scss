@@ -89,10 +89,6 @@
     border-bottom-color: transparent;
     color: var(--es-text-on-dark);
 
-    .ay-marca__icono {
-      background: color-mix(in srgb, var(--es-primary) 38%, transparent);
-      color: var(--es-text-on-dark);
-    }
     .ay-marca__texto small { color: var(--es-text-on-dark-secondary); }
 
     .ay-buscador__lupa { color: var(--es-text-on-dark-secondary); }
@@ -120,14 +116,21 @@
     }
   }
 
+  // Tres columnas: la marca a la izquierda, el buscador CENTRADO en la pantalla y la vuelta al
+  // panel a la derecha. Las laterales son iguales (1fr y 1fr) y por eso el buscador queda en el
+  // centro de verdad aunque la marca y el botón no midan lo mismo.
   &__interior {
     @include ui.contenedor-escenario;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 720px) minmax(0, 1fr);
     align-items: center;
     gap: 16px;
     min-height: 68px;
     padding-block: 12px;
-    flex-wrap: wrap;
+
+    > .ay-marca { justify-self: start; }
+    > .ay-buscador { justify-self: stretch; max-width: none; }
+    > .ay-volver { justify-self: end; }
   }
 }
 
@@ -139,7 +142,12 @@
   color: inherit;
   flex: 0 0 auto;
 
-  &__icono { @include ui.icono-redondo(38px); }
+  &__isotipo {
+    display: block;
+    width: 26px;
+    height: 34px;
+    flex: 0 0 auto;
+  }
 
   &__texto {
     display: flex;
@@ -414,6 +422,16 @@
 
 // En móvil el botón «Buscar» sobra: el teclado ya trae su tecla de envío, y quitarlo le devuelve
 // la línea entera al campo, que es lo que de verdad hace falta ahí.
+@media (max-width: 900px) {
+  .ay-cabecera__interior {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+
+    > .ay-buscador { flex: 1 1 280px; }
+  }
+}
+
 @media (max-width: 640px) {
   .ay-buscador {
     order: 3;

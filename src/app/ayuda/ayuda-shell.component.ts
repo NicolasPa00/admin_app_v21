@@ -21,6 +21,7 @@ import { PROVEEDOR_ICONOS_AYUDA, iconoSeguro } from './ayuda-iconos';
 import { ResaltadoPipe } from './markdown.pipe';
 import { marcaTiempo } from './duracion';
 import { environment } from '../../environments/environment';
+import { AssetService } from '../core/services/asset.service';
 
 /**
  * El marco del Centro de ayuda: cabecera con buscador, el contenido, y el pie con la salida a
@@ -73,6 +74,15 @@ export class AyudaShellComponent implements OnDestroy {
 
   protected readonly icono = iconoSeguro;
   protected readonly marca = marcaTiempo;
+
+  /** El isotipo de la marca para la cabecera: a color sobre claro, blanco sobre el escenario. */
+  protected readonly isotipo = (() => {
+    const assets = inject(AssetService);
+    return {
+      color: assets.getAssetPath('marca/isotipo-color.svg'),
+      blanco: assets.getAssetPath('marca/isotipo-blanco.svg'),
+    };
+  })();
 
   /** El WhatsApp de soporte, para la salida del pie. */
   protected readonly whatsappSoporte = environment.whatsappUrl;

@@ -28,6 +28,8 @@ import { duracionLegible } from './duracion';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, LucideAngularModule],
   providers: [...PROVEEDOR_ICONOS_AYUDA],
+  // En la portada todo va en un bloque centrado del ancho de las tarjetas (ver el SCSS).
+  host: { '[class.ay-explorar--inicio]': "nivel() === 'aplicativos'" },
   templateUrl: './ayuda-explorar.component.html',
   styleUrl: './ayuda-explorar.component.scss',
 })
