@@ -1,0 +1,195 @@
+<div class="ac-intro">
+  <p>
+    Lo que el asistente sabe <strong>además</strong> de los planes, los precios y los tipos de
+    negocio (esos salen solos del sistema): las visitas, la capacitación, una promoción, una
+    pregunta que se repite. Lo consulta cuando la pregunta lo pide. <strong>Guardar es
+    publicar</strong>: el siguiente mensaje ya lo usa.
+  </p>
+  @if (editando() === null) {
+    <button type="button" class="ac-boton ac-boton--primario" (click)="nueva()">
+      <lucide-icon name="plus" [size]="16" aria-hidden="true" /> Nueva entrada
+    </button>
+  }
+</div>
+
+@if (editando() === 0) {
+  <ng-container *ngTemplateOutlet="formulario" />
+}
+
+@if (estado() === 'cargando') {
+  <p class="ac-vacio">
+    <lucide-icon name="loader-2" [size]="18" class="ac-spin" aria-hidden="true" /> Cargando…
+  </p>
+} @else if (estado() === 'error') {
+  <p class="ac-vacio">
+    No se pudo cargar el conocimiento.
+    <button type="button" class="ac-boton" (click)="cargar()">Reintentar</button>
+  </p>
+} @else if (entradas().length === 0 && editando() === null) {
+  <p class="ac-vacio">
+    Todavía no hay nada. Empieza por lo que más preguntan y no está en la página: si hacen visitas,
+    si capacitan al personal, cómo es el soporte.
+  </p>
+} @else {
+  <ul class="ac-lista">
+    @for (e of entradas(); track e.id_conocimiento) {
+      @if (editando() === e.id_conocimiento) {
+        <li class="ac-lista__formulario"><ng-container *ngTemplateOutlet="formulario" /></li>
+      } @else {
+        <li class="ac-entrada" [class.ac-entrada--apagada]="!e.activo || e.vencida">
+          <div class="ac-entrada__cabeza">
+            <span class="ac-chip" [attr.data-tipo]="e.tipo">{{ etiquetaTipo(e.tipo) }}</span>
+            <h3>{{ e.titulo }}</h3>
+            @if (e.vencida) {
+              <span class="ac-marca ac-marca--alerta">Vencida el {{ e.vigente_hasta }}</span>
+            } @else if (e.vigente_hasta) {
+              <span class="ac-marca">Hasta el {{ e.vigente_hasta }}</span>
+            }
+            @if (!e.activo) {
+              <span class="ac-marca">Inactiva</span>
+            }
+          </div>
+          <p class="ac-entrada__texto">{{ e.contenido }}</p>
+          @if (e.palabras_clave) {
+            <p class="ac-entrada__claves">Se encuentra por: {{ e.palabras_clave }}</p>
+          }
+          <div class="ac-entrada__acciones">
+            <label class="ac-interruptor">
+              <input type="checkbox" [checked]="e.activo" (change)="alternarActiva(e)" />
+              <span>{{ e.activo ? 'Activa' : 'Inactiva' }}</span>
+            </label>
+            <span class="ac-hueco"></span>
+            @if (confirmandoBorrar() === e.id_conocimiento) {
+              <span class="ac-confirmar">¿Eliminarla?</span>
+              <button type="button" class="ac-boton ac-boton--peligro" (click)="borrar(e)">Sí, eliminar</button>
+              <button type="button" class="ac-boton" (click)="confirmandoBorrar.set(null)">No</button>
+            } @else {
+              <button type="button" class="ac-boton" (click)="editar(e)">
+                <lucide-icon name="pencil" [size]="14" aria-hidden="true" /> Editar
+              </button>
+              <button
+                type="button"
+                class="ac-boton ac-boton--icono"
+                (click)="confirmandoBorrar.set(e.id_conocimiento)"
+                [attr.aria-label]="'Eliminar ' + e.titulo"
+              >
+                <lucide-icon name="trash-2" [size]="15" aria-hidden="true" />
+              </button>
+            }
+          </div>
+        </li>
+      }
+    }
+  </ul>
+}
+
+<ng-template #formulario>
+  <form class="ac-form" (ngSubmit)="guardar()">
+    <div class="ac-form__fila">
+      <label class="ac-campo ac-campo--tipo">
+        <span>Tipo</span>
+        <select [ngModel]="borrador().tipo" (ngModelChange)="campo('tipo', $event)" name="tipo">
+          @for (t of TIPOS; track t.valor) {
+            <option [value]="t.valor" [selected]="t.valor === borrador().tipo">{{ t.etiqueta }}</option>
+          }
+        </select>
+        <small>{{ ayudaTipo() }}</small>
+      </label>
+      <label class="ac-campo ac-campo--crece">
+        <span>Título</span>
+        <input
+          type="text"
+          maxlength="150"
+          name="titulo"
+          placeholder="Ej.: Visita para dejar el sistema listo"
+          [ngModel]="borrador().titulo"
+          (ngModelChange)="campo('titulo', $event)"
+          required
+        />
+      </label>
+    </div>
+
+    <label class="ac-campo">
+      <span>Lo que el asistente debe saber</span>
+      <textarea
+        rows="4"
+        name="contenido"
+        [attr.maxlength]="MAX_CONTENIDO"
+        placeholder="Escríbelo como se lo dirías a un cliente. El asistente lo cuenta con sus palabras, sin añadir lo que no diga aquí."
+        [ngModel]="borrador().contenido"
+        (ngModelChange)="campo('contenido', $event)"
+        required
+      ></textarea>
+      <small class="ac-contador" [class.ac-contador--alerta]="borrador().contenido.length > MAX_CONTENIDO - 100">
+        {{ borrador().contenido.length }} / {{ MAX_CONTENIDO }}
+      </small>
+    </label>
+
+    <div class="ac-form__fila">
+      <label class="ac-campo ac-campo--crece">
+        <span>Palabras con las que lo preguntan <em>(opcional)</em></span>
+        <input
+          type="text"
+          maxlength="300"
+          name="palabras_clave"
+          placeholder="visita, instalar, ir al negocio"
+          [ngModel]="borrador().palabras_clave"
+          (ngModelChange)="campo('palabras_clave', $event)"
+        />
+      </label>
+      <label class="ac-campo">
+        <span>
+          Vigente hasta
+          @if (borrador().tipo !== 'promocion') {
+            <em>(opcional)</em>
+          }
+        </span>
+        <input
+          type="date"
+          name="vigente_hasta"
+          [class.ac-invalido]="faltaFecha()"
+          [ngModel]="borrador().vigente_hasta"
+          (ngModelChange)="campo('vigente_hasta', $event || null)"
+        />
+        @if (faltaFecha()) {
+          <small class="ac-error">Una promoción necesita fecha de fin.</small>
+        }
+      </label>
+      <label class="ac-campo ac-campo--orden">
+        <span>Orden</span>
+        <input
+          type="number"
+          name="orden"
+          min="-999"
+          max="999"
+          [ngModel]="borrador().orden"
+          (ngModelChange)="campo('orden', $event)"
+        />
+      </label>
+    </div>
+
+    <div class="ac-form__pie">
+      <label class="ac-interruptor">
+        <input
+          type="checkbox"
+          name="activo"
+          [ngModel]="borrador().activo"
+          (ngModelChange)="campo('activo', $event)"
+        />
+        <span>Activa: el asistente puede usarla</span>
+      </label>
+      <span class="ac-hueco"></span>
+      <button type="button" class="ac-boton" (click)="cancelar()">
+        <lucide-icon name="x" [size]="14" aria-hidden="true" /> Cancelar
+      </button>
+      <button type="submit" class="ac-boton ac-boton--primario" [disabled]="!valido() || guardando()">
+        @if (guardando()) {
+          <lucide-icon name="loader-2" [size]="14" class="ac-spin" aria-hidden="true" />
+        } @else {
+          <lucide-icon name="check" [size]="14" aria-hidden="true" />
+        }
+        Guardar
+      </button>
+    </div>
+  </form>
+</ng-template>

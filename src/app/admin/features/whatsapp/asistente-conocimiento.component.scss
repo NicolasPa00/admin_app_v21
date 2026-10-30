@@ -1,0 +1,347 @@
+:host {
+  display: block;
+  max-width: 960px;
+}
+
+.ac-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  p {
+    margin: 0;
+    max-width: 70ch;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+}
+
+.ac-vacio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ac-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ac-entrada {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+
+  &--apagada {
+    background: var(--color-surface-alt, #f8fafc);
+
+    h3,
+    .ac-entrada__texto {
+      color: var(--color-text-secondary);
+    }
+  }
+
+  &__cabeza {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 6px;
+
+    h3 {
+      margin: 0;
+      font-size: 0.9375rem;
+      font-weight: 700;
+    }
+  }
+
+  &__texto {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__claves {
+    margin: 6px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  &__acciones {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.ac-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+
+  &[data-tipo='promocion'] {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &[data-tipo='pregunta'] {
+    background: #e0f2fe;
+    color: #075985;
+  }
+
+  &[data-tipo='dato'] {
+    background: var(--color-surface-alt, #f1f5f9);
+    color: var(--color-text-secondary);
+  }
+}
+
+.ac-marca {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+
+  &--alerta {
+    color: #b45309;
+    font-weight: 600;
+  }
+}
+
+.ac-hueco {
+  flex: 1 1 auto;
+}
+
+.ac-confirmar {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.ac-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &--primario {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background: var(--color-primary-hover, #4f46e5);
+    }
+  }
+
+  &--peligro {
+    border-color: #dc2626;
+    background: #dc2626;
+    color: #fff;
+  }
+
+  &--icono {
+    padding: 7px 9px;
+    color: var(--color-text-secondary);
+
+    &:hover:not(:disabled) {
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+  }
+}
+
+.ac-interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+  }
+}
+
+// ── Formulario ──────────────────────────────────────────────────────────────────────────────
+
+.ac-lista__formulario {
+  list-style: none;
+}
+
+.ac-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-primary) 3%, var(--color-surface, #fff));
+
+  &__fila {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  &__pie {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+.ac-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+
+  > span {
+    font-size: 0.8125rem;
+    font-weight: 600;
+
+    em {
+      color: var(--color-text-secondary);
+      font-style: normal;
+      font-weight: 400;
+    }
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 9px 11px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.875rem;
+
+    &:focus {
+      outline: 2px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+      outline-offset: 1px;
+      border-color: var(--color-primary);
+    }
+  }
+
+  textarea {
+    min-height: 96px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+
+  small {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+  }
+
+  &--tipo {
+    flex: 0 1 220px;
+  }
+
+  &--crece {
+    flex: 1 1 260px;
+  }
+
+  &--orden {
+    flex: 0 0 90px;
+  }
+}
+
+.ac-contador {
+  align-self: flex-end;
+  font-variant-numeric: tabular-nums;
+
+  &--alerta {
+    color: #b45309 !important;
+  }
+}
+
+.ac-invalido {
+  border-color: #dc2626 !important;
+}
+
+.ac-error {
+  color: #b91c1c !important;
+}
+
+.ac-spin {
+  animation: ac-giro 0.9s linear infinite;
+}
+
+@keyframes ac-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ac-spin {
+    animation: none;
+  }
+
+  .ac-boton:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ac-intro {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,87 @@
+<form class="ac-form ac-form--plano" (ngSubmit)="guardar()">
+  <section class="acf-bloque">
+    <h2>Avisos cuando piden un asesor</h2>
+    <p>
+      Cada conversación que pasa a un asesor manda un correo a estas direcciones, con el teléfono de
+      la persona, sus últimos mensajes y el enlace para contestarle aquí. El asistente deja de
+      responder en ese chat hasta que alguien conteste o lo devuelva desde <em>Conversaciones</em>.
+    </p>
+
+    @if (correos().length) {
+      <ul class="acf-correos">
+        @for (c of correos(); track c) {
+          <li>
+            <lucide-icon name="mail" [size]="14" aria-hidden="true" />
+            {{ c }}
+            <button type="button" (click)="quitarCorreo(c)" [attr.aria-label]="'Quitar ' + c">
+              <lucide-icon name="x" [size]="14" aria-hidden="true" />
+            </button>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="acf-alerta">Sin correos: cuando alguien pida un asesor no le llegará aviso a nadie.</p>
+    }
+
+    <div class="acf-agregar">
+      <input
+        type="email"
+        name="nuevo"
+        placeholder="correo@ejemplo.com"
+        aria-label="Correo para añadir"
+        [ngModel]="nuevoCorreo()"
+        (ngModelChange)="nuevoCorreo.set($event)"
+        (keydown.enter)="$event.preventDefault(); agregarCorreo()"
+      />
+      <button type="button" class="ac-boton" [disabled]="!correoValido()" (click)="agregarCorreo()">
+        <lucide-icon name="plus" [size]="14" aria-hidden="true" /> Añadir
+      </button>
+    </div>
+  </section>
+
+  <section class="acf-bloque">
+    <h2>Sitio de los enlaces</h2>
+    <p>
+      La raíz de los enlaces que reparte el asistente: la prueba gratis (<code>/?prueba=1</code>),
+      la compra de un plan (<code>/adquirir</code>) y las páginas de cada aplicativo.
+    </p>
+    <label class="ac-campo acf-url">
+      <span>URL del sitio</span>
+      <input
+        type="url"
+        name="url"
+        [ngModel]="urlSitio()"
+        (ngModelChange)="urlSitio.set($event)"
+        required
+      />
+    </label>
+  </section>
+
+  <section class="acf-bloque">
+    <h2>Número de WhatsApp</h2>
+    @if (numero(); as n) {
+      <p><strong>{{ n }}</strong> está conectado a este asistente.</p>
+    } @else {
+      <p class="acf-alerta">
+        Ningún número está conectado al negocio EscalApp todavía. El número comercial se mueve aquí
+        en el servidor con <code>node scripts/escalapp_asistente.js --aplicar --mover-numero=3180332988</code>.
+      </p>
+    }
+    <p class="acf-nota">
+      Planes y precios no se editan aquí: el asistente los lee del catálogo de cobro (el mismo que
+      cobra), así que siempre dice la tarifa vigente.
+    </p>
+  </section>
+
+  <div class="ac-form__pie">
+    <span class="ac-hueco"></span>
+    <button type="submit" class="ac-boton ac-boton--primario" [disabled]="!sucio() || guardando()">
+      @if (guardando()) {
+        <lucide-icon name="loader-2" [size]="14" class="ac-spin" aria-hidden="true" />
+      } @else {
+        <lucide-icon name="check" [size]="14" aria-hidden="true" />
+      }
+      Guardar cambios
+    </button>
+  </div>
+</form>

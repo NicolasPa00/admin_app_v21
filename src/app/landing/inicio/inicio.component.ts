@@ -7,11 +7,12 @@ import {
   signal,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { AssetService } from '../../core/services/asset.service';
 import { SeoService } from '../../core/services/seo.service';
 import { montarEntradas } from '../shared/entradas';
+import { abrirPruebaSiLaPiden } from '../shared/abrir-prueba';
 import { TemaSelectorComponent } from '../shared/tema-selector.component';
 import { PruebaGratisStore } from '../shared/prueba-gratis.store';
 import { environment } from '../../../environments/environment';
@@ -227,6 +228,7 @@ export class InicioComponent {
   private readonly seo = inject(SeoService);
   private readonly assets = inject(AssetService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly prueba = inject(PruebaGratisStore);
 
@@ -272,6 +274,7 @@ export class InicioComponent {
       this.prueba.cargarOficios(OFICIOS_INICIO.map((o) => o.nombre));
       montarEntradas(this.destroyRef);
       this.arrancarChat();
+      abrirPruebaSiLaPiden(this.route, () => this.abrirPrueba());
     });
   }
 

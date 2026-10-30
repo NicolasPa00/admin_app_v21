@@ -75,7 +75,7 @@
       }
       <!-- Los ajustes del asistente viven en su propia ventana (pedido del dueño, 2026-10-02):
            en la cabecera le quitaban altura a los mensajes. -->
-      @if (config()) {
+      @if (config() && !sinAjustesDeNegocio()) {
         <button
           type="button"
           class="bdj__chip"
@@ -101,7 +101,7 @@
         </button>
       }
       <!-- ¿Qué le falta al asistente para atender bien? Revisión del backend, con dónde se arregla. -->
-      @if (preparacion(); as prep) {
+      @if (!sinAjustesDeNegocio() && preparacion(); as prep) {
         <button
           type="button"
           class="bdj__chip"

@@ -183,6 +183,15 @@ export class BandejaComponent implements OnInit, OnDestroy {
    * fila entera encima de la Bandeja, y con un solo negocio esa fila no tenía nada más.
    */
   readonly mostrarGestionarNumero = input(false);
+  /**
+   * El asistente comercial de EscalApp (2026-10-29) usa esta misma bandeja, pero sus ajustes viven
+   * en sus propias pestañas: la ventana de «Configuración del asistente» (tiempos, domicilio) y la
+   * revisión «Al asistente le faltan datos» son de restaurante y reserva, y allí no significan nada.
+   */
+  readonly sinAjustesDeNegocio = input(false);
+  /** Conversación que se abre al cargar: el enlace del correo que avisa a los asesores. */
+  readonly conversacionInicial = input<string | null>(null);
+  private conversacionInicialAbierta = false;
   readonly gestionarNumero = output<void>();
 
   readonly detalle = signal<ConversacionBandejaDetalle | null>(null);
@@ -589,7 +598,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
       this.prepAbierta.set(false);
       return;
     }
-    this.cargarPreparacion(idNegocio, true);
+    if (!this.sinAjustesDeNegocio()) this.cargarPreparacion(idNegocio, true);
     this.service.getConfiguracion(idNegocio).subscribe({
       next: (c) => {
         // El negocio pudo cambiar mientras la respuesta venía.
@@ -895,6 +904,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
         next: (data) => {
           this.sinModulo.set(!data.disponible);
           this.conversaciones.set(data.conversaciones);
+          this.abrirLaInicial(data.conversaciones);
           // Solo cuando se ven todos: filtrando por uno, la consulta ya viene acotada y
           // quedaría una sola pastilla, sin forma de volver.
           if (this.negocioActivo() === null && !this.soloEscaladas()) {
@@ -910,6 +920,20 @@ export class BandejaComponent implements OnInit, OnDestroy {
           this.estado.set('error');
         },
       });
+  }
+
+  /** Una sola vez: después manda la persona. Fuera de la lista (vieja), se abre igual por su id. */
+  private abrirLaInicial(lista: ConversacionBandeja[]): void {
+    const id = this.conversacionInicial();
+    if (!id || this.conversacionInicialAbierta) return;
+    this.conversacionInicialAbierta = true;
+    const enLista = lista.find((c) => c.id_conversacion === id);
+    if (enLista) {
+      this.abrir(enLista);
+    } else {
+      this.abierta.set(id);
+      this.cargarHilo(id);
+    }
   }
 
   filtrarPorNegocio(idNegocio: number | null): void {

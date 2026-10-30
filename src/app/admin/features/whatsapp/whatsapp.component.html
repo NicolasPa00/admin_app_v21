@@ -1,0 +1,114 @@
+<header class="wae-cabecera">
+  <div>
+    <h1>WhatsApp de EscalApp</h1>
+    <p>
+      El asistente que atiende a quien pregunta por EscalApp: planes, para qué negocios sirve y cómo
+      empezar. Cuando alguien pide un asesor, les llega un correo y el chat queda aquí para
+      retomarlo.
+    </p>
+  </div>
+  @if (resumen(); as r) {
+    <ul class="wae-estado" aria-label="Estado del asistente">
+      <li [class.wae-estado__alerta]="!numero()">
+        <lucide-icon name="smartphone" [size]="15" aria-hidden="true" />
+        {{ numero() ?? 'Número sin conectar' }}
+      </li>
+      <li [class.wae-estado__alerta]="r.cifras.esperando > 0">
+        <lucide-icon name="message-circle" [size]="15" aria-hidden="true" />
+        @if (r.cifras.esperando > 0) {
+          {{ r.cifras.esperando }} esperando asesor
+        } @else {
+          {{ r.cifras.conversaciones_7d }} conversaciones en 7 días
+        }
+      </li>
+    </ul>
+  }
+</header>
+
+<nav class="wae-pestanas" role="tablist" aria-label="Secciones del asistente">
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestana() === 'conversaciones'"
+    [class.wae-pestanas__activa]="pestana() === 'conversaciones'"
+    [disabled]="estado() === 'sin-configurar'"
+    (click)="verPestana('conversaciones')"
+  >
+    <lucide-icon name="message-circle" [size]="16" aria-hidden="true" /> Conversaciones
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestana() === 'conocimiento'"
+    [class.wae-pestanas__activa]="pestana() === 'conocimiento'"
+    [disabled]="estado() === 'sin-configurar'"
+    (click)="verPestana('conocimiento')"
+  >
+    <lucide-icon name="book-open" [size]="16" aria-hidden="true" /> Conocimiento
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestana() === 'configuracion'"
+    [class.wae-pestanas__activa]="pestana() === 'configuracion'"
+    [disabled]="estado() === 'sin-configurar'"
+    (click)="verPestana('configuracion')"
+  >
+    <lucide-icon name="settings" [size]="16" aria-hidden="true" /> Configuración
+  </button>
+  <button
+    type="button"
+    role="tab"
+    [attr.aria-selected]="pestana() === 'inquilinos'"
+    [class.wae-pestanas__activa]="pestana() === 'inquilinos'"
+    (click)="verPestana('inquilinos')"
+  >
+    <lucide-icon name="users" [size]="16" aria-hidden="true" /> Inquilinos
+  </button>
+</nav>
+
+@if (estado() === 'sin-configurar') {
+  <div class="wae-aviso" role="status">
+    <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+    <span>
+      El asistente de EscalApp aún no está configurado en esta base. En el servidor:
+      <code>node scripts/escalapp_asistente.js --aplicar</code>
+    </span>
+  </div>
+}
+
+@switch (pestana()) {
+  @case ('inquilinos') {
+    <app-whatsapp-inquilinos />
+  }
+  @default {
+    @if (estado() === 'cargando') {
+      <div class="wae-cargando">
+        <lucide-icon name="loader-2" [size]="20" class="wae-spin" aria-hidden="true" />
+        Cargando…
+      </div>
+    } @else if (estado() === 'error') {
+      <div class="wae-aviso wae-aviso--error" role="alert">
+        <lucide-icon name="alert-circle" [size]="16" aria-hidden="true" />
+        <span>No se pudo cargar el asistente.</span>
+        <button type="button" (click)="cargar()">Reintentar</button>
+      </div>
+    } @else if (idNegocio(); as id) {
+      @switch (pestana()) {
+        @case ('conversaciones') {
+          <app-bandeja
+            [negocioFijo]="id"
+            [sinAjustesDeNegocio]="true"
+            [conversacionInicial]="conversacionInicial"
+          />
+        }
+        @case ('conocimiento') {
+          <app-asistente-conocimiento (cambio)="refrescarResumen()" />
+        }
+        @case ('configuracion') {
+          <app-asistente-config [resumen]="resumen()" (guardado)="refrescarResumen()" />
+        }
+      }
+    }
+  }
+}

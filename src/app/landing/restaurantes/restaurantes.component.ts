@@ -8,11 +8,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { AssetService } from '../../core/services/asset.service';
 import { SeoService } from '../../core/services/seo.service';
 import { montarEntradas } from '../shared/entradas';
+import { abrirPruebaSiLaPiden } from '../shared/abrir-prueba';
 import { PAQUETES_EXTRA_FE, PlanFe, TRAMOS_FE, calcularFe, nombrePlanFe } from '../shared/facturacion';
 import { TemaSelectorComponent } from '../shared/tema-selector.component';
 import { PruebaGratisStore } from '../shared/prueba-gratis.store';
@@ -340,6 +341,7 @@ export class RestaurantesComponent {
   private readonly seo = inject(SeoService);
   private readonly assets = inject(AssetService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
 
   /**
    * El propio elemento del componente, para buscar dentro los hitos del relevo.
@@ -522,6 +524,7 @@ export class RestaurantesComponent {
       montarEntradas(this.destroyRef);
       this.prueba.cargarOficios();
       this.montarObservadores();
+      abrirPruebaSiLaPiden(this.route, () => this.abrirPrueba());
     });
 
     this.destroyRef.onDestroy(() => this.limpiarTemporizadores());

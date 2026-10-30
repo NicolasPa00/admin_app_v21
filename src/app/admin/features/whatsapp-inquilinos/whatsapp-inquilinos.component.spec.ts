@@ -8,7 +8,7 @@ import { AdminService } from '../../data-access/admin.service';
 import { CanalWhatsappService } from '../../data-access/canalWhatsapp.service';
 import { BandejaService } from '../../data-access/bandeja.service';
 import { Negocio } from '../../models/admin.models';
-import { WhatsappComponent } from './whatsapp.component';
+import { WhatsappInquilinosComponent } from './whatsapp-inquilinos.component';
 import { CanalWhatsappComponent } from '../canal-whatsapp/canal-whatsapp.component';
 import { AuthService } from '../../../auth/data-access/auth.service';
 import { User } from '../../../auth/models/auth.models';
@@ -104,7 +104,7 @@ async function montar<T>(
   };
 }
 
-describe('WhatsappComponent — un solo título por pantalla', () => {
+describe('WhatsappInquilinosComponent — un solo título por pantalla', () => {
   const habilitados = [
     negocio(1, 'Prueba Barbería', ['asistente_ia']),
     negocio(2, 'Prueba Restaurante', ['asistente_ia']),
@@ -112,14 +112,14 @@ describe('WhatsappComponent — un solo título por pantalla', () => {
   ];
 
   it('vista de conexión (varios negocios, ninguno conectado): exactamente un «Conectar WhatsApp»', async () => {
-    const v = await montar(WhatsappComponent, habilitados);
+    const v = await montar(WhatsappInquilinosComponent, habilitados);
     expect(v.titulos()).toEqual(['Conectar WhatsApp']);
     expect(v.cabeceras()).toBe(0);
     expect(v.el.querySelectorAll('[role="tab"]').length).toBe(3);
   });
 
   it('al cambiar de negocio con un chip sigue habiendo un solo título', async () => {
-    const v = await montar(WhatsappComponent, habilitados);
+    const v = await montar(WhatsappInquilinosComponent, habilitados);
     (v.el.querySelectorAll('[role="tab"]')[1] as HTMLElement).click();
     await v.esperar();
     expect(v.titulos()).toEqual(['Conectar WhatsApp']);
@@ -130,18 +130,18 @@ describe('WhatsappComponent — un solo título por pantalla', () => {
   });
 
   it('vista de conexión con un solo negocio: un título y sin chips', async () => {
-    const v = await montar(WhatsappComponent, [habilitados[0]]);
+    const v = await montar(WhatsappInquilinosComponent, [habilitados[0]]);
     expect(v.titulos()).toEqual(['Conectar WhatsApp']);
     expect(v.el.querySelectorAll('[role="tab"]').length).toBe(0);
   });
 
   it('sin negocios: un solo título', async () => {
-    const v = await montar(WhatsappComponent, []);
+    const v = await montar(WhatsappInquilinosComponent, []);
     expect(v.titulos()).toEqual(['Conectar WhatsApp']);
   });
 
   it('sin la feature (mejora de plan): un solo título', async () => {
-    const v = await montar(WhatsappComponent, [
+    const v = await montar(WhatsappInquilinosComponent, [
       negocio(1, 'Prueba Barbería', ['otra']),
       negocio(2, 'Prueba Tienda', ['otra']),
     ]);
@@ -150,7 +150,7 @@ describe('WhatsappComponent — un solo título por pantalla', () => {
   });
 });
 
-describe('WhatsappComponent con negocio conectado (bandeja)', () => {
+describe('WhatsappInquilinosComponent con negocio conectado (bandeja)', () => {
   // Regresión de producción (hotfix de íconos): un <lucide-icon> declarado por quien contiene la
   // bandeja y proyectado dentro de ella se resolvía contra los íconos de la bandeja y cortaba el
   // render («The "smartphone" icon has not been provided…»). La bandeja usa `viewProviders`. Aquí
@@ -163,7 +163,7 @@ describe('WhatsappComponent con negocio conectado (bandeja)', () => {
     };
     try {
       const v = await montar(
-        WhatsappComponent,
+        WhatsappInquilinosComponent,
         [negocio(1, 'Prueba Barbería', ['asistente_ia'])],
         true,
       );
@@ -177,7 +177,7 @@ describe('WhatsappComponent con negocio conectado (bandeja)', () => {
   });
 
   it('con el servicio activo la bandeja ya no trae el botón «Tu número»', async () => {
-    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
+    const v = await montar(WhatsappInquilinosComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
     const boton = Array.from(v.el.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Tu número'),
     );
@@ -185,12 +185,12 @@ describe('WhatsappComponent con negocio conectado (bandeja)', () => {
   });
 });
 
-describe('WhatsappComponent — «Gestionar número»', () => {
+describe('WhatsappInquilinosComponent — «Gestionar número»', () => {
   const enlace = (el: HTMLElement) =>
     Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.includes('Gestionar número'));
 
   it('con el número conectado aparece con su engranaje y lleva a la vista de número', async () => {
-    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
+    const v = await montar(WhatsappInquilinosComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
     const boton = enlace(v.el);
     expect(boton).toBeTruthy();
     expect(boton!.querySelector('lucide-icon svg')).toBeTruthy();
@@ -206,14 +206,14 @@ describe('WhatsappComponent — «Gestionar número»', () => {
   // Desde 2026-10-02 va en la cabecera de la Bandeja: la fila de arriba le quitaba alto a los
   // mensajes y, con un solo negocio, existía solo para este botón.
   it('con un negocio: va en la cabecera de la Bandeja y no hay fila de arriba', async () => {
-    const uno = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
+    const uno = await montar(WhatsappInquilinosComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], true);
     expect(uno.el.querySelector('.wa__barra')).toBeFalsy();
     expect(enlace(uno.el)?.closest('.bdj__top')).toBeTruthy();
   });
 
   it('con varios negocios: la fila de arriba solo lleva los negocios', async () => {
     const varios = await montar(
-      WhatsappComponent,
+      WhatsappInquilinosComponent,
       [negocio(1, 'Prueba Barbería', ['asistente_ia']), negocio(2, 'Prueba Tienda', ['asistente_ia'])],
       true,
     );
@@ -224,20 +224,20 @@ describe('WhatsappComponent — «Gestionar número»', () => {
   });
 
   it('sin conectar no aparece (ya está en esa vista)', async () => {
-    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], false);
+    const v = await montar(WhatsappInquilinosComponent, [negocio(1, 'Prueba Barbería', ['asistente_ia'])], false);
     expect(enlace(v.el)).toBeFalsy();
   });
 
   it('sin la feature tampoco aparece', async () => {
-    const v = await montar(WhatsappComponent, [negocio(1, 'Prueba Barbería', ['otra'])], true);
+    const v = await montar(WhatsappInquilinosComponent, [negocio(1, 'Prueba Barbería', ['otra'])], true);
     expect(enlace(v.el)).toBeFalsy();
   });
 });
 
-describe('WhatsappComponent — ?negocio=<id> (campana y «Ver planes»)', () => {
+describe('WhatsappInquilinosComponent — ?negocio=<id> (campana y «Ver planes»)', () => {
   it('abre con ese negocio seleccionado', async () => {
     const v = await montar(
-      WhatsappComponent,
+      WhatsappInquilinosComponent,
       [
         negocio(1, 'Prueba Barbería', ['asistente_ia']),
         negocio(2, 'Prueba Restaurante', ['asistente_ia']),
@@ -252,7 +252,7 @@ describe('WhatsappComponent — ?negocio=<id> (campana y «Ver planes»)', () =>
 
   it('un id que no es de sus negocios se ignora (multi-tenant): queda el primero', async () => {
     const v = await montar(
-      WhatsappComponent,
+      WhatsappInquilinosComponent,
       [negocio(1, 'Prueba Barbería', ['asistente_ia']), negocio(2, 'Prueba Tienda', ['asistente_ia'])],
       false,
       { negocio: '999' },
@@ -274,22 +274,22 @@ describe('CanalWhatsappComponent suelto (/admin/whatsapp/numero)', () => {
   });
 });
 
-describe('WhatsappComponent — el cajero (2026-10-04)', () => {
+describe('WhatsappInquilinosComponent — el cajero (2026-10-04)', () => {
   it('con el plan y número conectado: ve las conversaciones, sin «Gestionar número»', async () => {
-    const v = await montar(WhatsappComponent, [negocio(1, 'Zona', ['asistente_ia'])], true, {}, cajeroDe(1));
+    const v = await montar(WhatsappInquilinosComponent, [negocio(1, 'Zona', ['asistente_ia'])], true, {}, cajeroDe(1));
     expect(v.el.querySelector('app-bandeja')).toBeTruthy();
     expect(v.el.textContent).not.toContain('Gestionar número');
   });
 
   it('sin número conectado: le pide al administrador que lo conecte (no ve cómo conectarlo)', async () => {
-    const v = await montar(WhatsappComponent, [negocio(1, 'Zona', ['asistente_ia'])], false, {}, cajeroDe(1));
+    const v = await montar(WhatsappInquilinosComponent, [negocio(1, 'Zona', ['asistente_ia'])], false, {}, cajeroDe(1));
     expect(v.el.textContent).toContain('Pídele al administrador');
     expect(v.el.querySelector('app-canal-whatsapp')).toBeFalsy();
   });
 
   it('solo ve los negocios cuyo plan incluye WhatsApp', async () => {
     const v = await montar(
-      WhatsappComponent,
+      WhatsappInquilinosComponent,
       [negocio(1, 'Con plan', ['asistente_ia']), negocio(2, 'Sin plan', [])],
       true,
       {},
