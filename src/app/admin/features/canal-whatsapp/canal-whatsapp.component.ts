@@ -203,6 +203,8 @@ export class CanalWhatsappComponent implements OnInit {
 
   readonly conectado = computed(() => this.estadoCanal()?.conectado === true);
   readonly esPropio = computed(() => this.estadoCanal()?.origen === 'embedded_signup');
+  /** Conectado en nuestra base pero fuera de la Cloud API para Meta: no llegan mensajes. */
+  readonly caidoEnMeta = computed(() => this.conectado() && this.estadoCanal()?.meta?.enMeta === false);
 
   /** Confirmación de dos pasos para desconectar — nunca en el primer clic: es una acción con
    *  consecuencia real (el asistente deja de responder por este número hasta reconectarlo). */

@@ -15,6 +15,11 @@ export interface EstadoCanalWhatsapp {
   estado: string | null;
   /** El número sigue también en la app WhatsApp Business del celular (coexistencia). */
   coexistencia?: boolean;
+  /**
+   * Lo que Meta dice hoy del número (solo los conectados por Embedded Signup). `enMeta: false` =
+   * el asistente NO recibe mensajes aunque aquí figure conectado. `null` = Meta no contestó.
+   */
+  meta?: { status: string | null; platformType: string | null; enMeta: boolean } | null;
 }
 
 /**

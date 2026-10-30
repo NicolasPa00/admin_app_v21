@@ -48,8 +48,27 @@
       <p>No tienes ningún negocio activo.</p>
     </div>
   } @else if (conectado()) {
+    @if (caidoEnMeta()) {
+      <!-- 2026-10-29: la fila decía «conectado» y Meta tenía el número fuera de la Cloud API. -->
+      <div class="cw__aviso cw__aviso--caido" role="alert">
+        <strong>Meta tiene este número desconectado: el asistente no está recibiendo mensajes.</strong>
+        <span>
+          Estado en Meta: {{ estadoCanal()?.meta?.status }} · {{ estadoCanal()?.meta?.platformType }}.
+          Pasa cuando la app de WhatsApp Business se reinstala, cambia de celular o lleva unos 14 días
+          sin abrirse. En el celular: <em>Ajustes → Cuenta → Business Platform</em>. Si aparece un
+          proveedor, desconéctalo; espera unos 10 minutos y vuelve a conectar aquí con «Ya uso
+          WhatsApp Business», confirmando en la app el mensaje de Facebook («Conectar a Business
+          Platform» y el código).
+        </span>
+        @if (esPropio()) {
+          <button type="button" class="cw__boton" (click)="pedirConfirmacionDesconectar()">
+            Desconectar para volver a conectar
+          </button>
+        }
+      </div>
+    }
     <!-- ════════ Ya conectado ════════ -->
-    <article class="cw__card cw__card--ok">
+    <article class="cw__card cw__card--ok" [class.cw__card--apagada]="caidoEnMeta()">
       <h2 class="cw__card-title">
         <lucide-icon name="circle-check" [size]="18"></lucide-icon>
         WhatsApp conectado

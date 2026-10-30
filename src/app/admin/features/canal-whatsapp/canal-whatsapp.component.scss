@@ -169,6 +169,17 @@
     .cw__boton { margin-top: 0; align-self: flex-start; }
   }
 
+  &__aviso--caido {
+    margin-bottom: 0.75rem;
+    border-color: #fca5a5;
+    background: #fef2f2;
+    color: #7f1d1d;
+  }
+
+  &__card--apagada {
+    opacity: 0.6;
+  }
+
   /* Los dos caminos de «Tu propio número». */
   &__caminos {
     display: grid;
