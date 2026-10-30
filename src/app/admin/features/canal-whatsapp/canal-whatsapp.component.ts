@@ -169,6 +169,13 @@ export class CanalWhatsappComponent implements OnInit {
   readonly ocultarSelector = input(false);
   /** La vista WhatsApp pinta el título y el subtítulo ella misma, para poner los chips debajo. */
   readonly ocultarEncabezado = input(false);
+  /**
+   * Un negocio concreto, sin pasar por «mis negocios». Lo usa el panel del WhatsApp de EscalApp
+   * (2026-10-29): el negocio EscalApp no tiene usuarios vinculados —vincular a los super admins lo
+   * haría aparecer en sus listas y en `negocio_app`—, y el backend ya deja al super admin operar
+   * sobre cualquier negocio.
+   */
+  readonly negocioFijo = input<{ id_negocio: number; nombre: string } | null>(null);
   /** Avisa el estado tras cada consulta, conectar o desconectar, para que el contenedor cambie de vista. */
   readonly estadoCambio = output<{ idNegocio: number; conectado: boolean }>();
   readonly estadoCanal = signal<EstadoCanalWhatsapp | null>(null);
@@ -245,6 +252,13 @@ export class CanalWhatsappComponent implements OnInit {
       this.quitarEscuchador();
       if (this.relojSdk) clearTimeout(this.relojSdk);
     });
+
+    const fijo = this.negocioFijo();
+    if (fijo) {
+      this.negocios.set([{ ...fijo, estado: 'A' } as Negocio]);
+      this.seleccionar(fijo.id_negocio);
+      return;
+    }
 
     this.adminService.getMisNegociosUsuario().subscribe({
       next: (negocios) => {

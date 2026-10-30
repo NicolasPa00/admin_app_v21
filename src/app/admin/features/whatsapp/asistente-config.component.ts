@@ -16,6 +16,7 @@ import { Check, Loader2, Mail, Plus, X } from '../../../core/icons/phosphor';
 import { AsistenteEscalappService } from '../../data-access/asistente-escalapp.service';
 import { ResumenAsistenteEscalapp } from '../../models/asistente-escalapp.models';
 import { ToastService } from '../../../shared/toast/toast.service';
+import { CanalWhatsappComponent } from '../canal-whatsapp/canal-whatsapp.component';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -29,7 +30,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   selector: 'app-asistente-config',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule, LucideAngularModule, CanalWhatsappComponent],
   providers: [
     {
       provide: LUCIDE_ICONS,
@@ -78,6 +79,11 @@ export class AsistenteConfigComponent {
     const n = this.resumen()?.numero;
     return n && n.estado === 'A' ? n.numero_e164 || 'Conectado' : null;
   });
+
+  /** Al conectar o desconectar el número, la cabecera del panel se pone al día. */
+  numeroCambio(conectado: boolean): void {
+    if (conectado !== Boolean(this.numero())) this.guardado.emit();
+  }
 
   agregarCorreo(): void {
     const c = this.nuevoCorreo().trim().toLowerCase();
