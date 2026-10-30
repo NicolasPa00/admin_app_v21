@@ -36,8 +36,8 @@ export const environment = {
    * En desarrollo puede quedar vacío: el botón de "tu propio número" se deshabilita si falta.
    */
   metaAppId: '1552342763052863',
-  /** "EscalApp — Registro insertado", creada el 2026-09-19. */
-  metaConfigId: '3007420636275811',
+  /** "EscalApp - Embedded Signup v4", creada el 2026-10-30 (la v3 del 2026-09-19 era 3007420636275811). */
+  metaConfigId: '2166699173923667',
   /**
    * Versión de la Graph API con la que se inicializa el SDK de JS. Era v23.0 (la coexistencia salió
    * en 2025); desde 2026-10-30 es la que pide la guía de implementación de Embedded Signup v4.

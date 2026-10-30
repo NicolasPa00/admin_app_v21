@@ -31,7 +31,7 @@ export const environment = {
    * ✅ Verificado el 2026-10-20 en la cuenta «Escalapp» (dominio 27803591939268578).
    */
   metaAppId: '1552342763052863',
-  metaConfigId: '3007420636275811',
+  metaConfigId: '2166699173923667',
   /** Ver environment.ts: v23.0 por la coexistencia. */
   metaSdkVersion: 'v26.0',
 
