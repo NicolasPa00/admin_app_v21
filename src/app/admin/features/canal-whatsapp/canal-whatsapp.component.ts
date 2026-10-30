@@ -438,7 +438,14 @@ export class CanalWhatsappComponent implements OnInit {
     if (!code) {
       this.quitarEscuchador();
       const evento = this.eventoMeta;
-      const errorMeta = evento?.event === 'CANCEL' ? evento.data?.error_message : null;
+      // v4 separa el abandono (`CANCEL`) del error que la persona reporta en la ventana (`ERROR`,
+      // con `error_code`): los dos se enseñan, con el código, que es lo que Meta pide para soporte.
+      const errorMeta =
+        evento?.event === 'CANCEL' || evento?.event === 'ERROR'
+          ? [evento.data?.error_message, evento.data?.error_code ? `(#${evento.data.error_code})` : null]
+              .filter(Boolean)
+              .join(' ') || null
+          : null;
       this.error.set(
         errorMeta
           ? `Meta no completó la conexión: ${errorMeta}`

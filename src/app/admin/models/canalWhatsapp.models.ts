@@ -59,6 +59,8 @@ export interface EventoEmbeddedSignup {
     current_step?: string;
     error_message?: string;
     error_id?: string;
+    /** v4: el evento `ERROR` trae el código de Meta (p. ej. 2655048, «número no registrado»). */
+    error_code?: string | number;
     session_id?: string;
   };
 }
