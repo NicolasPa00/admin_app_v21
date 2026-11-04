@@ -1667,3 +1667,171 @@
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
 }
+/* ── Historial de análisis y cupo de IA (2026-11-03) ──────────────────────────────────────
+   La fecha va discreta bajo el título de la sección; cuando se mira uno ANTERIOR, la franja
+   lavanda lo dice y lleva de vuelta al último, para que nadie confunda el viejo con el actual. */
+.bdj-hist__cuando {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.bdj-hist__viendo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.25rem 0 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+}
+
+.bdj-hist__volver {
+  margin-left: auto;
+  padding: 0.125rem 0.5rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+
+  &:hover { background: color-mix(in srgb, var(--color-primary) 10%, transparent); }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+}
+
+.bdj-hist {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.bdj-hist__abrir {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 0.375rem; }
+}
+
+.bdj-hist__flecha {
+  margin-left: auto;
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.bdj-hist__abrir[aria-expanded='true'] .bdj-hist__flecha { transform: rotate(180deg); }
+
+.bdj-hist__lista {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.bdj-hist__item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+
+  lucide-icon { flex-shrink: 0; color: var(--color-text-secondary); }
+
+  &--ia lucide-icon { color: var(--color-primary); }
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+    background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+  }
+  &:active:not(:disabled) { transform: scale(0.99); }
+  &:disabled { cursor: progress; opacity: 0.7; }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+}
+
+.bdj-hist__txt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bdj-hist__fecha {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.bdj-cupo {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+
+  &__texto {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+
+    strong { color: var(--color-text-primary); font-variant-numeric: tabular-nums; }
+  }
+
+  &__barra {
+    margin-top: 0.375rem;
+    height: 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--color-primary);
+      transition: width 300ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+  }
+
+  &__aviso {
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+  }
+
+  &--agotado .bdj-cupo__barra span { background: var(--color-warning, #b45309); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bdj-hist__flecha,
+  .bdj-cupo__barra span { transition: none; }
+}

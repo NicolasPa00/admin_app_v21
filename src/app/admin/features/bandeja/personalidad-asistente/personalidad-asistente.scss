@@ -1,0 +1,265 @@
+// «Cómo se presenta tu asistente». Formulario a la izquierda y la burbuja de WhatsApp a la
+// derecha (debajo en el celular). Tokens --color-*; la paleta del negocio solo en el acento.
+:host { display: block; }
+
+.pa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(min(260px, 100%), 0.8fr);
+  gap: 16px 20px;
+  align-items: start;
+
+  @media (max-width: 760px) { grid-template-columns: minmax(0, 1fr); }
+}
+
+.pa__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pa__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pa__etq {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+
+  small { font-weight: 400; color: var(--color-text-secondary); }
+}
+
+.pa__ayuda {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.pa__error {
+  font-size: 12px;
+  color: var(--color-error);
+}
+
+.pa__input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 14px;
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+  }
+  &:disabled { opacity: 0.65; }
+  &--corto { max-width: 260px; }
+  &--mal { border-color: var(--color-error); }
+}
+
+.pa__texto { resize: vertical; min-height: 76px; line-height: 1.45; }
+
+.pa__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pa__chip {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 160ms ease-out;
+
+  &:hover:not(:disabled) { border-color: var(--color-primary); }
+  &:active:not(:disabled) { transform: scale(0.97); }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  &:disabled { cursor: default; opacity: 0.65; }
+
+  &--on {
+    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+    color: var(--color-primary);
+  }
+}
+
+.pa__segmento {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-bg, var(--color-surface));
+
+  button {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    color: var(--color-text-secondary);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+    &:disabled { cursor: default; }
+  }
+
+  .pa__seg--on {
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+  }
+}
+
+.pa__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  input { accent-color: var(--color-primary); width: 16px; height: 16px; }
+}
+
+.pa__marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pa__marca {
+  padding: 3px 9px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface)); }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+}
+
+// La burbuja: los colores de WhatsApp a propósito, para que se reconozca como «así lo verá el
+// cliente» y no como una tarjeta más del panel.
+.pa__previa {
+  margin: 0;
+  min-width: 0;
+
+  figcaption {
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+}
+
+.pa__chat {
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: #efeae2;
+}
+
+.pa__burbuja {
+  position: relative;
+  max-width: 100%;
+  padding: 8px 10px 9px;
+  border-radius: 0 10px 10px 10px;
+  background: #fff;
+  color: #111b21;
+  box-shadow: 0 1px 0.5px rgb(11 20 26 / 13%);
+  font-size: 14px;
+  line-height: 1.4;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -7px;
+    border-top: 0 solid transparent;
+    border-right: 8px solid #fff;
+    border-bottom: 10px solid transparent;
+  }
+}
+
+.pa__entrada {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.pa__sigue {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin: 8px 0 0;
+  padding-top: 7px;
+  border-top: 1px dashed #d1d7db;
+  font-size: 12px;
+  color: #667781;
+
+  lucide-icon { flex-shrink: 0; margin-top: 2px; }
+}
+
+.pa__pie {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pa__enlace {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { color: var(--color-text-primary); }
+  &:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+}
+
+// El botón «Guardar» de la Bandeja (`.bdj__auto-guardar`) vive en su hoja: aquí una copia mínima.
+.bdj__auto-guardar {
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-on-primary, #fff);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:disabled { opacity: 0.6; cursor: default; }
+  &:active:not(:disabled) { transform: scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa__chip { transition: none; }
+}

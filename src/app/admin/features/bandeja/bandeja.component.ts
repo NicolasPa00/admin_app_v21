@@ -14,6 +14,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { PersonalidadAsistenteComponent, PersonalidadAsistente } from './personalidad-asistente/personalidad-asistente';
 import { FormsModule } from '@angular/forms';
 import { DatePipe, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-angular';
@@ -21,6 +22,7 @@ import {
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
   Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
+  History, ChevronDown, Sparkles, Info,
 } from '../../../core/icons/phosphor';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -33,6 +35,8 @@ import {
   DiagnosticoAsistente,
   RecomendacionesAsistente,
   InformeAsistente,
+  AnalisisResumido,
+  CupoIaNegocio,
   ConversacionBandejaDetalle,
   MensajeBandeja,
   RetomadaAsistente,
@@ -125,7 +129,7 @@ const REFRESCO_MS = 5000;
   selector: 'app-bandeja',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DatePipe, DecimalPipe, LucideAngularModule, ModalCabeceraComponent],
+  imports: [FormsModule, DatePipe, DecimalPipe, LucideAngularModule, ModalCabeceraComponent, PersonalidadAsistenteComponent],
   // `viewProviders` y no `providers`: los `providers` también los ven los hijos PROYECTADOS
   // (<ng-content>), y como LUCIDE_ICONS es multi, un ícono declarado por quien proyecta (el botón
   // «Tu número» de WhatsApp) se buscaba aquí, no lo encontraba y cortaba el render de la bandeja.
@@ -137,6 +141,7 @@ const REFRESCO_MS = 5000;
         MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
         RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
         Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
+        History, ChevronDown, Sparkles, Info,
       }),
     },
   ],
@@ -306,7 +311,10 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.service.getDiagnostico(id).subscribe({
       next: (d) => {
         this.diagnosticando.set(false);
-        if (this.negocioConfig() === id) this.diagnostico.set(d);
+        if (this.negocioConfig() !== id) return;
+        this.diagnostico.set(d);
+        this.anteriorRevision.set(null);
+        this.cargarHistorialAnalisis(id, { soloLista: true });
       },
       error: (err) => {
         this.diagnosticando.set(false);
@@ -372,13 +380,131 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.service.pedirRecomendaciones(id, forzar).subscribe({
       next: (r) => {
         this.recomendando.set(false);
-        if (this.negocioConfig() === id) this.recomendaciones.set(r);
+        if (this.negocioConfig() !== id) return;
+        this.recomendaciones.set(r);
+        this.anteriorIa.set(null);
+        if (r?.cupo_ia) this.cupoIa.set(r.cupo_ia);
+        this.cargarHistorialAnalisis(id, { soloLista: true });
       },
       error: (err) => {
         this.recomendando.set(false);
         this.toast.errorHttp(err, 'No se pudieron generar las recomendaciones.');
       },
     });
+  }
+
+  // ── Historial de análisis y cupo de IA (2026-11-03) ─────────────────────────────────────
+  // La revisión a fondo y el análisis con IA se guardan en el servidor: al abrir «¿Está listo?»
+  // se ve el último de cada uno, y la lista de los anteriores. Antes se perdían al cerrar la
+  // ventana, aunque el de IA ya se había pagado.
+  readonly historialAnalisis = signal<AnalisisResumido[]>([]);
+  readonly cupoIa = signal<CupoIaNegocio | null>(null);
+  /** Si se está mirando un análisis anterior (no el último), cuál. */
+  readonly anteriorRevision = signal<AnalisisResumido | null>(null);
+  readonly anteriorIa = signal<AnalisisResumido | null>(null);
+  readonly historialAbierto = signal(false);
+  readonly abriendoAnalisis = signal<number | null>(null);
+
+  /**
+   * Sin cupo de IA del mes no se puede analizar. El tope de lecturas AL DÍA es solo de la carga
+   * de la carta, así que aquí no cuenta.
+   */
+  readonly sinCupoIa = computed(() => {
+    const c = this.cupoIa();
+    return !!c && !c.disponible && (c.motivo === 'mes' || c.motivo === 'plataforma');
+  });
+
+  /** `soloLista`: refresca la lista y el cupo sin pisar lo que está en pantalla. */
+  cargarHistorialAnalisis(idNegocio: number, { soloLista = false } = {}): void {
+    this.service.getHistorialAnalisis(idNegocio).subscribe({
+      next: (h) => {
+        if (!h || this.negocioConfig() !== idNegocio) return;
+        this.historialAnalisis.set(h.historial);
+        this.cupoIa.set(h.cupo_ia);
+        if (soloLista) return;
+        if (h.ultima_revision) this.diagnostico.set(h.ultima_revision);
+        if (h.ultimo_ia) this.recomendaciones.set(h.ultimo_ia);
+        this.anteriorRevision.set(null);
+        this.anteriorIa.set(null);
+      },
+      // Quien no es administrador no tiene historial (404): la pantalla sigue como antes.
+      error: () => undefined,
+    });
+  }
+
+  /** Abre un análisis anterior en su sección («Viendo el análisis del …»). */
+  verAnalisis(a: AnalisisResumido): void {
+    const id = this.negocioConfig();
+    if (id === null || this.abriendoAnalisis() !== null) return;
+    this.abriendoAnalisis.set(a.id_analisis);
+    this.service.getAnalisis(id, a.id_analisis).subscribe({
+      next: (r) => {
+        this.abriendoAnalisis.set(null);
+        if (!r || this.negocioConfig() !== id) return;
+        const ultimo = this.historialAnalisis().find((x) => x.tipo === a.tipo);
+        const esElUltimo = ultimo?.id_analisis === a.id_analisis;
+        if (a.tipo === 'revision') {
+          this.diagnostico.set(r);
+          this.anteriorRevision.set(esElUltimo ? null : a);
+        } else {
+          this.recomendaciones.set(r);
+          this.anteriorIa.set(esElUltimo ? null : a);
+        }
+        this.historialAbierto.set(false);
+      },
+      error: (err) => {
+        this.abriendoAnalisis.set(null);
+        this.toast.errorHttp(err, 'No se pudo abrir ese análisis.');
+      },
+    });
+  }
+
+  /** Vuelve al último análisis de ese tipo. */
+  volverAlUltimo(tipo: 'revision' | 'ia'): void {
+    const ultimo = this.historialAnalisis().find((x) => x.tipo === tipo);
+    if (ultimo) this.verAnalisis(ultimo);
+  }
+
+  /** «3 nov., 10:20 p. m.» (la fecha viene en hora de Bogotá, sin zona). */
+  fechaAnalisis(valor: string | null | undefined): string {
+    if (!valor) return '';
+    const fecha = new Date(valor);
+    if (Number.isNaN(fecha.getTime())) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(fecha);
+  }
+
+  /** La línea de cada análisis en la lista del historial. */
+  resumenAnalisis(a: AnalisisResumido): string {
+    if (a.tipo === 'revision') {
+      const n = a.resumen.pendientes ?? 0;
+      return n === 0 ? 'Revisión de la carta · sin puntos por mejorar' : `Revisión de la carta · ${n} ${n === 1 ? 'punto' : 'puntos'} por mejorar`;
+    }
+    const c = a.resumen.cambios ?? 0;
+    return `Análisis con IA · ${c} ${c === 1 ? 'cambio propuesto' : 'cambios propuestos'}`;
+  }
+
+  // ── Personalidad del asistente (2026-11-03) ─────────────────────────────────────────────
+  /** El nombre del negocio de los ajustes, para la vista previa del saludo. */
+  readonly nombreNegocioConfig = computed(() => {
+    const id = this.negocioConfig();
+    return this.negocios().find((n) => n.id_negocio === id)?.nombre ?? '';
+  });
+
+  personalidadGuardada(p: PersonalidadAsistente | null): void {
+    const c = this.config();
+    if (c) this.config.set({ ...c, asistente_personalidad: p });
+    this.toast.exito(
+      p ? 'Listo: así se presentará el asistente desde el próximo saludo.' : 'El asistente vuelve a presentarse como siempre.',
+    );
+  }
+
+  personalidadFallo(err: unknown): void {
+    this.toast.errorHttp(err, 'No se pudo guardar cómo se presenta el asistente.');
   }
 
   // ── Inventario (2026-10-07) ─────────────────────────────────────────────────────────────
@@ -592,6 +718,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
       this.config.set(null);
       this.diagnostico.set(null);
       this.recomendaciones.set(null);
+      this.historialAnalisis.set([]);
+      this.cupoIa.set(null);
       this.informe.set(null);
       this.informeAbierto.set(false);
       this.preparacion.set(null);
@@ -599,6 +727,10 @@ export class BandejaComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.sinAjustesDeNegocio()) this.cargarPreparacion(idNegocio, true);
+    this.diagnostico.set(null);
+    this.recomendaciones.set(null);
+    // El historial de análisis es de los mismos ajustes del negocio: sin ellos no hay nada que leer.
+    if (!this.sinAjustesDeNegocio()) this.cargarHistorialAnalisis(idNegocio);
     this.service.getConfiguracion(idNegocio).subscribe({
       next: (c) => {
         // El negocio pudo cambiar mientras la respuesta venía.

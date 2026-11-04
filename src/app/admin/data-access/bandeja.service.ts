@@ -9,6 +9,7 @@ import {
   ConfiguracionReactivacion,
   DiagnosticoAsistente,
   InformeAsistente,
+  HistorialAnalisis,
   RecomendacionesAsistente,
   PreparacionAsistente,
   ConversacionBandejaDetalle,
@@ -221,6 +222,31 @@ export class BandejaService {
       .post<ApiResponse<RecomendacionesAsistente>>(
         `${this.API}/intelligence/bandeja/diagnostico/recomendaciones`,
         { id_negocio: idNegocio, forzar },
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /**
+   * Lo analizado antes (2026-11-03): la última revisión a fondo y el último análisis con IA, la
+   * lista de los anteriores y el cupo de IA del negocio. Antes se perdía al cerrar la ventana.
+   */
+  getHistorialAnalisis(idNegocio: number): Observable<HistorialAnalisis | null> {
+    return this.http
+      .get<ApiResponse<HistorialAnalisis>>(`${this.API}/intelligence/bandeja/diagnostico/historial`, {
+        params: { id_negocio: String(idNegocio) },
+      })
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  /** Un análisis del historial, completo (revisión o IA según su `tipo`). */
+  getAnalisis(
+    idNegocio: number,
+    idAnalisis: number,
+  ): Observable<(DiagnosticoAsistente & RecomendacionesAsistente & { tipo: 'revision' | 'ia' }) | null> {
+    return this.http
+      .get<ApiResponse<DiagnosticoAsistente & RecomendacionesAsistente & { tipo: 'revision' | 'ia' }>>(
+        `${this.API}/intelligence/bandeja/diagnostico/historial/${idAnalisis}`,
+        { params: { id_negocio: String(idNegocio) } },
       )
       .pipe(map((res) => res.data ?? null));
   }

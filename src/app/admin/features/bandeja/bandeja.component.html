@@ -593,6 +593,21 @@
             <p class="bdj-cfg__aviso">Solo un administrador de este negocio puede cambiar estos ajustes.</p>
           }
         }
+        <!-- Cómo se presenta: nombre, trato a los clientes, emojis y bienvenida (2026-11-03). Va
+             primero porque es lo que el cliente ve en el primer mensaje. -->
+        <h3 class="bdj-cfg__titulo" id="pa-titulo">Cómo se presenta tu asistente</h3>
+        <p class="bdj-cfg__ayuda">Su nombre, cómo les dice a tus clientes y el saludo con tus palabras.</p>
+        @if (config(); as cfg) {
+          <app-personalidad-asistente
+            [idNegocio]="cfg.id_negocio"
+            [nombreNegocio]="nombreNegocioConfig()"
+            [valor]="cfg.asistente_personalidad ?? null"
+            [puedeEditar]="!!cfg.puede_editar"
+            (guardado)="personalidadGuardada($event)"
+            (fallo)="personalidadFallo($event)"
+          />
+        }
+
         <h3 class="bdj-cfg__titulo">Cuándo vuelve el asistente</h3>
         <p class="bdj-cfg__ayuda">Cuando alguien del negocio contesta, el asistente se calla en ese chat. Aquí decides si vuelve solo y tras cuántos minutos.</p>
         <!-- El asistente vuelve solo: decisión del negocio (ADR-023, Enmienda 2). «Nunca» es el
@@ -947,6 +962,15 @@
               </header>
 
               @if (diagnostico(); as d) {
+                @if (anteriorRevision(); as a) {
+                  <p class="bdj-hist__viendo" role="status">
+                    <lucide-icon name="history" [size]="14" aria-hidden="true" />
+                    Estás viendo la revisión del {{ fechaAnalisis(a.creado_en) }}
+                    <button type="button" class="bdj-hist__volver" (click)="volverAlUltimo('revision')">Ver la última</button>
+                  </p>
+                } @else if (d.creado_en) {
+                  <p class="bdj-hist__cuando">Revisada el {{ fechaAnalisis(d.creado_en) }}</p>
+                }
                 @if (d.hallazgos.length === 0) {
                   <p class="bdj__prep-ok">
                     <lucide-icon name="check" [size]="14" aria-hidden="true" />
@@ -1008,7 +1032,7 @@
                   <button
                     type="button"
                     class="bdj__auto-guardar"
-                    [disabled]="recomendando()"
+                    [disabled]="recomendando() || sinCupoIa()"
                     (click)="pedirRecomendaciones(!!recomendaciones())"
                   >
                     {{
@@ -1021,7 +1045,47 @@
                   </button>
                 </header>
 
+                <!-- El análisis gasta del cupo de IA del negocio, el mismo de «Cargar carta con IA». -->
+                @if (cupoIa(); as c) {
+                  <div class="bdj-cupo" [class.bdj-cupo--agotado]="sinCupoIa()">
+                    <div class="bdj-cupo__texto">
+                      <span>Cupo de IA de tu negocio este mes</span>
+                      <strong>{{ c.porcentaje_usado }} % usado</strong>
+                    </div>
+                    <div
+                      class="bdj-cupo__barra"
+                      role="progressbar"
+                      aria-label="Cupo de IA usado este mes"
+                      [attr.aria-valuenow]="c.porcentaje_usado"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    >
+                      <span [style.width.%]="c.porcentaje_usado"></span>
+                    </div>
+                    @if (sinCupoIa()) {
+                      <p class="bdj-cupo__aviso">
+                        Ya usaste el cupo de IA de este mes. Se renueva el día 1; mientras tanto, la
+                        revisión de arriba sigue funcionando.
+                      </p>
+                    }
+                  </div>
+                }
+
                 @if (recomendaciones(); as r) {
+                  @if (anteriorIa(); as a) {
+                    <p class="bdj-hist__viendo" role="status">
+                      <lucide-icon name="history" [size]="14" aria-hidden="true" />
+                      Estás viendo el análisis del {{ fechaAnalisis(a.creado_en) }}
+                      <button type="button" class="bdj-hist__volver" (click)="volverAlUltimo('ia')">Ver el último</button>
+                    </p>
+                  } @else if (r.creado_en) {
+                    <p class="bdj-hist__cuando">
+                      Analizada el {{ fechaAnalisis(r.creado_en) }}
+                      @if (r.de_cache) {
+                        · la carta no ha cambiado desde entonces
+                      }
+                    </p>
+                  }
                   @if (r.resumen) {
                     <p class="bdj__ia-resumen">{{ r.resumen }}</p>
                   }
@@ -1056,6 +1120,43 @@
                     </ul>
                   }
                   <p class="bdj__prep-donde">Los cambios se hacen en: App del restaurante → Menú</p>
+                }
+              </section>
+            }
+
+            @if (historialAnalisis().length > 1) {
+              <section class="bdj-hist" aria-labelledby="bdj-hist-titulo">
+                <button
+                  type="button"
+                  class="bdj-hist__abrir"
+                  [attr.aria-expanded]="historialAbierto()"
+                  aria-controls="bdj-hist-lista"
+                  (click)="historialAbierto.set(!historialAbierto())"
+                >
+                  <lucide-icon name="history" [size]="16" aria-hidden="true" />
+                  <span id="bdj-hist-titulo">Análisis anteriores ({{ historialAnalisis().length }})</span>
+                  <lucide-icon class="bdj-hist__flecha" name="chevron-down" [size]="16" aria-hidden="true" />
+                </button>
+                @if (historialAbierto()) {
+                  <ul id="bdj-hist-lista" class="bdj-hist__lista">
+                    @for (a of historialAnalisis(); track a.id_analisis) {
+                      <li>
+                        <button
+                          type="button"
+                          class="bdj-hist__item"
+                          [class.bdj-hist__item--ia]="a.tipo === 'ia'"
+                          [disabled]="abriendoAnalisis() !== null"
+                          (click)="verAnalisis(a)"
+                        >
+                          <lucide-icon [name]="a.tipo === 'ia' ? 'sparkles' : 'file-text'" [size]="16" aria-hidden="true" />
+                          <span class="bdj-hist__txt">{{ resumenAnalisis(a) }}</span>
+                          <span class="bdj-hist__fecha">
+                            {{ abriendoAnalisis() === a.id_analisis ? 'Abriendo…' : fechaAnalisis(a.creado_en) }}
+                          </span>
+                        </button>
+                      </li>
+                    }
+                  </ul>
                 }
               </section>
             }

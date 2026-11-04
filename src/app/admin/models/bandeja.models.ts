@@ -99,6 +99,13 @@ export interface RetomadaAsistente {
 /** Cuándo vuelve solo el asistente, por negocio. GET/PUT /admin/intelligence/bandeja/configuracion */
 export interface ConfiguracionReactivacion {
   id_negocio: number;
+  /** Nombre del asistente, trato a los clientes, bienvenida y emojis. null = los de siempre. */
+  asistente_personalidad?: {
+    nombre: string | null;
+    trato: string | null;
+    bienvenida: string | null;
+    emojis: 'normal' | 'pocos' | 'ninguno';
+  } | null;
   /** 0 = nunca (el valor de fábrica). */
   reactivar_asistente_min: number;
   /** Lo que el asistente contesta a «¿cuánto se demora?». null = sin configurar. */
@@ -237,6 +244,9 @@ export interface DiagnosticoAsistente {
   pruebas: { total: number; fallidas: number; hecha?: boolean };
   criticos: number;
   pendientes: number;
+  /** Del historial (2026-11-03): cuándo se hizo y su id. */
+  id_analisis?: number | null;
+  creado_en?: string | null;
 }
 
 /** Un cambio que la IA propone para la carta. Es una sugerencia: nada se aplica solo. */
@@ -259,7 +269,38 @@ export interface RecomendacionesAsistente {
   preguntas: string[];
   generado_en?: string;
   /** true si es el mismo análisis de hace un rato (la carta no cambió): no se volvió a cobrar. */
-  de_cache: boolean;
+  de_cache?: boolean;
+  /** Del historial (2026-11-03): cuándo se hizo y su id. */
+  id_analisis?: number | null;
+  creado_en?: string | null;
+  /** Cuánto queda del cupo de IA del negocio después de este análisis. */
+  cupo_ia?: CupoIaNegocio | null;
+}
+
+/**
+ * El cupo de IA del negocio (2026-11-03): lo comparten la carga de la carta con IA y el análisis
+ * del asistente. Se enseña en porcentaje: el dueño no sabe qué es un token.
+ */
+export interface CupoIaNegocio {
+  porcentaje_usado: number;
+  disponible: boolean;
+  motivo: 'dia' | 'mes' | 'plataforma' | null;
+}
+
+/** Una entrada de la lista del historial de análisis. */
+export interface AnalisisResumido {
+  id_analisis: number;
+  tipo: 'revision' | 'ia';
+  creado_en: string;
+  resumen: { pendientes?: number; criticos?: number; pruebas?: number; cambios?: number; preguntas?: number };
+}
+
+/** `GET /intelligence/bandeja/diagnostico/historial`. */
+export interface HistorialAnalisis {
+  ultima_revision: DiagnosticoAsistente | null;
+  ultimo_ia: RecomendacionesAsistente | null;
+  historial: AnalisisResumido[];
+  cupo_ia: CupoIaNegocio | null;
 }
 
 /** Los números de una ventana del informe del asistente. */

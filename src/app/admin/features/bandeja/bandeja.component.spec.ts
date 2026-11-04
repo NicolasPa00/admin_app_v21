@@ -145,6 +145,10 @@ async function montar(
           pausarAsistente,
           getDiagnostico,
           pedirRecomendaciones,
+          // Sin análisis guardados: la pantalla se comporta como antes del historial.
+          getHistorialAnalisis: () =>
+            of({ ultima_revision: null, ultimo_ia: null, historial: [], cupo_ia: null }),
+          getAnalisis: () => of(null),
           getInforme,
         },
       },
