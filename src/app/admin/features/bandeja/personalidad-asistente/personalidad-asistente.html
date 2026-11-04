@@ -1,9 +1,9 @@
-<div class="pa" role="group" aria-labelledby="pa-titulo">
+<div class="pa">
   <div class="pa__form">
     <label class="pa__campo">
-      <span class="pa__etq">Nombre del asistente <small>(opcional)</small></span>
+      <span class="pa__etq">Nombre del asistente <small>opcional</small></span>
       <input
-        class="pa__input"
+        class="pa__input pa__input--nombre"
         type="text"
         maxlength="30"
         placeholder="Ej.: Luna"
@@ -45,7 +45,7 @@
           <small class="pa__error" role="alert">Solo letras, como «veci» o «amigo».</small>
         }
       }
-      <small class="pa__ayuda">El asistente lo usa de vez en cuando, como alguien del local, no en cada mensaje.</small>
+      <small class="pa__ayuda">Lo usa de vez en cuando, como alguien del local, no en cada mensaje.</small>
     </div>
 
     <div class="pa__campo">
@@ -61,63 +61,77 @@
 
     <div class="pa__campo">
       <label class="pa__switch">
-        <input type="checkbox" [checked]="propia()" [disabled]="!puedeEditar()"
+        <input type="checkbox" role="switch" [checked]="propia()" [disabled]="!puedeEditar()"
                (change)="activarPropia($any($event.target).checked)" />
         <span>Escribir mi propia bienvenida</span>
       </label>
       @if (propia()) {
-        <div class="pa__marcas" aria-label="Insertar un dato en la bienvenida">
-          @for (m of marcas; track m.marca) {
-            <button type="button" class="pa__marca" [title]="m.ayuda" [disabled]="!puedeEditar()"
-                    (click)="insertarMarca(m.marca)">+ {{ m.etiqueta }}</button>
-          }
+        <div class="pa__propia">
+          <div class="pa__marcas" aria-label="Insertar un dato en la bienvenida">
+            <span class="pa__marcas-etq">Insertar:</span>
+            @for (m of marcas; track m.marca) {
+              <button type="button" class="pa__marca" [title]="m.ayuda" [disabled]="!puedeEditar()"
+                      (click)="insertarMarca(m.marca)">{{ m.etiqueta }}</button>
+            }
+          </div>
+          <textarea
+            #cajaBienvenida
+            class="pa__input pa__texto"
+            rows="3"
+            maxlength="400"
+            aria-label="Texto de bienvenida"
+            [value]="bienvenida()"
+            (input)="bienvenida.set($any($event.target).value)"
+            [disabled]="!puedeEditar()"
+          ></textarea>
+          <small class="pa__ayuda pa__ayuda--fila">
+            <span>Para resaltar, escribe *así*.</span>
+            <span class="pa__contador">{{ bienvenida().length }}/400</span>
+          </small>
         </div>
-        <textarea
-          #cajaBienvenida
-          class="pa__input pa__texto"
-          rows="3"
-          maxlength="400"
-          aria-label="Texto de bienvenida"
-          [value]="bienvenida()"
-          (input)="bienvenida.set($any($event.target).value)"
-          [disabled]="!puedeEditar()"
-        ></textarea>
-        <small class="pa__ayuda">{{ bienvenida().length }}/400 · Para resaltar, *así*.</small>
       }
     </div>
   </div>
 
-  <!-- Vista previa: la burbuja tal como la recibe el cliente en WhatsApp. -->
+  <!-- Vista previa: un chat de WhatsApp, para que se lea como «así lo recibe el cliente». -->
   <figure class="pa__previa" aria-label="Vista previa del saludo">
     <figcaption>Así saluda hoy</figcaption>
-    <div class="pa__chat">
-      <div class="pa__burbuja">
-        <p class="pa__entrada">
-          @for (x of vistaPrevia(); track $index) {
-            @if (x.negrita) { <strong>{{ x.t }}</strong> } @else { {{ x.t }} }
-          }
-        </p>
-        <p class="pa__sigue">
-          <lucide-icon name="info" [size]="12" aria-hidden="true" />
-          Aquí sigue lo que pone la plataforma: si estás abierto o a qué hora abres, y el enlace de tu carta.
-        </p>
+    <div class="pa__telefono">
+      <div class="pa__chat-cab">
+        <span class="pa__avatar" aria-hidden="true">{{ inicial() }}</span>
+        <span class="pa__chat-quien">
+          <strong>{{ nombreNegocio() || 'Tu negocio' }}</strong>
+          <small>en línea</small>
+        </span>
+      </div>
+      <div class="pa__chat">
+        <div class="pa__burbuja">
+          <p class="pa__entrada">@for (x of vistaPrevia(); track $index) {<span [class.pa__neg]="x.negrita">{{ x.t }}</span>}</p>
+          <p class="pa__sigue">Aquí sigue lo que pone la plataforma: si estás abierto o a qué hora abres, y el enlace de tu carta.</p>
+          <span class="pa__hora" aria-hidden="true">{{ horaAhora }} <lucide-icon name="check-check" [size]="14" /></span>
+        </div>
       </div>
     </div>
   </figure>
 
   @if (puedeEditar()) {
-    <div class="pa__pie">
-      @if (!esLaDeSiempre() || valor()) {
-        <button type="button" class="pa__enlace" [disabled]="guardando()" (click)="volverALaDeSiempre()">
-          Volver a la de siempre
-        </button>
-      }
+    <div class="pa__pie" [class.pa__pie--sucio]="sucio()">
       @if (sucio()) {
-        <button type="button" class="pa__enlace" [disabled]="guardando()" (click)="deshacer()">Deshacer</button>
-        <button type="button" class="bdj__auto-guardar" [disabled]="!valido() || guardando()" (click)="guardar()">
-          {{ guardando() ? 'Guardando…' : 'Guardar' }}
-        </button>
+        <span class="pa__pendiente">Cambios sin guardar</span>
       }
+      <span class="pa__pie-acciones">
+        @if (!sucio() && (!esLaDeSiempre() || valor())) {
+          <button type="button" class="pa__enlace" [disabled]="guardando()" (click)="volverALaDeSiempre()">
+            Volver a la de siempre
+          </button>
+        }
+        @if (sucio()) {
+          <button type="button" class="pa__enlace" [disabled]="guardando()" (click)="deshacer()">Deshacer</button>
+          <button type="button" class="pa__guardar" [disabled]="!valido() || guardando()" (click)="guardar()">
+            {{ guardando() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        }
+      </span>
     </div>
   }
 </div>

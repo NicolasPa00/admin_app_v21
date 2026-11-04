@@ -129,6 +129,11 @@ export class PersonalidadAsistenteComponent {
     () => !this.tratoInvalido() && this.trato().trim().length <= 24 && this.nombre().trim().length <= 30,
   );
 
+  /** La inicial del negocio para el avatar de la vista previa. */
+  readonly inicial = computed(() => (this.nombreNegocio().trim()[0] || 'N').toUpperCase());
+  /** «7:42 p. m.»: la hora del mensaje de ejemplo, como en WhatsApp. */
+  readonly horaAhora = new Intl.DateTimeFormat('es-CO', { hour: 'numeric', minute: '2-digit' }).format(new Date());
+
   readonly vistaPrevia = computed(() =>
     partesWhatsapp(entradaDeBienvenida(this.actual(), this.nombreNegocio(), saludoPorLaHora())),
   );
