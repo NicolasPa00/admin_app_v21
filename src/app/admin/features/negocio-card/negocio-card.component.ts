@@ -10,7 +10,7 @@ import { LucideAngularModule, LUCIDE_ICONS, LucideIconProvider } from 'lucide-an
 import {
   Utensils, Car, Scissors, ShoppingCart, Wrench, PiggyBank,
   Landmark, Building2, CheckCircle2, XCircle, Users, ArrowRight,
-  CalendarDays, RotateCw,
+  CalendarDays, RotateCw, Smartphone,
 } from '../../../core/icons/phosphor';
 
 import { TipoNegocioConRoles } from '../../models/admin.models';
@@ -27,6 +27,7 @@ const ICON_MAP: Record<string, string> = {
   'FONDO DE AHORROS':              'piggy-bank',
   'FINANCIERA DE PRESTAMOS':       'landmark',
   'RESERVA':                       'calendar-days',
+  'CELULARES':                     'smartphone',
 };
 
 /**
@@ -48,7 +49,7 @@ const ICON_MAP: Record<string, string> = {
       useValue: new LucideIconProvider({
         Utensils, Car, Scissors, ShoppingCart, Wrench,
         PiggyBank, Landmark, Building2, CheckCircle2,
-        XCircle, Users, ArrowRight, CalendarDays, RotateCw,
+        XCircle, Users, ArrowRight, CalendarDays, RotateCw, Smartphone,
       }),
     },
   ],

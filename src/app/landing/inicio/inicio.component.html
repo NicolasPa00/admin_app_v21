@@ -18,6 +18,7 @@
         <app-tema-selector />
         <a class="enlace" routerLink="/restaurantes">Restaurantes</a>
         <a class="enlace" routerLink="/reservas">Citas</a>
+        <a class="enlace" routerLink="/celulares">Celulares</a>
       </div>
       <a class="enlace enlace--entrar" routerLink="/login">Entrar</a>
       <button type="button" class="boton boton--sm" (click)="abrirPrueba()">
@@ -129,6 +130,15 @@
           </a>
         }
       </div>
+
+      <!-- La tercera respuesta, sin captura todavía: una tira, no una tarjeta de escena. -->
+      <a class="tira-celulares" routerLink="/celulares">
+        <span class="tira-celulares__texto">
+          <strong>¿Vendes celulares o reparas equipos?</strong>
+          Inventario por IMEI, garantías, apartados, servicio técnico y factura electrónica.
+        </span>
+        <span class="tira-celulares__ir">Ver EscalApp para tiendas de celulares</span>
+      </a>
     </div>
   </section>
 
@@ -272,6 +282,7 @@
         <nav class="pie__nav" aria-label="Secciones y legal">
           <a routerLink="/restaurantes">Restaurantes</a>
           <a routerLink="/reservas">Negocios de citas</a>
+          <a routerLink="/celulares">Tiendas de celulares</a>
           <a routerLink="/login">Iniciar sesión</a>
           <!-- La portada vieja tenía «Paga tu plan» en la cabecera: los clientes que pagan a mano
                llegan por aquí y no deben perder el camino. -->

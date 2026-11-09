@@ -147,6 +147,10 @@ const RUBROS_RESPALDO: TipoNegocio[] = [
   { id: 17, nombre: 'PELUQUERIA CANINA',   icon: 'paw-print',   label: 'Cuidado de mascotas', disponible: true, modulo: 'RESERVA' },
   { id: 14, nombre: 'CONSULTORIO',         icon: 'stethoscope', label: 'Consultorio',      disponible: true, modulo: 'RESERVA' },
   { id: 19, nombre: 'HOTEL',               icon: 'hotel',       label: 'Hospedaje',        disponible: true, modulo: 'RESERVA' },
+
+  // ── Motor celulares ──
+  { id: 20, nombre: 'TIENDA DE CELULARES',        icon: 'smartphone', label: 'Tienda de celulares',           disponible: true, modulo: 'CELULARES' },
+  { id: 21, nombre: 'SERVICIO TECNICO CELULARES', icon: 'wrench',     label: 'Servicio técnico de celulares', disponible: true, modulo: 'CELULARES' },
 ];
 
 /**

@@ -179,7 +179,7 @@ export class AdminService {
    * pasamos un `?code=` que la app destino canjea por la sesión.
    */
   generarCodigoAcceso(
-    moduloPath: 'restaurante' | 'parqueadero' | 'gym' | 'tienda' | 'reserva',
+    moduloPath: 'restaurante' | 'parqueadero' | 'gym' | 'tienda' | 'reserva' | 'celulares',
     payload: { token: string; id_negocio?: number },
   ): Observable<string> {
     const root = environment.apiUrl.replace(/\/admin\/?$/, '');

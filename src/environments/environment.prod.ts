@@ -19,6 +19,7 @@ export const environment = {
   gymAppUrl: 'https://escalapp.cloud/gym',
   tiendaAppUrl: 'https://escalapp.cloud/tienda',
   reservaAppUrl: 'https://escalapp.cloud/reserva',
+  celularesAppUrl: 'https://escalapp.cloud/celulares',
   assetPath: 'images',
   /** WhatsApp de soporte (wa.me URL) */
   whatsappUrl: 'https://wa.me/573180332988',

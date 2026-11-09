@@ -45,6 +45,7 @@ const AREA_PAD = { top: 16, right: 16, bottom: 30, left: 62 };
 const VERTICALES: Record<Vertical, { label: string; color: string }> = {
   restaurante: { label: 'Restaurante', color: '#4F46E5' },
   reserva:     { label: 'Reservas',    color: '#38A169' },
+  celulares:   { label: 'Celulares',   color: '#D53F8C' },
   parqueadero: { label: 'Parqueadero', color: '#C05621' },
   gym:         { label: 'Gimnasio',    color: '#7B1FA2' },
   tienda:      { label: 'Tienda',      color: '#0891B2' },

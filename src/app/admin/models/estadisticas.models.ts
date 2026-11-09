@@ -6,7 +6,7 @@
  */
 
 /** Los cinco aplicativos que atienden a los inquilinos. `otro` = tipo sin aplicativo asignado. */
-export type Vertical = 'restaurante' | 'reserva' | 'parqueadero' | 'gym' | 'tienda' | 'otro';
+export type Vertical = 'restaurante' | 'reserva' | 'celulares' | 'parqueadero' | 'gym' | 'tienda' | 'otro';
 
 export interface EstadisticasPeriodo {
   /** Inicio del rango pedido, o `null` cuando se mira todo el historial. */

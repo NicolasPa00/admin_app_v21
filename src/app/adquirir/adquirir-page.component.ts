@@ -171,7 +171,11 @@ export class AdquirirPageComponent {
   );
 
   protected readonly etiquetaCategoria = computed(() =>
-    this.moduloPedido() === 'RESERVA' ? 'Agenda y Reservas' : 'Restaurante / Gastrobar',
+    this.moduloPedido() === 'RESERVA'
+      ? 'Agenda y Reservas'
+      : this.moduloPedido() === 'CELULARES'
+        ? 'Tienda de celulares'
+        : 'Restaurante / Gastrobar',
   );
 
   /* ── Formulario ── */

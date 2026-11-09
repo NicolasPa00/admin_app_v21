@@ -25,6 +25,8 @@ export const environment = {
   tiendaAppUrl: 'http://localhost:4005',
   /** URL de la app de reserva */
   reservaAppUrl: 'http://localhost:4006',
+  /** URL de la app de celulares */
+  celularesAppUrl: 'http://localhost:4007',
   /** Ruta base de assets (imágenes, etc.) */
   assetPath: '/images',
   /** WhatsApp de soporte (wa.me URL) */

@@ -44,6 +44,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./landing/reservas/reservas.component').then((m) => m.ReservasComponent),
   },
+  // La página de la tienda de celulares. Misma regla: el título lo pone `SeoService`.
+  {
+    path: 'celulares',
+    loadComponent: () =>
+      import('./landing/celulares/celulares.component').then((m) => m.CelularesComponent),
+  },
 
   // Documentos legales públicos — SIN guardia a propósito: quien quiere ejercer sus derechos
   // como titular de datos no tiene por qué tener cuenta, y una política de privacidad que exige

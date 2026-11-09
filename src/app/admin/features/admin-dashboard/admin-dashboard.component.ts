@@ -14,7 +14,7 @@ import {
   AlertCircle, Building2, ArrowRight, Hash, Phone, Mail,
   DollarSign, Receipt, TrendingUp, TrendingDown, Minus,
   TriangleAlert, Lock, CalendarClock, CalendarRange, X, Wallet,
-  UtensilsCrossed, CalendarCheck, Dumbbell, Car, Store,
+  UtensilsCrossed, CalendarCheck, Dumbbell, Car, Store, Smartphone,
 } from '../../../core/icons/phosphor';
 
 import { ModalCabeceraComponent } from '../../../shared/modal-cabecera/modal-cabecera.component';
@@ -77,7 +77,7 @@ interface KpiMetrica {
         AlertCircle, Building2, ArrowRight, Hash, Phone, Mail,
         DollarSign, Receipt, TrendingUp, TrendingDown, Minus,
         TriangleAlert, Lock, CalendarClock, CalendarRange, X, Wallet,
-  UtensilsCrossed, CalendarCheck, Dumbbell, Car, Store,
+  UtensilsCrossed, CalendarCheck, Dumbbell, Car, Store, Smartphone,
       }),
     },
   ],
@@ -157,12 +157,14 @@ export class AdminDashboardComponent implements OnInit {
     GIMNASIO:    environment.gymAppUrl,
     TIENDA:      environment.tiendaAppUrl,
     RESERVA:     environment.reservaAppUrl,
+    CELULARES:   environment.celularesAppUrl,
   };
 
   /** El ícono de la tarjeta según el módulo: se reconoce de un vistazo qué clase de negocio es. */
   private readonly ICONO_MODULO: Record<string, string> = {
     RESTAURANTE: 'utensils-crossed',
     RESERVA:     'calendar-check',
+    CELULARES:   'smartphone',
     GIMNASIO:    'dumbbell',
     PARQUEADERO: 'car',
     TIENDA:      'store',
@@ -279,12 +281,13 @@ export class AdminDashboardComponent implements OnInit {
     const token = this.authService.getAccessToken();
     if (!token) { this.authService.logout(); return; }
 
-    const moduloPath: 'restaurante' | 'parqueadero' | 'gym' | 'tienda' | 'reserva' | null =
+    const moduloPath: 'restaurante' | 'parqueadero' | 'gym' | 'tienda' | 'reserva' | 'celulares' | null =
       appUrl === environment.negocioAppUrl     ? 'restaurante' :
       appUrl === environment.parqueaderoAppUrl ? 'parqueadero' :
       appUrl === environment.gymAppUrl         ? 'gym' :
       appUrl === environment.tiendaAppUrl      ? 'tienda' :
       appUrl === environment.reservaAppUrl     ? 'reserva' :
+      appUrl === environment.celularesAppUrl   ? 'celulares' :
       null;
 
     if (!moduloPath) {
