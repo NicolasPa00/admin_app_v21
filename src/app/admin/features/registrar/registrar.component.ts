@@ -15,6 +15,8 @@ import {
   // faltaban aquí, así que `iconoDe()` los descartaba y todos caían al genérico 'store'.
   Coffee, Croissant, IceCreamCone, Beer, Sandwich, Pizza, Sparkles, Flower2,
   Hand, HandHeart, Stethoscope, Syringe, PenTool, PawPrint, Dog, Hotel, BedDouble, Tent,
+  // Módulo CELULARES: tienda de celulares y repuestos de moto (ADR-030).
+  Smartphone, Bike,
 } from '../../../core/icons/phosphor';
 
 import { AdminService } from '../../data-access/admin.service';
@@ -29,6 +31,7 @@ const ICONOS_DISPONIBLES = [
   'coffee', 'croissant', 'ice-cream-cone', 'beer', 'sandwich', 'pizza',
   'sparkles', 'flower-2', 'hand', 'hand-heart', 'stethoscope', 'syringe',
   'pen-tool', 'paw-print', 'dog', 'hotel', 'bed-double', 'tent',
+  'smartphone', 'bike',
 ];
 
 const COLOR_DEFAULT = '#5d5497';
@@ -55,6 +58,7 @@ const COLOR_DEFAULT = '#5d5497';
         PiggyBank, Landmark, Store, Building2, Calendar, Briefcase,
         Coffee, Croissant, IceCreamCone, Beer, Sandwich, Pizza, Sparkles, Flower2,
         Hand, HandHeart, Stethoscope, Syringe, PenTool, PawPrint, Dog, Hotel, BedDouble, Tent,
+        Smartphone, Bike,
       }),
     },
   ],
