@@ -102,10 +102,10 @@
         </ul>
       }
 
-      <a routerLink="/admin/whatsapp" class="cw__boton cw__boton--outline">
+      <button type="button" class="cw__boton cw__boton--outline" (click)="verConversaciones()">
         <lucide-icon name="message-circle" [size]="16"></lucide-icon>
         Ver conversaciones
-      </a>
+      </button>
 
       @if (esPropio()) {
         @if (!confirmandoDesconectar()) {

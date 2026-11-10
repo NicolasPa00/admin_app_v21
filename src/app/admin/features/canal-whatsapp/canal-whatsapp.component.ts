@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
   OnInit,
   PLATFORM_ID,
   computed,
@@ -12,7 +13,8 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { map, of, switchMap } from 'rxjs';
 import {
   NegocioSelector,
   SelectorNegocioComponent,
@@ -34,7 +36,9 @@ import {
 import { environment } from '../../../../environments/environment';
 import { AdminService } from '../../data-access/admin.service';
 import { CanalWhatsappService } from '../../data-access/canalWhatsapp.service';
-import { Negocio } from '../../models/admin.models';
+import { Negocio, TipoNegocio } from '../../models/admin.models';
+import { AuthService } from '../../../auth/data-access/auth.service';
+import { esSuperAdmin } from '../../guards/admin.guard';
 import {
   EstadoCanalWhatsapp,
   EventoEmbeddedSignup,
@@ -95,6 +99,27 @@ const ESPERA_EVENTO_MS = 2500;
 const LIMITE_CARGA_SDK_MS = 15000;
 
 /**
+ * El aplicativo donde el dueño contesta las conversaciones de ese tipo de negocio.
+ *
+ * «Ver conversaciones» llevaba a `/admin/whatsapp`, que desde el 2026-10-08 es solo del super
+ * admin: al dueño el guard lo devolvía al Dashboard. Sus conversaciones viven en la app de su
+ * negocio. Se decide por el APLICATIVO del tipo y no por su nombre: «Repuestos de moto» es otro
+ * tipo atendido por la app de celulares (ADR-030). `null` = sin app con Bandeja (el panel sigue).
+ */
+export function appDeConversaciones(
+  tipo: Pick<TipoNegocio, 'nombre' | 'aplicativo'> | undefined,
+): { modulo: 'restaurante' | 'celulares'; url: string } | null {
+  const clave = String(tipo?.aplicativo ?? tipo?.nombre ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase();
+  if (clave === 'CELULARES') return { modulo: 'celulares', url: environment.celularesAppUrl };
+  if (clave === 'RESTAURANTE') return { modulo: 'restaurante', url: environment.negocioAppUrl };
+  return null;
+}
+
+/**
  * CanalWhatsappComponent — conectar el número de WhatsApp del negocio (F8-D).
  *
  * ## Las opciones, y por qué son botones y no un selector
@@ -128,7 +153,7 @@ const LIMITE_CARGA_SDK_MS = 15000;
 @Component({
   selector: 'app-canal-whatsapp',
   standalone: true,
-  imports: [FormsModule, RouterLink, LucideAngularModule, SelectorNegocioComponent],
+  imports: [FormsModule, LucideAngularModule, SelectorNegocioComponent],
   templateUrl: './canal-whatsapp.component.html',
   styleUrl: './canal-whatsapp.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -155,6 +180,9 @@ export class CanalWhatsappComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly canalService = inject(CanalWhatsappService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly router = inject(Router);
+  /** `AuthService` se pide al pulsar «Ver conversaciones», no al montar (ver ese método). */
+  private readonly injector = inject(Injector);
 
   readonly cargando = signal(true);
   readonly conectando = signal(false);
@@ -200,6 +228,53 @@ export class CanalWhatsappComponent implements OnInit {
   );
 
   readonly negocioActual = computed(() => this.negocios().find((n) => n.id_negocio === this.idNegocio()));
+
+  /**
+   * «Ver conversaciones». Al super admin, la Bandeja del panel. Al dueño, la de la app de su
+   * negocio, con un código de un solo uso (como el Dashboard al entrar a un negocio) y
+   * `destino=/conversaciones` para el callback.
+   *
+   * Todo se resuelve al pulsar —el tipo del negocio y la sesión— y no al montar: esta pantalla se
+   * monta también dentro de la vista WhatsApp del super admin, y así no paga una consulta de tipos
+   * que casi nunca se usa.
+   */
+  verConversaciones(): void {
+    const auth = this.injector.get(AuthService);
+    const token = auth.getAccessToken();
+    const idNegocio = this.idNegocio();
+    const negocio = this.negocioActual();
+    const alPanel = () => void this.router.navigate(['/admin/whatsapp']);
+    if (esSuperAdmin(auth.currentUser()) || !token || !idNegocio || !negocio) {
+      alPanel();
+      return;
+    }
+    const fallo = () =>
+      this.error.set('No se pudieron abrir las conversaciones. Entra a tu negocio desde el Dashboard.');
+
+    this.adminService
+      .getTiposNegocio()
+      .pipe(
+        map((tipos) => appDeConversaciones(tipos.find((t) => t.id_tipo_negocio === negocio.id_tipo_negocio))),
+        switchMap((destino) =>
+          destino
+            ? this.adminService
+                .generarCodigoAcceso(destino.modulo, { token, id_negocio: idNegocio })
+                .pipe(map((code) => ({ destino, code })))
+            : of(null),
+        ),
+      )
+      .subscribe({
+        next: (r) => {
+          if (!r) return alPanel();
+          if (!r.code || !isPlatformBrowser(this.platformId)) return fallo();
+          window.location.href =
+            `${r.destino.url}/auth/callback?code=${encodeURIComponent(r.code)}` +
+            `&destino=${encodeURIComponent('/conversaciones')}`;
+        },
+        error: fallo,
+      });
+  }
+
 
   readonly conectado = computed(() => this.estadoCanal()?.conectado === true);
   readonly esPropio = computed(() => this.estadoCanal()?.origen === 'embedded_signup');

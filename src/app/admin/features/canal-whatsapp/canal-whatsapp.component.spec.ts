@@ -193,3 +193,15 @@ describe('CanalWhatsappComponent — conectar el número propio', () => {
     expect(v.el.textContent).toContain('ya está conectado a otro negocio');
   });
 });
+
+describe('appDeConversaciones — «Ver conversaciones» lleva a la app del negocio', () => {
+  it('celulares (y sus oficios, como repuestos de moto) a /celulares; restaurante a /restaurante', async () => {
+    const { appDeConversaciones } = await import('./canal-whatsapp.component');
+    expect(appDeConversaciones({ nombre: 'REPUESTOS DE MOTO', aplicativo: 'Celulares' })?.modulo).toBe('celulares');
+    expect(appDeConversaciones({ nombre: 'CELULARES', aplicativo: null })?.modulo).toBe('celulares');
+    expect(appDeConversaciones({ nombre: 'PIZZERÍA', aplicativo: 'Restaurante' })?.modulo).toBe('restaurante');
+    // Sin app con Bandeja: el botón sigue llevando al panel.
+    expect(appDeConversaciones({ nombre: 'BARBERÍA', aplicativo: 'Reserva' })).toBeNull();
+    expect(appDeConversaciones(undefined)).toBeNull();
+  });
+});
