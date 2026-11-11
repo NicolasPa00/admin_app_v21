@@ -214,6 +214,66 @@ describe('FeOperacionComponent', () => {
       cmp.registro.set({ tipo: 'NC', prefijo: 'NC', desde: '1', hasta: '99999', resolucion: '', clave: '', vigenciaDesde: '', vigenciaHasta: '' });
       expect(cmp.registroValido()).toBe(true);
     });
+
+    it('el rango del tiquete POS pide su resolución pero no clave técnica', () => {
+      api['getEmision'].mockReturnValue(of(propia()));
+      const { cmp } = montar();
+      cmp.registro.set({ tipo: 'POS', prefijo: 'epos', desde: '1', hasta: '100000', resolucion: '', clave: '', vigenciaDesde: '', vigenciaHasta: '' });
+      expect(cmp.registroValido()).toBe(false);
+      cmp.campoRegistro('resolucion', '18764000000010');
+      expect(cmp.registroValido()).toBe(true);
+      cmp.registrarRango();
+      expect(api['registrarRango']).toHaveBeenCalledWith(17, expect.objectContaining({
+        tipo_documento: 'POS', prefijo: 'EPOS', resolucion: '18764000000010', clave_tecnica: null,
+      }));
+    });
+
+    describe('tiquete POS electrónico', () => {
+      const conPos = (enUso: boolean) => {
+        const v = propia();
+        return {
+          ...v,
+          rangos: [{
+            id_resolucion: 'r-pos', id_rango_proveedor: null, tipo_documento: 'POS' as const, prefijo: 'EPOS',
+            numero_resolucion: '18764000000010', rango_desde: 1, rango_hasta: 100000, consecutivo_actual: null,
+            vigencia_hasta: '2028-01-01', vencida: false, en_uso: enUso,
+          }],
+        };
+      };
+
+      it('no deja encenderlo sin un rango POS en uso ni sin los datos de la caja', async () => {
+        api['getEmision'].mockReturnValue(of(conPos(false)));
+        const { el, fixture } = montar();
+        // ngModel aplica [disabled] en el siguiente ciclo.
+        await fixture.whenStable();
+        fixture.detectChanges();
+        const pos = el.querySelector('input[name="feo-pos"]') as HTMLInputElement;
+        expect(pos.disabled).toBe(true);
+        expect(el.textContent).toContain('un rango «Tiquete POS» en uso y completar los datos de la caja');
+      });
+
+      it('con el rango y la caja, lo enciende mandando la caja escrita', async () => {
+        api['getEmision'].mockReturnValue(of(conPos(true)));
+        const { cmp, fixture, el } = montar();
+        cmp.campoCaja('placa', 'CAJA-01');
+        cmp.campoCaja('ubicacion', 'Mostrador');
+        cmp.campoCaja('tipo', 'Caja registradora');
+        fixture.detectChanges();
+        await fixture.whenStable();
+        fixture.detectChanges();
+        expect((el.querySelector('input[name="feo-pos"]') as HTMLInputElement).disabled).toBe(false);
+        cmp.guardarEmitePos(true);
+        expect(api['guardarEmision']).toHaveBeenCalledWith(17, {
+          emite_pos: true,
+          pos_caja: { placa: 'CAJA-01', ubicacion: 'Mostrador', tipo: 'Caja registradora' },
+        });
+      });
+
+      it('con Factus no aparece', () => {
+        const { el } = montar();
+        expect(el.querySelector('input[name="feo-pos"]')).toBeNull();
+      });
+    });
   });
 
   it('cambiar de negocio recarga y olvida lo que se estaba escribiendo', () => {

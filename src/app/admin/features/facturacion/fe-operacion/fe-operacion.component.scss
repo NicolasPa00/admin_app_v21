@@ -92,6 +92,15 @@
     background: var(--color-surface);
   }
 
+  &__subtitulo {
+    margin: 1rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+  }
+
   &__card-title {
     display: flex;
     flex-wrap: wrap;

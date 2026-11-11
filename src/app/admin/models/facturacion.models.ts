@@ -113,7 +113,8 @@ export interface Declaracion {
 export type AmbienteFe = 'PRUEBAS' | 'PRODUCCION';
 export type EstadoFe = 'SIN_CONFIGURAR' | 'EN_PRUEBAS' | 'ACTIVO' | 'SUSPENDIDO';
 /** ND = notas débito (solo el emisor propio las emite). */
-export type TipoRangoFe = 'FV' | 'NC' | 'ND';
+/** POS = tiquete POS electrónico (documento equivalente); NAP = su nota de ajuste crédito. */
+export type TipoRangoFe = 'FV' | 'NC' | 'ND' | 'POS' | 'NAP';
 /**
  * Quién emite. FACTUS = proveedor tecnológico (credenciales de su API). DIAN_DIRECTO = el emisor
  * propio de EscalApp (ADR-032): firma con el certificado del negocio y transmite directo a la DIAN;
@@ -134,6 +135,10 @@ export interface FeConfiguracion {
   enviar_correo: boolean;
   /** false (lo normal): se factura solo el cobro en el que el cajero lo pide. true: todos. */
   facturar_todo: boolean;
+  /** Emisor propio: el cobro sin factura sale como tiquete POS electrónico. */
+  emite_pos?: boolean;
+  /** La caja que va en cada tiquete POS (exigida por la DIAN). */
+  pos_caja?: { placa: string; ubicacion: string; tipo: string } | null;
   activado_en: string | null;
   tiene_credenciales: boolean;
 }

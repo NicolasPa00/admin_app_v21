@@ -62,6 +62,25 @@ const REGISTRO_VACIO = {
 };
 type RegistroRango = typeof REGISTRO_VACIO;
 
+/** Cada tipo de rango, dicho para una persona (tabla de rangos y avisos). */
+const NOMBRE_RANGO: Record<TipoRangoFe, string> = {
+  FV: 'Factura',
+  NC: 'Nota crédito',
+  ND: 'Nota débito',
+  POS: 'Tiquete POS',
+  NAP: 'Nota de ajuste POS',
+};
+const PLURAL_RANGO: Record<TipoRangoFe, string> = {
+  FV: 'las facturas',
+  NC: 'las notas crédito',
+  ND: 'las notas débito',
+  POS: 'los tiquetes POS',
+  NAP: 'las notas de ajuste al POS',
+};
+
+const CAJA_VACIA = { placa: '', ubicacion: '', tipo: '' };
+type CajaPos = typeof CAJA_VACIA;
+
 /** Por qué no factura todavía, dicho para una persona. */
 const MOTIVOS: Record<Exclude<MotivoNoFactura, null>, string> = {
   SIN_FEATURE: 'El plan del negocio no incluye la facturación electrónica.',
@@ -140,6 +159,10 @@ export class FeOperacionComponent {
   /** Nombre del .p12 elegido, para enseñarlo (el contenido va en `credencialesPropio`). */
   readonly archivoCertificado = signal<string | null>(null);
   readonly registro = signal<RegistroRango>({ ...REGISTRO_VACIO });
+  /** Tiquete POS electrónico: la caja que va en cada tiquete (placa, ubicación y tipo). */
+  readonly caja = signal<CajaPos>({ ...CAJA_VACIA });
+  readonly cajaCompleta = computed(() => Object.values(this.caja()).every((v) => v.trim().length > 0));
+  readonly hayRangoPos = computed(() => this.rangos().some((r) => r.tipo_documento === 'POS' && r.en_uso));
   readonly ambiente = signal<AmbienteFe>('PRUEBAS');
   readonly nuevoRango = signal<{ tipo: TipoRangoFe; prefijo: string; resolucion: string; actual: string }>({
     tipo: 'FV',
@@ -169,7 +192,11 @@ export class FeOperacionComponent {
     const hasta = Number(r.hasta);
     const numeros = r.desde !== '' && r.hasta !== '' && Number.isInteger(desde) && Number.isInteger(hasta) && desde >= 0 && hasta >= desde;
     if (!numeros) return false;
-    return r.tipo === 'NC' || (r.resolucion.trim().length >= 5 && r.clave.trim().length >= 10);
+    // La factura lleva resolución y clave técnica; el tiquete POS, solo su resolución (su CUDE va
+    // con el PIN del software); las notas no llevan ninguna.
+    if (r.tipo === 'FV') return r.resolucion.trim().length >= 5 && r.clave.trim().length >= 10;
+    if (r.tipo === 'POS') return r.resolucion.trim().length >= 5;
+    return true;
   });
   readonly rangoValido = computed(() => {
     const r = this.nuevoRango();
@@ -205,6 +232,7 @@ export class FeOperacionComponent {
     this.credencialesPropio.set({ ...PROPIO_VACIO });
     this.archivoCertificado.set(null);
     this.registro.set({ ...REGISTRO_VACIO });
+    this.caja.set({ ...CAJA_VACIA });
     this.api.getEmision(id).subscribe({
       next: (v) => {
         if (id !== this.idNegocio()) return; // llegó tarde: ya se cambió de negocio
@@ -222,6 +250,8 @@ export class FeOperacionComponent {
     this.vista.set(v);
     this.ambiente.set(v.config?.ambiente ?? 'PRUEBAS');
     this.proveedorElegido.set(v.config?.proveedor ?? 'FACTUS');
+    const c = v.config?.pos_caja;
+    this.caja.set({ placa: c?.placa ?? '', ubicacion: c?.ubicacion ?? '', tipo: c?.tipo ?? '' });
   }
 
   /** Ejecuta una acción con su indicador, su aviso de éxito y su error legible. */
@@ -292,6 +322,7 @@ export class FeOperacionComponent {
   registrarRango(): void {
     const r = this.registro();
     const factura = r.tipo === 'FV';
+    const conResolucion = factura || r.tipo === 'POS';
     this.ejecutar(
       'registrar-rango',
       this.api.registrarRango(this.idNegocio(), {
@@ -299,7 +330,7 @@ export class FeOperacionComponent {
         prefijo: r.prefijo.trim().toUpperCase() || null,
         desde: Number(r.desde),
         hasta: Number(r.hasta),
-        resolucion: factura ? r.resolucion.trim() : null,
+        resolucion: conResolucion ? r.resolucion.trim() : null,
         clave_tecnica: factura ? r.clave.trim() : null,
         vigencia_desde: r.vigenciaDesde || null,
         vigencia_hasta: r.vigenciaHasta || null,
@@ -398,7 +429,7 @@ export class FeOperacionComponent {
   usar(r: FeRango): void {
     this.ejecutar(`usar-${r.id_resolucion}`, this.api.usarRango(this.idNegocio(), r.id_resolucion), (rangos) => {
       this.ponerRangos(rangos);
-      return `Se usará ${r.prefijo ?? 'el rango'} para ${r.tipo_documento === 'NC' ? 'las notas crédito' : r.tipo_documento === 'ND' ? 'las notas débito' : 'las facturas'}.`;
+      return `Se usará ${r.prefijo ?? 'el rango'} para ${PLURAL_RANGO[r.tipo_documento] ?? 'las facturas'}.`;
     });
   }
 
@@ -425,6 +456,33 @@ export class FeOperacionComponent {
     this.ejecutar('correo', this.api.guardarEmision(this.idNegocio(), { enviar_correo: enviar }), (v) => {
       this.aplicar(v);
       return enviar ? 'El proveedor enviará la factura por correo al comprador.' : 'No se enviará correo al comprador.';
+    });
+  }
+
+  nombreRango(tipo: TipoRangoFe): string {
+    return NOMBRE_RANGO[tipo] ?? 'Factura';
+  }
+
+  campoCaja(campo: keyof CajaPos, valor: string): void {
+    this.caja.update((c) => ({ ...c, [campo]: valor }));
+  }
+
+  /** Guarda la caja del tiquete POS sin tocar si está encendido. */
+  guardarCaja(): void {
+    this.ejecutar('pos-caja', this.api.guardarEmision(this.idNegocio(), { pos_caja: this.caja() }), (v) => {
+      this.aplicar(v);
+      return 'Datos de la caja guardados.';
+    });
+  }
+
+  /** Enciende o apaga el tiquete POS electrónico (con la caja que está escrita). */
+  guardarEmitePos(emite: boolean): void {
+    const campos: Partial<FeConfiguracion> = emite ? { emite_pos: true, pos_caja: this.caja() } : { emite_pos: false };
+    this.ejecutar('emite-pos', this.api.guardarEmision(this.idNegocio(), campos), (v) => {
+      this.aplicar(v);
+      return emite
+        ? 'Los cobros sin factura saldrán como tiquete POS electrónico.'
+        : 'El tiquete POS electrónico quedó apagado: solo se emite la factura que pida el cajero.';
     });
   }
 

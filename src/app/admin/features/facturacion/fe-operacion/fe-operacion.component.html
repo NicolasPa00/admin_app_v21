@@ -264,13 +264,13 @@
               <tbody>
                 @for (r of rangos(); track r.id_resolucion) {
                   <tr [class.is-vencida]="r.vencida">
-                    <td>{{ r.tipo_documento === 'NC' ? 'Nota crédito' : r.tipo_documento === 'ND' ? 'Nota débito' : 'Factura' }}</td>
+                    <td>{{ nombreRango(r.tipo_documento) }}</td>
                     <td>{{ r.prefijo || '—' }}</td>
                     <td>{{ r.consecutivo_actual ?? '—' }}</td>
                     <td>{{ r.rango_hasta ?? '—' }}</td>
                     <td>{{ r.vencida ? 'Vencida' : (r.vigencia_hasta || '—') }}</td>
                     @if (propioGuardado()) {
-                      <td>{{ r.tipo_documento === 'NC' ? 'No aplica' : r.clave_tecnica ? 'Registrada' : 'Falta' }}</td>
+                      <td>{{ r.tipo_documento !== 'FV' ? 'No aplica' : r.clave_tecnica ? 'Registrada' : 'Falta' }}</td>
                     }
                     <td class="feo__celda-accion">
                       @if (r.en_uso) {
@@ -315,6 +315,8 @@
                   <option value="FV">Factura de venta</option>
                   <option value="NC">Nota crédito</option>
                   <option value="ND">Nota débito</option>
+                  <option value="POS">Tiquete POS electrónico</option>
+                  <option value="NAP">Nota de ajuste al tiquete POS</option>
                 </select>
               </label>
               <label class="feo__campo">
@@ -332,17 +334,19 @@
                 <input class="feo__input" inputmode="numeric" [ngModel]="registro().hasta"
                   (ngModelChange)="campoRegistro('hasta', $event)" name="feo-reg-hasta" />
               </label>
-              @if (registro().tipo === 'FV') {
+              @if (registro().tipo === 'FV' || registro().tipo === 'POS') {
                 <label class="feo__campo">
                   <span>Número de resolución</span>
                   <input class="feo__input" inputmode="numeric" [ngModel]="registro().resolucion"
                     (ngModelChange)="campoRegistro('resolucion', $event)" name="feo-reg-resolucion" />
                 </label>
-                <label class="feo__campo">
-                  <span>Clave técnica</span>
-                  <input class="feo__input" autocomplete="off" [ngModel]="registro().clave"
-                    (ngModelChange)="campoRegistro('clave', $event)" name="feo-reg-clave" />
-                </label>
+                @if (registro().tipo === 'FV') {
+                  <label class="feo__campo">
+                    <span>Clave técnica</span>
+                    <input class="feo__input" autocomplete="off" [ngModel]="registro().clave"
+                      (ngModelChange)="campoRegistro('clave', $event)" name="feo-reg-clave" />
+                  </label>
+                }
                 <label class="feo__campo">
                   <span>Vigente desde</span>
                   <input class="feo__input" type="date" [ngModel]="registro().vigenciaDesde"
@@ -490,6 +494,54 @@
             (ngModelChange)="guardarFacturarTodo($event)" [disabled]="ocupado() !== null" />
           <span>Facturar todos los cobros (a consumidor final si no se dice otra cosa)</span>
         </label>
+
+        @if (propioGuardado()) {
+          <h4 class="feo__subtitulo">Tiquete POS electrónico</h4>
+          <p class="feo__ayuda">
+            Con el emisor propio, el cobro en el que <strong>nadie pidió factura</strong> puede salir como
+            <strong>tiquete POS electrónico</strong> (documento equivalente) a consumidor final, sin tope de
+            valor. La factura sigue saliendo cuando el cajero la pide. Hace falta un rango
+            <strong>Tiquete POS</strong> en uso (con su resolución de la DIAN), uno de
+            <strong>Nota de ajuste al tiquete POS</strong> para anular o devolver, y los datos de la caja, que la
+            DIAN exige en cada tiquete.
+          </p>
+          <div class="feo__grid">
+            <label class="feo__campo">
+              <span>Placa o serial de la caja</span>
+              <input class="feo__input" maxlength="50" [ngModel]="caja().placa"
+                (ngModelChange)="campoCaja('placa', $event)" name="feo-caja-placa" placeholder="CAJA-01" />
+            </label>
+            <label class="feo__campo">
+              <span>Ubicación de la caja</span>
+              <input class="feo__input" maxlength="100" [ngModel]="caja().ubicacion"
+                (ngModelChange)="campoCaja('ubicacion', $event)" name="feo-caja-ubicacion" placeholder="Mostrador principal" />
+            </label>
+            <label class="feo__campo">
+              <span>Tipo de caja</span>
+              <input class="feo__input" maxlength="50" [ngModel]="caja().tipo"
+                (ngModelChange)="campoCaja('tipo', $event)" name="feo-caja-tipo" placeholder="Caja registradora" />
+            </label>
+          </div>
+          <div class="feo__acciones">
+            <button type="button" class="feo__btn" [disabled]="!cajaCompleta() || ocupado() !== null" (click)="guardarCaja()">
+              <lucide-icon [name]="ocupado() === 'pos-caja' ? 'loader-2' : 'save'" [size]="16"
+                [class.feo__spin]="ocupado() === 'pos-caja'"></lucide-icon>
+              Guardar caja
+            </button>
+          </div>
+          <label class="feo__check">
+            <input type="checkbox" [ngModel]="v.config?.emite_pos ?? false" name="feo-pos"
+              (ngModelChange)="guardarEmitePos($event)"
+              [disabled]="ocupado() !== null || (!(v.config?.emite_pos ?? false) && (!cajaCompleta() || !hayRangoPos()))" />
+            <span>Emitir tiquete POS electrónico en los cobros sin factura</span>
+          </label>
+          @if (!(v.config?.emite_pos ?? false) && (!cajaCompleta() || !hayRangoPos())) {
+            <p class="feo__ayuda">
+              Para encenderlo falta {{ !hayRangoPos() ? 'un rango «Tiquete POS» en uso' : '' }}{{
+                !hayRangoPos() && !cajaCompleta() ? ' y ' : '' }}{{ !cajaCompleta() ? 'completar los datos de la caja' : '' }}.
+            </p>
+          }
+        }
       </article>
 
       <!-- 6. Estado -->
