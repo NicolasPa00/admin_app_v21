@@ -30,7 +30,10 @@ import {
 
 /** Negocio enriquecido con el nombre legible de su tipo y el estado de su plan. */
 interface NegocioVista extends Negocio {
+  /** El MÓDULO (CELULARES, RESTAURANTE…): decide la app a la que se entra y el ícono. */
   tipoNombre: string;
+  /** Lo que se le muestra al dueño: su oficio si lo tiene («Tecnología y videojuegos»), si no el módulo. */
+  oficioNombre: string;
   /** `null` cuando el backend no manda el plan: no se bloquea ni se avisa. */
   vencimiento: Vencimiento | null;
 }
@@ -124,6 +127,10 @@ export class AdminDashboardComponent implements OnInit {
     this._negocios().map((n) => ({
       ...n,
       tipoNombre: this.tipoNombrePorId().get(n.id_tipo_negocio) ?? 'Negocio',
+      oficioNombre:
+        (n.id_rubro != null ? this.tipoNombrePorId().get(n.id_rubro) : undefined) ??
+        this.tipoNombrePorId().get(n.id_tipo_negocio) ??
+        'Negocio',
       vencimiento: n.plan === undefined ? null : evaluarVencimiento(n.plan),
     })),
   );

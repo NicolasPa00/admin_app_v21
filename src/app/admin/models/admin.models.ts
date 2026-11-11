@@ -147,6 +147,8 @@ export interface Negocio {
   email_contacto: string | null;
   telefono:       string | null;
   id_tipo_negocio: number;
+  /** El oficio del cliente («Tecnología y videojuegos»); el tipo es el módulo que lo atiende. */
+  id_rubro?:      number | null;
   id_paleta:      number | null;
   /** 'A' = activo, 'I' = inactivo */
   estado:         'A' | 'I';
