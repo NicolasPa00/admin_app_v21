@@ -684,7 +684,7 @@
                 max="10000"
                 step="100"
                 [value]="feDocsMes()"
-                (input)="feDocsMes.set(+$any($event.target).value)"
+                (input)="moverDocsFe(+$any($event.target).value)"
               />
 
               <dl class="calculadora__cuenta">
@@ -721,16 +721,22 @@
 
         <footer class="ventana__pie">
           <p class="fe-eleccion" aria-live="polite">
-            <span class="fe-eleccion__que">{{ feEleccion().plan }} · hasta {{ feEleccion().tope }} documentos al mes</span>
+            <span class="fe-eleccion__que">{{ feEleccion().plan }} · {{ feEleccion().codigo ? 'hasta ' : '' }}{{ feEleccion().tope }} documentos al mes</span>
             <span class="fe-eleccion__precio">{{ feEleccion().precio }} <small>al mes</small></span>
           </p>
-          <a
-            class="boton fe-eleccion__boton"
-            routerLink="/adquirir"
-            [queryParams]="{ plan: feEleccion().codigo, modulo: 'RESTAURANTE' }"
-          >
-            Adquirir
-          </a>
+          @if (feEleccion().codigo) {
+            <a
+              class="boton fe-eleccion__boton"
+              routerLink="/adquirir"
+              [queryParams]="{ plan: feEleccion().codigo, modulo: 'RESTAURANTE' }"
+            >
+              Adquirir
+            </a>
+          } @else {
+            <a class="boton fe-eleccion__boton" [href]="whatsappFeExtra" target="_blank" rel="noopener">
+              Escríbenos
+            </a>
+          }
         </footer>
       </dialog>
 

@@ -100,3 +100,54 @@ export function calcularFe(docs: number, plan: PlanFe, numero: (valor: number) =
     total: (plan === 'asistente' ? tramo.asistente : tramo.base) + extra.precio,
   };
 }
+
+/**
+ * Lo que resume el pie de la ventana: lo ÚLTIMO que tocó el visitante. Tocar un precio de la
+ * tabla elige ese tramo (`docsCalculadora = null`); mover la calculadora elige lo que ella dice.
+ * Antes el pie solo seguía a la tabla, así que con 10.000 documentos en la calculadora seguía
+ * diciendo «Plan Empresarial S · $117.999» debajo de un total de $507.996.
+ *
+ * `codigo` es `null` cuando hay adicionales: no existen en `gener_plan` y «Adquirir» no los vende,
+ * así que el pie manda a WhatsApp en vez de a comprar un plan que no alcanza.
+ */
+export interface EleccionFe {
+  /** «Plan Empresarial XL + 3 × +2.500». */
+  plan: string;
+  /** Documentos al mes que cubre la elección. */
+  docs: number;
+  total: number;
+  codigo: string | null;
+}
+
+export function eleccionFe(
+  tramoTabla: number,
+  plan: PlanFe,
+  docsCalculadora: number | null,
+  numero: (valor: number) => string,
+): EleccionFe {
+  if (docsCalculadora !== null) {
+    const calculo = calcularFe(docsCalculadora, plan, numero);
+    if (calculo.adicionales) {
+      return {
+        plan: `${calculo.plan} ${calculo.tramo.paquete} + ${calculo.adicionales}`,
+        docs: docsCalculadora,
+        total: calculo.total,
+        codigo: null,
+      };
+    }
+  }
+  const tramo = TRAMOS_FE[tramoTabla];
+  const conAsistente = plan === 'asistente';
+  return {
+    plan: `${nombrePlanFe(plan)} ${tramo.paquete}`,
+    docs: tramo.tope,
+    total: conAsistente ? tramo.asistente : tramo.base,
+    codigo: conAsistente ? tramo.codigoAsistente : tramo.codigoBase,
+  };
+}
+
+/** El índice en `TRAMOS_FE` del paquete que le alcanza a `docs` (el XL si ninguno alcanza). */
+export function indiceTramoFe(docs: number): number {
+  const i = TRAMOS_FE.findIndex((t) => docs <= t.tope);
+  return i === -1 ? TRAMOS_FE.length - 1 : i;
+}
