@@ -217,6 +217,7 @@ const OFICIOS_INICIO: { nombre: string; label: string }[] = [
   { nombre: 'TIENDA DE CELULARES', label: 'Tienda de celulares' },
   { nombre: 'SERVICIO TECNICO CELULARES', label: 'Servicio técnico de celulares' },
   { nombre: 'TECNOLOGIA Y VIDEOJUEGOS', label: 'Tecnología y videojuegos' },
+  { nombre: 'REPUESTOS DE MOTO', label: 'Repuestos de moto' },
 ];
 
 @Component({
