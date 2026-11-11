@@ -11,7 +11,8 @@
         <span class="feo__solo">Solo super admin</span>
       </h2>
       <p class="feo__sub">
-        La cuenta del proveedor tecnológico de este negocio, su numeración y cuándo empieza a emitir.
+        Con quién emite este negocio (Factus o el emisor propio de EscalApp), su numeración y cuándo
+        empieza a emitir.
       </p>
     </div>
     @if (!cargando() && vista()) {
@@ -75,15 +76,48 @@
     <article class="feo__card">
       <h3 class="feo__card-title">
         <lucide-icon name="key-round" [size]="16"></lucide-icon>
-        1. Credenciales del proveedor
+        1. Emisor y credenciales
         @if (v.config?.tiene_credenciales) {
           <span class="feo__ok"><lucide-icon name="check" [size]="14"></lucide-icon> Guardadas</span>
         }
       </h3>
+
+      <fieldset class="feo__emisor">
+        <legend>¿Quién emite?</legend>
+        <label class="feo__opcion">
+          <input type="radio" name="feo-proveedor" value="FACTUS" [checked]="!propio()"
+            (change)="proveedorElegido.set('FACTUS')" [disabled]="ocupado() !== null" />
+          <span><strong>Factus</strong> — proveedor tecnológico; el negocio usa la cuenta que él le da.</span>
+        </label>
+        <label class="feo__opcion">
+          <input type="radio" name="feo-proveedor" value="DIAN_DIRECTO" [checked]="propio()"
+            (change)="proveedorElegido.set('DIAN_DIRECTO')" [disabled]="ocupado() !== null" />
+          <span>
+            <strong>Emisor propio de EscalApp</strong> — firma con el certificado del negocio y transmite
+            directo a la DIAN, sin costo por documento.
+          </span>
+        </label>
+      </fieldset>
+      @if (cambiaProveedor()) {
+        <div class="feo__alerta feo__alerta--aviso">
+          <lucide-icon name="triangle-alert" [size]="18"></lucide-icon>
+          <span>
+            Este negocio hoy emite con {{ v.config?.proveedor === 'DIAN_DIRECTO' ? 'el emisor propio' : 'Factus' }}.
+            Al guardar las credenciales de abajo, cambia de emisor y las anteriores se borran.
+          </span>
+        </div>
+      }
+
       <p class="feo__ayuda">
-        Son las de la cuenta de <strong>este</strong> negocio, las que entrega el proveedor al activarlo
-        en el panel de aliados. Se guardan cifradas y no se vuelven a mostrar: para cambiarlas,
-        escríbelas de nuevo.
+        @if (propio()) {
+          El certificado de firma del <strong>negocio</strong> (.p12 o .pfx) con su clave, y lo que el
+          portal de habilitación de la DIAN asignó al registrar «Software propio»: el identificador del
+          software y el PIN que se eligió. Se guardan cifrados y no se vuelven a mostrar.
+        } @else {
+          Son las de la cuenta de <strong>este</strong> negocio, las que entrega el proveedor al activarlo
+          en el panel de aliados. Se guardan cifradas y no se vuelven a mostrar: para cambiarlas,
+          escríbelas de nuevo.
+        }
       </p>
 
       <div class="feo__fila">
@@ -91,12 +125,39 @@
           <span>Ambiente</span>
           <select class="feo__input" [ngModel]="ambiente()" (ngModelChange)="cambiarAmbiente($event)"
             [disabled]="ocupado() !== null" name="feo-ambiente">
-            <option value="PRUEBAS">Pruebas (sandbox)</option>
+            <option value="PRUEBAS">{{ propio() ? 'Pruebas (habilitación de la DIAN)' : 'Pruebas (sandbox)' }}</option>
             <option value="PRODUCCION">Producción</option>
           </select>
         </label>
       </div>
 
+      @if (propio()) {
+      <div class="feo__grid">
+        <label class="feo__campo">
+          <span>Certificado (.p12 / .pfx)</span>
+          <input class="feo__input" type="file" accept=".p12,.pfx,application/x-pkcs12" name="feo-p12"
+            (change)="leerCertificado($event)" />
+          @if (archivoCertificado()) {
+            <small class="feo__nota">{{ archivoCertificado() }}</small>
+          }
+        </label>
+        <label class="feo__campo">
+          <span>Clave del certificado</span>
+          <input class="feo__input" type="password" autocomplete="new-password" name="feo-clave-p12"
+            [ngModel]="credencialesPropio().clave_certificado" (ngModelChange)="credencialPropio('clave_certificado', $event)" />
+        </label>
+        <label class="feo__campo">
+          <span>Identificador del software (DIAN)</span>
+          <input class="feo__input" autocomplete="off" name="feo-software-id"
+            [ngModel]="credencialesPropio().software_id" (ngModelChange)="credencialPropio('software_id', $event)" />
+        </label>
+        <label class="feo__campo">
+          <span>PIN del software</span>
+          <input class="feo__input" type="password" autocomplete="off" name="feo-pin"
+            [ngModel]="credencialesPropio().pin" (ngModelChange)="credencialPropio('pin', $event)" />
+        </label>
+      </div>
+      } @else {
       <div class="feo__grid">
         <label class="feo__campo">
           <span>Client ID</span>
@@ -119,13 +180,14 @@
             [ngModel]="credenciales().password" (ngModelChange)="credencial('password', $event)" />
         </label>
       </div>
+      }
 
       <div class="feo__acciones">
         <button type="button" class="feo__btn feo__btn--primario"
           [disabled]="!credencialesCompletas() || ocupado() !== null" (click)="guardarCredenciales()">
           <lucide-icon [name]="ocupado() === 'credenciales' ? 'loader-2' : 'save'" [size]="16"
             [class.feo__spin]="ocupado() === 'credenciales'"></lucide-icon>
-          {{ v.config?.tiene_credenciales ? 'Reemplazar credenciales' : 'Guardar credenciales' }}
+          {{ cambiaProveedor() ? 'Guardar y cambiar de emisor' : v.config?.tiene_credenciales ? 'Reemplazar credenciales' : 'Guardar credenciales' }}
         </button>
       </div>
     </article>
@@ -135,21 +197,29 @@
       <article class="feo__card">
         <h3 class="feo__card-title">
           <lucide-icon name="plug" [size]="16"></lucide-icon>
-          2. Probar la conexión
+          2. {{ propioGuardado() ? 'Revisar el certificado' : 'Probar la conexión' }}
         </h3>
         <div class="feo__acciones">
           <button type="button" class="feo__btn" [disabled]="ocupado() !== null" (click)="probar()">
             <lucide-icon [name]="ocupado() === 'probar' ? 'loader-2' : 'plug'" [size]="16"
               [class.feo__spin]="ocupado() === 'probar'"></lucide-icon>
-            Probar conexión
+            {{ propioGuardado() ? 'Revisar certificado' : 'Probar conexión' }}
           </button>
         </div>
         @if (prueba(); as p) {
-          <p class="feo__dato">
-            Empresa en el proveedor: <strong>{{ p.empresa.razon_social || '—' }}</strong>
-            · NIT {{ p.empresa.nit }}-{{ p.empresa.dv }}
-          </p>
-          @if (!p.coincide_nit) {
+          @if (propioGuardado()) {
+            <p class="feo__dato">
+              Titular del certificado: <strong>{{ p.empresa.razon_social || '—' }}</strong>
+              · vence {{ p.empresa.vence }}
+              @if (p.empresa.nit) { · NIT {{ p.empresa.nit }} }
+            </p>
+          } @else {
+            <p class="feo__dato">
+              Empresa en el proveedor: <strong>{{ p.empresa.razon_social || '—' }}</strong>
+              · NIT {{ p.empresa.nit }}-{{ p.empresa.dv }}
+            </p>
+          }
+          @if (!p.coincide_nit && (!propioGuardado() || p.empresa.nit)) {
             <div class="feo__alerta feo__alerta--aviso">
               <lucide-icon name="triangle-alert" [size]="18"></lucide-icon>
               <span>
@@ -165,8 +235,14 @@
       <article class="feo__card">
         <h3 class="feo__card-title">3. Numeración</h3>
         <p class="feo__ayuda">
-          El proveedor lleva el consecutivo. Hace falta un rango en uso para las facturas y, para
-          poder anular, otro para las notas crédito.
+          @if (propioGuardado()) {
+            <strong>EscalApp lleva el consecutivo</strong>, sin huecos. Hace falta un rango de facturas
+            en uso (el que autorizó la DIAN, con su clave técnica) y, para poder anular, uno de notas
+            crédito (prefijo y rango los eliges tú).
+          } @else {
+            El proveedor lleva el consecutivo. Hace falta un rango en uso para las facturas y, para
+            poder anular, otro para las notas crédito.
+          }
         </p>
 
         @if (rangos().length) {
@@ -179,6 +255,9 @@
                   <th>Va en</th>
                   <th>Hasta</th>
                   <th>Vence</th>
+                  @if (propioGuardado()) {
+                    <th>Clave técnica</th>
+                  }
                   <th></th>
                 </tr>
               </thead>
@@ -190,6 +269,9 @@
                     <td>{{ r.consecutivo_actual ?? '—' }}</td>
                     <td>{{ r.rango_hasta ?? '—' }}</td>
                     <td>{{ r.vencida ? 'Vencida' : (r.vigencia_hasta || '—') }}</td>
+                    @if (propioGuardado()) {
+                      <td>{{ r.tipo_documento === 'NC' ? 'No aplica' : r.clave_tecnica ? 'Registrada' : 'Falta' }}</td>
+                    }
                     <td class="feo__celda-accion">
                       @if (r.en_uso) {
                         <span class="feo__ok"><lucide-icon name="check" [size]="14"></lucide-icon> En uso</span>
@@ -204,9 +286,84 @@
             </table>
           </div>
         } @else {
-          <p class="feo__vacio">Todavía no hay rangos. Sincroniza, o créalo abajo si el proveedor aún no lo tiene.</p>
+          <p class="feo__vacio">
+            {{ propioGuardado() ? 'Todavía no hay rangos. Regístralo abajo con los datos de la DIAN.' : 'Todavía no hay rangos. Sincroniza, o créalo abajo si el proveedor aún no lo tiene.' }}
+          </p>
         }
 
+        @if (propioGuardado()) {
+          <div class="feo__acciones">
+            <button type="button" class="feo__btn" [disabled]="ocupado() !== null || ambiente() !== 'PRODUCCION'"
+              (click)="sincronizar()" [title]="ambiente() !== 'PRODUCCION' ? 'En habilitación la DIAN no consulta rangos: regístralo a mano' : ''">
+              <lucide-icon [name]="ocupado() === 'sincronizar' ? 'loader-2' : 'refresh-cw'" [size]="16"
+                [class.feo__spin]="ocupado() === 'sincronizar'"></lucide-icon>
+              Traer de la DIAN (producción)
+            </button>
+          </div>
+
+          <details class="feo__crear" open>
+            <summary>Registrar un rango</summary>
+            <p class="feo__ayuda">
+              En <strong>habilitación</strong> el rango de prueba, su resolución y su clave técnica están en el
+              portal de la DIAN («Participantes» → «Facturador» → el modo «Software propio»). En producción,
+              son los de la resolución de numeración que el negocio pidió en MUISCA.
+            </p>
+            <div class="feo__grid">
+              <label class="feo__campo">
+                <span>Tipo</span>
+                <select class="feo__input" [ngModel]="registro().tipo" (ngModelChange)="campoRegistro('tipo', $event)" name="feo-reg-tipo">
+                  <option value="FV">Factura de venta</option>
+                  <option value="NC">Nota crédito</option>
+                </select>
+              </label>
+              <label class="feo__campo">
+                <span>Prefijo</span>
+                <input class="feo__input" maxlength="10" [ngModel]="registro().prefijo"
+                  (ngModelChange)="campoRegistro('prefijo', $event)" name="feo-reg-prefijo" />
+              </label>
+              <label class="feo__campo">
+                <span>Desde</span>
+                <input class="feo__input" inputmode="numeric" [ngModel]="registro().desde"
+                  (ngModelChange)="campoRegistro('desde', $event)" name="feo-reg-desde" />
+              </label>
+              <label class="feo__campo">
+                <span>Hasta</span>
+                <input class="feo__input" inputmode="numeric" [ngModel]="registro().hasta"
+                  (ngModelChange)="campoRegistro('hasta', $event)" name="feo-reg-hasta" />
+              </label>
+              @if (registro().tipo === 'FV') {
+                <label class="feo__campo">
+                  <span>Número de resolución</span>
+                  <input class="feo__input" inputmode="numeric" [ngModel]="registro().resolucion"
+                    (ngModelChange)="campoRegistro('resolucion', $event)" name="feo-reg-resolucion" />
+                </label>
+                <label class="feo__campo">
+                  <span>Clave técnica</span>
+                  <input class="feo__input" autocomplete="off" [ngModel]="registro().clave"
+                    (ngModelChange)="campoRegistro('clave', $event)" name="feo-reg-clave" />
+                </label>
+                <label class="feo__campo">
+                  <span>Vigente desde</span>
+                  <input class="feo__input" type="date" [ngModel]="registro().vigenciaDesde"
+                    (ngModelChange)="campoRegistro('vigenciaDesde', $event)" name="feo-reg-vig-desde" />
+                </label>
+                <label class="feo__campo">
+                  <span>Vigente hasta</span>
+                  <input class="feo__input" type="date" [ngModel]="registro().vigenciaHasta"
+                    (ngModelChange)="campoRegistro('vigenciaHasta', $event)" name="feo-reg-vig-hasta" />
+                </label>
+              }
+            </div>
+            <div class="feo__acciones">
+              <button type="button" class="feo__btn feo__btn--primario"
+                [disabled]="!registroValido() || ocupado() !== null" (click)="registrarRango()">
+                <lucide-icon [name]="ocupado() === 'registrar-rango' ? 'loader-2' : 'save'" [size]="16"
+                  [class.feo__spin]="ocupado() === 'registrar-rango'"></lucide-icon>
+                Registrar rango
+              </button>
+            </div>
+          </details>
+        } @else {
         <div class="feo__acciones">
           <button type="button" class="feo__btn" [disabled]="ocupado() !== null" (click)="sincronizar()">
             <lucide-icon [name]="ocupado() === 'sincronizar' ? 'loader-2' : 'refresh-cw'" [size]="16"
@@ -282,6 +439,7 @@
             </button>
           </div>
         </details>
+        }
       </article>
 
       <!-- 4. Impuestos por defecto -->

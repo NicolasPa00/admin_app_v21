@@ -113,11 +113,17 @@ export interface Declaracion {
 export type AmbienteFe = 'PRUEBAS' | 'PRODUCCION';
 export type EstadoFe = 'SIN_CONFIGURAR' | 'EN_PRUEBAS' | 'ACTIVO' | 'SUSPENDIDO';
 export type TipoRangoFe = 'FV' | 'NC';
+/**
+ * Quién emite. FACTUS = proveedor tecnológico (credenciales de su API). DIAN_DIRECTO = el emisor
+ * propio de EscalApp (ADR-032): firma con el certificado del negocio y transmite directo a la DIAN;
+ * el consecutivo lo lleva EscalApp.
+ */
+export type ProveedorFe = 'FACTUS' | 'DIAN_DIRECTO';
 
 /** La configuración de emisión. **Nunca trae las credenciales**: solo si las hay. */
 export interface FeConfiguracion {
   id_negocio: number;
-  proveedor: string;
+  proveedor: ProveedorFe;
   ambiente: AmbienteFe;
   estado: EstadoFe;
   impuesto_defecto_codigo: string;
@@ -133,7 +139,8 @@ export interface FeConfiguracion {
 
 export interface FeRango {
   id_resolucion: string;
-  id_rango_proveedor: number;
+  /** null en los rangos del emisor propio: no hay un proveedor que los numere. */
+  id_rango_proveedor: number | null;
   tipo_documento: TipoRangoFe;
   prefijo: string | null;
   numero_resolucion: string | null;
@@ -143,6 +150,8 @@ export interface FeRango {
   vigencia_hasta: string | null;
   vencida: boolean;
   en_uso: boolean;
+  /** Emisor propio: la clave técnica que la DIAN dio para el rango (entra en el CUFE). */
+  clave_tecnica?: string | null;
 }
 
 /** Por qué un negocio no factura todavía. `null` = factura. */
@@ -165,8 +174,32 @@ export interface FeCredenciales {
   password: string;
 }
 
+/**
+ * Credenciales del emisor propio: el certificado .p12 del negocio (en base64) con su clave, y lo
+ * que el portal de habilitación de la DIAN asignó al registrar «Software propio».
+ */
+export interface FeCredencialesPropio {
+  certificado_p12: string;
+  clave_certificado: string;
+  software_id: string;
+  pin: string;
+}
+
+/** Un rango que autorizó la DIAN, registrado a mano (emisor propio). */
+export interface FeRegistroRango {
+  tipo_documento: TipoRangoFe;
+  prefijo: string | null;
+  desde: number;
+  hasta: number;
+  resolucion?: string | null;
+  clave_tecnica?: string | null;
+  vigencia_desde?: string | null;
+  vigencia_hasta?: string | null;
+}
+
 export interface FePrueba {
-  empresa: { nit: string | null; dv: string | number | null; razon_social: string | null };
+  /** Con el emisor propio: el titular del certificado y su vencimiento (`vence`). */
+  empresa: { nit: string | null; dv: string | number | null; razon_social: string | null; vence?: string };
   coincide_nit: boolean;
   nit_del_negocio: string | null;
 }

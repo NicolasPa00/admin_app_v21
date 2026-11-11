@@ -65,6 +65,7 @@ describe('FeOperacionComponent', () => {
       sincronizarRangos: vi.fn(),
       rangosDian: vi.fn(),
       crearRango: vi.fn(),
+      registrarRango: vi.fn(() => of([])),
       usarRango: vi.fn(),
       cambiarEstadoEmision: vi.fn(() => of(vista())),
     };
@@ -109,7 +110,7 @@ describe('FeOperacionComponent', () => {
     const credenciales = { client_id: 'a', client_secret: 'b', username: 'c', password: 'd' };
     cmp.credenciales.set(credenciales);
     cmp.guardarCredenciales();
-    expect(api['guardarEmision']).toHaveBeenCalledWith(17, { credenciales, ambiente: 'PRUEBAS' });
+    expect(api['guardarEmision']).toHaveBeenCalledWith(17, { proveedor: 'FACTUS', credenciales, ambiente: 'PRUEBAS' });
     expect(cmp.credenciales()).toEqual({ client_id: '', client_secret: '', username: '', password: '' });
   });
 
@@ -150,6 +151,69 @@ describe('FeOperacionComponent', () => {
     cmp.confirmarEstado();
     fixture.detectChanges();
     expect(el.textContent).toContain('Falta: un rango de numeración en uso');
+  });
+
+  describe('emisor propio (DIAN_DIRECTO)', () => {
+    const propia = () => {
+      const v = vista();
+      return { ...v, config: { ...v.config!, proveedor: 'DIAN_DIRECTO' as const }, rangos: [] };
+    };
+
+    it('elegirlo cambia el formulario: certificado, clave, identificador del software y PIN', () => {
+      api['getEmision'].mockReturnValue(of(vista({ config: null, rangos: [] })));
+      const { cmp, fixture, el } = montar();
+      cmp.proveedorElegido.set('DIAN_DIRECTO');
+      fixture.detectChanges();
+      expect(el.querySelector('input[type="file"]')).not.toBeNull();
+      expect(el.textContent).toContain('Identificador del software');
+      expect(el.textContent).not.toContain('Client secret');
+    });
+
+    it('guarda el proveedor con sus credenciales y las borra de la pantalla', () => {
+      api['getEmision'].mockReturnValue(of(vista({ config: null, rangos: [] })));
+      const { cmp } = montar();
+      cmp.proveedorElegido.set('DIAN_DIRECTO');
+      const credenciales = { certificado_p12: 'TUlJ', clave_certificado: 'c', software_id: 's', pin: '1' };
+      cmp.credencialesPropio.set(credenciales);
+      expect(cmp.credencialesCompletas()).toBe(true);
+      cmp.guardarCredenciales();
+      expect(api['guardarEmision']).toHaveBeenCalledWith(17, { proveedor: 'DIAN_DIRECTO', credenciales, ambiente: 'PRUEBAS' });
+      expect(cmp.credencialesPropio().certificado_p12).toBe('');
+    });
+
+    it('avisa antes de cambiar de emisor a un negocio que ya tiene credenciales del otro', () => {
+      const { cmp, fixture, el } = montar(); // guardado: FACTUS con credenciales
+      cmp.proveedorElegido.set('DIAN_DIRECTO');
+      fixture.detectChanges();
+      expect(el.textContent).toContain('las anteriores se borran');
+      expect(el.textContent).toContain('Guardar y cambiar de emisor');
+    });
+
+    it('registra el rango de la DIAN con su clave técnica; sin clave no deja', () => {
+      api['getEmision'].mockReturnValue(of(propia()));
+      const { cmp, fixture, el } = montar();
+      expect(el.textContent).toContain('EscalApp lleva el consecutivo');
+      cmp.registro.set({
+        tipo: 'FV', prefijo: 'setp', desde: '990000000', hasta: '995000000', resolucion: '18760000001',
+        clave: '', vigenciaDesde: '2019-01-19', vigenciaHasta: '2030-01-19',
+      });
+      expect(cmp.registroValido()).toBe(false);
+      cmp.campoRegistro('clave', 'fc8eac422eba16e22ffd8c6f94b3f40a6e38162c');
+      expect(cmp.registroValido()).toBe(true);
+      cmp.registrarRango();
+      fixture.detectChanges();
+      expect(api['registrarRango']).toHaveBeenCalledWith(17, {
+        tipo_documento: 'FV', prefijo: 'SETP', desde: 990000000, hasta: 995000000, resolucion: '18760000001',
+        clave_tecnica: 'fc8eac422eba16e22ffd8c6f94b3f40a6e38162c', vigencia_desde: '2019-01-19', vigencia_hasta: '2030-01-19',
+      });
+    });
+
+    it('el rango de notas crédito no pide resolución ni clave técnica', () => {
+      api['getEmision'].mockReturnValue(of(propia()));
+      const { cmp } = montar();
+      cmp.registro.set({ tipo: 'NC', prefijo: 'NC', desde: '1', hasta: '99999', resolucion: '', clave: '', vigenciaDesde: '', vigenciaHasta: '' });
+      expect(cmp.registroValido()).toBe(true);
+    });
   });
 
   it('cambiar de negocio recarga y olvida lo que se estaba escribiendo', () => {

@@ -30,12 +30,14 @@ import {
   EstadoFe,
   FeConfiguracion,
   FeCredenciales,
+  FeCredencialesPropio,
   FePrueba,
   FeRango,
   FeRangoDian,
   FeVista,
   ImpuestoCatalogo,
   MotivoNoFactura,
+  ProveedorFe,
   TipoRangoFe,
 } from '../../../models/facturacion.models';
 
@@ -45,6 +47,20 @@ const CREDENCIALES_VACIAS: FeCredenciales = {
   username: '',
   password: '',
 };
+
+const PROPIO_VACIO: FeCredencialesPropio = { certificado_p12: '', clave_certificado: '', software_id: '', pin: '' };
+
+const REGISTRO_VACIO = {
+  tipo: 'FV' as TipoRangoFe,
+  prefijo: '',
+  desde: '',
+  hasta: '',
+  resolucion: '',
+  clave: '',
+  vigenciaDesde: '',
+  vigenciaHasta: '',
+};
+type RegistroRango = typeof REGISTRO_VACIO;
 
 /** Por qué no factura todavía, dicho para una persona. */
 const MOTIVOS: Record<Exclude<MotivoNoFactura, null>, string> = {
@@ -111,6 +127,19 @@ export class FeOperacionComponent {
   readonly dian = signal<FeRangoDian[] | null>(null);
 
   readonly credenciales = signal<FeCredenciales>({ ...CREDENCIALES_VACIAS });
+  /**
+   * Con qué emite: Factus o el emisor propio (ADR-032). Es la ELECCIÓN en pantalla; la guardada
+   * está en `config().proveedor` y solo cambia al guardar las credenciales del nuevo.
+   */
+  readonly proveedorElegido = signal<ProveedorFe>('FACTUS');
+  readonly propio = computed(() => this.proveedorElegido() === 'DIAN_DIRECTO');
+  /** Lo que ya está guardado manda en las tarjetas 2 y 3. */
+  readonly propioGuardado = computed(() => this.config()?.proveedor === 'DIAN_DIRECTO');
+  readonly cambiaProveedor = computed(() => !!this.config()?.tiene_credenciales && this.config()?.proveedor !== this.proveedorElegido());
+  readonly credencialesPropio = signal<FeCredencialesPropio>({ ...PROPIO_VACIO });
+  /** Nombre del .p12 elegido, para enseñarlo (el contenido va en `credencialesPropio`). */
+  readonly archivoCertificado = signal<string | null>(null);
+  readonly registro = signal<RegistroRango>({ ...REGISTRO_VACIO });
   readonly ambiente = signal<AmbienteFe>('PRUEBAS');
   readonly nuevoRango = signal<{ tipo: TipoRangoFe; prefijo: string; resolucion: string; actual: string }>({
     tipo: 'FV',
@@ -130,8 +159,18 @@ export class FeOperacionComponent {
   });
   readonly faltan = computed(() => this.vista()?.puede_emitir.faltan ?? []);
   readonly credencialesCompletas = computed(() =>
-    Object.values(this.credenciales()).every((v) => v.trim().length > 0),
+    this.propio()
+      ? Object.values(this.credencialesPropio()).every((v) => v.trim().length > 0)
+      : Object.values(this.credenciales()).every((v) => v.trim().length > 0),
   );
+  readonly registroValido = computed(() => {
+    const r = this.registro();
+    const desde = Number(r.desde);
+    const hasta = Number(r.hasta);
+    const numeros = r.desde !== '' && r.hasta !== '' && Number.isInteger(desde) && Number.isInteger(hasta) && desde >= 0 && hasta >= desde;
+    if (!numeros) return false;
+    return r.tipo === 'NC' || (r.resolucion.trim().length >= 5 && r.clave.trim().length >= 10);
+  });
   readonly rangoValido = computed(() => {
     const r = this.nuevoRango();
     const inicio = Number(r.actual);
@@ -163,6 +202,9 @@ export class FeOperacionComponent {
     this.dian.set(null);
     this.porConfirmar.set(null);
     this.credenciales.set({ ...CREDENCIALES_VACIAS });
+    this.credencialesPropio.set({ ...PROPIO_VACIO });
+    this.archivoCertificado.set(null);
+    this.registro.set({ ...REGISTRO_VACIO });
     this.api.getEmision(id).subscribe({
       next: (v) => {
         if (id !== this.idNegocio()) return; // llegó tarde: ya se cambió de negocio
@@ -179,6 +221,7 @@ export class FeOperacionComponent {
   private aplicar(v: FeVista): void {
     this.vista.set(v);
     this.ambiente.set(v.config?.ambiente ?? 'PRUEBAS');
+    this.proveedorElegido.set(v.config?.proveedor ?? 'FACTUS');
   }
 
   /** Ejecuta una acción con su indicador, su aviso de éxito y su error legible. */
@@ -223,21 +266,72 @@ export class FeOperacionComponent {
     this.credenciales.update((c) => ({ ...c, [campo]: valor }));
   }
 
+  credencialPropio(campo: keyof FeCredencialesPropio, valor: string): void {
+    this.credencialesPropio.update((c) => ({ ...c, [campo]: valor }));
+  }
+
+  /** Lee el .p12 del negocio y lo deja en base64. Nunca sale del navegador salvo al guardar. */
+  leerCertificado(evento: Event): void {
+    const archivo = (evento.target as HTMLInputElement).files?.[0];
+    if (!archivo) return;
+    const lector = new FileReader();
+    lector.onload = () => {
+      const base64 = String(lector.result ?? '').split(',').pop() ?? '';
+      this.credencialPropio('certificado_p12', base64);
+      this.archivoCertificado.set(archivo.name);
+    };
+    lector.onerror = () => this.error.set('No se pudo leer el archivo del certificado.');
+    lector.readAsDataURL(archivo);
+  }
+
+  campoRegistro(campo: keyof RegistroRango, valor: string): void {
+    this.registro.update((r) => ({ ...r, [campo]: valor }));
+  }
+
+  /** Emisor propio: registra el rango que autorizó la DIAN, o el de notas crédito. */
+  registrarRango(): void {
+    const r = this.registro();
+    const factura = r.tipo === 'FV';
+    this.ejecutar(
+      'registrar-rango',
+      this.api.registrarRango(this.idNegocio(), {
+        tipo_documento: r.tipo,
+        prefijo: r.prefijo.trim().toUpperCase() || null,
+        desde: Number(r.desde),
+        hasta: Number(r.hasta),
+        resolucion: factura ? r.resolucion.trim() : null,
+        clave_tecnica: factura ? r.clave.trim() : null,
+        vigencia_desde: r.vigenciaDesde || null,
+        vigencia_hasta: r.vigenciaHasta || null,
+      }),
+      (rangos) => {
+        this.ponerRangos(rangos);
+        this.registro.set({ ...REGISTRO_VACIO });
+        return 'Rango registrado. Elige «Usar» para facturar con él.';
+      },
+    );
+  }
+
   rango(campo: 'tipo' | 'prefijo' | 'resolucion' | 'actual', valor: string): void {
     this.nuevoRango.update((r) => ({ ...r, [campo]: valor }));
   }
 
   guardarCredenciales(): void {
-    const credenciales = this.credenciales();
+    const proveedor = this.proveedorElegido();
+    const credenciales = this.propio() ? this.credencialesPropio() : this.credenciales();
     this.ejecutar(
       'credenciales',
-      this.api.guardarEmision(this.idNegocio(), { credenciales, ambiente: this.ambiente() }),
+      this.api.guardarEmision(this.idNegocio(), { proveedor, credenciales, ambiente: this.ambiente() }),
       (v) => {
         this.aplicar(v);
         // Se borran de la pantalla en cuanto llegan al servidor: aquí no se quedan.
         this.credenciales.set({ ...CREDENCIALES_VACIAS });
+        this.credencialesPropio.set({ ...PROPIO_VACIO });
+        this.archivoCertificado.set(null);
         this.prueba.set(null);
-        return 'Credenciales guardadas. Prueba la conexión antes de seguir.';
+        return proveedor === 'DIAN_DIRECTO'
+          ? 'Certificado guardado: abre y está vigente. Ahora registra el rango de numeración.'
+          : 'Credenciales guardadas. Prueba la conexión antes de seguir.';
       },
     );
   }
