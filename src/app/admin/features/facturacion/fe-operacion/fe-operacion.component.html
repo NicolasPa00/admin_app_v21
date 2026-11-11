@@ -264,7 +264,7 @@
               <tbody>
                 @for (r of rangos(); track r.id_resolucion) {
                   <tr [class.is-vencida]="r.vencida">
-                    <td>{{ r.tipo_documento === 'NC' ? 'Nota crédito' : 'Factura' }}</td>
+                    <td>{{ r.tipo_documento === 'NC' ? 'Nota crédito' : r.tipo_documento === 'ND' ? 'Nota débito' : 'Factura' }}</td>
                     <td>{{ r.prefijo || '—' }}</td>
                     <td>{{ r.consecutivo_actual ?? '—' }}</td>
                     <td>{{ r.rango_hasta ?? '—' }}</td>
@@ -314,6 +314,7 @@
                 <select class="feo__input" [ngModel]="registro().tipo" (ngModelChange)="campoRegistro('tipo', $event)" name="feo-reg-tipo">
                   <option value="FV">Factura de venta</option>
                   <option value="NC">Nota crédito</option>
+                  <option value="ND">Nota débito</option>
                 </select>
               </label>
               <label class="feo__campo">

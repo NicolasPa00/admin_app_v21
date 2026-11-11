@@ -398,7 +398,7 @@ export class FeOperacionComponent {
   usar(r: FeRango): void {
     this.ejecutar(`usar-${r.id_resolucion}`, this.api.usarRango(this.idNegocio(), r.id_resolucion), (rangos) => {
       this.ponerRangos(rangos);
-      return `Se usará ${r.prefijo ?? 'el rango'} para ${r.tipo_documento === 'NC' ? 'las notas crédito' : 'las facturas'}.`;
+      return `Se usará ${r.prefijo ?? 'el rango'} para ${r.tipo_documento === 'NC' ? 'las notas crédito' : r.tipo_documento === 'ND' ? 'las notas débito' : 'las facturas'}.`;
     });
   }
 

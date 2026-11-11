@@ -112,7 +112,8 @@ export interface Declaracion {
 
 export type AmbienteFe = 'PRUEBAS' | 'PRODUCCION';
 export type EstadoFe = 'SIN_CONFIGURAR' | 'EN_PRUEBAS' | 'ACTIVO' | 'SUSPENDIDO';
-export type TipoRangoFe = 'FV' | 'NC';
+/** ND = notas débito (solo el emisor propio las emite). */
+export type TipoRangoFe = 'FV' | 'NC' | 'ND';
 /**
  * Quién emite. FACTUS = proveedor tecnológico (credenciales de su API). DIAN_DIRECTO = el emisor
  * propio de EscalApp (ADR-032): firma con el certificado del negocio y transmite directo a la DIAN;
