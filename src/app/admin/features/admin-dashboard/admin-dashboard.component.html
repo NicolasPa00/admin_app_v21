@@ -93,7 +93,7 @@
           class="neg-card"
           role="listitem"
           [class.neg-card--bloqueado]="negocio.vencimiento && !negocio.vencimiento.puedeEntrar"
-          [attr.aria-label]="negocio.nombre + ' — ' + (negocio.tipoNombre | titlecase)"
+          [attr.aria-label]="negocio.nombre + ' — ' + (negocio.oficioNombre | titlecase)"
         >
           <!-- Icono + nombre + tipo -->
           <header class="neg-card__header">
@@ -102,7 +102,7 @@
             </div>
             <div class="neg-card__heading">
               <h2 class="neg-card__name" [title]="negocio.nombre">{{ negocio.nombre }}</h2>
-              <span class="neg-card__type">{{ negocio.tipoNombre | titlecase }}</span>
+              <span class="neg-card__type">{{ negocio.oficioNombre | titlecase }}</span>
             </div>
           </header>
 
