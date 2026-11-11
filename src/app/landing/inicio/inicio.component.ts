@@ -213,6 +213,10 @@ const OFICIOS_INICIO: { nombre: string; label: string }[] = [
   { nombre: 'PELUQUERIA CANINA', label: 'Cuidado de mascotas' },
   { nombre: 'CONSULTORIO', label: 'Consultorio' },
   { nombre: 'HOTEL', label: 'Hospedaje' },
+  // Módulo de celulares (2026-11-10): faltaban, y quien llegaba por la portada no los encontraba.
+  { nombre: 'TIENDA DE CELULARES', label: 'Tienda de celulares' },
+  { nombre: 'SERVICIO TECNICO CELULARES', label: 'Servicio técnico de celulares' },
+  { nombre: 'TECNOLOGIA Y VIDEOJUEGOS', label: 'Tecnología y videojuegos' },
 ];
 
 @Component({

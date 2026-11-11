@@ -207,6 +207,7 @@ const COMPARACION: GrupoComparado[] = [
 const OFICIOS_CELULARES: { nombre: string; label: string }[] = [
   { nombre: 'TIENDA DE CELULARES', label: 'Tienda de celulares' },
   { nombre: 'SERVICIO TECNICO CELULARES', label: 'Servicio técnico de celulares' },
+  { nombre: 'TECNOLOGIA Y VIDEOJUEGOS', label: 'Tecnología y videojuegos' },
 ];
 
 /** Los pasos de la escena del héroe. El último deja la tarjeta del pedido dentro del panel. */
