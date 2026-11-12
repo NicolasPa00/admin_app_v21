@@ -558,7 +558,15 @@
                     Tocó el botón
                   </span>
                 }
-                <p class="bdj__msg-texto" [innerHTML]="formatoWhatsapp(m.contenido)"></p>
+                @if (sinTexto(m); as s) {
+                  <!-- Ubicación, contacto, reacción… WhatsApp no manda texto: se dice qué es. -->
+                  <p class="bdj__msg-texto bdj__msg-especial">
+                    <lucide-icon [name]="s.icono" [size]="15" aria-hidden="true" />
+                    {{ s.texto }}
+                  </p>
+                } @else {
+                  <p class="bdj__msg-texto" [innerHTML]="formatoWhatsapp(m.texto_boton || m.contenido)"></p>
+                }
               }
               @if (m.botones?.length) {
                 <!-- Los botones que vio el cliente con este mensaje. Aquí no se pueden tocar:

@@ -29,6 +29,8 @@ import {
   Paperclip, Timer, Plus, Pencil, Trash2, ImageIcon, ChevronUp,
   // La flecha de volver del chat a pantalla completa y el visor de fotos y videos (2026-11-11).
   ArrowLeft, ChevronLeft, ChevronRight,
+  // Lo que llega sin texto: ubicación, contacto, reacción (2026-11-11).
+  MapPin, Contact, ThumbsUp,
 } from '../../../core/icons/phosphor';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -249,6 +251,18 @@ export const ICONOS_BANDEJA = {
   ClipboardList, MousePointerClick, Reply, Sparkles, Download, Lock,
   Bike, History, Info, Package, RotateCcw, ShoppingBag, Wallet, ChevronDown, ListChecks,
   Paperclip, Timer, Plus, Pencil, Trash2, ImageIcon, ChevronUp, ArrowLeft, ChevronLeft, ChevronRight,
+  MapPin, Contact, ThumbsUp,
+};
+
+/**
+ * Lo que WhatsApp entrega sin texto y el backend guarda como `[tipo]`: en la burbuja se dice en
+ * palabras, con su ícono, en vez de enseñar «[location]» (2026-11-11).
+ */
+const SIN_TEXTO: Record<string, { icono: string; texto: string }> = {
+  location: { icono: 'map-pin', texto: 'Compartió una ubicación' },
+  contacts: { icono: 'contact', texto: 'Compartió un contacto' },
+  reaction: { icono: 'thumbs-up', texto: 'Reaccionó a un mensaje' },
+  unsupported: { icono: 'info', texto: 'Mensaje que WhatsApp no deja ver aquí' },
 };
 
 @Component({
@@ -2128,6 +2142,13 @@ export class BandejaComponent implements OnInit, OnDestroy {
 
   esDeLaPersona(m: MensajeBandeja): boolean {
     return m.direccion === 'entrante';
+  }
+
+  /** `[location]`, `[contacts]`… → qué es, en palabras y con ícono. `null` si es texto normal. */
+  sinTexto(m: MensajeBandeja): { icono: string; texto: string } | null {
+    const t = (m.contenido ?? '').trim().match(/^\[([a-z_]+)\]$/);
+    if (!t || m.media) return null;
+    return SIN_TEXTO[t[1]] ?? { icono: 'info', texto: 'Mensaje sin texto' };
   }
 
   /** Quién escribió el mensaje citado, visto desde el negocio. */

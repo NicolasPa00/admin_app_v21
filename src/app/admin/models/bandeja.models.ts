@@ -96,6 +96,8 @@ export interface MensajeBandeja {
   formulario?: Record<string, string> | null;
   /** El cliente contestó tocando un botón, no escribiendo. */
   de_boton?: boolean;
+  /** Lo que decía el botón que tocó («Sistema + WhatsApp»); `contenido` es su id (2026-11-11). */
+  texto_boton?: string | null;
   /** Quién escribió un saliente: el asistente, una persona desde la Bandeja o el dueño desde su celular. */
   origen?: 'asistente' | 'humano' | 'app_negocio' | string | null;
   /**
