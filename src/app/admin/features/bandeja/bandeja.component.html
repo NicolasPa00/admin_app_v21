@@ -128,12 +128,11 @@
     @if (pausado()) {
       <div class="bdj__pausa" role="status">
         <lucide-icon name="pause" [size]="16" aria-hidden="true" />
-        <span>
-          <strong>El asistente está en pausa</strong>@if (config()?.asistente_pausado_en; as desde) { desde las {{ desde | date: 'h:mm a' }}}. No le contesta a nadie. Los mensajes nuevos te llegan aquí, en «Esperan respuesta».
-          @if ((preparacion()?.pendientes ?? 0) > 0) {
-            Antes de reanudarlo, revisa «Al asistente le faltan datos»: con la carta o la
-            configuración a medias, ofrece lo que no hay.
-          }
+        <!-- Un solo renglón (2026-11-11): en un portátil la franja de dos líneas le quitaba al
+             chat casi 60 px. Lo que no cabe se corta con «…»; el título lo da completo. -->
+        <span class="bdj__pausa-texto"
+              title="El asistente no le contesta a nadie y los mensajes nuevos quedan en «Esperan respuesta».">
+          <strong>El asistente está en pausa</strong><span class="bdj__pausa-detalle">@if (config()?.asistente_pausado_en; as desde) {Desde las {{ desde | date: 'h:mm a' }} · }No le contesta a nadie; lo nuevo queda en «Esperan respuesta».</span>
         </span>
         @if (config()?.puede_editar) {
           <button type="button" class="bdj__pausa-boton" [disabled]="cambiandoPausa()" (click)="alternarPausa()">
@@ -206,7 +205,7 @@
                 (click)="abrir(c)"
               >
                 <span class="bdj__avatar" [class.bdj__avatar--espera]="c.escalada">
-                  @if (tieneNombre(c)) {
+                  @if (inicial(c)) {
                     {{ inicial(c) }}
                   } @else {
                     <lucide-icon name="user" [size]="18" aria-hidden="true" />
@@ -220,12 +219,29 @@
                     </span>
                   </span>
                   <span class="bdj__item-fila">
-                    <span class="bdj__item-texto">{{ c.ultimo_texto || '—' }}</span>
-                    @if (c.escalada) {
+                    <span class="bdj__item-texto">{{ vistaPrevia(c) }}</span>
+                    <!-- Cuántos mensajes seguidos mandó sin que nadie contestara. Con uno solo
+                         no se pinta: «1» al lado de un mensaje sin responder no dice nada que
+                         no diga ya el propio mensaje. Desde dos, sí: es alguien insistiendo. -->
+                    @if ((c.sin_responder ?? 0) > 1) {
+                      <span class="bdj__item-cuenta"
+                            [attr.title]="c.sin_responder + ' mensajes sin responder'">
+                        {{ c.sin_responder! > 99 ? '99+' : c.sin_responder }}
+                      </span>
+                    } @else if (c.escalada) {
                       <span class="bdj__punto" title="Espera respuesta"></span>
                     }
                   </span>
                   <span class="bdj__item-pie">
+                    <!-- Cuánto queda para contestar con texto libre (2026-11-10). Cerrada, no se
+                         pinta nada: la mayoría de los chats viejos lo están y sería ruido. -->
+                    @if (ventanaDeLista(c); as v) {
+                      <span class="bdj__item-ventana" [attr.data-nivel]="v.nivel"
+                            [title]="'Puedes responder durante ' + v.texto + ' más'">
+                        <lucide-icon name="timer" [size]="11" aria-hidden="true" />
+                        {{ v.texto }}
+                      </span>
+                    }
                     <!-- El negocio, solo cuando hay más de uno y no se está filtrando por él:
                          si no, es una línea repetida en todas las filas. -->
                     @if (variosNegocios() && negocioActivo() === null && c.negocio) {
@@ -257,7 +273,38 @@
 
   <!-- ── Panel derecho: el hilo ────────────────────────────────── -->
   <section class="bdj__hilo-panel">
-    @if (!detalle()) {
+    @if (cargandoChat(); as c) {
+      <!-- Esqueleto mientras llega el chat (2026-11-11): en el teléfono y la tableta el chat ya se
+           abre a pantalla completa, con su banda y el nombre, en vez de dejar la vista en blanco. -->
+      <div class="bdj__esqueleto" role="status" aria-label="Cargando la conversación">
+        <header class="bdj__hilo-head">
+          <button type="button" class="bdj__volver" (click)="cerrar()" aria-label="Volver a las conversaciones">
+            <lucide-icon name="arrow-left" [size]="20" aria-hidden="true" />
+          </button>
+          <span class="bdj__avatar bdj__avatar--grande">
+            @if (inicial(c)) { {{ inicial(c) }} } @else { <lucide-icon name="user" [size]="16" aria-hidden="true" /> }
+          </span>
+          <div class="bdj__hilo-quien">
+            <strong>{{ quien(c) }}</strong>
+            <span>Cargando…</span>
+          </div>
+          <button type="button" class="bdj__icono bdj__icono--claro" (click)="cerrar()" aria-label="Cerrar">
+            <lucide-icon name="x" [size]="16" aria-hidden="true" />
+          </button>
+        </header>
+        <div class="bdj__mensajes bdj__esqueleto-hilo" aria-hidden="true">
+          <span class="bdj__hueso bdj__hueso--dia"></span>
+          <span class="bdj__hueso bdj__hueso--suyo" style="width: 46%"></span>
+          <span class="bdj__hueso bdj__hueso--suyo" style="width: 30%"></span>
+          <span class="bdj__hueso" style="width: 58%; height: 3.5rem"></span>
+          <span class="bdj__hueso bdj__hueso--suyo bdj__hueso--foto"></span>
+          <span class="bdj__hueso" style="width: 40%"></span>
+        </div>
+        <div class="bdj__responder" aria-hidden="true">
+          <span class="bdj__hueso bdj__hueso--caja"></span>
+        </div>
+      </div>
+    } @else if (!detalle()) {
       <div class="bdj__placeholder">
         <!-- Marca de agua: solo decoración. El chat abierto sí lleva el papel con garabatos. -->
         <span class="bdj__marca-agua marca" aria-hidden="true">EscalApp</span>
@@ -273,8 +320,13 @@
       <!-- La banda de color, como en el chat de la landing: identifica de un vistazo que esto
            es una conversación y no una tabla más del panel. -->
       <header class="bdj__hilo-head">
+        <!-- Volver a la lista. Solo se ve con el chat a pantalla completa (teléfono y tableta):
+             ahí la flecha a la izquierda es lo que cualquiera busca, no la X de la esquina. -->
+        <button type="button" class="bdj__volver" (click)="cerrar()" aria-label="Volver a las conversaciones">
+          <lucide-icon name="arrow-left" [size]="20" aria-hidden="true" />
+        </button>
         <span class="bdj__avatar bdj__avatar--grande">
-          @if (tieneNombre(d.conversacion)) {
+          @if (inicial(d.conversacion)) {
             {{ inicial(d.conversacion) }}
           } @else {
             <lucide-icon name="user" [size]="16" aria-hidden="true" />
@@ -288,6 +340,23 @@
           </span>
         </div>
 
+        <!-- La ventana de 24 h, con su contador (2026-11-10, pedido de AYM): cuánto queda para
+             contestar con texto libre. Baja sola cada 30 s y cambia de color en las 6 y la última
+             hora. Desde 2026-11-11 vive DENTRO de la banda —una pastilla y la barra como filo
+             inferior— y no en un renglón propio: era alto robado a los mensajes. -->
+        @if (ventanaViva().abierta) {
+          <span class="bdj__ventana" [attr.data-nivel]="ventanaViva().nivel" role="timer"
+                [attr.aria-label]="'Ventana de 24 horas: quedan ' + textoVentana()"
+                [title]="'Puedes responder con texto libre durante ' + textoVentana() + ' más'">
+            <lucide-icon name="timer" [size]="14" aria-hidden="true" />
+            <strong>{{ textoVentana() }}</strong>
+            <span class="bdj__ventana-texto">para responder</span>
+          </span>
+          <span class="bdj__ventana-barra" [attr.data-nivel]="ventanaViva().nivel" aria-hidden="true">
+            <span [style.width.%]="ventanaViva().fraccion * 100"></span>
+          </span>
+        }
+
         @if (d.conversacion.escalada) {
           <!-- No devuelve la conversación al asistente (ADR-023): solo deja de contar como
                pendiente. Hace falta porque no todo se resuelve por el chat. -->
@@ -298,7 +367,7 @@
             title="Quitarla de las que esperan respuesta. El asistente no vuelve a esta conversación."
           >
             <lucide-icon name="check-check" [size]="15" aria-hidden="true" />
-            Ya me ocupé
+            <span class="bdj__accion-rotulo">Ya me ocupé</span>
           </button>
         }
         <!--
@@ -378,28 +447,65 @@
         </div>
       }
 
-      <div class="bdj__mensajes" #mensajes>
+      <div class="bdj__mensajes" #mensajes (dragover)="$event.preventDefault()" (drop)="alSoltar($event)">
+        @if (hayAnteriores()) {
+          <button type="button" class="bdj__anteriores" (click)="cargarAnteriores()" [disabled]="cargandoAnteriores()">
+            @if (cargandoAnteriores()) {
+              <lucide-icon name="loader-2" [size]="13" class="bdj__spin" aria-hidden="true" />
+              Cargando…
+            } @else {
+              <lucide-icon name="chevron-up" [size]="13" aria-hidden="true" />
+              Ver mensajes anteriores
+            }
+          </button>
+        }
         @for (it of lineaDeTiempo(); track it.clave) {
           @if (it.tipo === 'msg') {
             @let m = it.m;
-            <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)">
+            <div class="bdj__msg" [class.bdj__msg--suyo]="esDeLaPersona(m)"
+                 [attr.data-mensaje]="m.id_mensaje">
+              @if (m.cita; as c) {
+                <!-- Respondió a un mensaje (2026-11-11): la cita va encima, como en WhatsApp. Tocarla
+                     lleva al original si ya está cargado en el hilo. -->
+                <button type="button" class="bdj__cita" [class.bdj__cita--cliente]="c.direccion === 'entrante'"
+                        [disabled]="!c.encontrado" (click)="irACita(c)"
+                        [attr.aria-label]="'Responde a: ' + textoCita(c)">
+                  <span class="bdj__cita-quien">{{ quienCita(c) }}</span>
+                  <span class="bdj__cita-texto">{{ textoCita(c) }}</span>
+                </button>
+              }
               @if (m.media; as a) {
                 <!-- Foto, sticker, audio… que mandó el cliente: se trae de WhatsApp al abrir el
                      chat (no se guarda copia; WhatsApp lo conserva 7 días). -->
-                <div class="bdj__archivo">
-                  @if (urlArchivo(m); as url) {
+                <div class="bdj__archivo" [class.bdj__archivo--subiendo]="m.local?.estado === 'subiendo'">
+                  @if (m.local?.url || urlArchivo(m); as url) {
                     @if (a.tipo === 'image' || a.tipo === 'sticker') {
-                      <a [href]="url" target="_blank" rel="noopener" title="Ver en grande">
+                      <!-- Se abre en el visor, encima del chat (2026-11-11). Antes: otra pestaña. -->
+                      <button type="button" class="bdj__archivo-ver" (click)="verMedio(m)" title="Ver en grande">
                         <img
                           [src]="url"
                           [class.bdj__archivo-sticker]="a.tipo === 'sticker'"
-                          [alt]="a.caption || (a.tipo === 'sticker' ? 'Sticker' : 'Foto del cliente')"
+                          [alt]="a.caption || (a.tipo === 'sticker' ? 'Sticker' : esDeLaPersona(m) ? 'Foto del cliente' : 'Foto enviada')"
                         />
-                      </a>
+                      </button>
                     } @else if (a.tipo === 'audio') {
-                      <audio controls [src]="url"></audio>
+                      <audio controls preload="metadata" [src]="url"></audio>
+                      <!-- Las notas de voz de WhatsApp son OGG/Opus, y hay Safari (iPhone) que
+                           no las reproducen: así se pueden oír igual, con el reproductor del equipo. -->
+                      <a class="bdj__archivo-bajar" [href]="url" download="nota-de-voz.ogg">
+                        <lucide-icon name="download" [size]="12" aria-hidden="true" />
+                        Descargar audio
+                      </a>
                     } @else if (a.tipo === 'video') {
-                      <video controls [src]="url"></video>
+                      <!-- El primer cuadro con un botón de reproducir, como en WhatsApp: se mira
+                           en el visor, en grande, no en la miniatura de la burbuja. -->
+                      <button type="button" class="bdj__archivo-ver bdj__archivo-video" (click)="verMedio(m)"
+                              aria-label="Ver el video">
+                        <video [src]="url" preload="metadata" muted playsinline tabindex="-1"></video>
+                        <span class="bdj__archivo-play" aria-hidden="true">
+                          <lucide-icon name="play" [size]="22" />
+                        </span>
+                      </button>
                     } @else {
                       <button type="button" class="bdj__archivo-doc" (click)="abrirDocumento(m)">
                         <lucide-icon name="file-text" [size]="15" aria-hidden="true" />
@@ -408,6 +514,11 @@
                     }
                   } @else if (errorArchivo(m); as aviso) {
                     <span class="bdj__archivo-aviso">{{ aviso }}</span>
+                  } @else if (m.local) {
+                    <span class="bdj__archivo-doc">
+                      <lucide-icon name="file-text" [size]="15" aria-hidden="true" />
+                      {{ a.nombre || nombreDeArchivo(a.tipo) }}
+                    </span>
                   } @else if (a.tipo === 'document') {
                     <button type="button" class="bdj__archivo-doc" (click)="abrirDocumento(m)" [disabled]="cargandoArchivo(m)">
                       <lucide-icon name="file-text" [size]="15" aria-hidden="true" />
@@ -426,8 +537,40 @@
                   <lucide-icon name="ban" [size]="13" aria-hidden="true" />
                   Mensaje eliminado
                 </p>
+              } @else if (m.formulario) {
+                <!-- El formulario de entrega que llenó el cliente, como tarjeta y no como texto. -->
+                <div class="bdj__form">
+                  <p class="bdj__form-titulo">
+                    <lucide-icon name="clipboard-list" [size]="14" aria-hidden="true" />
+                    Llenó el formulario
+                  </p>
+                  <dl class="bdj__form-campos">
+                    @for (c of camposFormulario(m.formulario); track c.clave) {
+                      <dt>{{ c.etiqueta }}</dt>
+                      <dd>{{ c.valor }}</dd>
+                    }
+                  </dl>
+                </div>
               } @else {
-                <p class="bdj__msg-texto">{{ m.contenido }}</p>
+                @if (m.de_boton) {
+                  <span class="bdj__msg-tocado">
+                    <lucide-icon name="mouse-pointer-click" [size]="12" aria-hidden="true" />
+                    Tocó el botón
+                  </span>
+                }
+                <p class="bdj__msg-texto" [innerHTML]="formatoWhatsapp(m.contenido)"></p>
+              }
+              @if (m.botones?.length) {
+                <!-- Los botones que vio el cliente con este mensaje. Aquí no se pueden tocar:
+                     son del cliente, no del negocio. -->
+                <div class="bdj__msg-botones" aria-label="Botones que vio el cliente">
+                  @for (b of m.botones; track $index) {
+                    <span class="bdj__msg-boton" [class.bdj__msg-boton--form]="b.formulario">
+                      <lucide-icon [name]="b.formulario ? 'clipboard-list' : 'reply'" [size]="13" aria-hidden="true" />
+                      {{ b.etiqueta }}
+                    </span>
+                  }
+                </div>
               }
               <span class="bdj__msg-pie">
                 @if (m.editado && !m.eliminado) {
@@ -442,6 +585,8 @@
                 }
               </span>
             </div>
+          } @else if (it.tipo === 'dia') {
+            <div class="bdj__dia">{{ it.texto }}</div>
           } @else {
             @let r = it.r;
             <div class="bdj__evento" role="status">
@@ -451,6 +596,59 @@
           }
         }
       </div>
+
+      <!-- El visor de fotos y videos (2026-11-11). Un <dialog> modal: foco atrapado, Escape y capa
+           superior los pone el navegador. Flechas (o ← →) para pasar entre los de este chat. -->
+      <dialog #visor class="bdj-visor" aria-label="Foto o video de la conversación"
+              (close)="visorId.set(null)" (keydown)="alTeclearVisor($event)" (click)="alClicVisor($event)">
+        @if (visorActual(); as v) {
+          @let url = urlDeMedio(v);
+          <header class="bdj-visor__barra">
+            <div class="bdj-visor__quien">
+              <strong>{{ esDeLaPersona(v) ? quien(d.conversacion) : (d.conversacion.negocio || 'Tu negocio') }}</strong>
+              <span>{{ v.creado_en | date: "d 'de' MMMM, h:mm a" }}</span>
+            </div>
+            @if (medios().length > 1) {
+              <span class="bdj-visor__cuenta">{{ visorIndice() + 1 }} de {{ medios().length }}</span>
+            }
+            @if (url) {
+              <a class="bdj-visor__boton" [href]="url" [download]="nombreDescarga(v)" title="Descargar" aria-label="Descargar">
+                <lucide-icon name="download" [size]="20" aria-hidden="true" />
+              </a>
+            }
+            <button type="button" class="bdj-visor__boton" (click)="cerrarVisor()" title="Cerrar (Esc)" aria-label="Cerrar" autofocus>
+              <lucide-icon name="x" [size]="22" aria-hidden="true" />
+            </button>
+          </header>
+
+          <div class="bdj-visor__escena">
+            @if (medios().length > 1) {
+              <button type="button" class="bdj-visor__flecha bdj-visor__flecha--antes" (click)="moverVisor(-1)"
+                      [disabled]="visorIndice() === 0" aria-label="Anterior">
+                <lucide-icon name="chevron-left" [size]="26" aria-hidden="true" />
+              </button>
+            }
+            @if (url) {
+              <figure class="bdj-visor__figura">
+                @if (v.media?.tipo === 'video') {
+                  <video [src]="url" controls autoplay playsinline></video>
+                } @else {
+                  <img [src]="url" [alt]="v.media?.caption || 'Foto de la conversación'" />
+                }
+                @if (v.media?.caption) {
+                  <figcaption>{{ v.media?.caption }}</figcaption>
+                }
+              </figure>
+            }
+            @if (medios().length > 1) {
+              <button type="button" class="bdj-visor__flecha bdj-visor__flecha--despues" (click)="moverVisor(1)"
+                      [disabled]="visorIndice() === medios().length - 1" aria-label="Siguiente">
+                <lucide-icon name="chevron-right" [size]="26" aria-hidden="true" />
+              </button>
+            }
+          </div>
+        }
+      </dialog>
 
       <footer class="bdj__responder">
         @if (!d.ventana.abierta) {
@@ -481,20 +679,104 @@
               Si respondes, el asistente deja de contestar en esta conversación y sigues tú.
             </p>
           }
+          <!-- Respuestas rápidas: escribe «/» y el atajo, o toca el rayo (2026-11-10). -->
+          @if (mostrandoRapidas()) {
+            <div class="bdj__rapidas" role="listbox" aria-label="Respuestas rápidas">
+              <div class="bdj__rapidas-cabeza">
+                <span><lucide-icon name="reply" [size]="13" aria-hidden="true" /> Respuestas rápidas</span>
+                <button type="button" class="bdj__enlace" (click)="abrirGestionRapidas()">Administrar</button>
+              </div>
+              @for (r of sugerenciasRapidas(); track r.id_respuesta; let i = $index) {
+                <button
+                  type="button"
+                  role="option"
+                  class="bdj__rapida"
+                  [class.bdj__rapida--marcada]="i === rapidaMarcada()"
+                  [attr.aria-selected]="i === rapidaMarcada()"
+                  (mousedown)="$event.preventDefault()"
+                  (click)="usarRapida(r)"
+                >
+                  <strong>/{{ r.atajo }}</strong>
+                  <span>{{ r.texto }}</span>
+                </button>
+              } @empty {
+                <p class="bdj__rapidas-vacio">
+                  @if (respuestasRapidas().length) {
+                    Ningún atajo empieza así.
+                  } @else {
+                    Aún no tienes respuestas rápidas. Guarda los mensajes que más repites y
+                    escríbelos con «/» y su atajo.
+                  }
+                  <button type="button" class="bdj__enlace" (click)="abrirGestionRapidas()">Crear una</button>
+                </p>
+              }
+            </div>
+          }
+
+          @if (emojisAbierto()) {
+            <div class="bdj__emojis" aria-label="Emojis">
+              @for (g of emojis; track g.grupo) {
+                <p class="bdj__emojis-grupo">{{ g.grupo }}</p>
+                <div class="bdj__emojis-lista">
+                  @for (e of g.lista; track $index) {
+                    <button type="button" class="bdj__emoji" (mousedown)="$event.preventDefault()" (click)="ponerEmoji(e)">{{ e }}</button>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (adjunto(); as adj) {
+            <div class="bdj__adjunto">
+              @if (adj.tipo === 'image' && adj.url) {
+                <img [src]="adj.url" alt="Vista previa" />
+              } @else if (adj.tipo === 'video' && adj.url) {
+                <video [src]="adj.url" muted></video>
+              } @else {
+                <span class="bdj__adjunto-icono"><lucide-icon name="file-text" [size]="20" aria-hidden="true" /></span>
+              }
+              <span class="bdj__adjunto-datos">
+                <strong>{{ adj.archivo.name }}</strong>
+                <span>{{ tamanoLegible(adj.archivo.size) }} · el texto que escribas va como pie</span>
+              </span>
+              <button type="button" class="bdj__icono" (click)="quitarAdjunto()" aria-label="Quitar archivo" title="Quitar archivo">
+                <lucide-icon name="x" [size]="15" aria-hidden="true" />
+              </button>
+            </div>
+          }
+
           <div class="bdj__caja">
+            <div class="bdj__herramientas">
+              <button type="button" class="bdj__herramienta" [class.bdj__herramienta--on]="emojisAbierto()"
+                      data-abre-emojis (click)="alternarEmojis()" aria-label="Emojis" title="Emojis">
+                <span class="bdj__herramienta-emoji" aria-hidden="true">🙂</span>
+              </button>
+              <button type="button" class="bdj__herramienta" (click)="elegirArchivo()" [disabled]="enviando()"
+                      aria-label="Adjuntar foto, video o documento" title="Adjuntar foto, video o documento">
+                <lucide-icon name="paperclip" [size]="18" aria-hidden="true" />
+              </button>
+              <button type="button" class="bdj__herramienta" [class.bdj__herramienta--on]="rapidasAbierto()"
+                      (click)="alternarRapidas()" aria-label="Respuestas rápidas" title="Respuestas rápidas (escribe «/»)">
+                <lucide-icon name="reply" [size]="17" aria-hidden="true" />
+              </button>
+              <input #selectorArchivo type="file" class="bdj__oculto" [accept]="aceptaArchivos" (change)="alElegirArchivo($event)" />
+            </div>
             <textarea
+              #cajaTexto
               class="bdj__texto"
               rows="1"
-              placeholder="Escribe un mensaje"
+              [placeholder]="adjunto() ? 'Añade un pie (opcional)' : 'Escribe un mensaje o «/» para una respuesta rápida'"
               [ngModel]="borrador()"
               (ngModelChange)="borrador.set($event)"
+              (keydown)="alTeclear($event)"
               (keydown.enter)="alEnter($event)"
-              [disabled]="enviando()"
+              (paste)="alPegar($event)"
             ></textarea>
             <button
               type="button"
               class="bdj__enviar"
               [disabled]="!puedeEnviar()"
+              (mousedown)="$event.preventDefault()"
               (click)="enviar()"
               aria-label="Enviar"
             >
@@ -514,6 +796,73 @@
     }
   </section>
 </div>
+
+<!-- ── Respuestas rápidas: crear, editar y borrar (2026-11-10) ──────────────── -->
+@if (gestionRapidas()) {
+  <div class="bdj-modal" (click)="cerrarGestionRapidas()" (keydown.escape)="cerrarGestionRapidas()">
+    <div
+      class="bdj-modal__card bdj-modal__card--ancha"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="bdj-rap-title"
+      (click)="$event.stopPropagation()"
+    >
+      <app-modal-cabecera
+        icono="message-square"
+        titulo="Respuestas rápidas"
+        subtitulo="Escribe «/» y el atajo en el chat para usarlas"
+        tituloId="bdj-rap-title"
+        [bloqueado]="guardandoRapida()"
+        (cerrar)="cerrarGestionRapidas()"
+      />
+      <div class="bdj-modal__body">
+        <div class="bdj-rap__form">
+          <label class="bdj-modal__label" for="bdj-rap-atajo">Atajo</label>
+          <div class="bdj-rap__atajo">
+            <span aria-hidden="true">/</span>
+            <input id="bdj-rap-atajo" class="bdj-modal__campo" maxlength="40" placeholder="envios"
+                   [ngModel]="rapidaAtajo()" (ngModelChange)="rapidaAtajo.set($event)" [disabled]="guardandoRapida()" />
+          </div>
+          <label class="bdj-modal__label" for="bdj-rap-texto">Mensaje</label>
+          <textarea id="bdj-rap-texto" class="bdj-modal__texto" rows="4" maxlength="4096"
+                    placeholder="Hola {nombre} 👋 Hacemos envíos a todo el país con Servientrega…"
+                    [ngModel]="rapidaTexto()" (ngModelChange)="rapidaTexto.set($event)" [disabled]="guardandoRapida()"></textarea>
+          <p class="bdj-rap__ayuda">Escribe <code>{{ '{' }}nombre{{ '}' }}</code> y se cambia por el nombre del cliente.</p>
+          @if (errorRapida(); as err) {
+            <p class="bdj__error" role="alert">{{ err }}</p>
+          }
+          <div class="bdj-rap__botones">
+            @if (rapidaEditando() !== null) {
+              <button type="button" class="bdj__btn-secundario" (click)="nuevaRapida()" [disabled]="guardandoRapida()">Cancelar edición</button>
+            }
+            <button type="button" class="bdj__btn-primario" (click)="guardarRapida()" [disabled]="guardandoRapida()">
+              {{ guardandoRapida() ? 'Guardando…' : rapidaEditando() !== null ? 'Guardar cambios' : 'Añadir respuesta' }}
+            </button>
+          </div>
+        </div>
+
+        <ul class="bdj-rap__lista">
+          @for (r of respuestasRapidas(); track r.id_respuesta) {
+            <li class="bdj-rap__item" [class.bdj-rap__item--editando]="rapidaEditando() === r.id_respuesta">
+              <span class="bdj-rap__item-texto">
+                <strong>/{{ r.atajo }}</strong>
+                <span>{{ r.texto }}</span>
+              </span>
+              <button type="button" class="bdj__icono" (click)="editarRapida(r)" aria-label="Editar" title="Editar">
+                <lucide-icon name="pencil" [size]="15" aria-hidden="true" />
+              </button>
+              <button type="button" class="bdj__icono" (click)="eliminarRapida(r)" aria-label="Eliminar" title="Eliminar">
+                <lucide-icon name="trash-2" [size]="15" aria-hidden="true" />
+              </button>
+            </li>
+          } @empty {
+            <li class="bdj-rap__vacio">Todavía no hay respuestas guardadas.</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- ── Modal «Reportar usuario»: reporta Y bloquea ──────────────── -->
 @if (confirmandoBloqueo() && detalle(); as d) {

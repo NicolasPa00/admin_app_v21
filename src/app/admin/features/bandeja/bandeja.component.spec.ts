@@ -47,7 +47,12 @@ const detalle = (
   },
   retomadas: extra.retomadas ?? [],
   mensajes: [],
-  ventana: { abierta: ventanaAbierta, ultimo_entrante_en: '2026-09-23T10:05:00', expira_en: null },
+  // Desde 2026-11-10 la pantalla cuenta lo que le queda a la ventana con `expira_en` (barra de 24 h).
+  ventana: {
+    abierta: ventanaAbierta,
+    ultimo_entrante_en: '2026-09-23T10:05:00',
+    expira_en: new Date(Date.now() + (ventanaAbierta ? 20 : -1) * 3600 * 1000).toISOString(),
+  },
   reportes: { persona: 0, conversacion: 0, del_asistente: 0, mio: null, ultimo: null },
   motivos: [],
 });
@@ -150,6 +155,13 @@ async function montar(
             of({ ultima_revision: null, ultimo_ia: null, historial: [], cupo_ia: null }),
           getAnalisis: () => of(null),
           getInforme,
+          // Lo que la Bandeja ganó el 2026-11-10/11 (traído de restaurante_app).
+          getRespuestasRapidas: () => of([]),
+          guardarRespuestaRapida: () => of(null),
+          eliminarRespuestaRapida: () => of(null),
+          getMensajesAnteriores: () => of({ mensajes: [], hay_anteriores: false }),
+          getPendientes: () => of({ total: 0 }),
+          enviarArchivo: () => of(null),
         },
       },
     ],
@@ -211,7 +223,8 @@ describe('Bandeja — lista de chats', () => {
     expect(c.contacto(bsuid)).toBe('WhatsApp no comparte su número');
     // Un número de verdad sigue saliendo como número.
     expect(c.esIdSinNumero('573104445566')).toBe(false);
-    expect(c.contacto(SIN_NOMBRE)).toBe('+573104445566');
+    // Sin nombre, el título ya ES el número: debajo no se repite (auditoría móvil, 2026-10-16).
+    expect(c.contacto(SIN_NOMBRE)).toBe('Sin nombre en WhatsApp');
   });
 });
 

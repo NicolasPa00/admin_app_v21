@@ -22,6 +22,27 @@
   el 2026-09-01). Dentro de un `color-mix()` una variable inexistente invalida la declaración
   entera y se descarta en silencio.
 */
+/*
+  ## Chat a pantalla completa («inmersivo»), desde 2026-11-11 (catalogo_app y restaurante_app)
+
+  En el teléfono la lista y el chat nunca cupieron juntos: al tocar una conversación, el chat se
+  pone encima de todo. Ahora también en la TABLETA —pedido del dueño—, que es donde más se nota
+  que dos paneles de 400 px no dejan leer ni una foto. Se reconoce la tableta por el dedo
+  (`pointer: coarse` sin `hover`), no solo por el ancho: un iPad en horizontal mide 1180 px, lo
+  mismo que un portátil, y el portátil sí quiere los dos paneles. Hasta 85,4rem (1366 px, el
+  iPad Pro de 12,9" acostado).
+
+  ⚠️ Igual en catalogo_app y restaurante_app: si se cambia uno, se cambia el otro.
+*/
+@mixin inmersivo {
+  @media (max-width: 48rem), (hover: none) and (pointer: coarse) and (max-width: 85.4rem) {
+    @content;
+  }
+}
+
+/* La curva de un cajón de iOS: arranca rápido y frena largo. Para abrir el chat. */
+$bdj-curva-cajon: cubic-bezier(0.32, 0.72, 0, 1);
+
 :host {
   /* Los verdes del chat. Valores copiados de la landing, no referencias. */
   --bdj-verde: #25d366;
@@ -31,6 +52,25 @@
   --bdj-papel: #f2f7f4;
 
   display: block;
+}
+
+/*
+  La página anfitriona le da a la Bandeja el alto que sobra (columna flexible) y la Bandeja lo
+  llena. Así no hay que adivinar cuánto mide el cromo de alrededor con `--bdj-cromo`: ese cálculo
+  se quedaba corto o largo cada vez que algo cambiaba arriba (el aviso del plan, las pestañas), y
+  el error no se ve como error sino como un hueco muerto o un chat cortado.
+*/
+:host(.bdj-host--llena) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  .bdj {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 22rem;
+  }
 }
 
 .bdj {
@@ -55,17 +95,35 @@
     height: calc(
       100dvh - 8rem - var(--bdj-extra, 0rem) - 62px - env(safe-area-inset-bottom, 0px)
     );
-    grid-template-columns: 1fr;
+  }
+
+  /* Un solo panel: manda la lista, y el chat se abre encima a pantalla completa. */
+  @include inmersivo {
+    /* `minmax(0, 1fr)` y no `1fr`: `1fr` no baja del ancho mínimo de su contenido, y la fila de
+       botones de arriba lo dejaba en ~512px en un teléfono de 390 — la lista se salía y se
+       cortaban la fecha de cada chat y el filtro (auditoría en el navegador, 2026-10-16). */
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Sin barra arriba la lista y el chat ocupan todo el alto. */
+  &--sin-cabecera {
+    grid-template-rows: minmax(0, 1fr);
   }
 
   /* ── Barra superior ─────────────────────────────────────────── */
+  /* Desde 2026-11-11 la barra vive SOLO sobre la lista y el chat sube hasta arriba (ver
+     `&__hilo-panel`): la pausa y los negocios son cosas de «qué atiendo», no del chat abierto, y
+     un renglón a todo lo ancho era alto que se le quitaba a los mensajes. */
   &__top {
-    grid-column: 1 / -1;
+    grid-column: 1;
+    grid-row: 1;
+    border-right: 1px solid var(--color-border);
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
-    padding: 0.75rem 0.875rem;
+    /* Fina (2026-11-11): cada píxel de esta barra es un píxel menos de chat. */
+    padding: 0.5rem 0.625rem;
     border-bottom: 1px solid var(--color-border);
     background: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-surface));
   }
@@ -128,6 +186,8 @@
 
   /* ── Panel de la lista ──────────────────────────────────────── */
   &__lista-panel {
+    grid-column: 1;
+    grid-row: -2;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -216,34 +276,60 @@
   }
 
   /* Con el asistente en pausa, una franja que no se puede pasar por alto. */
+  /* Una tira de un renglón: se ve (rojo, con su botón) pero ya no se come el chat. Antes eran dos
+     o tres renglones con borde y en un portátil de 768 px de alto eso eran ~70 px de mensajes. */
   &__pausa {
     flex-basis: 100%;
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.75rem;
-    padding: 0.625rem 0.875rem;
-    border: 1px solid var(--color-error);
-    border-radius: 0.625rem;
+    gap: 0.625rem;
+    min-width: 0;
+    padding: 0.375rem 0.375rem 0.375rem 0.625rem;
+    border-radius: 0.75rem;
     background: color-mix(in srgb, var(--color-error) 10%, var(--color-surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-error) 35%, transparent);
     color: var(--color-text-primary);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
 
-    lucide-icon {
+    /* Solo el ícono de la tira: el del botón rojo es blanco. Con `lucide-icon` a secas se
+       pintaba rojo sobre rojo y desaparecía (2026-11-11). */
+    > lucide-icon {
       color: var(--color-error);
       flex: 0 0 auto;
     }
+  }
 
-    span {
-      flex: 1 1 16rem;
+  /* Dos renglones cortos: «está en pausa» y, debajo, desde cuándo y qué pasa (cortado con «…»;
+     el título del elemento lo da entero). */
+  &__pausa-texto {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+
+    /* Puede partirse en dos renglones: «El asistente está en p…» no decía nada. */
+    strong {
+      color: var(--color-error);
     }
   }
 
+  &__pausa-detalle {
+    font-size: 0.6875rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   &__pausa-boton {
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.375rem 0.875rem;
+    padding: 0.25rem 0.75rem;
+    white-space: nowrap;
+    transition: transform 160ms ease-out;
     border: none;
     border-radius: 999px;
     background: var(--color-error);
@@ -255,6 +341,10 @@
     &:disabled {
       opacity: 0.6;
       cursor: wait;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.97);
     }
   }
 
@@ -476,18 +566,51 @@
     min-width: 0;
     min-height: 0;
     background: var(--color-surface);
+    /* Todo el alto, también el de la barra de la pausa (que va solo sobre la lista). */
+    grid-column: 2;
+    grid-row: 1 / -1;
 
-    @media (max-width: 48rem) {
+    @include inmersivo {
       display: none;
+      grid-column: auto;
+      grid-row: auto;
 
       &:has(.bdj__hilo-head) {
         display: flex;
         position: fixed;
         inset: 0;
         /* Por encima de la barra de navegación inferior del móvil (z 200), que si no tapa el
-           cuadro de escribir. */
+           cuadro de escribir, y del menú lateral en la tableta. */
         z-index: 210;
+        /* Entra desde la derecha, como en cualquier app de mensajes: dice «estás un nivel más
+           adentro» y la flecha de volver tiene sentido. Corto, porque se abre muchas veces al día. */
+        animation: bdj-entra-chat 260ms $bdj-curva-cajon both;
       }
+    }
+  }
+
+  /* La flecha de volver: solo con el chat a pantalla completa. Ahí reemplaza a la X. */
+  &__volver {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-left: -0.375rem;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 160ms ease, transform 160ms ease-out;
+
+    &:hover { background: rgba(255, 255, 255, 0.16); }
+    &:active { transform: scale(0.94); }
+    &:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+
+    @include inmersivo {
+      display: inline-flex;
     }
   }
 
@@ -553,13 +676,30 @@
   /* La banda del chat: es lo que hace que esto se lea como una conversación y no como una
      tabla. Misma forma que la cabecera del chat de la landing. */
   &__hilo-head {
+    /* Ancla de la barra de las 24 h, que va pegada a su borde inferior. */
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
-    padding: 0.625rem 0.875rem;
+    padding: 0.5rem 0.75rem;
     background: var(--bdj-verde-hondo);
     color: #fff;
+
+    /* La X es del escritorio; a pantalla completa la flecha de la izquierda hace su trabajo. */
+    > .bdj__icono--claro {
+      @include inmersivo {
+        display: none;
+      }
+    }
+
+    /* A pantalla completa la banda llega hasta arriba: que no la tape la muesca del teléfono. */
+    @include inmersivo {
+      flex-wrap: nowrap;
+      padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+      padding-inline: calc(0.75rem + env(safe-area-inset-left, 0px))
+        calc(0.75rem + env(safe-area-inset-right, 0px));
+    }
   }
 
   &__hilo-quien {
@@ -603,6 +743,15 @@
     &:hover {
       background: rgba(255, 255, 255, 0.22);
     }
+
+    /* Angosto: solo el icono (el rótulo queda para el lector de pantalla), en un círculo del
+       tamaño de un dedo. Si no, en un teléfono el nombre del cliente se quedaba sin sitio. */
+    @media (max-width: 30rem) {
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0;
+    }
   }
 
   /* Ya reportada por mí: se nota sin gritar. El rojo se reserva para el botón que la pone. */
@@ -626,7 +775,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.875rem;
+    padding: 0.3125rem 0.75rem;
     border-bottom: 1px solid var(--color-border);
     font-size: 0.75rem;
     line-height: 1.45;
@@ -986,30 +1135,57 @@
     text-align: center;
   }
 
+  /* «La llevas tú» en un renglón (2026-11-11): texto, cuándo vuelve el asistente y el botón. Lo
+     que no cabe se corta con «…»; en el teléfono el aviso baja a un segundo renglón. */
   &__retomar-aviso {
-    flex: 1 1 100%;
+    order: 2;
+    flex: 1 1 0;
+    min-width: 0;
     margin: 0;
     font-size: 0.6875rem;
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted, var(--color-text-secondary));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    @media (max-width: 40rem) {
+      order: 4;
+      flex-basis: 100%;
+      white-space: normal;
+    }
   }
 
   &__retomar {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem 0.5rem;
     flex-wrap: wrap;
-    padding: 0.5rem 0.875rem;
+    padding: 0.3125rem 0.75rem;
     border-bottom: 1px solid var(--color-border);
-    background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
+    background: color-mix(in srgb, var(--color-text-primary) 4%, var(--color-surface));
     font-size: 0.75rem;
     color: var(--color-text-secondary);
 
-    span {
-      flex: 1;
-      min-width: 8rem;
+    lucide-icon {
+      order: 0;
+      flex: 0 0 auto;
+    }
+
+    > span {
+      order: 1;
+      flex: 0 1 auto;
+      min-width: 0;
+      color: var(--color-text-primary);
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     button {
+      order: 3;
+      margin-left: auto;
+      transition: background-color 160ms ease, transform 160ms ease-out;
       flex: 0 0 auto;
       padding: 0.25rem 0.625rem;
       border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
@@ -1022,6 +1198,10 @@
 
       &:hover {
         background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+      }
+
+      &:active {
+        transform: scale(0.97);
       }
     }
   }
@@ -1161,6 +1341,157 @@
     box-shadow: 0 1px 1px rgba(11, 61, 44, 0.1);
   }
 
+  /* El mensaje al que responde (2026-11-11): una franja encima del texto, con la raya de color a
+     la izquierda, como en WhatsApp. Verde si citó lo nuestro, violeta si citó al cliente. */
+  &__cita {
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 0.3125rem;
+    padding: 0.3125rem 0.5rem;
+    border: 0;
+    border-left: 3px solid var(--bdj-verde-hondo, #128c7e);
+    border-radius: 0.375rem;
+    background: rgba(11, 61, 44, 0.07);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: default;
+    }
+    &:focus-visible {
+      outline: 2px solid var(--bdj-verde-hondo, #128c7e);
+      outline-offset: 1px;
+    }
+  }
+
+  &__cita--cliente {
+    border-left-color: #8a6fd1;
+  }
+
+  &__cita-quien {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--bdj-verde-hondo, #128c7e);
+  }
+
+  &__cita--cliente &__cita-quien {
+    color: #6b4fc0;
+  }
+
+  &__cita-texto {
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    opacity: 0.8;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  &__msg--resaltado {
+    outline: 2px solid color-mix(in srgb, var(--bdj-verde-hondo, #128c7e) 60%, transparent);
+    outline-offset: 2px;
+    transition: outline-color 0.3s;
+  }
+
+  /* Traído de restaurante_app (2026-11-11): botones y formulario que vio el cliente, y la
+     descarga de notas de voz. */
+  /* Los botones que vio el cliente con el mensaje (2026-10-16). Pintados como en WhatsApp —una
+     fila bajo la burbuja, separada por una raya— pero sin aspecto de botón que se pueda tocar:
+     son del cliente, no del negocio. */
+  &__msg-botones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.375rem -0.25rem 0.125rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid color-mix(in srgb, var(--bdj-verde-tinta) 14%, transparent);
+  }
+
+  &__msg-boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, #ffffff 70%, transparent);
+    color: var(--bdj-verde-hondo);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* El que abre el formulario se distingue: es el que el negocio quiere ver si se usa. */
+  &__msg-boton--form {
+    background: var(--bdj-verde-hondo);
+    color: #ffffff;
+  }
+
+  /* «Tocó el botón»: un «sí» tocado no es lo mismo que uno escrito. */
+  &__msg-tocado {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.125rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  /* El formulario que llenó el cliente: tarjeta con sus campos, no un bloque de texto. */
+  &__form {
+    min-width: min(14rem, 100%);
+  }
+
+  &__form-titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.3125rem;
+    margin: 0 0 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--bdj-verde-hondo);
+  }
+
+  &__form-campos {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.1875rem 0.625rem;
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+
+    dt {
+      color: var(--color-text-secondary);
+      font-weight: 600;
+    }
+
+    dd {
+      margin: 0;
+      color: var(--color-text-primary);
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__archivo-bajar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
+
   &__msg-texto--eliminado {
     display: inline-flex;
     align-items: center;
@@ -1251,16 +1582,26 @@
   /* ── Responder ──────────────────────────────────────────────── */
   &__responder {
     border-top: 1px solid var(--color-border);
-    padding: 0.625rem 0.875rem 0.875rem;
+    padding: 0.5rem 0.75rem 0.625rem;
     background: var(--color-surface);
+
+    /* A pantalla completa el cuadro de escribir toca el borde de abajo: la barra de gestos del
+       teléfono no lo puede tapar. */
+    @include inmersivo {
+      padding-bottom: calc(0.625rem + env(safe-area-inset-bottom, 0px));
+      padding-inline: calc(0.75rem + env(safe-area-inset-left, 0px))
+        calc(0.75rem + env(safe-area-inset-right, 0px));
+    }
   }
 
   &__nota {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin: 0 0 0.5rem;
-    font-size: 0.75rem;
+    margin: 0 0 0.375rem;
+    padding-left: 0.25rem;
+    font-size: 0.6875rem;
+    line-height: 1.3;
     color: var(--color-text-secondary);
   }
 
@@ -1374,6 +1715,19 @@
   }
 }
 
+@keyframes bdj-entra-chat {
+  from {
+    opacity: 0;
+    transform: translateX(2.5rem);
+  }
+}
+
+@keyframes bdj-entra-chat-suave {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes bdj-spin {
   to {
     transform: rotate(360deg);
@@ -1387,6 +1741,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bdj__chip--alerta { animation: none; }
+  /* Sin desplazamiento: solo aparece, para que no se sienta como un corte. */
+  .bdj__hilo-panel:has(.bdj__hilo-head) { animation-name: bdj-entra-chat-suave; animation-duration: 160ms; }
 }
 
 /* ── Modal «Reportar usuario» ─────────────────────────────────── */

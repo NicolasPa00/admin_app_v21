@@ -21,6 +21,18 @@ export interface ConversacionBandeja {
   ultimo_mensaje_en: string | null;
   negocio: string | null;
   persona: string | null;
+  /**
+   * De dónde salió `persona` (2026-11-10): `cliente` = el directorio de Clientes, `contacto` = la
+   * agenda de la app WhatsApp Business del negocio. Ausente en un backend anterior.
+   */
+  origen_nombre?: 'cliente' | 'contacto' | null;
+  /** El nombre que el cliente puso en SU perfil de WhatsApp. Se enseña «~Nombre», como WhatsApp. */
+  perfil_nombre?: string | null;
+  /** Último mensaje del cliente en las últimas 48 h: con él la lista pinta la barra de 24 h. */
+  ultimo_entrante_en?: string | null;
+  /** Quién habló último y qué tipo de mensaje fue (para «📷 Foto» en vez de «[image]»). */
+  ultimo_direccion?: 'entrante' | 'saliente' | null;
+  ultimo_tipo?: string | null;
   telefono_e164: string | null;
   /** El bot dejó de contestar aquí y espera a una persona. La única urgencia de esta pantalla. */
   escalada: boolean;
@@ -37,6 +49,16 @@ export interface ConversacionBandeja {
    * Llega en 0 cuando el entorno todavía no tiene la tabla migrada.
    */
   reportes: number;
+  /**
+   * Cuántos mensajes del cliente quedaron SIN contestar: los que entraron después de la última
+   * salida nuestra (del asistente o de una persona).
+   *
+   * No es lo mismo que `escalada`. Una conversación puede estar escalada con un solo mensaje
+   * esperando, y otra puede tener tres mensajes seguidos que el asistente sí contestó. Este
+   * número contesta «cuánto lleva acumulado esta persona sin respuesta», que es lo que decide a
+   * quién se atiende primero.
+   */
+  sin_responder?: number;
   /** Última vez que una persona del negocio intervino (ADR-023, Enmienda 2). Solo en el detalle. */
   humano_ultimo_en?: string | null;
   /** Minutos tras los cuales el asistente vuelve solo; 0 = nunca. Solo en el detalle. */
@@ -64,6 +86,34 @@ export interface MensajeBandeja {
   /** Quien lo escribió lo editó desde WhatsApp: se muestra el texto nuevo y la marca «editado». */
   editado?: boolean;
   /** Quien lo escribió lo borró: el contenido ya no se guarda y se muestra «Mensaje eliminado». */
+  eliminado?: boolean;
+  /**
+   * Los botones que salieron con un mensaje del asistente («Completar datos», «Sí, confirmo»).
+   * `formulario` dice si ese botón abre el formulario de entrega. Solo los salientes.
+   */
+  botones?: { etiqueta: string; formulario: boolean }[] | null;
+  /** El formulario de entrega que llenó el cliente, campo a campo («entrega», «barrio»…). */
+  formulario?: Record<string, string> | null;
+  /** El cliente contestó tocando un botón, no escribiendo. */
+  de_boton?: boolean;
+  /** Quién escribió un saliente: el asistente, una persona desde la Bandeja o el dueño desde su celular. */
+  origen?: 'asistente' | 'humano' | 'app_negocio' | string | null;
+  /**
+   * El mensaje al que este responde (el cliente deslizó «Responder» en WhatsApp). `encontrado:
+   * false` si es anterior a la conexión y no está guardado.
+   */
+  cita?: CitaMensaje | null;
+  /** Solo en pantalla: un archivo que se está subiendo y todavía no existe en el servidor. */
+  local?: { url: string | null; estado: 'subiendo' | 'error'; error?: string };
+}
+
+export interface CitaMensaje {
+  encontrado: boolean;
+  id_mensaje?: string;
+  direccion?: 'entrante' | 'saliente';
+  contenido?: string | null;
+  /** Si el citado era un archivo: image, sticker, audio, video, document. */
+  tipo?: string | null;
   eliminado?: boolean;
 }
 
@@ -131,8 +181,13 @@ export interface ConfiguracionReactivacion {
   asistente_mira_stock?: boolean;
   /** El control de inventario de caja: solo para avisar en pantalla de cómo se combinan. */
   controla_inventario?: boolean;
-  /** Solo un administrador de ESE negocio puede cambiarlo. */
+  /** Los AJUSTES (tiempos, notas, domicilio): solo un administrador de ESE negocio. */
   puede_editar?: boolean;
+  /**
+   * ACTIVAR o PAUSAR el asistente: cualquiera con el módulo de WhatsApp en ese negocio, no solo
+   * el administrador (2026-10-27). Ausente en un backend anterior; sin él manda `puede_editar`.
+   */
+  puede_activar?: boolean;
 }
 
 export interface ConversacionBandejaDetalle {
@@ -142,6 +197,8 @@ export interface ConversacionBandejaDetalle {
   /** Cuándo retomó el asistente. Ausente en un backend anterior. */
   retomadas?: RetomadaAsistente[];
   ventana: VentanaBandeja;
+  /** Hay mensajes más viejos que los que llegaron (el hilo va por páginas desde 2026-11-10). */
+  hay_anteriores?: boolean;
   reportes: ReportesConversacion;
   /** El catálogo tal como lo valida el backend. Se recibe para no divergir en silencio. */
   motivos: string[];
@@ -355,4 +412,12 @@ export interface PreparacionAsistente {
   criticos: number;
   pendientes: number;
   puntos: PuntoPreparacion[];
+}
+
+/** Un mensaje guardado que se inserta escribiendo «/atajo» (2026-11-10). */
+export interface RespuestaRapida {
+  id_respuesta: number;
+  atajo: string;
+  texto: string;
+  actualizado_en?: string;
 }

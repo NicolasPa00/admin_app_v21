@@ -73,6 +73,9 @@ async function montar<T>(
           getPreparacion: () => of(null),
           getHistorialAnalisis: () => of(null),
           getConfiguracion: () => of({ id_negocio: 1, reactivar_asistente_min: 0, puede_editar: true }),
+          // Respuestas rápidas y hilo por páginas (la Bandeja, 2026-11-10/11).
+          getRespuestasRapidas: () => of([]),
+          getMensajesAnteriores: () => of({ mensajes: [], hay_anteriores: false }),
         },
       },
       {

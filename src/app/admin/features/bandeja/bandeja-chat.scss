@@ -1,0 +1,803 @@
+/* ── Mejoras de 2026-11-10 (AYM): barra de 24 h, archivos, emojis y respuestas rápidas ─────────
+   ⚠️ Igual en restaurante_app y catalogo_app. Colores de estado fijos y semánticos (verde, ámbar,
+   rojo) mezclados con los tokens: la marca del negocio no decide si algo es urgente. */
+.bdj {
+  --bdj-ventana-holgada: #17734f;
+  --bdj-ventana-media: #b26a00;
+  --bdj-ventana-urgente: var(--color-error, #c62828);
+
+  &__item-ventana {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1875rem;
+    flex: 0 0 auto;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--bdj-ventana-holgada);
+    background: color-mix(in srgb, var(--bdj-ventana-holgada) 12%, transparent);
+
+    &[data-nivel='media'] {
+      color: var(--bdj-ventana-media);
+      background: color-mix(in srgb, var(--bdj-ventana-media) 14%, transparent);
+    }
+    &[data-nivel='urgente'] {
+      color: var(--bdj-ventana-urgente);
+      background: color-mix(in srgb, var(--bdj-ventana-urgente) 12%, transparent);
+    }
+  }
+
+  /* La barra bajo la cabecera del chat: el texto a la izquierda y la barra que se vacía. */
+  /* La ventana de 24 h, DENTRO de la banda verde (2026-11-11): una pastilla con el tiempo y, como
+     filo inferior de la banda, la barra que se vacía. Antes era un renglón propio de ~32 px.
+     Sobre el verde: holgada = translúcida y blanca (no distrae); media y urgente = pastilla
+     blanca con el texto en ámbar o rojo, que es lo que salta a la vista sin gritar. */
+  &__ventana {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+    color: #fff;
+    font-size: 0.75rem;
+    line-height: 1;
+    white-space: nowrap;
+    transition: background-color 300ms ease, color 300ms ease;
+
+    strong {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &[data-nivel='media'],
+    &[data-nivel='urgente'] {
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(11, 61, 44, 0.25);
+    }
+    &[data-nivel='media'] { color: var(--bdj-ventana-media); }
+    &[data-nivel='urgente'] { color: var(--bdj-ventana-urgente); }
+  }
+
+  &__ventana-texto {
+    font-weight: 500;
+    opacity: 0.85;
+
+    /* Angosto: queda el reloj y el tiempo, que es lo que se mira. */
+    @media (max-width: 40rem) {
+      display: none;
+    }
+  }
+
+  /* El filo inferior de la banda: lo que queda de las 24 h, de izquierda a derecha. */
+  &__ventana-barra {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+
+    span {
+      display: block;
+      height: 100%;
+      background: #7ff0b0;
+      transition: width 0.6s ease;
+    }
+
+    &[data-nivel='media'] span { background: #ffc24a; }
+    &[data-nivel='urgente'] span { background: #ff8a80; }
+  }
+
+  &__anteriores {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    align-self: center;
+    margin: 0.25rem auto 0.5rem;
+    padding: 0.3125rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: var(--color-text-primary);
+    }
+    &:disabled {
+      cursor: default;
+      opacity: 0.7;
+    }
+  }
+
+  &__archivo--subiendo {
+    opacity: 0.6;
+  }
+
+  /* El pie del compositor sostiene los paneles que se abren hacia arriba. */
+  &__responder {
+    position: relative;
+  }
+
+  &__herramientas {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: 0.125rem;
+  }
+
+  &__herramienta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.5rem;
+    border: none;
+    border-radius: 0.625rem;
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+
+    &:hover:not(:disabled),
+    &--on {
+      background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+      color: var(--color-text-primary);
+    }
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__herramienta-emoji {
+    font-size: 1.125rem;
+    line-height: 1;
+    filter: grayscale(0.35);
+  }
+  &__herramienta--on &__herramienta-emoji {
+    filter: none;
+  }
+
+  &__oculto {
+    display: none;
+  }
+
+  /* Los paneles (emojis y respuestas rápidas) flotan sobre el hilo, pegados al compositor. */
+  &__emojis,
+  &__rapidas {
+    position: absolute;
+    left: 0.875rem;
+    right: 0.875rem;
+    bottom: calc(100% - 0.25rem);
+    z-index: 20;
+    max-height: min(18rem, 50dvh);
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.18));
+  }
+
+  &__emojis {
+    padding: 0.5rem 0.625rem 0.625rem;
+  }
+
+  &__emojis-grupo {
+    margin: 0.375rem 0 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+  }
+
+  &__emojis-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.25rem, 1fr));
+  }
+
+  &__emoji {
+    height: 2.25rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: none;
+    font-size: 1.375rem;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+    }
+  }
+
+  &__rapidas {
+    padding: 0.25rem;
+  }
+
+  &__rapidas-cabeza {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+
+    span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+  }
+
+  &__rapida {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.125rem;
+    width: 100%;
+    min-width: 0;
+    padding: 0.5rem 0.625rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: none;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+
+    strong {
+      font-size: 0.8125rem;
+      color: var(--color-primary);
+    }
+    span {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--color-text-secondary);
+    }
+
+    &:hover,
+    &--marcada {
+      background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    }
+  }
+
+  &__rapidas-vacio {
+    margin: 0;
+    padding: 0.5rem 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: var(--color-text-secondary);
+  }
+
+  &__enlace {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  /* El archivo elegido, encima de la caja de texto, con su vista previa. */
+  &__adjunto {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--color-text-primary) 3%, var(--color-surface));
+
+    img,
+    video {
+      flex: 0 0 auto;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 0.5rem;
+      object-fit: cover;
+    }
+  }
+
+  &__adjunto-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    color: var(--color-primary);
+  }
+
+  &__adjunto-datos {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+
+    strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.875rem;
+      color: var(--color-text-primary);
+    }
+  }
+
+  &__btn-primario {
+    flex: 0 0 auto;
+    padding: 0.4375rem 0.875rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: var(--color-primary);
+    color: var(--color-on-primary, #fff);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+  }
+}
+
+/* En el teléfono la caja de texto necesita el ancho: las herramientas se encogen. */
+@media (max-width: 480px) {
+  .bdj__herramienta {
+    width: 2rem;
+  }
+}
+
+/* ── Ventana de respuestas rápidas ── */
+.bdj-modal__card--ancha {
+  width: min(36rem, 100%);
+}
+
+.bdj-modal__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.875rem;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.bdj-rap__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bdj-rap__atajo {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+
+  > span {
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+}
+
+.bdj-rap__ayuda {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+
+  code {
+    padding: 0 0.25rem;
+    border-radius: 0.25rem;
+    background: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+  }
+}
+
+.bdj-rap__botones {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bdj-rap__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bdj-rap__item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.375rem 0.25rem 0.375rem 0.5rem;
+  border-radius: 0.5rem;
+
+  &--editando {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  }
+}
+
+.bdj-rap__item-texto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.8125rem;
+
+  strong {
+    color: var(--color-primary);
+  }
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+  }
+}
+
+.bdj-rap__vacio {
+  padding: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+}
+
+/* ── Foto y video dentro de la burbuja: se tocan y se abren en el visor (2026-11-11) ── */
+.bdj__archivo-ver {
+  position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  cursor: zoom-in;
+  transition: transform 160ms ease-out;
+
+  &:active { transform: scale(0.98); }
+  &:focus-visible { outline: 2px solid var(--bdj-verde-hondo); outline-offset: 2px; }
+
+  video {
+    display: block;
+    max-width: min(100%, 16rem);
+    max-height: 20rem;
+    border-radius: 0.5rem;
+    background: #0b1410;
+    pointer-events: none;
+  }
+}
+
+.bdj__archivo-video { cursor: pointer; }
+
+/* El botón de reproducir sobre el primer cuadro, como en WhatsApp. */
+.bdj__archivo-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  pointer-events: none;
+
+  lucide-icon { display: inline-flex; margin-left: 2px; }
+}
+
+/* ── El visor ──────────────────────────────────────────────────────────────────────────────
+   Pantalla completa sobre fondo casi negro (con un punto de verde, el del chat): la foto manda y
+   todo lo demás se aparta. Barra arriba con quién y cuándo, descargar y cerrar; flechas a los
+   lados. Entra con un fundido y la foto crece un pelo desde 96 %; sale sin animación, porque al
+   cerrar la persona ya quiere volver al chat. */
+.bdj-visor {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(8, 15, 12, 0.94);
+  color: #fff;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 180ms ease-out;
+
+  &::backdrop { background: transparent; }
+
+  &[open] {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+
+    @starting-style { opacity: 0; }
+  }
+}
+
+.bdj-visor__barra {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: calc(0.5rem + env(safe-area-inset-top, 0px)) calc(0.75rem + env(safe-area-inset-right, 0px))
+    0.5rem calc(1rem + env(safe-area-inset-left, 0px));
+  background: linear-gradient(rgba(0, 0, 0, 0.35), transparent);
+}
+
+.bdj-visor__quien {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+
+  strong, span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  strong { font-size: 0.9375rem; font-weight: 600; }
+  span { font-size: 0.75rem; color: rgba(255, 255, 255, 0.7); }
+}
+
+.bdj-visor__cuenta {
+  flex: 0 0 auto;
+  margin-right: 0.25rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.bdj-visor__boton,
+.bdj-visor__flecha {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 160ms ease, transform 160ms ease-out, opacity 160ms ease;
+
+  &:hover { background: rgba(255, 255, 255, 0.14); }
+  &:active:not(:disabled) { transform: scale(0.94); }
+  &:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+}
+
+.bdj-visor__escena {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0.5rem 4.5rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+
+  @media (max-width: 40rem) {
+    padding-inline: 0.5rem;
+  }
+}
+
+.bdj-visor__flecha {
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  width: 3rem;
+  height: 3rem;
+  margin-top: -1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+
+  &--antes { left: 1rem; }
+  &--despues { right: 1rem; }
+
+  &:disabled { opacity: 0.25; cursor: default; }
+
+  /* En el teléfono van encima de la foto, más pequeñas y con más fondo para que se lean. */
+  @media (max-width: 40rem) {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-top: -1.25rem;
+    background: rgba(0, 0, 0, 0.45);
+    &--antes { left: 0.5rem; }
+    &--despues { right: 0.5rem; }
+  }
+}
+
+.bdj-visor__figura {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  animation: bdj-visor-crece 220ms cubic-bezier(0.23, 1, 0.32, 1) both;
+
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+    /* Lo que deja la barra de arriba y el aire de abajo; con pie de foto, un renglón menos. */
+    max-height: calc(100dvh - 7rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    object-fit: contain;
+    border-radius: 0.25rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    background: #000;
+  }
+
+  img { background: transparent; }
+
+  figcaption {
+    max-width: 40rem;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.88);
+  }
+}
+
+.bdj-visor__figura:has(figcaption) img,
+.bdj-visor__figura:has(figcaption) video {
+  max-height: calc(100dvh - 10rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+}
+
+@keyframes bdj-visor-crece {
+  from { opacity: 0; transform: scale(0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bdj-visor__figura { animation-name: bdj-visor-aparece; }
+}
+
+@keyframes bdj-visor-aparece {
+  from { opacity: 0; }
+}
+
+/* ── Fotos y videos en la burbuja, bien encuadrados (2026-11-11) ──
+   El tope era `min(100%, 16rem)`: un porcentaje no frena el ancho que la foto PIDE, así que la
+   burbuja crecía hasta su máximo con la foto de 16rem dentro y un hueco al lado. Con el tope fijo
+   la burbuja se ajusta a la foto, y el borde fino alrededor queda como en WhatsApp. */
+.bdj__msg:has(> .bdj__archivo .bdj__archivo-ver) {
+  padding: 0.1875rem 0.1875rem 0.25rem;
+
+  .bdj__msg-texto,
+  .bdj__msg-pie {
+    padding-inline: 0.4375rem;
+  }
+}
+
+.bdj__archivo-ver {
+  width: fit-content;
+  max-width: 100%;
+
+  img,
+  video {
+    width: auto;
+    max-width: 16rem;
+  }
+
+  img.bdj__archivo-sticker {
+    max-width: 8rem;
+  }
+}
+
+@media (max-width: 22rem) {
+  .bdj__archivo-ver img,
+  .bdj__archivo-ver video {
+    max-width: 13rem;
+  }
+}
+
+/* ── Esqueleto mientras llega un chat (2026-11-11) ── */
+.bdj__esqueleto {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.bdj__esqueleto-hilo {
+  gap: 0.625rem;
+  overflow: hidden;
+}
+
+.bdj__hueso {
+  display: block;
+  flex: 0 0 auto;
+  width: 50%;
+  max-width: 26rem;
+  height: 2.375rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0) 70%
+    )
+    color-mix(in srgb, var(--bdj-verde) 22%, #ffffff);
+  background-size: 200% 100%;
+  animation: bdj-hueso 1.3s linear infinite;
+  align-self: flex-end;
+
+  &--suyo {
+    align-self: flex-start;
+    background-color: #fff;
+  }
+  &--dia {
+    align-self: center;
+    width: 4rem;
+    height: 1.5rem;
+    border-radius: 0.5rem;
+    background-color: #fff;
+  }
+  &--foto {
+    width: 12rem;
+    height: 9rem;
+  }
+  &--caja {
+    width: 100%;
+    max-width: none;
+    height: 2.5rem;
+    border-radius: 1.25rem;
+    background-color: color-mix(in srgb, var(--color-text-primary) 7%, var(--color-surface));
+  }
+}
+
+@keyframes bdj-hueso {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bdj__hueso { animation: none; }
+}
+
+/* Enlaces dentro de los mensajes: se ven y se pueden tocar. */
+.bdj__msg-texto a {
+  color: #0b6bcb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}

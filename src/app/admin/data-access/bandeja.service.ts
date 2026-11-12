@@ -15,6 +15,8 @@ import {
   ConversacionBandejaDetalle,
   ReportesConversacion,
   RespuestaEncolada,
+  MensajeBandeja,
+  RespuestaRapida,
 } from '../models/bandeja.models';
 
 /**
@@ -41,9 +43,10 @@ export class BandejaService {
   private readonly http = inject(HttpClient);
   private readonly API = environment.apiUrl;
 
-  getConversaciones(filtros: { id_negocio?: number; solo_escaladas?: boolean } = {}):
+  getConversaciones(filtros: { id_negocio?: number; solo_escaladas?: boolean; limite?: number } = {}):
     Observable<BandejaListado> {
     let params = new HttpParams();
+    if (filtros.limite) params = params.set('limite', `${filtros.limite}`);
     if (filtros.id_negocio) params = params.set('id_negocio', `${filtros.id_negocio}`);
     if (filtros.solo_escaladas) params = params.set('solo_escaladas', 'true');
 
@@ -127,6 +130,76 @@ export class BandejaService {
         {},
       )
       .pipe(map((res) => res.data?.reportes ?? null));
+  }
+
+  /**
+   * Los mensajes ANTERIORES a un instante (el hilo llega por páginas de 60 desde 2026-11-10: antes
+   * se mandaba entero cada 5 segundos, y en un chat largo eso era lo que se sentía lento).
+   */
+  getMensajesAnteriores(
+    id: string,
+    antes: string,
+  ): Observable<{ mensajes: MensajeBandeja[]; hay_anteriores: boolean }> {
+    return this.http
+      .get<ApiResponse<{ mensajes: MensajeBandeja[]; hay_anteriores: boolean }>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}`,
+        { params: new HttpParams().set('antes', antes) },
+      )
+      .pipe(map((res) => res.data ?? { mensajes: [], hay_anteriores: false }));
+  }
+
+  /**
+   * Manda una foto, video, audio o documento, con un pie opcional. Como `responder`, toma la
+   * conversación. El servidor lo sube a WhatsApp y no guarda copia.
+   */
+  enviarArchivo(id: string, archivo: File, texto?: string): Observable<RespuestaEncolada | null> {
+    const datos = new FormData();
+    datos.append('archivo', archivo, archivo.name);
+    if (texto?.trim()) datos.append('texto', texto.trim());
+    return this.http
+      .post<ApiResponse<RespuestaEncolada>>(
+        `${this.API}/intelligence/bandeja/conversaciones/${id}/archivo`,
+        datos,
+      )
+      .pipe(map((res) => res.data ?? null));
+  }
+
+  // ── Respuestas rápidas («/atajo») ──
+
+  getRespuestasRapidas(idNegocio: number): Observable<RespuestaRapida[]> {
+    return this.http
+      .get<ApiResponse<{ respuestas: RespuestaRapida[] }>>(
+        `${this.API}/intelligence/bandeja/respuestas-rapidas`,
+        { params: new HttpParams().set('id_negocio', `${idNegocio}`) },
+      )
+      .pipe(map((res) => res.data?.respuestas ?? []));
+  }
+
+  guardarRespuestaRapida(
+    idNegocio: number,
+    datos: { atajo: string; texto: string },
+    idRespuesta?: number | null,
+  ): Observable<RespuestaRapida | null> {
+    const cuerpo = { id_negocio: idNegocio, ...datos };
+    const peticion = idRespuesta
+      ? this.http.put<ApiResponse<RespuestaRapida>>(
+          `${this.API}/intelligence/bandeja/respuestas-rapidas/${idRespuesta}`,
+          cuerpo,
+        )
+      : this.http.post<ApiResponse<RespuestaRapida>>(
+          `${this.API}/intelligence/bandeja/respuestas-rapidas`,
+          cuerpo,
+        );
+    return peticion.pipe(map((res) => res.data ?? null));
+  }
+
+  eliminarRespuestaRapida(idNegocio: number, idRespuesta: number): Observable<void> {
+    return this.http
+      .delete<ApiResponse<unknown>>(
+        `${this.API}/intelligence/bandeja/respuestas-rapidas/${idRespuesta}`,
+        { params: new HttpParams().set('id_negocio', `${idNegocio}`) },
+      )
+      .pipe(map(() => undefined));
   }
 
   getConversacion(id: string): Observable<ConversacionBandejaDetalle | null> {

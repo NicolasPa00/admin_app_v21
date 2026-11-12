@@ -22,7 +22,13 @@ import {
   MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert, RefreshCw, Inbox,
   Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
   Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
-  History, ChevronDown, Sparkles, Info,
+  ClipboardList, MousePointerClick, Reply, Sparkles, Download, Lock,
+  // Los de Ajustes, el historial de análisis y la vista previa del saludo (2026-11-03).
+  Bike, History, Info, Package, RotateCcw, ShoppingBag, Wallet, ChevronDown, ListChecks,
+  // Archivos, respuestas rápidas y barra de 24 h (2026-11-10).
+  Paperclip, Timer, Plus, Pencil, Trash2, ImageIcon, ChevronUp,
+  // La flecha de volver del chat a pantalla completa y el visor de fotos y videos (2026-11-11).
+  ArrowLeft, ChevronLeft, ChevronRight,
 } from '../../../core/icons/phosphor';
 
 import { BandejaService } from '../../data-access/bandeja.service';
@@ -39,12 +45,17 @@ import {
   CupoIaNegocio,
   ConversacionBandejaDetalle,
   MensajeBandeja,
+  CitaMensaje,
   RetomadaAsistente,
   NegocioConConversaciones,
   ReportesConversacion,
   PreparacionAsistente,
+  RespuestaRapida,
 } from '../../models/bandeja.models';
 import { LoadingState } from '../../models/admin.models';
+
+/** Las pestañas de la ventana «Tu asistente». */
+type PestanaAsistente = 'revision' | 'ajustes' | 'informe';
 
 /** Un archivo del cliente, ya traído (o no) para pintarlo en el hilo. */
 type EstadoArchivo =
@@ -55,7 +66,35 @@ type EstadoArchivo =
 /** Una línea del hilo: un mensaje, o el aviso de que el asistente retomó la conversación. */
 type ItemHilo =
   | { tipo: 'msg'; clave: string; fecha: number; m: MensajeBandeja }
-  | { tipo: 'retomo'; clave: string; fecha: number; r: RetomadaAsistente };
+  | { tipo: 'retomo'; clave: string; fecha: number; r: RetomadaAsistente }
+  | { tipo: 'dia'; clave: string; fecha: number; texto: string };
+
+/** El día de una fecha en Bogotá, `AAAA-MM-DD`: lo que decide si dos mensajes son del mismo día. */
+const DIA_BOGOTA = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Bogota',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const DIA_EN_LETRAS = new Intl.DateTimeFormat('es-CO', {
+  timeZone: 'America/Bogota',
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
+/**
+ * «Hoy», «Ayer» o «Sábado 17 de octubre», como el separador de WhatsApp. Sin él, una conversación
+ * que vuelve al día siguiente se lee como si todo fuera de la misma noche (Zona Burger, 2026-10-18).
+ */
+function textoDelDia(fecha: number, ahora = Date.now()): string {
+  const dia = DIA_BOGOTA.format(fecha);
+  if (dia === DIA_BOGOTA.format(ahora)) return 'Hoy';
+  if (dia === DIA_BOGOTA.format(ahora - 24 * 3600 * 1000)) return 'Ayer';
+  const texto = DIA_EN_LETRAS.format(fecha).replace(',', '');
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 
 /**
  * BandejaComponent — donde el negocio contesta cuando el asistente no supo.
@@ -122,8 +161,95 @@ type ItemHilo =
  * el bot escala se resuelve por el chat — se llama al cliente, o se le atiende en el local—, y
  * sin él la única forma de vaciar la lista era escribirle a alguien que ya no lo necesitaba.
  */
-/** Cada cuánto se mira si hay algo nuevo. */
-const REFRESCO_MS = 5000;
+/**
+ * Cada cuánto se mira si hay algo nuevo en el chat abierto. La lista se refresca cada DOS latidos.
+ * Desde 2026-11-10 el chat abierto va más rápido (3 s, antes 5): ya no se trae entero en cada
+ * latido sino los últimos 60 mensajes, así que mirar más seguido cuesta menos que antes.
+ */
+const REFRESCO_MS = 3000;
+
+/** Cuántas conversaciones trae la lista. */
+const LIMITE_LISTA = 60;
+
+/** La ventana de WhatsApp para contestar con texto libre. */
+const VENTANA_MS = 24 * 3600 * 1000;
+
+type NivelVentana = 'holgada' | 'media' | 'urgente' | 'cerrada';
+
+/** Verde con más de 6 h, ámbar entre 1 y 6 h, rojo en la última hora. */
+function nivelVentana(restanteMs: number): NivelVentana {
+  if (restanteMs <= 0) return 'cerrada';
+  if (restanteMs < 3600000) return 'urgente';
+  if (restanteMs < 6 * 3600000) return 'media';
+  return 'holgada';
+}
+
+/** 66.120.000 ms → «18 h 22 min». */
+function textoRestante(ms: number): string {
+  if (ms <= 0) return 'Cerrada';
+  const min = Math.floor(ms / 60000);
+  const h = Math.floor(min / 60);
+  if (h === 0) return `${Math.max(1, min)} min`;
+  return `${h} h ${String(min % 60).padStart(2, '0')} min`;
+}
+
+/** Cómo se dice en la lista lo que no es texto. */
+const ETIQUETA_ARCHIVO: Record<string, string> = {
+  image: '📷 Foto',
+  video: '🎥 Video',
+  audio: '🎤 Audio',
+  document: '📄 Documento',
+  sticker: '💟 Sticker',
+  location: '📍 Ubicación',
+  contacts: '👤 Contacto',
+  reaction: '👍 Reacción',
+};
+
+/** Lo que WhatsApp acepta al ENVIAR, y su tope en MB. Igual que `ARCHIVOS_PERMITIDOS` del backend. */
+const ARCHIVOS_WHATSAPP: Record<string, { tipo: string; max: number }> = {
+  'image/jpeg': { tipo: 'image', max: 5 },
+  'image/png': { tipo: 'image', max: 5 },
+  'video/mp4': { tipo: 'video', max: 16 },
+  'video/3gpp': { tipo: 'video', max: 16 },
+  'audio/aac': { tipo: 'audio', max: 16 },
+  'audio/amr': { tipo: 'audio', max: 16 },
+  'audio/mpeg': { tipo: 'audio', max: 16 },
+  'audio/mp4': { tipo: 'audio', max: 16 },
+  'audio/ogg': { tipo: 'audio', max: 16 },
+  'application/pdf': { tipo: 'document', max: 16 },
+  'application/msword': { tipo: 'document', max: 16 },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { tipo: 'document', max: 16 },
+  'application/vnd.ms-excel': { tipo: 'document', max: 16 },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { tipo: 'document', max: 16 },
+  'application/vnd.ms-powerpoint': { tipo: 'document', max: 16 },
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': { tipo: 'document', max: 16 },
+  'text/plain': { tipo: 'document', max: 16 },
+};
+
+/** Los emojis del selector, por grupo. Los más usados en un chat de ventas primero. */
+const EMOJIS: { grupo: string; lista: string[] }[] = [
+  { grupo: 'Frecuentes', lista: ['😊', '🙌', '👍', '🙏', '❤️', '😂', '😉', '👌', '✅', '🔥', '🎉', '🤝', '👋', '😍', '🥰', '💯'] },
+  { grupo: 'Caras', lista: ['😀', '😃', '😄', '😁', '😅', '🤣', '🙂', '😇', '😌', '😋', '😎', '🤩', '🥳', '🤗', '🤔', '🤭', '😐', '😶', '🙄', '😏', '😮', '😯', '😲', '😴', '🤤', '😪', '😕', '😟', '🙁', '😢', '😭', '😤', '😡', '🥺', '😱', '🤯'] },
+  { grupo: 'Manos', lista: ['👍', '👎', '👏', '🙌', '👐', '🤲', '🙏', '✌️', '🤞', '🤟', '🤙', '👈', '👉', '👆', '👇', '☝️', '✋', '🖐️', '👊', '💪'] },
+  { grupo: 'Negocio', lista: ['📱', '💻', '⌚', '🎧', '🔋', '🔌', '📦', '🚚', '🛵', '🏍️', '🛒', '🏪', '💵', '💳', '🧾', '📍', '🕐', '📅', '📞', '✉️', '🎁', '🏷️', '🔧', '🛠️'] },
+  { grupo: 'Comida', lista: ['🍔', '🍟', '🍕', '🌭', '🌮', '🥪', '🍗', '🍖', '🥗', '🍝', '🍣', '🍩', '🍰', '🍦', '☕', '🥤', '🍺', '🧃'] },
+  { grupo: 'Símbolos', lista: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '💖', '✨', '⭐', '🌟', '⚡', '💥', '✔️', '❌', '⚠️', '❗', '❓', '➡️', '⬅️', '🔝', '🆕', '🆗', '💲'] },
+];
+
+/**
+ * Los íconos que pinta la Bandeja. Tiene su PROPIO proveedor y, como LUCIDE_ICONS es `multi`, el
+ * más cercano tapa al de la app: un ícono que no esté aquí no sale aunque exista en
+ * `core/icons/phosphor` (y Angular corta el render). Exportado para que
+ * `bandeja.iconos.spec.ts` lo compare con la plantilla.
+ */
+export const ICONOS_BANDEJA = {
+  MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
+  RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
+  Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
+  ClipboardList, MousePointerClick, Reply, Sparkles, Download, Lock,
+  Bike, History, Info, Package, RotateCcw, ShoppingBag, Wallet, ChevronDown, ListChecks,
+  Paperclip, Timer, Plus, Pencil, Trash2, ImageIcon, ChevronUp, ArrowLeft, ChevronLeft, ChevronRight,
+};
 
 @Component({
   selector: 'app-bandeja',
@@ -137,16 +263,18 @@ const REFRESCO_MS = 5000;
     {
       provide: LUCIDE_ICONS,
       multi: true,
-      useValue: new LucideIconProvider({
-        MessageSquare, Send, Loader2, AlertCircle, Bot, Clock, TriangleAlert,
-        RefreshCw, Inbox, Search, X, Check, Building2, CheckCheck, BotMessageSquare, Ban, BellOff,
-        Flag, ShieldAlert, MessageCircle, User, FileText, Settings, Smartphone, Pause, Play, ChartColumn,
-        History, ChevronDown, Sparkles, Info,
-      }),
+      useValue: new LucideIconProvider(ICONOS_BANDEJA),
     },
   ],
+  // Tocar fuera del panel de emojis lo cierra, como cualquier menú (2026-11-11).
+  host: {
+    '(document:pointerdown)': 'alTocarFuera($event)',
+    '(document:keydown.escape)': 'emojisAbierto.set(false)',
+  },
   templateUrl: './bandeja.component.html',
-  styleUrl: './bandeja.component.scss',
+  // Dos hojas: la de siempre y la del compositor/ventana de 24 h (2026-11-10, traídas de
+  // restaurante_app el 2026-11-11), cada una bajo el tope de tamaño que el build pone por archivo.
+  styleUrls: ['./bandeja.component.scss', './bandeja-chat.scss'],
 })
 export class BandejaComponent implements OnInit, OnDestroy {
   private readonly service = inject(BandejaService);
@@ -207,7 +335,388 @@ export class BandejaComponent implements OnInit, OnDestroy {
   // cambiar de conversación. El archivo nunca se guarda en el servidor (decisión del dueño).
   readonly archivos = signal<Record<string, EstadoArchivo>>({});
   readonly estadoDetalle = signal<LoadingState>('idle');
+
+  /**
+   * Se está trayendo un chat que todavía no se ve (2026-11-11): se pinta un esqueleto en vez de la
+   * pantalla en blanco —o, en escritorio, en vez del chat ANTERIOR, que hacía creer que el clic no
+   * había hecho nada—. La fila de la lista da el nombre mientras tanto.
+   */
+  readonly cargandoChat = computed(() => {
+    const id = this.abierta();
+    if (!id || this.estadoDetalle() !== 'loading') return null;
+    if (this.detalle()?.conversacion.id_conversacion === id) return null;
+    return this.conversaciones().find((c) => c.id_conversacion === id) ?? null;
+  });
   readonly abierta = signal<string | null>(null);
+
+  // ── Mejoras pedidas por AYM (2026-11-10) ─────────────────────────────────────────────────
+  // Barra de 24 h con contador, hilo por páginas, archivos, emojis y respuestas rápidas («/»).
+  // ⚠️ Viven igual en restaurante_app y catalogo_app: un cambio aquí va también a la otra.
+
+  /** El reloj de la pantalla: mueve los contadores de 24 h sin pedir nada al servidor. */
+  readonly ahora = signal(Date.now());
+  private reloj: ReturnType<typeof setInterval> | null = null;
+  private ticks = 0;
+  private readonly alVolverALaPestana = (): void => {
+    if (!document.hidden) this.refrescar();
+  };
+
+  /** Hay mensajes más viejos que los que se ven (el hilo llega de a 60). */
+  readonly hayAnteriores = signal(false);
+  readonly cargandoAnteriores = signal(false);
+
+  /** Mensajes que se ven ya en el hilo pero el servidor todavía no confirmó (texto o archivo). */
+  readonly locales = signal<MensajeBandeja[]>([]);
+
+  /**
+   * La ventana de 24 h del chat abierto, en vivo. Se calcula con el reloj de la pantalla a partir
+   * de lo que dijo el servidor, así el contador baja solo y el botón se apaga en el minuto exacto.
+   */
+  readonly ventanaViva = computed(() => {
+    const v = this.detalle()?.ventana;
+    const expira = v?.expira_en ? Date.parse(v.expira_en) : NaN;
+    if (!v || Number.isNaN(expira)) return { abierta: false, restanteMs: 0, fraccion: 0, nivel: 'cerrada' as NivelVentana };
+    const restanteMs = Math.max(0, expira - this.ahora());
+    return {
+      abierta: restanteMs > 0,
+      restanteMs,
+      fraccion: Math.min(1, restanteMs / VENTANA_MS),
+      nivel: nivelVentana(restanteMs),
+    };
+  });
+
+  /** «Quedan 18 h 32 min» para el chat abierto. */
+  readonly textoVentana = computed(() => textoRestante(this.ventanaViva().restanteMs));
+
+  /** La ventana de una fila de la lista, o `null` si ya está cerrada (no se pinta nada). */
+  ventanaDeLista(c: ConversacionBandeja): { texto: string; nivel: NivelVentana; fraccion: number } | null {
+    if (!c.ultimo_entrante_en) return null;
+    const restanteMs = Date.parse(c.ultimo_entrante_en) + VENTANA_MS - this.ahora();
+    if (!(restanteMs > 0)) return null;
+    return {
+      texto: restanteMs >= 3600000 ? `${Math.floor(restanteMs / 3600000)} h` : `${Math.max(1, Math.floor(restanteMs / 60000))} min`,
+      nivel: nivelVentana(restanteMs),
+      fraccion: Math.min(1, restanteMs / VENTANA_MS),
+    };
+  }
+
+  /** La vista previa de la lista: «📷 Foto» en vez de «[image]», y «Tú: » si lo último fue nuestro. */
+  vistaPrevia(c: ConversacionBandeja): string {
+    const tipo = c.ultimo_tipo ?? '';
+    const texto = (c.ultimo_texto ?? '').trim();
+    // «[image]» es como se guarda un archivo sin pie: se traduce aunque no venga `ultimo_tipo`.
+    const marcado = /^\[(\w+)\]$/.exec(texto)?.[1];
+    const delArchivo = ETIQUETA_ARCHIVO[tipo] ?? (marcado ? ETIQUETA_ARCHIVO[marcado] : undefined);
+    const cuerpo = delArchivo && (!texto || marcado) ? delArchivo : this.sinMarcas(texto);
+    if (!cuerpo) return '—';
+    return c.ultimo_direccion === 'saliente' ? `Tú: ${cuerpo}` : cuerpo;
+  }
+
+  /** Trae los 60 mensajes anteriores sin mover lo que se está leyendo. */
+  cargarAnteriores(): void {
+    const d = this.detalle();
+    const primero = d?.mensajes[0];
+    if (!d || !primero || this.cargandoAnteriores()) return;
+    const id = d.conversacion.id_conversacion;
+    const caja = this.cajaMensajes()?.nativeElement;
+    const altoAntes = caja?.scrollHeight ?? 0;
+    this.cargandoAnteriores.set(true);
+    this.service.getMensajesAnteriores(id, primero.creado_en).subscribe({
+      next: ({ mensajes, hay_anteriores }) => {
+        this.cargandoAnteriores.set(false);
+        const actual = this.detalle();
+        if (!actual || actual.conversacion.id_conversacion !== id) return;
+        const ya = new Set(actual.mensajes.map((m) => m.id_mensaje));
+        this.detalle.set({ ...actual, mensajes: [...mensajes.filter((m) => !ya.has(m.id_mensaje)), ...actual.mensajes] });
+        this.hayAnteriores.set(hay_anteriores);
+        this.pedirArchivos(id, mensajes);
+        // Lo nuevo entra ARRIBA: se corre el scroll lo mismo que creció, y el mensaje que se
+        // estaba leyendo no se mueve.
+        setTimeout(() => {
+          if (caja) caja.scrollTop += caja.scrollHeight - altoAntes;
+        });
+      },
+      error: () => {
+        this.cargandoAnteriores.set(false);
+        this.toast.error('No se pudieron traer los mensajes anteriores.');
+      },
+    });
+  }
+
+  // ── Archivos para enviar ──
+
+  /** El archivo elegido y su vista previa, mientras se escribe el pie. */
+  readonly adjunto = signal<{ archivo: File; url: string | null; tipo: string } | null>(null);
+  private readonly selectorArchivo = viewChild<ElementRef<HTMLInputElement>>('selectorArchivo');
+  readonly aceptaArchivos = Object.keys(ARCHIVOS_WHATSAPP).join(',');
+
+  elegirArchivo(): void {
+    this.selectorArchivo()?.nativeElement.click();
+  }
+
+  alElegirArchivo(ev: Event): void {
+    const entrada = ev.target as HTMLInputElement;
+    const archivo = entrada.files?.[0];
+    entrada.value = '';
+    if (archivo) this.adjuntar(archivo);
+  }
+
+  /** Pegar una captura (Ctrl+V) la adjunta, como en WhatsApp Web. */
+  alPegar(ev: ClipboardEvent): void {
+    const archivo = Array.from(ev.clipboardData?.files ?? [])[0];
+    if (!archivo) return;
+    ev.preventDefault();
+    this.adjuntar(archivo);
+  }
+
+  /** Soltar un archivo sobre el chat lo adjunta. */
+  alSoltar(ev: DragEvent): void {
+    const archivo = ev.dataTransfer?.files?.[0];
+    if (!archivo) return;
+    ev.preventDefault();
+    if (this.ventanaViva().abierta) this.adjuntar(archivo);
+  }
+
+  /** Comprueba tipo y tamaño ANTES de subir: WhatsApp los rechazaría igual, pero tarde. */
+  adjuntar(archivo: File): void {
+    const regla = ARCHIVOS_WHATSAPP[(archivo.type || '').toLowerCase()];
+    if (!regla) {
+      this.errorEnvio.set('WhatsApp no acepta ese tipo de archivo. Fotos en JPG o PNG, videos en MP4, y documentos PDF, Word, Excel o PowerPoint.');
+      return;
+    }
+    if (archivo.size > regla.max * 1024 * 1024) {
+      this.errorEnvio.set(`Ese archivo pesa demasiado: WhatsApp acepta hasta ${regla.max} MB para este tipo.`);
+      return;
+    }
+    this.quitarAdjunto();
+    this.errorEnvio.set(null);
+    const url = regla.tipo === 'image' || regla.tipo === 'video' ? URL.createObjectURL(archivo) : null;
+    this.adjunto.set({ archivo, url, tipo: regla.tipo });
+  }
+
+  quitarAdjunto(): void {
+    const a = this.adjunto();
+    if (a?.url) URL.revokeObjectURL(a.url);
+    this.adjunto.set(null);
+  }
+
+  tamanoLegible(bytes: number): string {
+    return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  // ── Emojis ──
+
+  readonly emojisAbierto = signal(false);
+  readonly emojis = EMOJIS;
+  private readonly cajaTexto = viewChild<ElementRef<HTMLTextAreaElement>>('cajaTexto');
+
+  alternarEmojis(): void {
+    this.emojisAbierto.update((v) => !v);
+    this.rapidasAbierto.set(false);
+  }
+
+  /** Un toque fuera del panel de emojis (y de su botón) lo cierra. */
+  alTocarFuera(ev: Event): void {
+    if (!this.emojisAbierto()) return;
+    const t = ev.target as Element | null;
+    if (t?.closest?.('.bdj__emojis, [data-abre-emojis]')) return;
+    this.emojisAbierto.set(false);
+  }
+
+  /**
+   * Devuelve el cursor a la caja de escribir. Tras enviar, la persona suele seguir escribiendo
+   * (2026-11-11): antes la caja se deshabilitaba mientras salía el mensaje y perdía el foco, y en
+   * el celular se cerraba el teclado.
+   */
+  private enfocarCaja(): void {
+    setTimeout(() => this.cajaTexto()?.nativeElement.focus());
+  }
+
+  /** Mete el emoji donde está el cursor, no al final. */
+  ponerEmoji(emoji: string): void {
+    this.insertarEnCursor(emoji);
+  }
+
+  private insertarEnCursor(texto: string): void {
+    const caja = this.cajaTexto()?.nativeElement;
+    const actual = this.borrador();
+    const inicio = caja?.selectionStart ?? actual.length;
+    const fin = caja?.selectionEnd ?? actual.length;
+    this.borrador.set(actual.slice(0, inicio) + texto + actual.slice(fin));
+    setTimeout(() => {
+      if (!caja) return;
+      caja.focus();
+      caja.selectionStart = caja.selectionEnd = inicio + texto.length;
+    });
+  }
+
+  // ── Respuestas rápidas («/atajo») ──
+
+  readonly respuestasRapidas = signal<RespuestaRapida[]>([]);
+  readonly rapidasAbierto = signal(false);
+  readonly rapidaMarcada = signal(0);
+  /** Se cerró la lista con Escape: no vuelve a abrirse hasta que cambie lo escrito. */
+  private readonly rapidasDescartadas = signal<string | null>(null);
+
+  /** Lo que va después de «/» mientras se escribe el atajo, o `null` si no se está escribiendo uno. */
+  private readonly consultaRapida = computed(() => {
+    const m = /^\/([^\s]*)$/.exec(this.borrador());
+    return m ? m[1].toLowerCase() : null;
+  });
+
+  /** Las sugerencias: las que empiezan por lo escrito primero, después las que lo contienen. */
+  readonly sugerenciasRapidas = computed<RespuestaRapida[]>(() => {
+    const q = this.consultaRapida();
+    const todas = this.respuestasRapidas();
+    if (this.rapidasAbierto()) return todas;
+    if (q === null || this.rapidasDescartadas() === this.borrador()) return [];
+    const empieza = todas.filter((r) => r.atajo.startsWith(q));
+    const contiene = todas.filter((r) => !r.atajo.startsWith(q) && (r.atajo.includes(q) || r.texto.toLowerCase().includes(q)));
+    return [...empieza, ...contiene].slice(0, 8);
+  });
+
+  readonly mostrandoRapidas = computed(
+    () => this.rapidasAbierto() || (this.consultaRapida() !== null && this.rapidasDescartadas() !== this.borrador()),
+  );
+
+  alternarRapidas(): void {
+    this.rapidasAbierto.update((v) => !v);
+    this.emojisAbierto.set(false);
+    this.rapidaMarcada.set(0);
+  }
+
+  /** Pone el texto guardado en la caja, con {nombre} ya cambiado por el del cliente. */
+  usarRapida(r: RespuestaRapida): void {
+    const c = this.detalle()?.conversacion;
+    const nombre = c ? this.primerNombre(c) : '';
+    const texto = r.texto.replace(/\{nombre\}/gi, nombre).replace(/\s+([,.!?])/g, '$1');
+    this.borrador.set(texto);
+    this.rapidasAbierto.set(false);
+    this.rapidaMarcada.set(0);
+    setTimeout(() => {
+      const caja = this.cajaTexto()?.nativeElement;
+      if (!caja) return;
+      caja.focus();
+      caja.selectionStart = caja.selectionEnd = texto.length;
+    });
+  }
+
+  /** ↑ ↓ eligen, Enter o Tab ponen, Escape cierra. Devuelve si la tecla se usó aquí. */
+  private teclaEnRapidas(e: KeyboardEvent): boolean {
+    if (!this.mostrandoRapidas()) return false;
+    const lista = this.sugerenciasRapidas();
+    if (e.key === 'Escape') {
+      this.rapidasAbierto.set(false);
+      this.rapidasDescartadas.set(this.borrador());
+      return true;
+    }
+    if (!lista.length) return false;
+    if (e.key === 'ArrowDown') {
+      this.rapidaMarcada.update((i) => (i + 1) % lista.length);
+      return true;
+    }
+    if (e.key === 'ArrowUp') {
+      this.rapidaMarcada.update((i) => (i - 1 + lista.length) % lista.length);
+      return true;
+    }
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      this.usarRapida(lista[Math.min(this.rapidaMarcada(), lista.length - 1)]);
+      return true;
+    }
+    return false;
+  }
+
+  alTeclear(ev: KeyboardEvent): void {
+    if (this.teclaEnRapidas(ev)) {
+      ev.preventDefault();
+      return;
+    }
+    if (ev.key === 'Escape') this.emojisAbierto.set(false);
+  }
+
+  private cargarRapidas(): void {
+    const id = this.negocioConfig();
+    if (id === null) return;
+    this.service.getRespuestasRapidas(id).subscribe({
+      next: (lista) => this.respuestasRapidas.set(lista),
+      error: () => this.respuestasRapidas.set([]),
+    });
+  }
+
+  // La ventana para crear y editar las respuestas rápidas.
+  readonly gestionRapidas = signal(false);
+  readonly rapidaEditando = signal<number | null>(null);
+  readonly rapidaAtajo = signal('');
+  readonly rapidaTexto = signal('');
+  readonly guardandoRapida = signal(false);
+  readonly errorRapida = signal<string | null>(null);
+
+  abrirGestionRapidas(): void {
+    this.rapidasAbierto.set(false);
+    this.nuevaRapida();
+    this.gestionRapidas.set(true);
+  }
+
+  cerrarGestionRapidas(): void {
+    if (this.guardandoRapida()) return;
+    this.gestionRapidas.set(false);
+  }
+
+  nuevaRapida(): void {
+    this.rapidaEditando.set(null);
+    this.rapidaAtajo.set('');
+    this.rapidaTexto.set('');
+    this.errorRapida.set(null);
+  }
+
+  editarRapida(r: RespuestaRapida): void {
+    this.rapidaEditando.set(r.id_respuesta);
+    this.rapidaAtajo.set(r.atajo);
+    this.rapidaTexto.set(r.texto);
+    this.errorRapida.set(null);
+  }
+
+  guardarRapida(): void {
+    const id = this.negocioConfig();
+    const atajo = this.rapidaAtajo().trim().replace(/^\/+/, '');
+    const texto = this.rapidaTexto().trim();
+    if (id === null || !atajo || !texto) {
+      this.errorRapida.set('Escribe el atajo y el mensaje.');
+      return;
+    }
+    this.guardandoRapida.set(true);
+    this.errorRapida.set(null);
+    this.service.guardarRespuestaRapida(id, { atajo, texto }, this.rapidaEditando()).subscribe({
+      next: () => {
+        this.guardandoRapida.set(false);
+        this.nuevaRapida();
+        this.cargarRapidas();
+      },
+      error: (err) => {
+        this.guardandoRapida.set(false);
+        this.errorRapida.set(err?.error?.message ?? 'No se pudo guardar la respuesta rápida.');
+      },
+    });
+  }
+
+  eliminarRapida(r: RespuestaRapida): void {
+    const id = this.negocioConfig();
+    if (id === null) return;
+    this.service.eliminarRespuestaRapida(id, r.id_respuesta).subscribe({
+      next: () => {
+        if (this.rapidaEditando() === r.id_respuesta) this.nuevaRapida();
+        this.cargarRapidas();
+      },
+      error: (err) => this.errorRapida.set(err?.error?.message ?? 'No se pudo eliminar.'),
+    });
+  }
+
+  /** El primer nombre del cliente para «{nombre}»: el guardado, o el de su perfil si es un nombre. */
+  primerNombre(c: ConversacionBandeja): string {
+    const fuente = this.tieneNombre(c) ? c.persona! : (c.perfil_nombre ?? '');
+    const palabra = fuente.trim().split(/\s+/)[0] ?? '';
+    return /^[\p{L}][\p{L}'.-]*$/u.test(palabra) ? palabra : '';
+  }
 
   // ── El asistente vuelve solo (ADR-023, Enmienda 2) ────────────────────────────────────────
   //
@@ -698,7 +1207,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
     const q = this.busqueda().trim().toLowerCase();
     const lista = q
       ? this.conversaciones().filter((c) =>
-          `${this.quien(c)} ${c.ultimo_texto ?? ''}`.toLowerCase().includes(q),
+          `${this.quien(c)} ${c.perfil_nombre ?? ''} ${c.id_externo} ${c.ultimo_texto ?? ''}`.toLowerCase().includes(q),
         )
       : this.conversaciones();
     // Por fecha, como siempre: anclar arriba las que esperan respuesta se probó y se retiró el
@@ -709,8 +1218,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
   readonly puedeEnviar = computed(
     () =>
       !this.enviando() &&
-      this.borrador().trim().length > 0 &&
-      (this.detalle()?.ventana.abierta ?? false),
+      (this.borrador().trim().length > 0 || this.adjunto() !== null) &&
+      this.ventanaViva().abierta,
   );
 
   private cargarConfig(idNegocio: number | null): void {
@@ -974,8 +1483,27 @@ export class BandejaComponent implements OnInit, OnDestroy {
       ...(d.retomadas ?? []).map(
         (r, i): ItemHilo => ({ tipo: 'retomo', clave: `r-${i}-${r.fecha}`, fecha: Date.parse(r.fecha), r }),
       ),
+      ...this.locales().map(
+        (m): ItemHilo => ({ tipo: 'msg', clave: m.id_mensaje, fecha: Date.parse(m.creado_en), m }),
+      ),
     ];
-    return items.sort((a, b) => a.fecha - b.fecha);
+    items.sort((a, b) => a.fecha - b.fecha);
+    // Un separador cada vez que cambia el día (en Bogotá), antes del primer mensaje de ese día.
+    const conDias: ItemHilo[] = [];
+    let diaAnterior = '';
+    for (const it of items) {
+      if (Number.isNaN(it.fecha)) {
+        conDias.push(it);
+        continue;
+      }
+      const dia = DIA_BOGOTA.format(it.fecha);
+      if (dia !== diaAnterior) {
+        conDias.push({ tipo: 'dia', clave: `d-${dia}`, fecha: it.fecha, texto: textoDelDia(it.fecha) });
+        diaAnterior = dia;
+      }
+      conDias.push(it);
+    }
+    return conDias;
   });
 
   textoRetomada(r: RetomadaAsistente): string {
@@ -995,11 +1523,21 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.pantallaAncha.pedir();
     this.anchoPedido = true;
     this.temporizador = setInterval(() => this.refrescar(), REFRESCO_MS);
+    // El reloj de los contadores de 24 h: cada 30 s basta para un contador en minutos.
+    this.reloj = setInterval(() => this.ahora.set(Date.now()), 30000);
+    // Al volver a la pestaña se refresca enseguida, sin esperar al siguiente latido.
+    document.addEventListener('visibilitychange', this.alVolverALaPestana);
+    this.cargarRapidas();
   }
 
   ngOnDestroy(): void {
     this.liberarArchivos();
     if (this.temporizador) clearInterval(this.temporizador);
+    if (this.reloj) clearInterval(this.reloj);
+    if (isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('visibilitychange', this.alVolverALaPestana);
+    }
+    this.quitarAdjunto();
     if (this.anchoPedido) this.pantallaAncha.soltar();
   }
 
@@ -1018,9 +1556,11 @@ export class BandejaComponent implements OnInit, OnDestroy {
     if (document.hidden) return;
     if (this.enviando()) return;
 
-    this.cargar(true);
+    this.ahora.set(Date.now());
     const abierta = this.abierta();
     if (abierta) this.cargarHilo(abierta, true);
+    // La lista cada dos latidos (6 s): lo urgente es el chat que se está mirando.
+    if (!abierta || this.ticks++ % 2 === 0) this.cargar(true);
   }
 
   cargar(silencioso = false): void {
@@ -1031,6 +1571,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
       .getConversaciones({
         solo_escaladas: this.soloEscaladas(),
         id_negocio: this.negocioActivo() ?? undefined,
+        // 60 y no 30: la búsqueda filtra lo que llegó, y con 30 un chat de ayer ya no aparecía.
+        limite: LIMITE_LISTA,
       })
       .subscribe({
         next: (data) => {
@@ -1082,11 +1624,17 @@ export class BandejaComponent implements OnInit, OnDestroy {
   }
 
   abrir(conversacion: ConversacionBandeja): void {
+    this.cerrarVisor();
     if (this.abierta() !== conversacion.id_conversacion) this.liberarArchivos();
     this.marcarVista(conversacion);
     this.abierta.set(conversacion.id_conversacion);
     this.errorEnvio.set(null);
     this.borrador.set('');
+    this.quitarAdjunto();
+    this.locales.set([]);
+    this.hayAnteriores.set(false);
+    this.emojisAbierto.set(false);
+    this.rapidasAbierto.set(false);
     // Cambiar de conversación con el modal de reporte abierto lo dejaría apuntando a otra
     // persona. Se cierra siempre.
     this.confirmandoBloqueo.set(false);
@@ -1095,7 +1643,7 @@ export class BandejaComponent implements OnInit, OnDestroy {
     this.cargarHilo(conversacion.id_conversacion);
   }
 
-  private cargarHilo(id: string, silencioso = false): void {
+  private cargarHilo(id: string, silencioso = false, alTerminar?: () => void): void {
     if (!silencioso) this.estadoDetalle.set('loading');
 
     // Si ya estabas abajo del todo, seguirás abajo al llegar lo nuevo. Si habías subido a leer
@@ -1108,12 +1656,26 @@ export class BandejaComponent implements OnInit, OnDestroy {
       next: (data) => {
         // La conversación pudo cerrarse mientras la petición volvía.
         if (this.abierta() !== id) return;
+        if (data) {
+          // El servidor manda los 60 últimos. Si ya se habían pedido mensajes más viejos, se
+          // conservan: el refresco no puede «olvidar» lo que se estaba leyendo arriba.
+          const previo = this.detalle();
+          const primero = data.mensajes[0];
+          if (silencioso && previo?.conversacion.id_conversacion === id && primero) {
+            const viejos = previo.mensajes.filter((m) => m.creado_en < primero.creado_en);
+            if (viejos.length) data = { ...data, mensajes: [...viejos, ...data.mensajes] };
+          } else {
+            this.hayAnteriores.set(Boolean(data.hay_anteriores));
+          }
+        }
         this.detalle.set(data);
         this.estadoDetalle.set('success');
         this.pedirArchivos(id, data?.mensajes ?? []);
         if (pegadoAbajo) this.alFinal();
+        alTerminar?.();
       },
       error: () => {
+        alTerminar?.();
         if (silencioso) return;
         this.errorEnvio.set('No se pudo abrir la conversación.');
         this.estadoDetalle.set('error');
@@ -1171,6 +1733,74 @@ export class BandejaComponent implements OnInit, OnDestroy {
 
   cargandoArchivo(m: MensajeBandeja): boolean {
     return this.archivos()[m.id_mensaje]?.estado === 'cargando';
+  }
+
+  // ── Visor de fotos y videos (2026-11-11) ──────────────────────────────────────────────────
+  // Como WhatsApp: la foto o el video se abre ENCIMA del chat, en grande y con fondo oscuro, y
+  // no en otra pestaña (que en la tableta sacaba a la persona de la app). Es un <dialog> modal:
+  // el navegador da el foco atrapado, el Escape y la capa superior —por encima del chat a pantalla
+  // completa, que ya es `position: fixed`—, sin pelear con z-index.
+
+  private readonly visorDialogo = viewChild<ElementRef<HTMLDialogElement>>('visor');
+  /** El mensaje cuya foto o video se está viendo, o `null`. */
+  readonly visorId = signal<string | null>(null);
+
+  /** La URL que se puede pintar de un archivo: la local mientras sube, o la ya traída. */
+  urlDeMedio(m: MensajeBandeja): string | null {
+    return m.local?.url || this.urlArchivo(m);
+  }
+
+  /** Las fotos y videos del chat ya cargados, en orden: lo que recorren las flechas del visor. */
+  readonly medios = computed(() =>
+    this.lineaDeTiempo().flatMap((it) =>
+      it.tipo === 'msg' &&
+      !it.m.eliminado &&
+      ['image', 'sticker', 'video'].includes(it.m.media?.tipo ?? '') &&
+      this.urlDeMedio(it.m)
+        ? [it.m]
+        : [],
+    ),
+  );
+  readonly visorIndice = computed(() => this.medios().findIndex((m) => m.id_mensaje === this.visorId()));
+  readonly visorActual = computed(() => this.medios()[this.visorIndice()] ?? null);
+
+  verMedio(m: MensajeBandeja): void {
+    this.visorId.set(m.id_mensaje);
+    const d = this.visorDialogo()?.nativeElement;
+    if (d && !d.open) d.showModal();
+  }
+
+  cerrarVisor(): void {
+    const d = this.visorDialogo()?.nativeElement;
+    if (d?.open) d.close();
+    this.visorId.set(null);
+  }
+
+  /** La anterior (-1) o la siguiente (+1). En los extremos no da la vuelta: así se sabe dónde acaba. */
+  moverVisor(paso: number): void {
+    const lista = this.medios();
+    const i = this.visorIndice() + paso;
+    if (i >= 0 && i < lista.length) this.visorId.set(lista[i].id_mensaje);
+  }
+
+  alTeclearVisor(ev: KeyboardEvent): void {
+    if (ev.key === 'ArrowLeft') this.moverVisor(-1);
+    else if (ev.key === 'ArrowRight') this.moverVisor(1);
+    else return;
+    ev.preventDefault();
+  }
+
+  /** Un toque en lo oscuro (fuera de la foto y de los botones) cierra, como en WhatsApp. */
+  alClicVisor(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement | null;
+    if (t && (t === ev.currentTarget || t.classList.contains('bdj-visor__escena'))) this.cerrarVisor();
+  }
+
+  /** El nombre con que se descarga: el del archivo si lo trae, o uno por su tipo. */
+  nombreDescarga(m: MensajeBandeja): string {
+    if (m.media?.nombre) return m.media.nombre;
+    const ext = (m.media?.mime ?? '').split('/')[1]?.split(';')[0] || (m.media?.tipo === 'video' ? 'mp4' : 'jpg');
+    return `${m.media?.tipo === 'video' ? 'video' : 'foto'}-${m.creado_en.slice(0, 10)}.${ext}`;
   }
 
   /** Un documento se trae al tocarlo y se abre en otra pestaña. */
@@ -1330,7 +1960,10 @@ export class BandejaComponent implements OnInit, OnDestroy {
   }
 
   cerrar(): void {
+    this.cerrarVisor();
     this.liberarArchivos();
+    this.quitarAdjunto();
+    this.locales.set([]);
     this.detalle.set(null);
     this.abierta.set(null);
     this.estadoDetalle.set('idle');
@@ -1344,30 +1977,75 @@ export class BandejaComponent implements OnInit, OnDestroy {
   enviar(): void {
     const actual = this.detalle();
     if (!actual || !this.puedeEnviar()) return;
+    const id = actual.conversacion.id_conversacion;
+    const texto = this.borrador().trim();
+    const adjunto = this.adjunto();
 
     this.enviando.set(true);
     this.errorEnvio.set(null);
-    const texto = this.borrador().trim();
+    this.emojisAbierto.set(false);
 
-    this.service.responder(actual.conversacion.id_conversacion, texto).subscribe({
+    // La burbuja sale YA, marcada «enviando…» (2026-11-10). Antes había que esperar a que el
+    // servidor contestara y a recargar el hilo, y eso se sentía lento. Sigue sin mentir: dice
+    // «enviando…» hasta que el hilo real la reemplaza con el estado que puso el backend.
+    const clave = `local-${Date.now()}`;
+    const local: MensajeBandeja = {
+      id_mensaje: clave,
+      direccion: 'saliente',
+      canal: actual.conversacion.canal,
+      contenido: texto,
+      estado_entrega: 'pendiente',
+      enviado_en: null,
+      entregado_en: null,
+      creado_en: new Date().toISOString(),
+      origen: 'humano',
+      media: adjunto
+        ? { tipo: adjunto.tipo, mime: adjunto.archivo.type, caption: texto || null, nombre: adjunto.archivo.name }
+        : null,
+      local: adjunto ? { url: adjunto.url, estado: 'subiendo' } : undefined,
+    };
+    this.locales.update((l) => [...l, local]);
+    this.borrador.set('');
+    // La URL de la vista previa la sigue usando la burbuja local: no se libera aquí.
+    this.adjunto.set(null);
+    this.alFinal();
+    this.enfocarCaja();
+
+    const peticion = adjunto
+      ? this.service.enviarArchivo(id, adjunto.archivo, texto)
+      : this.service.responder(id, texto);
+
+    peticion.subscribe({
       next: () => {
-        this.borrador.set('');
         this.enviando.set(false);
-        // Se recarga en vez de añadir la burbuja a mano: así el hilo enseña el estado de entrega
-        // real que puso el backend, y no uno optimista que podría ser mentira.
-        this.cargarHilo(actual.conversacion.id_conversacion, true);
+        // Se recarga el hilo: trae el mensaje de verdad, con el estado de entrega que puso el
+        // backend, y entonces la burbuja local sobra.
+        this.cargarHilo(id, true, () => {
+          this.soltarLocal(clave);
+          this.alFinal();
+        });
         this.cargar(true);
       },
       error: (err) => {
         this.enviando.set(false);
+        this.soltarLocal(clave);
+        // Lo escrito vuelve a la caja: no se pierde un mensaje que no salió.
+        if (!this.borrador()) this.borrador.set(texto);
+        if (adjunto) this.adjunto.set(adjunto);
         // El 409 es el caso previsto —la ventana se cerró mientras escribía— y merece el
         // mensaje del backend, que dice exactamente qué pasó.
         this.errorEnvio.set(
-          err?.error?.message ?? 'No se pudo enviar la respuesta. Inténtalo de nuevo.',
+          err?.error?.message ?? 'No se pudo enviar. Inténtalo de nuevo.',
         );
-        if (err?.status === 409) this.cargarHilo(actual.conversacion.id_conversacion, true);
+        if (err?.status === 409) this.cargarHilo(id, true);
       },
     });
+  }
+
+  private soltarLocal(clave: string): void {
+    const m = this.locales().find((x) => x.id_mensaje === clave);
+    if (m?.local?.url && !this.adjunto()) URL.revokeObjectURL(m.local.url);
+    this.locales.update((l) => l.filter((x) => x.id_mensaje !== clave));
   }
 
   /** ¿La conversación tiene el nombre de la persona? Un número no cuenta como nombre. */
@@ -1382,6 +2060,9 @@ export class BandejaComponent implements OnInit, OnDestroy {
    */
   quien(c: ConversacionBandeja): string {
     if (this.tieneNombre(c)) return c.persona!.trim();
+    // El nombre que el cliente puso en su perfil, con «~» delante como hace WhatsApp con quien
+    // no está en la agenda: lo escribió él y puede ser cualquier cosa (2026-11-10).
+    if (this.nombreDePerfil(c)) return `~${this.nombreDePerfil(c)}`;
     if (!c.telefono_e164 && this.esIdSinNumero(c.id_externo)) return 'Cliente sin número visible';
     return this.formatearTelefono(c.telefono_e164 || c.id_externo) || 'Sin identificar';
   }
@@ -1392,9 +2073,18 @@ export class BandejaComponent implements OnInit, OnDestroy {
    * teléfono, y mostrarlos como «+1084…» invita a llamar a un número que no existe.
    */
   contacto(c: ConversacionBandeja): string {
-    if (c.telefono_e164) return c.telefono_e164;
-    if (this.esIdSinNumero(c.id_externo)) return 'WhatsApp no comparte su número';
-    return c.id_externo ?? '';
+    if (this.esIdSinNumero(c.id_externo) && !c.telefono_e164) return 'WhatsApp no comparte su número';
+    // Sin nombre, el título ya ES el número: repetirlo debajo («+57 315… / 573156…») solo
+    // ocupa el renglón que en el teléfono no sobra (auditoría móvil, 2026-10-16).
+    if (!this.tieneNombre(c) && !this.nombreDePerfil(c)) return 'Sin nombre en WhatsApp';
+    const telefono = this.formatearTelefono(c.telefono_e164 || c.id_externo);
+    return c.origen_nombre === 'contacto' ? `${telefono} · en tus contactos` : telefono;
+  }
+
+  /** El nombre del perfil de WhatsApp del cliente, si es algo legible (no solo espacios o un número). */
+  nombreDePerfil(c: ConversacionBandeja): string {
+    const n = (c.perfil_nombre ?? '').trim();
+    return n && !/^\+?[\d\s()-]+$/.test(n) ? n : '';
   }
 
   /** ¿Es un identificador de WhatsApp sin número (`CO.123…`) y no un teléfono? */
@@ -1405,7 +2095,8 @@ export class BandejaComponent implements OnInit, OnDestroy {
 
   /** La inicial del nombre. Sin nombre no hay inicial: el avatar enseña un ícono de persona. */
   inicial(c: ConversacionBandeja): string {
-    return this.tieneNombre(c) ? c.persona!.trim()[0].toUpperCase() : '';
+    const n = this.tieneNombre(c) ? c.persona!.trim() : this.nombreDePerfil(c);
+    return n ? Array.from(n)[0].toUpperCase() : '';
   }
 
   /** `+573001234567` → `+57 300 123 4567`. Otros países: solo el `+` y los dígitos. */
@@ -1426,6 +2117,11 @@ export class BandejaComponent implements OnInit, OnDestroy {
   alEnter(ev: Event): void {
     const e = ev as KeyboardEvent;
     if (e.shiftKey || e.isComposing) return;
+    // Con las respuestas rápidas abiertas, Enter elige una (lo hace `alTeclear`), no envía.
+    if (e.defaultPrevented || (this.mostrandoRapidas() && this.sugerenciasRapidas().length)) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     if (this.puedeEnviar()) this.enviar();
   }
@@ -1434,11 +2130,116 @@ export class BandejaComponent implements OnInit, OnDestroy {
     return m.direccion === 'entrante';
   }
 
+  /** Quién escribió el mensaje citado, visto desde el negocio. */
+  quienCita(c: CitaMensaje): string {
+    if (!c.encontrado) return 'Mensaje anterior';
+    return c.direccion === 'entrante' ? 'Cliente' : 'Tú';
+  }
+
+  /** El texto del mensaje citado, o qué era si fue un archivo. */
+  textoCita(c: CitaMensaje): string {
+    if (!c.encontrado) return 'No está guardado en EscalApp';
+    if (c.eliminado) return 'Mensaje eliminado';
+    const texto = (c.contenido ?? '').trim();
+    if (c.tipo && (!texto || /^\[\w+\]$/.test(texto))) {
+      const archivo = this.nombreDeArchivo(c.tipo);
+      return archivo.charAt(0).toUpperCase() + archivo.slice(1);
+    }
+    return texto || 'Mensaje';
+  }
+
+  /** Lleva al mensaje citado si está en las páginas ya cargadas, y lo resalta un momento. */
+  irACita(c: CitaMensaje): void {
+    if (!c.id_mensaje || !isPlatformBrowser(this.platformId)) return;
+    const el = document.querySelector<HTMLElement>(`[data-mensaje="${CSS.escape(c.id_mensaje)}"]`);
+    if (!el) {
+      this.toast.info('Ese mensaje está más arriba: carga los anteriores para verlo.');
+      return;
+    }
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    el.classList.add('bdj__msg--resaltado');
+    setTimeout(() => el.classList.remove('bdj__msg--resaltado'), 1600);
+  }
+
   /** Solo tres estados merecen pintarse: lo demás es ruido para quien no depura. */
   etiquetaEntrega(m: MensajeBandeja): string | null {
     if (m.direccion !== 'saliente') return null;
     if (m.estado_entrega === 'pendiente') return 'enviando…';
     if (m.estado_entrega === 'fallido') return 'no se entregó';
     return null;
+  }
+
+  /**
+   * El formulario de entrega, en el orden en que el cliente lo llenó y con nombres de persona.
+   * Lo que no esté en la lista (un campo nuevo) va al final con su clave tal cual.
+   */
+  camposFormulario(f: Record<string, string>): { clave: string; etiqueta: string; valor: string }[] {
+    const ORDEN: Record<string, string> = {
+      entrega: 'Cómo lo recibe',
+      barrio: 'Barrio',
+      direccion: 'Dirección',
+      indicaciones: 'Indicaciones',
+      telefono: 'Teléfono',
+      pago: 'Pago',
+    };
+    const VALORES: Record<string, string> = {
+      domicilio: 'A domicilio',
+      recoger: 'Pasa a recoger',
+      servir: 'Para servir en el local',
+    };
+    const claves = [
+      ...Object.keys(ORDEN).filter((k) => f[k]),
+      ...Object.keys(f).filter((k) => !(k in ORDEN) && f[k]),
+    ];
+    return claves.map((clave) => ({
+      clave,
+      etiqueta: ORDEN[clave] ?? clave.replace(/_/g, ' '),
+      valor: clave === 'entrega' ? (VALORES[f[clave]] ?? f[clave]) : f[clave],
+    }));
+  }
+
+  /**
+   * El texto con el formato de WhatsApp: *negrita*, _cursiva_ y ~tachado~, como lo ve el cliente.
+   *
+   * Se escapa TODO el HTML primero y luego se ponen solo esas tres marcas: el texto lo escribió
+   * un cliente o el modelo, y `innerHTML` con su texto crudo sería abrirle la página. Las marcas
+   * solo valen pegadas a una palabra y con espacio o signo alrededor: «Calle 16A n 43_61» no es
+   * una cursiva.
+   */
+  /** La vista previa de la lista, sin las marcas de formato («El Nequi es *323…*» → sin asteriscos). */
+  sinMarcas(texto: string | null | undefined): string {
+    return String(texto ?? '')
+      .replace(/(^|[\s(¡¿"'«-])([*_~])(?=\S)([^*_~\n]*?\S)\2(?=$|[\s.,;:!?)»"'-])/g, '$1$3')
+      .replace(/^📋 Formulario enviado/, '📋 Llenó el formulario');
+  }
+
+  formatoWhatsapp(texto: string | null | undefined): string {
+    const escapado = String(texto ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    const marca = (s: string, signo: string, etiqueta: string): string =>
+      s.replace(
+        new RegExp(`(^|[\\s(¡¿"'«\\-])\\${signo}(?=\\S)([^${signo}\\n]*?\\S)\\${signo}(?=$|[\\s.,;:!?)»"'\\-])`, 'g'),
+        `$1<${etiqueta}>$2</${etiqueta}>`
+      );
+    // Los enlaces se apartan ANTES de las marcas: un `_` o un `*` dentro de una dirección web no
+    // es cursiva ni negrita. Se cortan antes de la puntuación final y de las comillas (escapadas).
+    const enlaces: string[] = [];
+    const sinEnlaces = escapado.replace(
+      /\b(?:https?:\/\/|www\.)[^\s]+?(?=[.,;:!?)»]*(?:\s|$|&quot;|&#39;|&lt;|&gt;))/gi,
+      (url) => {
+        const href = /^www\./i.test(url) ? `https://${url}` : url;
+        enlaces.push(`<a href="${href}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+        // Un marcador que ningún texto de WhatsApp trae ni las marcas tocan.
+        return `\u0000${enlaces.length - 1}\u0000`;
+      },
+    );
+    return marca(marca(marca(sinEnlaces, '*', 'strong'), '_', 'em'), '~', 's').replace(
+      /\u0000(\d+)\u0000/g,
+      (_m, i: string) => enlaces[Number(i)],
+    );
   }
 }
