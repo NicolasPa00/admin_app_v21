@@ -229,10 +229,14 @@ describe('FeOperacionComponent', () => {
     });
 
     describe('tiquete POS electrónico', () => {
-      const conPos = (enUso: boolean) => {
+      const conPos = (enUso: boolean, softwarePos = enUso) => {
         const v = propia();
         return {
           ...v,
+          config: v.config && {
+            ...v.config,
+            software_pos: softwarePos ? { software_id: '2e4e893d-1926-40f7-b706-80b4a5ac8613', pin_propio: false } : null,
+          },
           rangos: [{
             id_resolucion: 'r-pos', id_rango_proveedor: null, tipo_documento: 'POS' as const, prefijo: 'EPOS',
             numero_resolucion: '18764000000010', rango_desde: 1, rango_hasta: 100000, consecutivo_actual: null,
@@ -241,7 +245,7 @@ describe('FeOperacionComponent', () => {
         };
       };
 
-      it('no deja encenderlo sin un rango POS en uso ni sin los datos de la caja', async () => {
+      it('no deja encenderlo sin un rango POS en uso, sin su software ni sin los datos de la caja', async () => {
         api['getEmision'].mockReturnValue(of(conPos(false)));
         const { el, fixture } = montar();
         // ngModel aplica [disabled] en el siguiente ciclo.
@@ -249,7 +253,27 @@ describe('FeOperacionComponent', () => {
         fixture.detectChanges();
         const pos = el.querySelector('input[name="feo-pos"]') as HTMLInputElement;
         expect(pos.disabled).toBe(true);
-        expect(el.textContent).toContain('un rango «Tiquete POS» en uso y completar los datos de la caja');
+        expect(el.textContent).toContain(
+          'un rango «Tiquete POS» en uso, el Software ID del tiquete POS y completar los datos de la caja',
+        );
+      });
+
+      it('guarda el Software ID del POS aparte, sin pedir otra vez el certificado', () => {
+        api['getEmision'].mockReturnValue(of(conPos(true, false)));
+        const { cmp } = montar();
+        expect(cmp.haySoftwarePos()).toBe(false);
+        cmp.softwarePosId.set('  2e4e893d-1926-40f7-b706-80b4a5ac8613 ');
+        cmp.guardarSoftwarePos();
+        expect(api['guardarEmision']).toHaveBeenCalledWith(17, {
+          software_pos: { software_id: '2e4e893d-1926-40f7-b706-80b4a5ac8613', pin: '' },
+        });
+      });
+
+      it('con el software guardado lo enseña, pero nunca el PIN', () => {
+        api['getEmision'].mockReturnValue(of(conPos(true)));
+        const { cmp } = montar();
+        expect(cmp.softwarePosId()).toBe('2e4e893d-1926-40f7-b706-80b4a5ac8613');
+        expect(cmp.softwarePosPin()).toBe('');
       });
 
       it('con el rango y la caja, lo enciende mandando la caja escrita', async () => {

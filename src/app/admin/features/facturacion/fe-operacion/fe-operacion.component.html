@@ -502,9 +502,37 @@
             <strong>tiquete POS electrónico</strong> (documento equivalente) a consumidor final, sin tope de
             valor. La factura sigue saliendo cuando el cajero la pide. Hace falta un rango
             <strong>Tiquete POS</strong> en uso (con su resolución de la DIAN), uno de
-            <strong>Nota de ajuste al tiquete POS</strong> para anular o devolver, y los datos de la caja, que la
-            DIAN exige en cada tiquete.
+            <strong>Nota de ajuste al tiquete POS</strong> para anular o devolver, el
+            <strong>Software ID del tiquete POS</strong> y los datos de la caja, que la DIAN exige en cada tiquete.
           </p>
+          <p class="feo__ayuda">
+            Al asociar «Documentos equivalentes» en el portal de habilitación, la DIAN le da al POS
+            <strong>otro Software ID</strong>, distinto del de la factura: es el de la tabla del portal, no el que
+            se ve en el formulario antes de asociar. Si el PIN que se escribió ahí es el mismo de la factura, deja
+            el PIN vacío.
+          </p>
+          <div class="feo__grid">
+            <label class="feo__campo">
+              <span>Software ID del tiquete POS</span>
+              <input class="feo__input" maxlength="100" [ngModel]="softwarePosId()"
+                (ngModelChange)="softwarePosId.set($event)" name="feo-pos-software" autocomplete="off"
+                placeholder="2e4e893d-1926-40f7-b706-80b4a5ac8613" />
+            </label>
+            <label class="feo__campo">
+              <span>PIN del tiquete POS (si es otro)</span>
+              <input class="feo__input" type="password" maxlength="20" [ngModel]="softwarePosPin()"
+                (ngModelChange)="softwarePosPin.set($event)" name="feo-pos-pin" autocomplete="new-password"
+                [placeholder]="v.config?.software_pos?.pin_propio ? 'Guardado: escríbelo solo para cambiarlo' : 'El mismo de la factura'" />
+            </label>
+          </div>
+          <div class="feo__acciones">
+            <button type="button" class="feo__btn" [disabled]="!softwarePosId().trim() || ocupado() !== null"
+              (click)="guardarSoftwarePos()">
+              <lucide-icon [name]="ocupado() === 'pos-software' ? 'loader-2' : 'save'" [size]="16"
+                [class.feo__spin]="ocupado() === 'pos-software'"></lucide-icon>
+              Guardar software del POS
+            </button>
+          </div>
           <div class="feo__grid">
             <label class="feo__campo">
               <span>Placa o serial de la caja</span>
@@ -532,14 +560,11 @@
           <label class="feo__check">
             <input type="checkbox" [ngModel]="v.config?.emite_pos ?? false" name="feo-pos"
               (ngModelChange)="guardarEmitePos($event)"
-              [disabled]="ocupado() !== null || (!(v.config?.emite_pos ?? false) && (!cajaCompleta() || !hayRangoPos()))" />
+              [disabled]="ocupado() !== null || (!(v.config?.emite_pos ?? false) && (!cajaCompleta() || !hayRangoPos() || !haySoftwarePos()))" />
             <span>Emitir tiquete POS electrónico en los cobros sin factura</span>
           </label>
-          @if (!(v.config?.emite_pos ?? false) && (!cajaCompleta() || !hayRangoPos())) {
-            <p class="feo__ayuda">
-              Para encenderlo falta {{ !hayRangoPos() ? 'un rango «Tiquete POS» en uso' : '' }}{{
-                !hayRangoPos() && !cajaCompleta() ? ' y ' : '' }}{{ !cajaCompleta() ? 'completar los datos de la caja' : '' }}.
-            </p>
+          @if (!(v.config?.emite_pos ?? false) && faltaParaPos().length) {
+            <p class="feo__ayuda">Para encenderlo falta {{ faltaParaPos() }}.</p>
           }
         }
       </article>

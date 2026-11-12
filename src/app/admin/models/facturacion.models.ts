@@ -139,6 +139,11 @@ export interface FeConfiguracion {
   emite_pos?: boolean;
   /** La caja que va en cada tiquete POS (exigida por la DIAN). */
   pos_caja?: { placa: string; ubicacion: string; tipo: string } | null;
+  /**
+   * El Software ID que la DIAN le dio al tiquete POS (distinto del de la factura). El PIN no
+   * viaja: solo si el POS tiene uno propio. `null` = no registrado.
+   */
+  software_pos?: { software_id: string; pin_propio: boolean } | null;
   activado_en: string | null;
   tiene_credenciales: boolean;
 }

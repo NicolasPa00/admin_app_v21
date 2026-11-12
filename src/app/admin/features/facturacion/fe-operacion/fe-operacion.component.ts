@@ -162,6 +162,20 @@ export class FeOperacionComponent {
   /** Tiquete POS electrónico: la caja que va en cada tiquete (placa, ubicación y tipo). */
   readonly caja = signal<CajaPos>({ ...CAJA_VACIA });
   readonly cajaCompleta = computed(() => Object.values(this.caja()).every((v) => v.trim().length > 0));
+  /** Software ID y PIN del tiquete POS que se están escribiendo (el PIN nunca vuelve del servidor). */
+  readonly softwarePosId = signal('');
+  readonly softwarePosPin = signal('');
+  /** La DIAN le da al POS su propio Software ID: sin él cada tiquete sale rechazado. */
+  readonly haySoftwarePos = computed(() => !!this.vista()?.config?.software_pos?.software_id);
+  /** Lo que falta para encender el tiquete POS, dicho en una frase («a, b y c»). */
+  readonly faltaParaPos = computed(() => {
+    const faltan = [
+      !this.hayRangoPos() ? 'un rango «Tiquete POS» en uso' : null,
+      !this.haySoftwarePos() ? 'el Software ID del tiquete POS' : null,
+      !this.cajaCompleta() ? 'completar los datos de la caja' : null,
+    ].filter((x): x is string => !!x);
+    return faltan.length > 1 ? `${faltan.slice(0, -1).join(', ')} y ${faltan[faltan.length - 1]}` : (faltan[0] ?? '');
+  });
   readonly hayRangoPos = computed(() => this.rangos().some((r) => r.tipo_documento === 'POS' && r.en_uso));
   readonly ambiente = signal<AmbienteFe>('PRUEBAS');
   readonly nuevoRango = signal<{ tipo: TipoRangoFe; prefijo: string; resolucion: string; actual: string }>({
@@ -252,6 +266,8 @@ export class FeOperacionComponent {
     this.proveedorElegido.set(v.config?.proveedor ?? 'FACTUS');
     const c = v.config?.pos_caja;
     this.caja.set({ placa: c?.placa ?? '', ubicacion: c?.ubicacion ?? '', tipo: c?.tipo ?? '' });
+    this.softwarePosId.set(v.config?.software_pos?.software_id ?? '');
+    this.softwarePosPin.set('');
   }
 
   /** Ejecuta una acción con su indicador, su aviso de éxito y su error legible. */
@@ -472,6 +488,15 @@ export class FeOperacionComponent {
     this.ejecutar('pos-caja', this.api.guardarEmision(this.idNegocio(), { pos_caja: this.caja() }), (v) => {
       this.aplicar(v);
       return 'Datos de la caja guardados.';
+    });
+  }
+
+  /** Guarda el Software ID (y el PIN, si es otro) del tiquete POS sin volver a subir el certificado. */
+  guardarSoftwarePos(): void {
+    const software_pos = { software_id: this.softwarePosId().trim(), pin: this.softwarePosPin().trim() };
+    this.ejecutar('pos-software', this.api.guardarEmision(this.idNegocio(), { software_pos }), (v) => {
+      this.aplicar(v);
+      return 'Software del tiquete POS guardado.';
     });
   }
 

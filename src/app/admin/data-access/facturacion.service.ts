@@ -113,7 +113,11 @@ export class FacturacionService {
 
   guardarEmision(
     idNegocio: number,
-    campos: Partial<FeConfiguracion> & { credenciales?: FeCredenciales | FeCredencialesPropio },
+    campos: Omit<Partial<FeConfiguracion>, 'software_pos'> & {
+      credenciales?: FeCredenciales | FeCredencialesPropio;
+      /** Software del tiquete POS; el PIN vacío = el mismo de la factura. null lo quita. */
+      software_pos?: { software_id: string; pin?: string } | null;
+    },
   ): Observable<FeVista> {
     return this.http
       .put<ApiResponse<FeVista>>(this.fe(idNegocio), campos)
