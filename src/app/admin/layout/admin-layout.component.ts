@@ -28,6 +28,7 @@ import {
   Contact,
   History,
   ChartColumn,
+  TrendingUp,
   Bot,
   MessageSquare,
   MessageCircle,
@@ -109,7 +110,7 @@ const ATAJOS_MOVIL = 4;
       provide: LUCIDE_ICONS,
       multi: true,
       useValue: new LucideIconProvider({
-        LayoutGrid, Settings, Users, Store, Building2, Contact, History, ChartColumn, Bot, MessageSquare,
+        LayoutGrid, Settings, Users, Store, Building2, Contact, History, ChartColumn, TrendingUp, Bot, MessageSquare,
         MessageCircle, FileText, Wallet, Gauge, Landmark,
         Sun, Moon, LogOut,
         ChevronRight, Menu, PanelLeft, PanelLeftClose, TriangleAlert, X, CircleHelp,
@@ -153,6 +154,8 @@ export class AdminLayoutComponent {
     // «EscalApp en números»: la vista que se enseña a un interesado. Solo super admin — cruza
     // las cifras de todos los inquilinos a la vez.
     { label: 'Estadísticas', icon: 'chart-column', route: '/admin/estadisticas', superAdmin: true },
+    // El embudo de pruebas: a quién llamar hoy. Interno, solo super admin.
+    { label: 'Pruebas y conversión', icon: 'trending-up', route: '/admin/embudo', superAdmin: true },
     { label: 'Auditoría', icon: 'history', route: '/admin/auditoria', superAdmin: true },
     // Los tutoriales que ven todos los clientes en `/ayuda`. Solo super admin: el contenido es
     // de la plataforma, no de un inquilino — lo que uno editara lo verían los demás.
@@ -321,6 +324,7 @@ export class AdminLayoutComponent {
     if (url.includes('/cobranza')) return 'Cobranza';
     if (url.includes('/cartera')) return 'Cartera';
     if (url.includes('/estadisticas')) return 'Estadísticas';
+    if (url.includes('/embudo')) return 'Pruebas y conversión';
     if (url.includes('/auditoria')) return 'Auditoría';
     if (url.includes('/ayuda')) return 'Centro de ayuda';
     if (url.includes('/tipos-negocio')) return 'Roles del negocio';

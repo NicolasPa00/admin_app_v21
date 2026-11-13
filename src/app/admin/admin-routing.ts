@@ -187,6 +187,15 @@ export const adminRoutes: Routes = [
         title: 'Estadísticas de la plataforma',
       },
       {
+        // Pruebas y conversión: registrado → configuró → primera venta → pagó, y a quién llamar
+        // hoy. INTERNA (lleva nombres y alertas comerciales): no es la vista que se enseña.
+        path: 'embudo',
+        loadComponent: () =>
+          import('./features/embudo/embudo.component').then((m) => m.EmbudoComponent),
+        canActivate: [adminGuard()], // solo SUPER ADMINISTRADOR
+        title: 'Pruebas y conversión',
+      },
+      {
         // El CRUD del Centro de ayuda. Solo super admin: el contenido es de la plataforma —el
         // mismo para los cinco restaurantes—, así que lo que un inquilino editara lo verían los
         // otros cuatro. Por eso NO entra en la matriz de permisos por negocio; el candado es

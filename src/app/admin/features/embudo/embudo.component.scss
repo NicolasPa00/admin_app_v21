@@ -1,0 +1,300 @@
+/*
+  EmbudoComponent — Pruebas y conversión (Super Admin). Tokens del admin (`--color-*`).
+*/
+:host {
+  display: block;
+}
+
+.emb {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+
+  &__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  &__subtitle {
+    margin: 0.25rem 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    max-width: 52ch;
+  }
+
+  &__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  &__refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--font-size-sm);
+    padding: 0.45rem 0.9rem;
+  }
+
+  &__sk {
+    height: 320px;
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-hover);
+    animation: emb-pulso 1.4s ease-in-out infinite;
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 3rem 1rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+
+  &__card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    min-width: 0;
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.75rem;
+
+    .emb__h2 { margin: 0; }
+  }
+
+  &__h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    font-size: var(--font-size-lg);
+    font-weight: 650;
+    color: var(--color-text-primary);
+  }
+
+  &__contador {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    min-width: 1.5rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--radius-full);
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+    text-align: center;
+  }
+
+  /* ── El embudo ─────────────────────────────────────── */
+  &__pasos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  &__paso-txt {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.35rem;
+  }
+
+  &__paso-label {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  &__paso-n {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-variant-numeric: tabular-nums;
+
+    strong { font-size: var(--font-size-lg); color: var(--color-text-primary); }
+  }
+
+  &__paso-pct {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    min-width: 3.5ch;
+    text-align: right;
+  }
+
+  &__barra {
+    height: 12px;
+    border-radius: var(--radius-full);
+    background: var(--color-surface-hover);
+    overflow: hidden;
+  }
+
+  &__barra-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--color-primary-hover);
+    transition: width 0.4s var(--ease-out);
+  }
+
+  &__caida {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  &__nota {
+    margin: 1rem 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  /* ── Para hacer hoy ────────────────────────────────── */
+  &__vacio {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  &__tareas {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+  }
+
+  &__tarea {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 0.25rem 1rem;
+    align-items: center;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--color-border);
+
+    &:first-child { border-top: 0; padding-top: 0; }
+
+    @media (max-width: 640px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__tarea-quien {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    strong {
+      color: var(--color-text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__tarea-meta,
+  &__neg-meta,
+  &__sub {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  &__tarea-que {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+
+  /* ── Tablas ────────────────────────────────────────── */
+  &__tabla-wrap {
+    overflow-x: auto;
+    margin: 0 -0.25rem;
+  }
+
+  &__tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+
+    th,
+    td {
+      padding: 0.6rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+
+    th {
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--color-text-secondary);
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    tbody tr:hover { background: var(--color-surface-hover); }
+  }
+
+  &__neg {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  &__sub,
+  &__neg-meta {
+    display: block;
+  }
+
+  &__pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+
+    &[data-tono='ok'] { background: var(--color-success-bg); color: var(--color-success); }
+    &[data-tono='aviso'] { background: var(--color-warning-bg); color: var(--color-warning); }
+    &[data-tono='mal'] { background: var(--color-error-bg); color: var(--color-error); }
+  }
+}
+
+@keyframes emb-pulso {
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .emb__sk { animation: none; }
+  .emb__barra-fill { transition: none; }
+}

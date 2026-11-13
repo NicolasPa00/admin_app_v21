@@ -1,0 +1,223 @@
+<!--
+  Pruebas y conversión (Super Admin, interno). Lleva nombres: no es la vista para enseñar.
+-->
+<div class="emb">
+  <header class="emb__head">
+    <div>
+      <h1 class="emb__title">Pruebas y conversión</h1>
+      <p class="emb__subtitle">
+        En qué paso se quedan los negocios que se registran, y a quién conviene llamar hoy.
+      </p>
+    </div>
+
+    <div class="emb__head-actions">
+      <div class="ui-filtros" role="group" aria-label="Registrados en">
+        @for (r of rangos; track r.valor) {
+          <button
+            type="button"
+            class="ui-filtro"
+            [class.ui-filtro--on]="rango() === r.valor"
+            [attr.aria-pressed]="rango() === r.valor"
+            (click)="cambiarRango(r.valor)"
+          >
+            {{ r.label }}
+          </button>
+        }
+      </div>
+      <button
+        type="button"
+        class="btn btn--outline emb__refresh"
+        (click)="cargar()"
+        [disabled]="estado() === 'loading'"
+      >
+        <lucide-icon name="refresh-cw" [size]="16" aria-hidden="true" />
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  @if (estado() === 'loading' || estado() === 'idle') {
+    <div class="emb__sk" aria-busy="true" aria-label="Cargando el embudo"></div>
+  }
+
+  @if (estado() === 'error') {
+    <div class="emb__state" role="alert">
+      <lucide-icon name="alert-circle" [size]="32" aria-hidden="true" />
+      <p>No se pudo cargar el embudo.</p>
+      <button type="button" class="btn btn--primary" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  @if (estado() === 'success' && datos(); as d) {
+    @if (d.kpis.registrados === 0) {
+      <div class="emb__state">
+        <lucide-icon name="users" [size]="32" aria-hidden="true" />
+        <p>Nadie se registró en este rango.</p>
+      </div>
+    } @else {
+      <!-- ── El embudo ── -->
+      <section class="emb__card" aria-labelledby="emb-embudo">
+        <h2 class="emb__h2" id="emb-embudo">El embudo</h2>
+        <ol class="emb__pasos">
+          @for (p of escalones(); track p.label) {
+            <li class="emb__paso">
+              <div class="emb__paso-txt">
+                <span class="emb__paso-label" [title]="p.ayuda">{{ p.label }}</span>
+                <span class="emb__paso-n">
+                  <strong>{{ p.n }}</strong>
+                  <span class="emb__paso-pct">{{ p.pct }} %</span>
+                </span>
+              </div>
+              <div class="emb__barra" aria-hidden="true">
+                <span class="emb__barra-fill" [style.width.%]="p.ancho"></span>
+              </div>
+              @if (p.caida !== null && p.caida > 0) {
+                <span class="emb__caida">se quedan el {{ p.caida }} % del paso anterior</span>
+              }
+            </li>
+          }
+        </ol>
+        <p class="emb__nota">
+          @if (d.kpis.mediana_dias_a_primera_venta !== null) {
+            La primera venta llega a los <strong>{{ d.kpis.mediana_dias_a_primera_venta }}</strong>
+            días del registro (mediana) ·
+          }
+          {{ d.kpis.venta_en_7_dias }} de {{ d.kpis.registrados }} vendieron en su primera semana.
+        </p>
+      </section>
+
+      <!-- ── Para hacer hoy ── -->
+      <section class="emb__card" aria-labelledby="emb-hoy">
+        <h2 class="emb__h2" id="emb-hoy">
+          <lucide-icon name="phone" [size]="18" aria-hidden="true" />
+          Para hacer hoy
+          <span class="emb__contador">{{ pendientes().length }}</span>
+        </h2>
+        @if (pendientes().length === 0) {
+          <p class="emb__vacio">Nada pendiente: todos los negocios van bien.</p>
+        } @else {
+          <ul class="emb__tareas">
+            @for (n of pendientes(); track n.id_negocio) {
+              <li class="emb__tarea">
+                <div class="emb__tarea-quien">
+                  <strong>{{ n.nombre }}</strong>
+                  <span class="emb__tarea-meta">
+                    #{{ n.id_negocio }} · {{ n.rubro ?? 'Sin oficio' }} · registrado el
+                    {{ fecha(n.fecha_registro) }}
+                  </span>
+                </div>
+                <span class="emb__tarea-que">{{ n.alerta }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <!-- ── Todos los negocios ── -->
+      <section class="emb__card" aria-labelledby="emb-todos">
+        <div class="emb__card-head">
+          <h2 class="emb__h2" id="emb-todos">Negocios</h2>
+          <div class="ui-filtros" role="group" aria-label="Filtrar por estado">
+            <button
+              type="button"
+              class="ui-filtro"
+              [class.ui-filtro--on]="filtro() === 'todos'"
+              [attr.aria-pressed]="filtro() === 'todos'"
+              (click)="cambiarFiltro('todos')"
+            >
+              Todos · {{ d.negocios.length }}
+            </button>
+            @for (f of filtros(); track f.valor) {
+              <button
+                type="button"
+                class="ui-filtro"
+                [class.ui-filtro--on]="filtro() === f.valor"
+                [attr.aria-pressed]="filtro() === f.valor"
+                (click)="cambiarFiltro(f.valor)"
+              >
+                {{ f.label }} · {{ f.n }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="emb__tabla-wrap">
+          <table class="emb__tabla">
+            <thead>
+              <tr>
+                <th scope="col">Negocio</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Registro</th>
+                <th scope="col" class="num">Ventas</th>
+                <th scope="col">Último uso</th>
+                <th scope="col" class="num">Pagado</th>
+                <th scope="col">Plan</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (n of negociosFiltrados(); track n.id_negocio) {
+                <tr>
+                  <td>
+                    <span class="emb__neg">{{ n.nombre }}</span>
+                    <span class="emb__neg-meta">#{{ n.id_negocio }} · {{ n.rubro ?? '—' }}</span>
+                  </td>
+                  <td>
+                    <span class="emb__pill" [attr.data-tono]="tonoEstado(n.estado)">
+                      {{ etiquetaEstado(n.estado) }}
+                    </span>
+                  </td>
+                  <td>{{ fecha(n.fecha_registro) }}</td>
+                  <td class="num">
+                    {{ n.n_tx }}
+                    @if (n.tx_7d) {
+                      <span class="emb__sub">{{ n.tx_7d }} en 7 días</span>
+                    }
+                  </td>
+                  <td>{{ uso(n) }}</td>
+                  <td class="num">{{ n.n_pagos ? dinero(n.total_pagado) : '—' }}</td>
+                  <td>
+                    {{ n.plan ?? 'Sin plan' }}
+                    @if (n.dias_prueba !== null) {
+                      <span class="emb__sub">vence en {{ n.dias_prueba }} d</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Por mes de registro ── -->
+      @if (d.cohortes.length > 1) {
+        <section class="emb__card" aria-labelledby="emb-cohortes">
+          <h2 class="emb__h2" id="emb-cohortes">Por mes de registro</h2>
+          <div class="emb__tabla-wrap">
+            <table class="emb__tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Mes</th>
+                  <th scope="col" class="num">Registrados</th>
+                  <th scope="col" class="num">Configuraron</th>
+                  <th scope="col" class="num">Vendieron</th>
+                  <th scope="col" class="num">Pagaron</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of d.cohortes; track c.mes) {
+                  <tr>
+                    <td>{{ mes(c.mes) }}</td>
+                    <td class="num">{{ c.registrados }}</td>
+                    <td class="num">{{ c.configurados }} <span class="emb__sub">{{ pct(c.configurados, c.registrados) }}</span></td>
+                    <td class="num">{{ c.con_venta }} <span class="emb__sub">{{ pct(c.con_venta, c.registrados) }}</span></td>
+                    <td class="num">{{ c.pagaron }} <span class="emb__sub">{{ pct(c.pagaron, c.registrados) }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+    }
+  }
+</div>
