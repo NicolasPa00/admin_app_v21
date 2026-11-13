@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { AuthService } from '../../auth/data-access/auth.service';
 import { AnaliticaService } from '../../core/services/analitica.service';
+import { TurnstileService } from '../../core/services/turnstile.service';
 
 /**
  * El registro de prueba gratuita, sin su aspecto.
@@ -67,6 +68,7 @@ const MAX_REENVIOS = 3;
 export class PruebaGratisStore {
   private readonly auth = inject(AuthService);
   private readonly analitica = inject(AnaliticaService);
+  private readonly turnstile = inject(TurnstileService);
   private readonly destroyRef = inject(DestroyRef);
 
   // ── Estado de la capa ──
@@ -98,6 +100,8 @@ export class PruebaGratisStore {
   readonly error = signal<string | null>(null);
   readonly nombreCreado = signal('');
   readonly cedulaCreada = signal('');
+  /** La contraseña temporal que devolvió el backend; vacía si llegó de un backend viejo. */
+  readonly passwordCreada = signal('');
 
   readonly oficios = signal<OficioPrueba[]>(OFICIOS_RESPALDO);
 
@@ -306,11 +310,17 @@ export class PruebaGratisStore {
     this.cargando.set(true);
     this.error.set(null);
     try {
+      const captcha = await this.turnstile.obtenerToken();
       const res = await firstValueFrom(
-        this.auth.verificarYCrearTrial({ email: this.email().trim(), code: this.codigo().trim() }),
+        this.auth.verificarYCrearTrial({
+          email: this.email().trim(),
+          code: this.codigo().trim(),
+          ...(captcha ? { captcha_token: captcha } : {}),
+        }),
       );
       this.nombreCreado.set(res.data?.nombre ?? this.nombre().split(' ')[0]);
       this.cedulaCreada.set(res.data?.numIdentificacion ?? this.cedula().trim());
+      this.passwordCreada.set(res.data?.passwordTemporal ?? '');
       this.paso.set('success');
       // La conversión del embudo público: aquí ya existe el negocio con su prueba de 30 días. Es la
       // que se le declara a Meta como CompleteRegistration. No viaja ni el correo ni la cédula.

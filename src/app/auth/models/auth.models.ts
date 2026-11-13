@@ -212,11 +212,15 @@ export interface TrialEnviarCodigoRequest {
 export interface TrialVerificarRequest {
   email: string;
   code: string;
+  /** Token de Cloudflare Turnstile; ausente si el CAPTCHA está apagado. */
+  captcha_token?: string;
 }
 
 export interface TrialVerificarData {
   nombre: string;
   numIdentificacion: string;
+  /** Contraseña temporal generada (desde 2026-11-12 ya no es la cédula). */
+  passwordTemporal?: string;
 }
 
 export type TrialEnviarCodigoResponse = ApiResponse;

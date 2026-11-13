@@ -1410,8 +1410,10 @@
                 <span class="lp-trial-success__cred-value">{{ trialSuccessCedula() }}</span>
               </div>
               <div class="lp-trial-success__cred-row">
-                <span class="lp-trial-success__cred-label">Contraseña</span>
-                <span class="lp-trial-success__cred-value">{{ trialSuccessCedula() }}</span>
+                <span class="lp-trial-success__cred-label">Contraseña temporal</span>
+                <span class="lp-trial-success__cred-value">{{
+                  trialSuccessPassword() || 'la que te enviamos al correo'
+                }}</span>
               </div>
             </div>
 

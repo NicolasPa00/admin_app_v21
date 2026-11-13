@@ -83,6 +83,7 @@ import {
 import { AssetService } from '../core/services/asset.service';
 import { SeoService } from '../core/services/seo.service';
 import { AnaliticaService } from '../core/services/analitica.service';
+import { TurnstileService } from '../core/services/turnstile.service';
 import { AuthService } from '../auth/data-access/auth.service';
 import { AdquirirService } from '../adquirir/adquirir.service';
 import { environment } from '../../environments/environment';
@@ -1638,6 +1639,9 @@ export class LandingComponent {
   protected readonly trialError     = signal<string | null>(null);
   protected readonly trialSuccessNombre = signal('');
   protected readonly trialSuccessCedula = signal('');
+  /** Contraseña temporal devuelta por el backend (desde 2026-11-12 ya no es la cédula). */
+  protected readonly trialSuccessPassword = signal('');
+  private readonly turnstile = inject(TurnstileService);
 
   // =================== Validaciones paso 1 ===================
 
@@ -1869,14 +1873,17 @@ export class LandingComponent {
     this.trialError.set(null);
 
     try {
+      const captcha = await this.turnstile.obtenerToken();
       const res = await firstValueFrom(
         this.authService.verificarYCrearTrial({
           email: this.trialEmail().trim(),
           code:  this.trialOtp().trim(),
+          ...(captcha ? { captcha_token: captcha } : {}),
         }),
       );
       this.trialSuccessNombre.set(res.data?.nombre ?? this.trialNombre().split(' ')[0]);
       this.trialSuccessCedula.set(res.data?.numIdentificacion ?? this.trialCedula().trim());
+      this.trialSuccessPassword.set(res.data?.passwordTemporal ?? '');
       this.modalStep.set('success');
       // La conversión del embudo público: aquí ya existe el negocio con su prueba de 30 días.
       // Es la que se le declara a Meta como `CompleteRegistration` y contra la que se optimiza

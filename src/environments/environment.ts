@@ -49,6 +49,11 @@ export const environment = {
    * v2 y v3 se desactivaron el 15-oct-2026. Ver admin_ws/docs/embedded-signup.md.
    */
   metaSdkVersion: 'v26.0',
+  /**
+   * Clave pública (site key) de Cloudflare Turnstile para el CAPTCHA del registro de prueba.
+   * Vacía = sin CAPTCHA (no se carga ningún script). Ver core/services/turnstile.service.ts.
+   */
+  turnstileSiteKey: '',
 
   /**
    * Analítica del embudo público. **Vacía en desarrollo a propósito**: medir las pruebas de uno

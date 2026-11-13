@@ -535,7 +535,13 @@
           <h2 class="capa__titulo" id="prueba-titulo">Tu cuenta está lista</h2>
           <p class="capa__bajada">
             Hola, <strong>{{ prueba.nombreCreado() }}</strong>. Tu prueba de 30 días ya está activa.
-            Entra con tu correo y tu número de cédula.
+            Entra con tu número de cédula
+            @if (prueba.passwordCreada()) {
+              y esta contraseña temporal: <strong>{{ prueba.passwordCreada() }}</strong>. También
+              te la enviamos al correo, y te pediremos cambiarla al entrar.
+            } @else {
+              y la contraseña temporal que te enviamos al correo.
+            }
           </p>
           <a class="boton boton--lg" routerLink="/login">Entrar a mi negocio</a>
         }

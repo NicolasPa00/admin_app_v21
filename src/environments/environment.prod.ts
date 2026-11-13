@@ -35,6 +35,11 @@ export const environment = {
   metaConfigId: '2166699173923667',
   /** Ver environment.ts: v23.0 por la coexistencia. */
   metaSdkVersion: 'v26.0',
+  /**
+   * Clave pública (site key) de Cloudflare Turnstile para el CAPTCHA del registro de prueba.
+   * Vacía = sin CAPTCHA (no se carga ningún script). Ver core/services/turnstile.service.ts.
+   */
+  turnstileSiteKey: '',
 
   /**
    * Analítica del embudo público.
