@@ -15,12 +15,9 @@ import { SeoService } from '../../core/services/seo.service';
 import { montarEntradas } from '../shared/entradas';
 import { abrirPruebaSiLaPiden } from '../shared/abrir-prueba';
 import {
-  PAQUETES_EXTRA_FE,
   PlanFe,
   TRAMOS_FE,
-  calcularFe,
   eleccionFe,
-  indiceTramoFe,
 } from '../shared/facturacion';
 import { TemaSelectorComponent } from '../shared/tema-selector.component';
 import { PruebaGratisStore } from '../shared/prueba-gratis.store';
@@ -435,51 +432,20 @@ export class ReservasComponent {
    */
   protected readonly feTramo = signal(0);
   protected readonly fePlan = signal<PlanFe>('asistente');
-  /**
-   * Los documentos que eligió la calculadora, o `null` si lo último que tocó fue la tabla. El pie
-   * resume lo último que tocó (`eleccionFe` en `shared/facturacion.ts`).
-   */
-  private readonly feDocsElegidos = signal<number | null>(null);
   protected readonly feEleccion = computed(() => {
-    const e = eleccionFe(this.feTramo(), this.fePlan(), this.feDocsElegidos(), (v) => this.numero(v));
-    return { ...e, tope: this.numero(e.docs), precio: this.pesos(e.total) };
+    const e = eleccionFe(this.feTramo(), this.fePlan());
+    return { ...e, precio: this.pesos(e.total) };
   });
 
   protected elegirFe(tramo: number, plan: PlanFe): void {
     this.feTramo.set(tramo);
     this.fePlan.set(plan);
-    this.feDocsElegidos.set(null);
   }
-
-  /** Mover la calculadora también elige: el tramo que le alcanza y, si pasa del XL, los adicionales. */
-  protected moverDocsFe(docs: number): void {
-    this.feDocsMes.set(docs);
-    this.feTramo.set(indiceTramoFe(docs));
-    this.feDocsElegidos.set(docs);
-  }
-
-  // ── Documentos adicionales ──
-
-  protected readonly paquetesExtraFe = PAQUETES_EXTRA_FE;
-
-  /** Lo que el dueño responde en la calculadora. Arranca por encima del XL, que es para quien está. */
-  protected readonly feDocsMes = signal(3000);
-
-  /**
-   * El paquete que le alcanza, los adicionales que le faltan y el total, con el plan que tenga
-   * elegido en la tabla (con o sin asistente). Moverla cambia también el pie (`moverDocsFe`); los
-   * adicionales no se compran desde «Adquirir», así que con ellos el pie manda a WhatsApp.
-   */
-  protected readonly feCalculo = computed(() =>
-    calcularFe(this.feDocsMes(), this.fePlan(), (valor) => this.numero(valor)),
-  );
 
   /** Para «¿Tienes dudas?» de la ventana de facturación: aquí sí llega con la pregunta escrita. */
   protected readonly whatsappFe =
     `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, tengo dudas sobre la facturación electrónica de EscalApp para mi negocio de citas')}`;
 
-  protected readonly whatsappFeExtra =
-    `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, necesito documentos adicionales de facturación electrónica para mi negocio de citas')}`;
 
   constructor() {
     // En el constructor y no en `afterNextRender`: la ruta es `Prerender`, así que esto corre

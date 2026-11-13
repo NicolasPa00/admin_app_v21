@@ -35,10 +35,10 @@ export const TRAMOS: readonly Tramo[] = ['S', 'M', 'L', 'XL'];
 
 /** Lo que significa cada paquete, en lenguaje de cliente (mismos rangos que la landing). */
 export const DOCUMENTOS_POR_TRAMO: Record<Tramo, string> = {
-  S: 'hasta 100 documentos al mes',
-  M: 'hasta 500 documentos al mes',
-  L: 'hasta 1.200 documentos al mes',
-  XL: 'hasta 2.500 documentos al mes',
+  S: 'hasta 2.500 documentos al mes',
+  M: 'hasta 5.000 documentos al mes',
+  L: 'hasta 10.000 documentos al mes',
+  XL: 'documentos ilimitados',
 };
 
 /** Si el plan lleva facturación electrónica: `obligatoria` = hay que elegir un paquete. */
