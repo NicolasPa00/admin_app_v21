@@ -124,6 +124,22 @@ export class FacturacionService {
       .pipe(map((r) => r.data as FeVista));
   }
 
+  /** El logo con el que salen las facturas del negocio (PNG o JPG, hasta 1 MB). */
+  subirLogoFactura(idNegocio: number, archivo: File): Observable<FeVista> {
+    const datos = new FormData();
+    datos.append('logo', archivo);
+    return this.http
+      .post<ApiResponse<FeVista>>(`${this.fe(idNegocio)}/logo`, datos)
+      .pipe(map((r) => r.data as FeVista));
+  }
+
+  /** Quita el logo de la factura: vuelve a usarse el de la marca del negocio. */
+  quitarLogoFactura(idNegocio: number): Observable<FeVista> {
+    return this.http
+      .delete<ApiResponse<FeVista>>(`${this.fe(idNegocio)}/logo`)
+      .pipe(map((r) => r.data as FeVista));
+  }
+
   probarConexion(idNegocio: number): Observable<FePrueba> {
     return this.http
       .post<ApiResponse<FePrueba>>(`${this.fe(idNegocio)}/probar`, {})

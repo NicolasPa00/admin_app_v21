@@ -144,6 +144,11 @@ export interface FeConfiguracion {
    * viaja: solo si el POS tiene uno propio. `null` = no registrado.
    */
   software_pos?: { software_id: string; pin_propio: boolean } | null;
+  /**
+   * El logo con el que salen las facturas (PDF y correo), como en Factus: `/uploads/...` (PNG o JPG).
+   * `null` = el logo de la marca del negocio, si es PNG o JPG; si no, su inicial.
+   */
+  logo_url?: string | null;
   activado_en: string | null;
   tiene_credenciales: boolean;
 }

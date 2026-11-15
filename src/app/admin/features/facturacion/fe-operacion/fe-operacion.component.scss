@@ -226,6 +226,64 @@
     gap: 0.5rem;
   }
 
+  // Logo de la factura: el marco tiene la proporción de un logo horizontal y fondo a cuadros
+  // tenue, para que se note si el PNG trae fondo transparente o un recuadro blanco.
+  &__logo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  &__logo-marco {
+    display: grid;
+    place-items: center;
+    width: min(220px, 100%);
+    min-width: 0;
+    height: 72px;
+    padding: 0.6rem 0.9rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 0.6rem;
+    background:
+      repeating-conic-gradient(color-mix(in srgb, var(--color-border) 45%, transparent) 0% 25%, transparent 0% 50%)
+      0 0 / 14px 14px;
+
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    span {
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+    }
+  }
+
+  // El input de archivo vive dentro del botón (una <label>): invisible pero accesible por teclado.
+  &__archivo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  label.feo__btn {
+    position: relative;
+
+    &:focus-within {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    &.is-deshabilitado {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+  }
+
   &__btn {
     display: inline-flex;
     align-items: center;

@@ -68,6 +68,8 @@ describe('FeOperacionComponent', () => {
       registrarRango: vi.fn(() => of([])),
       usarRango: vi.fn(),
       cambiarEstadoEmision: vi.fn(() => of(vista())),
+      subirLogoFactura: vi.fn(() => of(vista())),
+      quitarLogoFactura: vi.fn(() => of(vista())),
     };
     TestBed.configureTestingModule({
       imports: [Anfitrion],
@@ -307,5 +309,33 @@ describe('FeOperacionComponent', () => {
     fixture.detectChanges();
     expect(api['getEmision']).toHaveBeenLastCalledWith(18);
     expect(cmp.credenciales().client_id).toBe('');
+  });
+
+  describe('logo de la factura', () => {
+    const elegir = (cmp: FeOperacionComponent, archivo: File) =>
+      cmp.subirLogo({ target: { files: [archivo], value: 'x' } } as unknown as Event);
+
+    it('solo acepta PNG o JPG de hasta 1 MB, sin llamar al servidor si no', () => {
+      const { cmp } = montar();
+      elegir(cmp, new File(['x'], 'logo.webp', { type: 'image/webp' }));
+      expect(cmp.error()).toContain('PNG o JPG');
+      elegir(cmp, new File([new Uint8Array(1024 * 1024 + 1)], 'logo.png', { type: 'image/png' }));
+      expect(cmp.error()).toContain('1 MB');
+      expect(api['subirLogoFactura']).not.toHaveBeenCalled();
+    });
+
+    it('sube el PNG y enseña el logo guardado con la URL del backend', () => {
+      api['subirLogoFactura'].mockReturnValue(
+        of(vista({ config: { ...vista().config!, logo_url: '/uploads/facturacion/logos/17/logo_factura.png?v=1' } })),
+      );
+      const { cmp, fixture, el } = montar();
+      const archivo = new File(['x'], 'logo.png', { type: 'image/png' });
+      elegir(cmp, archivo);
+      fixture.detectChanges();
+      expect(api['subirLogoFactura']).toHaveBeenCalledWith(17, archivo);
+      const img = el.querySelector<HTMLImageElement>('.feo__logo-marco img');
+      expect(img?.getAttribute('src')).toMatch(/^https?:\/\/[^/]+\/uploads\/facturacion\/logos\/17\/logo_factura\.png\?v=1$/);
+      expect(el.textContent).toContain('Cambiar logo');
+    });
   });
 });

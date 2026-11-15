@@ -474,6 +474,37 @@
             </select>
           </label>
         </div>
+        <h4 class="feo__subtitulo">Logo de la factura</h4>
+        <p class="feo__ayuda">
+          El logo con el que salen el PDF y el correo de las facturas de este negocio. PNG o JPG de hasta
+          1 MB, idealmente con fondo transparente. Sin él se usa el logo de la marca del negocio si es PNG o
+          JPG; si no, su inicial en el color de la marca.
+        </p>
+        <div class="feo__logo">
+          <div class="feo__logo-marco">
+            @if (logoFactura(); as url) {
+              <img [src]="url" alt="Logo de la factura" />
+            } @else {
+              <span>Sin logo propio</span>
+            }
+          </div>
+          <div class="feo__acciones">
+            <label class="feo__btn" [class.is-deshabilitado]="ocupado() !== null">
+              <lucide-icon [name]="ocupado() === 'logo' ? 'loader-2' : 'image-icon'" [size]="16"
+                [class.feo__spin]="ocupado() === 'logo'"></lucide-icon>
+              {{ logoFactura() ? 'Cambiar logo' : 'Subir logo' }}
+              <input type="file" accept="image/png,image/jpeg" class="feo__archivo"
+                [disabled]="ocupado() !== null" (change)="subirLogo($event)" />
+            </label>
+            @if (logoFactura()) {
+              <button type="button" class="feo__btn" [disabled]="ocupado() !== null" (click)="quitarLogo()">
+                <lucide-icon name="trash-2" [size]="16"></lucide-icon>
+                Quitar
+              </button>
+            }
+          </div>
+        </div>
+
         <label class="feo__check">
           <input type="checkbox" [ngModel]="v.config?.enviar_correo ?? true" name="feo-correo"
             (ngModelChange)="guardarCorreo($event)" [disabled]="ocupado() !== null" />

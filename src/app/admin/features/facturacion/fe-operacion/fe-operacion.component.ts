@@ -22,9 +22,12 @@ import {
   Save,
   ShieldCheck,
   TriangleAlert,
+  ImageIcon,
+  Trash2,
 } from '../../../../core/icons/phosphor';
 
 import { FacturacionService } from '../../../data-access/facturacion.service';
+import { environment } from '../../../../../environments/environment';
 import {
   AmbienteFe,
   EstadoFe,
@@ -124,6 +127,8 @@ const MOTIVOS: Record<Exclude<MotivoNoFactura, null>, string> = {
         Save,
         ShieldCheck,
         TriangleAlert,
+        ImageIcon,
+        Trash2,
       }),
     },
   ],
@@ -488,6 +493,42 @@ export class FeOperacionComponent {
     this.ejecutar('pos-caja', this.api.guardarEmision(this.idNegocio(), { pos_caja: this.caja() }), (v) => {
       this.aplicar(v);
       return 'Datos de la caja guardados.';
+    });
+  }
+
+  /** La vista previa del logo de la factura (el que se subió aquí), o null. */
+  readonly logoFactura = computed(() => {
+    const ruta = this.config()?.logo_url;
+    if (!ruta) return null;
+    if (/^https?:\/\//i.test(ruta)) return ruta;
+    // Lo sirve el backend: el origen del API sin `/admin`.
+    return `${environment.apiUrl.replace(/\/admin\/?$/, '')}${ruta.startsWith('/') ? '' : '/'}${ruta}`;
+  });
+
+  /** Sube el logo de la factura. PNG o JPG hasta 1 MB: el PDF no sabe pintar WebP ni SVG. */
+  subirLogo(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
+    if (!['image/png', 'image/jpeg'].includes(archivo.type)) {
+      this.error.set('El logo debe ser una imagen PNG o JPG.');
+      return;
+    }
+    if (archivo.size > 1024 * 1024) {
+      this.error.set('El logo no puede pesar más de 1 MB.');
+      return;
+    }
+    this.ejecutar('logo', this.api.subirLogoFactura(this.idNegocio(), archivo), (v) => {
+      this.aplicar(v);
+      return 'Logo guardado: las próximas facturas saldrán con él.';
+    });
+  }
+
+  quitarLogo(): void {
+    this.ejecutar('logo', this.api.quitarLogoFactura(this.idNegocio()), (v) => {
+      this.aplicar(v);
+      return 'Logo quitado: las facturas usarán el logo de la marca del negocio, si es PNG o JPG.';
     });
   }
 
