@@ -15,7 +15,6 @@ import { SeoService } from '../../core/services/seo.service';
 import { montarEntradas } from '../shared/entradas';
 import { abrirPruebaSiLaPiden } from '../shared/abrir-prueba';
 import {
-  PAQUETES_EXTRA_FE,
   PlanFe,
   TRAMOS_FE,
   calcularFe,
@@ -287,7 +286,7 @@ export class CelularesComponent {
 
   /**
    * La facturación electrónica se cuenta aparte, en su ventana: la pide una minoría y son ocho
-   * precios. Precios y cuentas en `shared/facturacion.ts`, los mismos en `/restaurantes` y `/reservas`.
+   * precios. Precios y cuentas en `shared/facturacion.ts`, los mismos en las tres landings.
    */
   protected readonly tramosFe = TRAMOS_FE;
 
@@ -297,51 +296,41 @@ export class CelularesComponent {
    */
   protected readonly feTramo = signal(0);
   protected readonly fePlan = signal<PlanFe>('asistente');
-  /**
-   * Los documentos que eligió la calculadora, o `null` si lo último que tocó fue la tabla. El pie
-   * resume lo último que tocó (`eleccionFe` en `shared/facturacion.ts`).
-   */
-  private readonly feDocsElegidos = signal<number | null>(null);
   protected readonly feEleccion = computed(() => {
-    const e = eleccionFe(this.feTramo(), this.fePlan(), this.feDocsElegidos(), (v) => this.numero(v));
-    return { ...e, tope: this.numero(e.docs), precio: this.pesos(e.total) };
+    const e = eleccionFe(this.feTramo(), this.fePlan(), (v) => this.numero(v));
+    return { ...e, precio: this.pesos(e.total) };
   });
 
   protected elegirFe(tramo: number, plan: PlanFe): void {
     this.feTramo.set(tramo);
     this.fePlan.set(plan);
-    this.feDocsElegidos.set(null);
   }
 
-  /** Mover la calculadora también elige: el tramo que le alcanza y, si pasa del XL, los adicionales. */
+  /** Mover la calculadora también elige: el paquete que le alcanza a esos documentos. */
   protected moverDocsFe(docs: number): void {
     this.feDocsMes.set(docs);
     this.feTramo.set(indiceTramoFe(docs));
-    this.feDocsElegidos.set(docs);
   }
 
-  // ── Documentos adicionales ──
-
-  protected readonly paquetesExtraFe = PAQUETES_EXTRA_FE;
-
-  /** Lo que el dueño responde en la calculadora. Arranca por encima del XL, que es para quien está. */
+  /** Lo que el dueño responde en la calculadora. */
   protected readonly feDocsMes = signal(3000);
 
-  /**
-   * El paquete que le alcanza, los adicionales que le faltan y el total, con el plan que tenga
-   * elegido en la tabla (con o sin asistente). Moverla cambia también el pie (`moverDocsFe`); los
-   * adicionales no se compran desde «Adquirir», así que con ellos el pie manda a WhatsApp.
-   */
-  protected readonly feCalculo = computed(() =>
-    calcularFe(this.feDocsMes(), this.fePlan(), (valor) => this.numero(valor)),
-  );
+  /** El paquete que le alcanza y el total, con el plan elegido en la tabla (con o sin asistente). */
+  protected readonly feCalculo = computed(() => calcularFe(this.feDocsMes(), this.fePlan()));
 
   /** Para «¿Tienes dudas?» de la ventana de facturación: aquí sí llega con la pregunta escrita. */
   protected readonly whatsappFe =
     `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, tengo dudas sobre la facturación electrónica de EscalApp para mi negocio de celulares')}`;
 
-  protected readonly whatsappFeExtra =
-    `${environment.whatsappUrl}?text=${encodeURIComponent('Hola, necesito documentos adicionales de facturación electrónica para mi negocio de celulares')}`;
+  /**
+   * El pie de la ventana: mientras los paquetes no estén en `gener_plan` se contratan por WhatsApp,
+   * y el mensaje lleva escrito el paquete elegido.
+   */
+  protected readonly whatsappFeElegido = computed(() => {
+    const e = this.feEleccion();
+    const texto = `Hola, quiero contratar ${e.resumen} (${e.precio} al mes) para mi negocio de celulares`;
+    return `${environment.whatsappUrl}?text=${encodeURIComponent(texto)}`;
+  });
 
   constructor() {
     // En el constructor y no en `afterNextRender`: la ruta es `Prerender`, así que esto corre

@@ -561,7 +561,7 @@
         <header class="ventana__cabeza">
           <div>
             <h3 class="ventana__titulo" id="ventana-fe-titulo">Facturación electrónica ante la DIAN</h3>
-            <p class="ventana__bajada">Elige tu plan y cuántos documentos emites al mes.</p>
+            <p class="ventana__bajada">Elige tu paquete según los documentos que emites al mes.</p>
           </div>
           <button type="button" class="ventana__cerrar" (click)="ventanaFe.close()" aria-label="Cerrar">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -593,8 +593,6 @@
               <thead>
                 <tr>
                   <th scope="col" class="fe-tabla__esquina">Documentos al mes</th>
-                  <!-- Los nombres de la página de compra (`gener_plan`): «Emprendedor + Facturación» y
-                       «Plan Empresarial». Así el cliente lee lo mismo aquí y al pagar. -->
                   <th scope="col" class="comparar__plan">
                     <span class="comparar__plan-nombre">Emprendedor + Facturación</span>
                     <span class="comparar__plan-sub">Sin asistente</span>
@@ -606,11 +604,11 @@
                 </tr>
               </thead>
               <tbody>
-                @for (tramo of tramosFe; track tramo.tope; let i = $index) {
+                @for (tramo of tramosFe; track tramo.nombre; let i = $index) {
                   <tr>
                     <th scope="row" class="comparar__que">
-                      Paquete {{ tramo.paquete }}
-                      <span class="comparar__que-sub">Hasta {{ numero(tramo.tope) }}</span>
+                      {{ tramo.nombre }}
+                      <span class="comparar__que-sub">{{ tramo.detalle }}</span>
                     </th>
                     <td class="comparar__valor">
                       <button
@@ -618,7 +616,7 @@
                         class="fe-precio"
                         [class.fe-precio--elegido]="feTramo() === i && fePlan() === 'base'"
                         [attr.aria-pressed]="feTramo() === i && fePlan() === 'base'"
-                        [attr.aria-label]="'Emprendedor + Facturación ' + tramo.paquete + ', hasta ' + numero(tramo.tope) + ' documentos: ' + pesos(tramo.base) + ' al mes'"
+                        [attr.aria-label]="'Emprendedor + Facturación, ' + tramo.nombre + ': ' + pesos(tramo.base) + ' al mes'"
                         (click)="elegirFe(i, 'base')"
                       >
                         {{ pesos(tramo.base) }}
@@ -630,7 +628,7 @@
                         class="fe-precio"
                         [class.fe-precio--elegido]="feTramo() === i && fePlan() === 'asistente'"
                         [attr.aria-pressed]="feTramo() === i && fePlan() === 'asistente'"
-                        [attr.aria-label]="'Plan Empresarial ' + tramo.paquete + ', hasta ' + numero(tramo.tope) + ' documentos: ' + pesos(tramo.asistente) + ' al mes'"
+                        [attr.aria-label]="'Plan Empresarial, ' + tramo.nombre + ': ' + pesos(tramo.asistente) + ' al mes'"
                         (click)="elegirFe(i, 'asistente')"
                       >
                         {{ pesos(tramo.asistente) }}
@@ -666,24 +664,16 @@
             </a>
           </div>
 
-          <!-- Para quien pasa de 2.500 documentos al mes: la misma calculadora de los mensajes. Se
-               pregunta cuántos documentos emite y se contesta qué paquete le alcanza, qué adicionales
-               le faltan y cuánto queda al mes con el plan elegido en la tabla. Precios y márgenes en
-               `PAQUETES_EXTRA_FE`. -->
+          <!-- La calculadora: cuántos documentos emite → qué paquete le alcanza. Mueve también la
+               elección del pie. Precios en `shared/facturacion.ts` (`TRAMOS_FE`). -->
           <section class="fe-extra" aria-labelledby="fe-extra-titulo">
             <div>
-              <p class="fe-dudas__titulo" id="fe-extra-titulo">¿Emites más de 2.500 documentos al mes?</p>
+              <p class="fe-dudas__titulo" id="fe-extra-titulo">¿Qué paquete te alcanza?</p>
               <p class="fe-dudas__texto">
-                Toma el paquete XL y súmale documentos adicionales. Se cobran cada mes junto con tu plan.
+                Cuentan las facturas, los tiquetes POS electrónicos y las notas. Si un mes te pasas del
+                cupo, facturas igual: el mes siguiente pasas al paquete de arriba. Con Ilimitada no hay
+                tope.
               </p>
-              <ul class="fe-extra__paquetes">
-                @for (paquete of paquetesExtraFe; track paquete.docs) {
-                  <li>
-                    <span>+{{ numero(paquete.docs) }} documentos al mes</span>
-                    <strong>{{ pesos(paquete.precio) }}</strong>
-                  </li>
-                }
-              </ul>
             </div>
 
             <div class="calculadora fe-extra__calculadora">
@@ -692,7 +682,7 @@
               </label>
 
               <output class="calculadora__cuantos" for="cal-documentos">
-                {{ numero(feDocsMes()) }}
+                {{ numero(feDocsMes()) }}{{ feDocsMes() > 10000 ? ' o más' : '' }}
               </output>
 
               <input
@@ -700,7 +690,7 @@
                 class="calculadora__barra"
                 type="range"
                 min="100"
-                max="10000"
+                max="10100"
                 step="100"
                 [value]="feDocsMes()"
                 (input)="moverDocsFe(+$any($event.target).value)"
@@ -709,11 +699,7 @@
               <dl class="calculadora__cuenta">
                 <div>
                   <dt>Tu paquete</dt>
-                  <dd>{{ feCalculo().tramo.paquete }} · hasta {{ numero(feCalculo().tramo.tope) }}</dd>
-                </div>
-                <div>
-                  <dt>Adicionales</dt>
-                  <dd>{{ feCalculo().adicionales || 'No los necesitas' }}</dd>
+                  <dd>{{ feCalculo().tramo.nombre }}</dd>
                 </div>
                 <div class="calculadora__total">
                   <dt>Al mes, {{ feCalculo().plan }}</dt>
@@ -722,17 +708,8 @@
               </dl>
 
               <p class="calculadora__aviso">
-                @if (feCalculo().adicionales) {
-                  Los adicionales se activan aparte del botón «Adquirir»:
-                  <a [href]="whatsappFeExtra" target="_blank" rel="noopener">escríbenos por WhatsApp</a>
-                  y los sumamos a tu plan.
-                  @if (feDocsMes() >= 10000) {
-                    ¿Emites aún más? Te armamos un paquete a tu medida.
-                  }
-                } @else {
-                  Con {{ numero(feDocsMes()) }} documentos al mes te alcanza el paquete
-                  {{ feCalculo().tramo.paquete }}, sin adicionales. Lo eliges en la tabla de arriba.
-                }
+                Te alcanza el paquete {{ feCalculo().tramo.nombre }}. También lo puedes elegir en la tabla
+                de arriba.
               </p>
             </div>
           </section>
@@ -740,7 +717,7 @@
 
         <footer class="ventana__pie">
           <p class="fe-eleccion" aria-live="polite">
-            <span class="fe-eleccion__que">{{ feEleccion().plan }} · {{ feEleccion().codigo ? 'hasta ' : '' }}{{ feEleccion().tope }} documentos al mes</span>
+            <span class="fe-eleccion__que">{{ feEleccion().resumen }}</span>
             <span class="fe-eleccion__precio">{{ feEleccion().precio }} <small>al mes</small></span>
           </p>
           @if (feEleccion().codigo) {
@@ -752,8 +729,8 @@
               Adquirir
             </a>
           } @else {
-            <a class="boton fe-eleccion__boton" [href]="whatsappFeExtra" target="_blank" rel="noopener">
-              Escríbenos
+            <a class="boton fe-eleccion__boton" [href]="whatsappFeElegido()" target="_blank" rel="noopener">
+              Contratar
             </a>
           }
         </footer>

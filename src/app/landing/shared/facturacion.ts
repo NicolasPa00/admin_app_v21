@@ -1,153 +1,120 @@
 /**
- * La facturación electrónica de las landings, en un solo sitio: la ventana de `/restaurantes` y la
- * de `/reservas` venden los mismos planes al mismo precio (`precios-y-planes.md` §9: Reserva cuesta
- * lo mismo que Restaurante), así que los precios no se escriben dos veces.
+ * La facturación electrónica de las landings, en un solo sitio: la ventana de `/restaurantes`,
+ * `/reservas` y `/celulares` vende los mismos paquetes al mismo precio, así que los precios no se
+ * escriben tres veces.
+ *
+ * **Desde 2026-11-14: paquetes del EMISOR PROPIO** (`admin_ws/docs/precios-y-planes.md` §0,
+ * «DECIDIDO 2026-11-12»). Reemplazan los tramos S–XL de Factus (100 a 2.500 documentos, de $81.999
+ * a $162.999) y sus documentos adicionales: con Ilimitada ya no hace falta sumar paquetes. Con
+ * asistente cuesta $40.000 más (decidido por el dueño el 2026-11-14).
+ *
+ * ⚠️ Estos paquetes todavía NO existen en `gener_plan` / `cobranza.cob_precio_plan` (que siguen con
+ * S–XL), así que «Adquirir» no los puede vender: el pie de la ventana manda a WhatsApp. Cuando se
+ * creen los planes, poner sus códigos en `codigoBase` / `codigoAsistente` y el botón vuelve solo.
  */
 
-/**
- * El precio TOTAL al mes con facturación electrónica (plan + facturación), por tope de documentos.
- * Los códigos son los planes de `gener_plan` que vende `/adquirir` (`?plan=<código>`): el botón de
- * la ventana lleva directo a comprar el tramo elegido.
- */
 export interface TramoFe {
-  /** La letra del paquete, como en el nombre del plan («Emprendedor + Facturación S»). */
-  paquete: string;
-  /** Documentos al mes. Números y no textos: la calculadora de adicionales hace cuentas con ellos. */
-  tope: number;
+  /** Cómo se llama el paquete en la tabla: «2.500 documentos», «Ilimitada». */
+  nombre: string;
+  /** La línea de abajo del nombre. */
+  detalle: string;
+  /** Documentos al mes; `null` = sin tope. La calculadora hace cuentas con ellos. */
+  tope: number | null;
+  /** Total al mes, sistema + facturación, sin asistente. */
   base: number;
+  /** Total al mes con el asistente de WhatsApp. */
   asistente: number;
-  codigoBase: string;
-  codigoAsistente: string;
+  /** Los planes de `gener_plan` que vende `/adquirir` (`?plan=<código>`); `null` = aún no existen. */
+  codigoBase: string | null;
+  codigoAsistente: string | null;
 }
 
 export const TRAMOS_FE: TramoFe[] = [
-  { paquete: 'S', tope: 100, base: 81999, asistente: 117999, codigoBase: 'EMPRENDEDOR_FE_S', codigoAsistente: 'EMPRESARIAL_S' },
-  { paquete: 'M', tope: 500, base: 101999, asistente: 132999, codigoBase: 'EMPRENDEDOR_FE_M', codigoAsistente: 'EMPRESARIAL_M' },
-  { paquete: 'L', tope: 1200, base: 121999, asistente: 147999, codigoBase: 'EMPRENDEDOR_FE_L', codigoAsistente: 'EMPRESARIAL_L' },
-  { paquete: 'XL', tope: 2500, base: 141999, asistente: 162999, codigoBase: 'EMPRENDEDOR_FE_XL', codigoAsistente: 'EMPRESARIAL_XL' },
-];
-
-/**
- * Documentos adicionales al mes, para quien pasa del paquete XL. Se suman al plan y se cobran con él.
- *
- * Cada paquete tiene precio por SU PROPIA compra en Factus (paquete individual, lista de
- * `facturacion-electronica.md` §8.2), porque cuando a un cliente se le acaba la bolsa no se
- * «amplía»: se compra otra y se suman. Peor caso, el adicional lleno durante un año:
- *
- * | Adicional | Al año | Paquete Factus que lo cubre | Costo/mes | Precio | Margen |
- * |---|---|---|---|---|---|
- * | +500 | 6.000 | 10.000 · $390.000 | $32.500 | $54.999 | 41 % |
- * | +1.000 | 12.000 | 15.000 · $440.000 | $36.667 | $64.999 | 44 % |
- * | +2.500 | 30.000 | 35.000 · $820.000 | $68.333 | $114.999 | 41 % |
- *
- * Como cada uno se cubre solo, cualquier combinación también: comprar una bolsa más grande que
- * cubra la suma nunca cuesta más que comprarlas por separado.
- */
-export interface PaqueteExtraFe {
-  docs: number;
-  precio: number;
-}
-
-export const PAQUETES_EXTRA_FE: PaqueteExtraFe[] = [
-  { docs: 500, precio: 54999 },
-  { docs: 1000, precio: 64999 },
-  { docs: 2500, precio: 114999 },
+  {
+    nombre: '2.500 documentos',
+    detalle: 'Al mes, unos 80 al día',
+    tope: 2500,
+    base: 69999,
+    asistente: 109999,
+    codigoBase: null,
+    codigoAsistente: null,
+  },
+  {
+    nombre: '5.000 documentos',
+    detalle: 'Al mes',
+    tope: 5000,
+    base: 89999,
+    asistente: 129999,
+    codigoBase: null,
+    codigoAsistente: null,
+  },
+  {
+    nombre: '10.000 documentos',
+    detalle: 'Al mes',
+    tope: 10000,
+    base: 119999,
+    asistente: 159999,
+    codigoBase: null,
+    codigoAsistente: null,
+  },
+  {
+    nombre: 'Ilimitada',
+    detalle: 'Sin tope de documentos',
+    tope: null,
+    base: 159999,
+    asistente: 199999,
+    codigoBase: null,
+    codigoAsistente: null,
+  },
 ];
 
 export type PlanFe = 'base' | 'asistente';
 
-/** El nombre exacto del plan en la página de compra. */
+/** El nombre del plan como lo lee el cliente. */
 export function nombrePlanFe(plan: PlanFe): string {
   return plan === 'asistente' ? 'Plan Empresarial' : 'Emprendedor + Facturación';
 }
 
-/** La combinación más barata de adicionales que cubre `faltan` documentos al mes. */
-function combinarExtrasFe(faltan: number): { cantidades: number[]; precio: number } {
-  let mejor = { cantidades: PAQUETES_EXTRA_FE.map(() => 0), precio: 0 };
-  if (faltan <= 0) return mejor;
-  const [chico, medio, grande] = PAQUETES_EXTRA_FE;
-  mejor = { ...mejor, precio: Infinity };
-  for (let g = 0; g <= Math.ceil(faltan / grande.docs); g++) {
-    for (let m = 0; m <= Math.ceil(faltan / medio.docs); m++) {
-      for (let c = 0; c <= Math.ceil(faltan / chico.docs); c++) {
-        const docs = g * grande.docs + m * medio.docs + c * chico.docs;
-        if (docs < faltan) continue;
-        const precio = g * grande.precio + m * medio.precio + c * chico.precio;
-        if (precio < mejor.precio) mejor = { cantidades: [c, m, g], precio };
-      }
-    }
-  }
-  return mejor;
+/** El índice en `TRAMOS_FE` del paquete que le alcanza a `docs` (Ilimitada si ninguno alcanza). */
+export function indiceTramoFe(docs: number): number {
+  const i = TRAMOS_FE.findIndex((t) => t.tope === null || docs <= t.tope);
+  return i === -1 ? TRAMOS_FE.length - 1 : i;
 }
 
-/**
- * La cuenta de la calculadora: el paquete que le alcanza a `docs` documentos al mes, los
- * adicionales que le faltan («2 × +2.500 y +500», vacío si no hacen falta) y el total al mes con
- * el plan elegido. `numero` es el formateador de la página, para que las cifras salgan iguales.
- */
-export function calcularFe(docs: number, plan: PlanFe, numero: (valor: number) => string) {
-  const tramo = TRAMOS_FE.find((t) => docs <= t.tope) ?? TRAMOS_FE[TRAMOS_FE.length - 1];
-  const extra = combinarExtrasFe(docs - tramo.tope);
-  const adicionales = PAQUETES_EXTRA_FE.map((p, i) => ({ docs: p.docs, cantidad: extra.cantidades[i] }))
-    .filter((p) => p.cantidad > 0)
-    .reverse()
-    .map((p) => `${p.cantidad > 1 ? `${p.cantidad} × ` : ''}+${numero(p.docs)}`)
-    .join(' y ');
+/** La cuenta de la calculadora: el paquete que le alcanza a `docs` documentos al mes y el total. */
+export function calcularFe(docs: number, plan: PlanFe) {
+  const tramo = TRAMOS_FE[indiceTramoFe(docs)];
   return {
     tramo,
-    adicionales,
     plan: nombrePlanFe(plan),
-    total: (plan === 'asistente' ? tramo.asistente : tramo.base) + extra.precio,
+    total: plan === 'asistente' ? tramo.asistente : tramo.base,
   };
 }
 
 /**
- * Lo que resume el pie de la ventana: lo ÚLTIMO que tocó el visitante. Tocar un precio de la
- * tabla elige ese tramo (`docsCalculadora = null`); mover la calculadora elige lo que ella dice.
- * Antes el pie solo seguía a la tabla, así que con 10.000 documentos en la calculadora seguía
- * diciendo «Plan Empresarial S · $117.999» debajo de un total de $507.996.
- *
- * `codigo` es `null` cuando hay adicionales: no existen en `gener_plan` y «Adquirir» no los vende,
- * así que el pie manda a WhatsApp en vez de a comprar un plan que no alcanza.
+ * Lo que resume el pie de la ventana: el paquete elegido en la tabla o en la calculadora (las dos
+ * mueven `feTramo`) y con qué plan. `codigo` es `null` mientras el paquete no exista en
+ * `gener_plan`: el pie manda a WhatsApp en vez de a comprar un plan con otro precio.
  */
 export interface EleccionFe {
-  /** «Plan Empresarial XL + 3 × +2.500». */
-  plan: string;
-  /** Documentos al mes que cubre la elección. */
-  docs: number;
+  /** «Plan Empresarial · hasta 5.000 documentos al mes». */
+  resumen: string;
   total: number;
   codigo: string | null;
 }
 
 export function eleccionFe(
-  tramoTabla: number,
+  tramoElegido: number,
   plan: PlanFe,
-  docsCalculadora: number | null,
   numero: (valor: number) => string,
 ): EleccionFe {
-  if (docsCalculadora !== null) {
-    const calculo = calcularFe(docsCalculadora, plan, numero);
-    if (calculo.adicionales) {
-      return {
-        plan: `${calculo.plan} ${calculo.tramo.paquete} + ${calculo.adicionales}`,
-        docs: docsCalculadora,
-        total: calculo.total,
-        codigo: null,
-      };
-    }
-  }
-  const tramo = TRAMOS_FE[tramoTabla];
+  const tramo = TRAMOS_FE[tramoElegido];
   const conAsistente = plan === 'asistente';
+  const docs =
+    tramo.tope === null ? 'facturación ilimitada' : `hasta ${numero(tramo.tope)} documentos al mes`;
   return {
-    plan: `${nombrePlanFe(plan)} ${tramo.paquete}`,
-    docs: tramo.tope,
+    resumen: `${nombrePlanFe(plan)} · ${docs}`,
     total: conAsistente ? tramo.asistente : tramo.base,
     codigo: conAsistente ? tramo.codigoAsistente : tramo.codigoBase,
   };
-}
-
-/** El índice en `TRAMOS_FE` del paquete que le alcanza a `docs` (el XL si ninguno alcanza). */
-export function indiceTramoFe(docs: number): number {
-  const i = TRAMOS_FE.findIndex((t) => docs <= t.tope);
-  return i === -1 ? TRAMOS_FE.length - 1 : i;
 }
