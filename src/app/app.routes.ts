@@ -3,7 +3,6 @@ import { Routes } from '@angular/router';
 import { authRoutes } from './auth/auth-routing';
 import { adminRoutes } from './admin/admin-routing';
 import { ayudaRoutes } from './ayuda/ayuda-routing';
-import { adminGuard } from './admin/guards/admin.guard';
 
 export const routes: Routes = [
   // La portada: `/inicio`, la página madre que reparte al visitante entre `/restaurantes` y
@@ -96,17 +95,14 @@ export const routes: Routes = [
     title: 'Paga tu mensualidad — EscalApp',
   },
 
-  // Centro de ayuda. Está DISEÑADO para ser público —la ayuda hace más falta justo cuando no se
-  // puede entrar: contraseña olvidada, prueba vencida, plan caducado— pero se estrena cerrado al
-  // equipo de EscalApp mientras el catálogo esté a medio grabar: un centro con tres tutoriales y
-  // treinta y nueve módulos vacíos enseña que no hay nada, y eso es peor que no enseñar nada.
+  // Centro de ayuda. PÚBLICO desde el 2026-11-18 —la ayuda hace más falta justo cuando no se
+  // puede entrar: contraseña olvidada, prueba vencida, plan caducado—, sin guard.
   //
-  // Para abrirlo al público hay que deshacer TRES cosas, y están juntas a propósito:
-  //   1. este `canActivate`,
-  //   2. las rutas de lectura en `PUBLIC_URLS` del `authInterceptor` (volver a declararlas),
-  //   3. `AYUDA_PUBLICA=true` en el `.env` del servidor (eso es lo único que no se despliega).
+  // Se estrenó cerrado (super admin) mientras el catálogo estaba a medio grabar. Volver a
+  // cerrarlo son TRES cosas juntas: `canActivate: [adminGuard()]` aquí, quitar sus lecturas de
+  // `PUBLIC_URLS` del `authInterceptor` y `AYUDA_PUBLICA` fuera del `.env` del servidor.
   // Está escrito en `admin_ws/docs/centro-de-ayuda.md`, sección «Cómo se abre al público».
-  { path: 'ayuda', canActivate: [adminGuard()], children: ayudaRoutes },
+  { path: 'ayuda', children: ayudaRoutes },
 
   // Módulo de autenticación — /auth/register, /auth/callback, etc. (el login está en /login).
   { path: 'auth', children: authRoutes },
