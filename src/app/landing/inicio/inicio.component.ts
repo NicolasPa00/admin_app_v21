@@ -157,7 +157,7 @@ interface Logo {
   conNombre?: boolean;
 }
 
-/** Las plataformas con las que trabaja EscalApp. Factus no va: lo impide su acuerdo de confidencialidad. */
+/** Las plataformas con las que trabaja EscalApp. */
 const ALIADOS: Logo[] = [
   { nombre: 'Meta', imagen: 'meta.svg', url: 'https://www.meta.com' },
   {
@@ -287,7 +287,7 @@ export class InicioComponent {
    * Los datos estructurados de la PORTADA.
    *
    * Se perdieron el 2026-10-27, cuando `/inicio` sustituyó a la landing vieja en `path: ''`: el
-   * bloque JSON-LD vivía en `landing.component.ts`, que quedó sin ruta, y nadie lo echó de menos
+   * bloque JSON-LD vivía en la landing vieja, que quedó sin ruta, y nadie lo echó de menos
    * porque no se ve. En producción la portada quedó sin una sola línea de datos estructurados
    * mientras `/restaurantes` y `/reservas` sí los tenían.
    *

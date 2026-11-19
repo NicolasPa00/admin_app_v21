@@ -10,12 +10,9 @@ import {
   Declaracion,
   EstadoFe,
   FeConfiguracion,
-  FeCredenciales,
   FeCredencialesPropio,
-  FeNuevoRango,
   FePrueba,
   FeRango,
-  FeRangoDian,
   FeRegistroRango,
   FeVista,
   FichaFiscal,
@@ -92,12 +89,10 @@ export class FacturacionService {
   // ── Emisión (FE-2) — solo super admin; el backend responde 403 a cualquier otro ──
   //
   //   GET    /admin/negocios/:id_negocio/facturacion-electronica
-  //   PUT    …                                  credenciales, ambiente, impuestos por defecto
-  //   POST   …/probar                           ¿las credenciales son de este negocio?
-  //   GET    …/rangos/dian                      lo que la DIAN tiene asociado
-  //   POST   …/rangos                           crear el rango en el proveedor (no lo toma solo)
-  //   POST   …/rangos/sincronizar
-  //   POST   …/rangos/registrar               emisor propio: el rango que autorizó la DIAN
+  //   PUT    …                                  certificado y software, ambiente, impuestos por defecto
+  //   POST   …/probar                           ¿el certificado es de este negocio?
+  //   POST   …/rangos/sincronizar               solo producción: los rangos que autorizó la DIAN
+  //   POST   …/rangos/registrar                 el rango que autorizó la DIAN, a mano
   //   PUT    …/rangos/:id_resolucion/usar
   //   PATCH  …/estado
   //
@@ -114,7 +109,7 @@ export class FacturacionService {
   guardarEmision(
     idNegocio: number,
     campos: Omit<Partial<FeConfiguracion>, 'software_pos'> & {
-      credenciales?: FeCredenciales | FeCredencialesPropio;
+      credenciales?: FeCredencialesPropio;
       /** Software del tiquete POS; el PIN vacío = el mismo de la factura. null lo quita. */
       software_pos?: { software_id: string; pin?: string } | null;
     },
@@ -152,19 +147,7 @@ export class FacturacionService {
       .pipe(map((r) => r.data?.rangos ?? []));
   }
 
-  rangosDian(idNegocio: number): Observable<FeRangoDian[]> {
-    return this.http
-      .get<ApiResponse<{ rangos: FeRangoDian[] }>>(`${this.fe(idNegocio)}/rangos/dian`)
-      .pipe(map((r) => r.data?.rangos ?? []));
-  }
-
-  crearRango(idNegocio: number, rango: FeNuevoRango): Observable<FeRango[]> {
-    return this.http
-      .post<ApiResponse<{ rangos: FeRango[] }>>(`${this.fe(idNegocio)}/rangos`, rango)
-      .pipe(map((r) => r.data?.rangos ?? []));
-  }
-
-  /** Emisor propio: registra el rango que autorizó la DIAN (o el de notas crédito). */
+  /** Registra el rango que autorizó la DIAN (o el de notas crédito). */
   registrarRango(idNegocio: number, rango: FeRegistroRango): Observable<FeRango[]> {
     return this.http
       .post<ApiResponse<{ rangos: FeRango[] }>>(`${this.fe(idNegocio)}/rangos/registrar`, rango)

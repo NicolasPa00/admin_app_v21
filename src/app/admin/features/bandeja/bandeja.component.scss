@@ -9,7 +9,7 @@
   Esta pantalla añade un tercero, local y acotado: `--bdj-*`, declarado en `:host` y en ningún
   sitio más — exactamente el mismo patrón que `--carta-*` en `negocio_app`. Son los verdes del
   chat, copiados **por valor** de `--lp-wa-verde` / `--lp-wa-verde-hondo` en
-  `landing.component.scss`, no referenciados: si se escribiera `var(--es-...)` aquí, sería el
+  la landing vieja (`landing.component.scss`, borrada el 2026-11-18), no referenciados: si se escribiera `var(--es-...)` aquí, sería el
   puente que la regla prohíbe, y además `--es-*` ni siquiera está definido en el área de admin.
 
   Por qué verde y no la paleta del inquilino: la banda y las burbujas son **el canal**, no la

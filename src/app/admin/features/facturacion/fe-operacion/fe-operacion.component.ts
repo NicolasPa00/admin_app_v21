@@ -32,24 +32,15 @@ import {
   AmbienteFe,
   EstadoFe,
   FeConfiguracion,
-  FeCredenciales,
   FeCredencialesPropio,
   FePrueba,
   FeRango,
-  FeRangoDian,
   FeVista,
   ImpuestoCatalogo,
   MotivoNoFactura,
-  ProveedorFe,
+  PROVEEDOR_FE,
   TipoRangoFe,
 } from '../../../models/facturacion.models';
-
-const CREDENCIALES_VACIAS: FeCredenciales = {
-  client_id: '',
-  client_secret: '',
-  username: '',
-  password: '',
-};
 
 const PROPIO_VACIO: FeCredencialesPropio = { certificado_p12: '', clave_certificado: '', software_id: '', pin: '' };
 
@@ -96,12 +87,12 @@ const MOTIVOS: Record<Exclude<MotivoNoFactura, null>, string> = {
  * Emisión de facturación electrónica de UN negocio (FE-2). **Solo la ve el super admin**: quien
  * decide si se pinta es la pantalla que la contiene, y el backend responde 403 a cualquier otro.
  *
- * Es el alta de un cliente, en el orden en que ocurre en la vida real:
- *   1. Pegar las credenciales que entregó el proveedor para ESE negocio.
- *   2. Probar la conexión — y comprobar que la empresa es la del negocio, no otra.
- *   3. Crear el rango de numeración en el proveedor: no lo toma solo de la DIAN.
- *   4. Elegir con qué rango se factura y con cuál se anula (notas crédito).
- *   5. Pasar a pruebas, y después activar.
+ * Emite el emisor propio de EscalApp (ADR-032): firma con el certificado del negocio y transmite
+ * directo a la DIAN. Es el alta de un cliente, en el orden en que ocurre en la vida real:
+ *   1. Subir el certificado del negocio y el software que le asignó la DIAN.
+ *   2. Revisar el certificado — y comprobar que es del NIT del negocio, no de otro.
+ *   3. Registrar los rangos que autorizó la DIAN y elegir con cuál se factura y con cuál se anula.
+ *   4. Pasar a pruebas, y después activar.
  *
  * Las credenciales se escriben y se envían; nunca se vuelven a mostrar. Lo único que el servidor
  * devuelve es si las tiene.
@@ -148,18 +139,7 @@ export class FeOperacionComponent {
 
   readonly vista = signal<FeVista | null>(null);
   readonly prueba = signal<FePrueba | null>(null);
-  readonly dian = signal<FeRangoDian[] | null>(null);
 
-  readonly credenciales = signal<FeCredenciales>({ ...CREDENCIALES_VACIAS });
-  /**
-   * Con qué emite: Factus o el emisor propio (ADR-032). Es la ELECCIÓN en pantalla; la guardada
-   * está en `config().proveedor` y solo cambia al guardar las credenciales del nuevo.
-   */
-  readonly proveedorElegido = signal<ProveedorFe>('FACTUS');
-  readonly propio = computed(() => this.proveedorElegido() === 'DIAN_DIRECTO');
-  /** Lo que ya está guardado manda en las tarjetas 2 y 3. */
-  readonly propioGuardado = computed(() => this.config()?.proveedor === 'DIAN_DIRECTO');
-  readonly cambiaProveedor = computed(() => !!this.config()?.tiene_credenciales && this.config()?.proveedor !== this.proveedorElegido());
   readonly credencialesPropio = signal<FeCredencialesPropio>({ ...PROPIO_VACIO });
   /** Nombre del .p12 elegido, para enseñarlo (el contenido va en `credencialesPropio`). */
   readonly archivoCertificado = signal<string | null>(null);
@@ -183,12 +163,6 @@ export class FeOperacionComponent {
   });
   readonly hayRangoPos = computed(() => this.rangos().some((r) => r.tipo_documento === 'POS' && r.en_uso));
   readonly ambiente = signal<AmbienteFe>('PRUEBAS');
-  readonly nuevoRango = signal<{ tipo: TipoRangoFe; prefijo: string; resolucion: string; actual: string }>({
-    tipo: 'FV',
-    prefijo: '',
-    resolucion: '',
-    actual: '',
-  });
   /** El cambio de estado que espera confirmación (dos pasos: no se activa con un clic suelto). */
   readonly porConfirmar = signal<EstadoFe | null>(null);
 
@@ -201,9 +175,7 @@ export class FeOperacionComponent {
   });
   readonly faltan = computed(() => this.vista()?.puede_emitir.faltan ?? []);
   readonly credencialesCompletas = computed(() =>
-    this.propio()
-      ? Object.values(this.credencialesPropio()).every((v) => v.trim().length > 0)
-      : Object.values(this.credenciales()).every((v) => v.trim().length > 0),
+    Object.values(this.credencialesPropio()).every((v) => v.trim().length > 0),
   );
   readonly registroValido = computed(() => {
     const r = this.registro();
@@ -216,16 +188,6 @@ export class FeOperacionComponent {
     if (r.tipo === 'FV') return r.resolucion.trim().length >= 5 && r.clave.trim().length >= 10;
     if (r.tipo === 'POS') return r.resolucion.trim().length >= 5;
     return true;
-  });
-  readonly rangoValido = computed(() => {
-    const r = this.nuevoRango();
-    const inicio = Number(r.actual);
-    return (
-      r.prefijo.trim().length > 0 &&
-      Number.isInteger(inicio) &&
-      inicio > 0 &&
-      (r.tipo === 'NC' || r.resolucion.trim().length >= 5)
-    );
   });
   readonly impuestoDefecto = computed(() => this.claveImpuesto('defecto'));
   readonly impuestoDomicilio = computed(() => this.claveImpuesto('domicilio'));
@@ -245,9 +207,7 @@ export class FeOperacionComponent {
     this.aviso.set(null);
     this.vista.set(null);
     this.prueba.set(null);
-    this.dian.set(null);
     this.porConfirmar.set(null);
-    this.credenciales.set({ ...CREDENCIALES_VACIAS });
     this.credencialesPropio.set({ ...PROPIO_VACIO });
     this.archivoCertificado.set(null);
     this.registro.set({ ...REGISTRO_VACIO });
@@ -268,7 +228,6 @@ export class FeOperacionComponent {
   private aplicar(v: FeVista): void {
     this.vista.set(v);
     this.ambiente.set(v.config?.ambiente ?? 'PRUEBAS');
-    this.proveedorElegido.set(v.config?.proveedor ?? 'FACTUS');
     const c = v.config?.pos_caja;
     this.caja.set({ placa: c?.placa ?? '', ubicacion: c?.ubicacion ?? '', tipo: c?.tipo ?? '' });
     this.softwarePosId.set(v.config?.software_pos?.software_id ?? '');
@@ -313,10 +272,6 @@ export class FeOperacionComponent {
     return i.codigo === 'ZZ' ? 'Sin impuesto' : `${i.nombre} ${Number(i.tarifa)}%`;
   }
 
-  credencial(campo: keyof FeCredenciales, valor: string): void {
-    this.credenciales.update((c) => ({ ...c, [campo]: valor }));
-  }
-
   credencialPropio(campo: keyof FeCredencialesPropio, valor: string): void {
     this.credencialesPropio.update((c) => ({ ...c, [campo]: valor }));
   }
@@ -339,7 +294,7 @@ export class FeOperacionComponent {
     this.registro.update((r) => ({ ...r, [campo]: valor }));
   }
 
-  /** Emisor propio: registra el rango que autorizó la DIAN, o el de notas crédito. */
+  /** Registra el rango que autorizó la DIAN, o el de notas crédito. */
   registrarRango(): void {
     const r = this.registro();
     const factura = r.tipo === 'FV';
@@ -364,26 +319,18 @@ export class FeOperacionComponent {
     );
   }
 
-  rango(campo: 'tipo' | 'prefijo' | 'resolucion' | 'actual', valor: string): void {
-    this.nuevoRango.update((r) => ({ ...r, [campo]: valor }));
-  }
-
   guardarCredenciales(): void {
-    const proveedor = this.proveedorElegido();
-    const credenciales = this.propio() ? this.credencialesPropio() : this.credenciales();
+    const credenciales = this.credencialesPropio();
     this.ejecutar(
       'credenciales',
-      this.api.guardarEmision(this.idNegocio(), { proveedor, credenciales, ambiente: this.ambiente() }),
+      this.api.guardarEmision(this.idNegocio(), { proveedor: PROVEEDOR_FE, credenciales, ambiente: this.ambiente() }),
       (v) => {
         this.aplicar(v);
         // Se borran de la pantalla en cuanto llegan al servidor: aquí no se quedan.
-        this.credenciales.set({ ...CREDENCIALES_VACIAS });
         this.credencialesPropio.set({ ...PROPIO_VACIO });
         this.archivoCertificado.set(null);
         this.prueba.set(null);
-        return proveedor === 'DIAN_DIRECTO'
-          ? 'Certificado guardado: abre y está vigente. Ahora registra el rango de numeración.'
-          : 'Credenciales guardadas. Prueba la conexión antes de seguir.';
+        return 'Certificado guardado: abre y está vigente. Ahora registra el rango de numeración.';
       },
     );
   }
@@ -410,41 +357,6 @@ export class FeOperacionComponent {
       this.ponerRangos(rangos);
       return `Rangos sincronizados: ${rangos.length}.`;
     });
-  }
-
-  verDian(): void {
-    this.ejecutar('dian', this.api.rangosDian(this.idNegocio()), (rangos) => {
-      this.dian.set(rangos);
-      return null;
-    });
-  }
-
-  /** Rellena el formulario con un prefijo que la DIAN ya tiene asociado. */
-  tomarDeDian(r: FeRangoDian): void {
-    this.nuevoRango.set({
-      tipo: 'FV',
-      prefijo: r.prefijo ?? '',
-      resolucion: r.resolucion ?? '',
-      actual: r.desde != null ? String(r.desde) : '',
-    });
-  }
-
-  crearRango(): void {
-    const r = this.nuevoRango();
-    this.ejecutar(
-      'crear-rango',
-      this.api.crearRango(this.idNegocio(), {
-        tipo_documento: r.tipo,
-        prefijo: r.prefijo.trim().toUpperCase(),
-        actual: Number(r.actual),
-        resolucion: r.tipo === 'FV' ? r.resolucion.trim() : null,
-      }),
-      (rangos) => {
-        this.ponerRangos(rangos);
-        this.nuevoRango.set({ tipo: 'FV', prefijo: '', resolucion: '', actual: '' });
-        return 'Rango creado en el proveedor. Elige «Usar» para facturar con él.';
-      },
-    );
   }
 
   usar(r: FeRango): void {
@@ -476,7 +388,7 @@ export class FeOperacionComponent {
   guardarCorreo(enviar: boolean): void {
     this.ejecutar('correo', this.api.guardarEmision(this.idNegocio(), { enviar_correo: enviar }), (v) => {
       this.aplicar(v);
-      return enviar ? 'El proveedor enviará la factura por correo al comprador.' : 'No se enviará correo al comprador.';
+      return enviar ? 'EscalApp enviará la factura por correo al comprador.' : 'No se enviará correo al comprador.';
     });
   }
 

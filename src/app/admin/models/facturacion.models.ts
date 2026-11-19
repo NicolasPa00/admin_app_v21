@@ -112,15 +112,15 @@ export interface Declaracion {
 
 export type AmbienteFe = 'PRUEBAS' | 'PRODUCCION';
 export type EstadoFe = 'SIN_CONFIGURAR' | 'EN_PRUEBAS' | 'ACTIVO' | 'SUSPENDIDO';
-/** ND = notas débito (solo el emisor propio las emite). */
+/** ND = notas débito. */
 /** POS = tiquete POS electrónico (documento equivalente); NAP = su nota de ajuste crédito. */
 export type TipoRangoFe = 'FV' | 'NC' | 'ND' | 'POS' | 'NAP';
 /**
- * Quién emite. FACTUS = proveedor tecnológico (credenciales de su API). DIAN_DIRECTO = el emisor
- * propio de EscalApp (ADR-032): firma con el certificado del negocio y transmite directo a la DIAN;
- * el consecutivo lo lleva EscalApp.
+ * Quién emite. Hoy solo DIAN_DIRECTO = el emisor propio de EscalApp (ADR-032): firma con el
+ * certificado del negocio y transmite directo a la DIAN; el consecutivo lo lleva EscalApp.
  */
-export type ProveedorFe = 'FACTUS' | 'DIAN_DIRECTO';
+export type ProveedorFe = 'DIAN_DIRECTO';
+export const PROVEEDOR_FE: ProveedorFe = 'DIAN_DIRECTO';
 
 /** La configuración de emisión. **Nunca trae las credenciales**: solo si las hay. */
 export interface FeConfiguracion {
@@ -135,7 +135,7 @@ export interface FeConfiguracion {
   enviar_correo: boolean;
   /** false (lo normal): se factura solo el cobro en el que el cajero lo pide. true: todos. */
   facturar_todo: boolean;
-  /** Emisor propio: el cobro sin factura sale como tiquete POS electrónico. */
+  /** El cobro sin factura sale como tiquete POS electrónico. */
   emite_pos?: boolean;
   /** La caja que va en cada tiquete POS (exigida por la DIAN). */
   pos_caja?: { placa: string; ubicacion: string; tipo: string } | null;
@@ -145,7 +145,7 @@ export interface FeConfiguracion {
    */
   software_pos?: { software_id: string; pin_propio: boolean } | null;
   /**
-   * El logo con el que salen las facturas (PDF y correo), como en Factus: `/uploads/...` (PNG o JPG).
+   * El logo con el que salen las facturas (PDF y correo): `/uploads/...` (PNG o JPG).
    * `null` = el logo de la marca del negocio, si es PNG o JPG; si no, su inicial.
    */
   logo_url?: string | null;
@@ -155,7 +155,7 @@ export interface FeConfiguracion {
 
 export interface FeRango {
   id_resolucion: string;
-  /** null en los rangos del emisor propio: no hay un proveedor que los numere. */
+  /** Columna heredada: siempre null (los rangos los numera EscalApp). */
   id_rango_proveedor: number | null;
   tipo_documento: TipoRangoFe;
   prefijo: string | null;
@@ -166,7 +166,7 @@ export interface FeRango {
   vigencia_hasta: string | null;
   vencida: boolean;
   en_uso: boolean;
-  /** Emisor propio: la clave técnica que la DIAN dio para el rango (entra en el CUFE). */
+  /** La clave técnica que la DIAN dio para el rango (entra en el CUFE). */
   clave_tecnica?: string | null;
 }
 
@@ -183,13 +183,6 @@ export interface FeVista {
   alertas: string[];
 }
 
-export interface FeCredenciales {
-  client_id: string;
-  client_secret: string;
-  username: string;
-  password: string;
-}
-
 /**
  * Credenciales del emisor propio: el certificado .p12 del negocio (en base64) con su clave, y lo
  * que el portal de habilitación de la DIAN asignó al registrar «Software propio».
@@ -201,7 +194,7 @@ export interface FeCredencialesPropio {
   pin: string;
 }
 
-/** Un rango que autorizó la DIAN, registrado a mano (emisor propio). */
+/** Un rango que autorizó la DIAN, registrado a mano. */
 export interface FeRegistroRango {
   tipo_documento: TipoRangoFe;
   prefijo: string | null;
@@ -214,25 +207,9 @@ export interface FeRegistroRango {
 }
 
 export interface FePrueba {
-  /** Con el emisor propio: el titular del certificado y su vencimiento (`vence`). */
+  /** El titular del certificado y su vencimiento (`vence`). */
   empresa: { nit: string | null; dv: string | number | null; razon_social: string | null; vence?: string };
   coincide_nit: boolean;
   nit_del_negocio: string | null;
 }
 
-/** Un prefijo que la DIAN tiene asociado al software del negocio. */
-export interface FeRangoDian {
-  prefijo: string | null;
-  resolucion: string | null;
-  desde: string | number | null;
-  hasta: string | number | null;
-  vigenciaDesde: string | null;
-  vigenciaHasta: string | null;
-}
-
-export interface FeNuevoRango {
-  tipo_documento: TipoRangoFe;
-  prefijo: string;
-  actual: number;
-  resolucion?: string | null;
-}

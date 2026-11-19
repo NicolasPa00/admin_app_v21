@@ -6,8 +6,8 @@ import { ayudaRoutes } from './ayuda/ayuda-routing';
 
 export const routes: Routes = [
   // La portada: `/inicio`, la página madre que reparte al visitante entre `/restaurantes` y
-  // `/reservas`, pasó a la raíz el 2026-10-27 (pedido del dueño). La landing anterior
-  // (`landing/landing.component`) queda en el código sin ruta, por si hay que volver.
+  // `/reservas`, pasó a la raíz el 2026-10-27 (pedido del dueño). La landing anterior se borró el
+  // 2026-11-18 (llevaba los precios de la facturación de antes); está en la historia de git.
   // SIN `title` a propósito: lo pone `SeoService` desde el componente. El `title` de la ruta lo
   // aplica el router DESPUÉS de construir el componente y pisaba el del servicio.
   {

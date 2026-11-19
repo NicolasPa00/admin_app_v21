@@ -32,7 +32,7 @@ export interface OficioPrueba {
 }
 
 /**
- * Los oficios que ofrece el desplegable (espejo de `RUBROS_REGISTRO` en `landing.component.ts`).
+ * Los oficios que ofrece el desplegable (eran el `RUBROS_REGISTRO` de la landing vieja, ya borrada).
  *
  * El catálogo tiene más de quince y ofrecerlos todos prometía cosas que el producto aún no atiende
  * igual de bien. Aquí van solo los que están completos y en producción.

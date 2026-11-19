@@ -207,7 +207,7 @@ const COMPARACION: GrupoComparado[] = [
 
 /**
  * Los oficios que ofrece el registro de esta página: los del motor de reserva, tal como los lista
- * la landing viva (`RUBROS_REGISTRO`). El `nombre` es lo que viaja al backend; se validan contra la
+ * la landing (antes `RUBROS_REGISTRO`). El `nombre` es lo que viaja al backend; se validan contra la
  * base al registrarse. Las etiquetas son el respaldo para cuando la API no contesta (prerender).
  */
 const OFICIOS_CELULARES: { nombre: string; label: string }[] = [

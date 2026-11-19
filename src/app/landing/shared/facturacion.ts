@@ -4,7 +4,7 @@
  * escriben tres veces.
  *
  * **Desde 2026-11-14: paquetes del EMISOR PROPIO** (`admin_ws/docs/precios-y-planes.md` §0,
- * «DECIDIDO 2026-11-12»). Reemplazan los tramos S–XL de Factus (100 a 2.500 documentos, de $81.999
+ * «DECIDIDO 2026-11-12»). Reemplazan los tramos S–XL de antes (100 a 2.500 documentos, de $81.999
  * a $162.999) y sus documentos adicionales: con Ilimitada ya no hace falta sumar paquetes. Con
  * asistente cuesta $40.000 más (decidido por el dueño el 2026-11-14).
  *
