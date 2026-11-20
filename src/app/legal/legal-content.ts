@@ -465,8 +465,33 @@ export const PRIVACIDAD: DocumentoLegal = {
         Superintendencia de Industria y Comercio conforme a la ley.</p>`,
     },
     {
+      id: 'app-android',
+      titulo: '11. La app de EscalApp para Android',
+      html: `
+        <p>La app «EscalApp» (Google Play, identificador <code>cloud.escalapp.movil</code>) es la
+        herramienta del personal de los negocios: entra con la misma cuenta del panel y muestra los
+        mismos datos. No crea cuentas por su cuenta ni recoge datos distintos de los descritos en la
+        sección 3.</p>
+        <ul>
+          <li><strong>Lo que guarda en el celular:</strong> la sesión, la carta y los pedidos que se
+          toman sin señal, para poder seguir trabajando y enviarlos solos cuando vuelva la conexión.
+          Se queda solo en ese celular y se borra al desinstalar la app o al borrar sus datos
+          desde los ajustes del teléfono.</li>
+          <li><strong>Bluetooth:</strong> solo para conectarse a la impresora térmica que el negocio
+          elija. No busca ni registra otros dispositivos.</li>
+          <li><strong>Cámara:</strong> solo para escanear el código QR de una orden de pago, cuando
+          la persona lo pide. No guarda fotos ni las envía.</li>
+          <li><strong>No usamos</strong> ubicación, contactos, micrófono, publicidad, identificadores
+          publicitarios ni herramientas de analítica de terceros.</li>
+          <li>Lo que la app envía viaja cifrado (HTTPS) a nuestro servidor y no se comparte con
+          terceros para fines propios de ellos.</li>
+        </ul>
+        <p>Para borrar una cuenta y sus datos, sigue las instrucciones de
+        <a href="eliminacion-datos">Cómo eliminar tus datos</a>.</p>`,
+    },
+    {
       id: 'rnbd',
-      titulo: '11. Registro Nacional de Bases de Datos',
+      titulo: '12. Registro Nacional de Bases de Datos',
       html: `
         <p>A la fecha de esta versión, EscalApp no está obligada a inscribirse en el RNBD: esa
         obligación recae sobre sociedades con activos totales superiores a 100.000 UVT y EscalApp
@@ -474,7 +499,7 @@ export const PRIVACIDAD: DocumentoLegal = {
     },
     {
       id: 'vigencia',
-      titulo: '12. Vigencia y cambios',
+      titulo: '13. Vigencia y cambios',
       html: `
         <p>Los cambios materiales se publicarán en escalapp.cloud y se avisarán a los usuarios
         registrados. Las bases de datos se conservarán mientras se mantengan las finalidades
